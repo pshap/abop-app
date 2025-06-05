@@ -33,6 +33,8 @@ pub enum Message {
     ScanComplete(Result<crate::library::ScanResult, String>),
     /// Reports progress during library scanning (0.0 to 1.0).
     ScanProgress(f32),
+    /// Reports enhanced scan progress with detailed information
+    ScanProgressEnhanced(crate::library::ScanProgress),
 
     /// Selects an audiobook by its ID.
     SelectAudiobook(String),

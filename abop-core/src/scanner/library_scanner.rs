@@ -24,6 +24,7 @@ use crate::{
         error::{ScanError, ScanResult as ScanResultType},
         progress::ScanProgress,
         result::ScanSummary,
+        performance::{PerformanceMonitor, OperationType},
     },
 };
 use iced::Task;
@@ -63,6 +64,8 @@ pub struct LibraryScanner {
     config: ScannerConfig,
     /// Cancellation token for async operations
     cancel_token: CancellationToken,
+    /// Performance monitor for tracking operation times
+    performance_monitor: Option<Arc<PerformanceMonitor>>,
 }
 
 impl LibraryScanner {
@@ -75,6 +78,7 @@ impl LibraryScanner {
             extensions: SUPPORTED_AUDIO_EXTENSIONS,
             config: ScannerConfig::default(),
             cancel_token: CancellationToken::new(),
+            performance_monitor: Some(Arc::new(PerformanceMonitor::new())),
         }
     }
     
@@ -84,13 +88,30 @@ impl LibraryScanner {
         self
     }
 
+    /// Enables performance monitoring for this scanner
+    pub fn with_performance_monitoring(mut self) -> Self {
+        self.performance_monitor = Some(Arc::new(PerformanceMonitor::new()));
+        self
+    }
+
+    /// Disables performance monitoring for this scanner
+    pub fn without_performance_monitoring(mut self) -> Self {
+        self.performance_monitor = None;
+        self
+    }
+
+    /// Gets the performance monitor if enabled
+    pub fn get_performance_monitor(&self) -> Option<Arc<PerformanceMonitor>> {
+        self.performance_monitor.clone()
+    }
+
     /// Extracts audiobook metadata from a file path (no DB access, safe for parallel)
     ///
     /// # Errors
     /// Returns an error if metadata cannot be read from the file
     pub fn extract_audiobook_metadata(library_id: &str, path: &Path) -> Result<Audiobook> {
         let metadata = AudioMetadata::from_file(path).map_err(|e| {
-            log::warn!("Error reading metadata for {}: {}", path.display(), e);
+            warn!("Error reading metadata for {}: {}", path.display(), e);
             e
         })?;
 
@@ -120,6 +141,32 @@ impl LibraryScanner {
         Ok(audiobook)
     }
 
+    /// Extracts audiobook metadata from a file path with performance monitoring
+    ///
+    /// # Errors
+    /// Returns an error if metadata cannot be read from the file
+    pub fn extract_audiobook_metadata_with_monitoring(
+        library_id: &str, 
+        path: &Path, 
+        monitor: Option<&PerformanceMonitor>
+    ) -> Result<Audiobook> {
+        let start_time = std::time::Instant::now();
+        let _timer = monitor.map(|m| m.start_operation(
+            path.to_string_lossy().as_ref(),
+            OperationType::MetadataExtraction
+        ));
+        
+        let result = Self::extract_audiobook_metadata(library_id, path);
+        
+        // Record the operation result
+        if let Some(monitor) = monitor {
+            let duration = start_time.elapsed();
+            monitor.record_file_processed(duration, result.is_ok());
+        }
+        
+        result
+    }
+
     /// Scans the library directory for audio files and updates the database
     ///
     /// # Errors
@@ -138,12 +185,14 @@ impl LibraryScanner {
         info!("Found {} audio files", audio_files.len());
 
         let library_id = self.library.id.clone();
+        let performance_monitor = self.performance_monitor.as_deref();
+        
         // Extract metadata in parallel, no DB access
         let _span = span!(Level::DEBUG, "extract_metadata_parallel").entered();
         let audiobooks: Vec<_> = audio_files
             .par_iter()
             .filter_map(
-                |path| match Self::extract_audiobook_metadata(&library_id, path) {
+                |path| match Self::extract_audiobook_metadata_with_monitoring(&library_id, path, performance_monitor) {
                     Ok(book) => {
                         debug!("Successfully extracted metadata for: {}", path.display());
                         Some(book)
@@ -180,6 +229,18 @@ impl LibraryScanner {
             result.error_count
         );
 
+        // Log performance summary if monitoring is enabled
+        if let Some(monitor) = &self.performance_monitor {
+            monitor.log_summary();
+            let recommendations = monitor.get_recommendations();
+            if !recommendations.is_empty() {
+                info!("Performance recommendations:");
+                for rec in recommendations {
+                    info!("  • {}", rec);
+                }
+            }
+        }
+
         Ok(result)
     }
 
@@ -187,6 +248,7 @@ impl LibraryScanner {
     pub fn scan_with_tasks(&self, paths: Vec<PathBuf>) -> Task<LibraryScanResult> {
         let db = self.db.clone();
         let library = self.library.clone();
+        let performance_monitor = self.performance_monitor.clone();
         let concurrency = 8;
         let semaphore = Arc::new(Semaphore::new(concurrency));
 
@@ -197,11 +259,27 @@ impl LibraryScanner {
                         let semaphore = semaphore.clone();
                         let db = db.clone();
                         let library_id = library.id.clone();
+                        let monitor = performance_monitor.as_deref();
                         async move {
                             let _permit = semaphore.acquire().await.unwrap();
-                            match Self::extract_audiobook_metadata(&library_id, &path) {
+                            
+                            // Start timing for database operations
+                            let db_start = std::time::Instant::now();
+                            let _db_timer = monitor.map(|m| m.start_operation(
+                                path.to_string_lossy().as_ref(),
+                                OperationType::DatabaseInsert
+                            ));
+                            
+                            match Self::extract_audiobook_metadata_with_monitoring(&library_id, &path, monitor) {
                                 Ok(audiobook) => {
                                     let db_result = db.add_audiobook(&audiobook);
+                                    
+                                    // Record database operation performance
+                                    if let Some(monitor) = monitor {
+                                        let db_duration = db_start.elapsed();
+                                        monitor.record_file_processed(db_duration, db_result.is_ok());
+                                    }
+                                    
                                     match db_result {
                                         Ok(()) => Ok(audiobook),
                                         Err(e) => Err(e),
@@ -227,6 +305,12 @@ impl LibraryScanner {
                         }
                     }
                 }
+                
+                // Log performance summary if monitoring is enabled
+                if let Some(monitor) = &performance_monitor {
+                    monitor.log_summary();
+                }
+                
                 scan_result
             },
             |result| result,
@@ -681,6 +765,7 @@ impl LibraryScanner {
 }
 
 /// Represents the result of a library scan
+#[derive(Debug, Clone)]
 pub struct LibraryScanResult {
     /// Number of files successfully processed
     pub processed_count: usize,

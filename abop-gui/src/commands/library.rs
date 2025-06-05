@@ -107,6 +107,7 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
                             scan_duration: core_result.scan_duration,
                             processed_count: core_result.processed_count,
                             error_count: core_result.error_count,
+                            performance_monitor: None,
                         };
                         Message::ScanComplete(Ok(gui_result))
                     })

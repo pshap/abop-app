@@ -1,9 +1,11 @@
 use iced::Element;
 use iced::Length;
-use iced::widget::{column, container, text};
+use iced::widget::{column, container, text, row};
 use std::path::PathBuf;
 
+
 use abop_core::PlayerState;
+use crate::library::ScanProgress;
 
 use crate::components::common::create_progress_indicator;
 use crate::messages::Message;
@@ -17,6 +19,31 @@ pub struct StatusDisplayParams<'a> {
     pub scanning: bool,
     /// Progress of the scan operation
     pub scan_progress: Option<f32>,
+    /// Whether audio is being processed
+    pub processing_audio: bool,
+    /// Progress of audio processing
+    pub processing_progress: Option<f32>,
+    /// Status message for processing
+    pub processing_status: Option<&'a str>,
+    /// Current audio player state
+    pub player_state: PlayerState,
+    /// Path to the currently playing file
+    pub current_playing_file: Option<&'a PathBuf>,
+    /// Number of selected audiobooks
+    pub selected_count: usize,
+    /// Total number of audiobooks
+    pub total_count: usize,
+    /// The current theme mode for styling
+    pub theme: ThemeMode,
+}
+
+/// Parameters for the enhanced status display view
+#[derive(Debug, Clone)]
+pub struct EnhancedStatusDisplayParams<'a> {
+    /// Whether the library is being scanned
+    pub scanning: bool,
+    /// Enhanced scan progress information
+    pub scan_progress: Option<ScanProgress>,
     /// Whether audio is being processed
     pub processing_audio: bool,
     /// Progress of audio processing
@@ -111,5 +138,89 @@ impl StatusDisplay {
             .width(Length::Fill)
             .height(Length::Fixed(36.0)) // Fixed height for the footer
             .into()
+    }
+
+    /// Enhanced status display with detailed progress information and ETA
+    #[must_use]
+    pub fn enhanced_view<'a>(
+        params: EnhancedStatusDisplayParams<'a>,
+        tokens: &MaterialTokens,
+    ) -> Element<'a, Message> {
+        let mut status_column = column![];
+
+        // Show enhanced scanning progress if active
+        if params.scanning {
+            if let Some(progress) = &params.scan_progress {
+                let progress_text = if let Some(current_file) = &progress.current_file {
+                    format!(
+                        "Scanning: {} ({}/{}) - {:.1} files/sec",
+                        current_file
+                            .split(std::path::MAIN_SEPARATOR)
+                            .last()
+                            .unwrap_or(current_file),
+                        progress.processed,
+                        progress.total,
+                        progress.throughput
+                    )
+                } else {
+                    format!(
+                        "Scanning library... ({}/{}) - {:.1} files/sec",
+                        progress.processed,
+                        progress.total,
+                        progress.throughput
+                    )
+                };
+
+                let eta_text = if let Some(eta) = progress.eta {
+                    if eta.as_secs() > 0 {
+                        format!(" - ETA: {}s", eta.as_secs())
+                    } else {
+                        String::new()
+                    }
+                } else {
+                    String::new()
+                };
+
+                let full_text = format!("{}{}", progress_text, eta_text);
+
+                status_column = status_column.push(
+                    column![
+                        create_progress_indicator(
+                            Some(progress.progress_percentage),
+                            &full_text,
+                            params.theme,
+                            tokens,
+                        ),
+                        row![
+                            text(format!("Progress: {:.1}%", progress.progress_percentage * 100.0))
+                                .size(12),
+                            text(format!("Throughput: {:.1} files/sec", progress.throughput))
+                                .size(12),
+                        ]
+                        .spacing(tokens.spacing().md as u16)
+                    ]
+                    .spacing(tokens.spacing().sm as u16)
+                );
+            } else {
+                status_column = status_column.push(create_progress_indicator(
+                    None,
+                    "Scanning library...",
+                    params.theme,
+                    tokens,
+                ));
+            }
+        }
+
+        // Show audio processing progress if active
+        if params.processing_audio {
+            status_column = status_column.push(create_progress_indicator(
+                params.processing_progress,
+                params.processing_status.unwrap_or("Processing audio..."),
+                params.theme,
+                tokens,
+            ));
+        }
+
+        status_column.spacing(tokens.spacing().md as u16).into()
     }
 }

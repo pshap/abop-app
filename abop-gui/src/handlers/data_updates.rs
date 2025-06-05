@@ -287,6 +287,28 @@ pub fn handle_data_message(state: &mut UiState, message: Message) -> Option<Task
             }
             Some(Task::none())
         }
+        Message::ScanProgressEnhanced(enhanced_progress) => {
+            // Update enhanced scan progress during scanning
+            if state.scanning {
+                // Convert enhanced progress to basic progress for compatibility
+                state.scan_progress = Some(enhanced_progress.progress_percentage);
+                
+                // Store enhanced progress information
+                state.enhanced_scan_progress = Some(enhanced_progress.clone());
+                
+                // Log the enhanced information
+                log::debug!(
+                    "[SCAN] Enhanced progress: {}/{} files ({:.1}%), current: {:?}, throughput: {:.1} files/sec, ETA: {:?}",
+                    enhanced_progress.processed,
+                    enhanced_progress.total,
+                    enhanced_progress.progress_percentage * 100.0,
+                    enhanced_progress.current_file,
+                    enhanced_progress.throughput,
+                    enhanced_progress.eta
+                );
+            }
+            Some(Task::none())
+        }
         Message::SelectAudiobook(id) => {
             if state.selected_audiobooks.contains(&id) {
                 state.selected_audiobooks.remove(&id);

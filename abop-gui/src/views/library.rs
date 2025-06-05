@@ -4,7 +4,7 @@ use iced::Length;
 use iced::widget::{column, container};
 
 use crate::components::audio_toolbar::AudioToolbar;
-use crate::components::status::StatusDisplay;
+use crate::components::status::{StatusDisplay, EnhancedStatusDisplayParams};
 use crate::components::table_core::AudiobookTable;
 use crate::messages::Message;
 use crate::state::UiState;
@@ -19,18 +19,20 @@ pub fn library_view(state: &UiState) -> iced::Element<Message> {
         state.audiobooks.len()
     );
 
-    // Use the StatusDisplay component
-    let status_display = StatusDisplay::view(
-        state.scanning,
-        state.scan_progress,
-        state.processing_audio,
-        state.processing_progress,
-        state.processing_status.as_deref(),
-        &state.player_state,
-        state.current_playing_file.as_ref(),
-        state.selected_audiobooks.len(),
-        state.audiobooks.len(),
-        state.theme_mode,
+    // Use the enhanced StatusDisplay component with detailed progress information
+    let status_display = StatusDisplay::enhanced_view(
+        EnhancedStatusDisplayParams {
+            scanning: state.scanning,
+            scan_progress: state.enhanced_scan_progress.clone(),
+            processing_audio: state.processing_audio,
+            processing_progress: state.processing_progress,
+            processing_status: state.processing_status.as_deref(),
+            player_state: state.player_state.clone(),
+            current_playing_file: state.current_playing_file.as_ref(),
+            selected_count: state.selected_audiobooks.len(),
+            total_count: state.audiobooks.len(),
+            theme: state.theme_mode,
+        },
         &state.material_tokens,
     );
 

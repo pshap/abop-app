@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use crate::styling::material::MaterialTokens;
+use crate::library::ScanProgress;
 use crate::theme::ThemeMode;
 use abop_core::{AppState, PlayerState, models::Audiobook};
 
@@ -78,6 +79,8 @@ pub struct UiState {
     pub scanning: bool,
     /// Progress of the current scan (0.0 to 1.0)
     pub scan_progress: Option<f32>,
+    /// Enhanced scan progress with detailed information
+    pub enhanced_scan_progress: Option<ScanProgress>,
     /// Whether state saving is in progress
     pub saving: bool,
     /// Progress of the current state save (0.0 to 1.0)
@@ -115,6 +118,7 @@ impl UiState {
             selected_audiobooks: HashSet::new(),
             scanning: false,
             scan_progress: None,
+            enhanced_scan_progress: None,
             saving: false,
             save_progress: None,
             processing_audio: false,
