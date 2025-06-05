@@ -1,71 +1,164 @@
-# Thread Pool Refactoring: Architecture Integration Plan
+# ABOP Thread Pool Refactoring Plan
 
-## Executive Summary
+## Overview
+Replace the current `ScanningThreadPool` with Iced 0.13's `Task` system while preserving existing scanner functionality and integrating with current architecture.
 
-Refactor ABOP's manual thread pool to leverage Iced 0.13's `Task` system while integrating with existing error handling, database operations, configuration management, and caching infrastructure.
+## Core Strategy
+- **Preserve Current Architecture**: Use existing `Config`, `AppError`, and `RepositoryManager` patterns
+- **Enhance Scanner**: Add Task support to current `LibraryScanner` without breaking existing functionality
+- **Maintain Performance**: Keep current Rayon parallel processing where appropriate
 
-## Architecture Integration Strategy
+## 1. Enhanced LibraryScanner
 
-### Core Principles
-- **Leverage Existing Systems**: Use established `AppError` hierarchy, `LibraryRepository` patterns, and `AppConfig` system
-- **Maintain Consistency**: Follow existing validation, caching, and state management patterns
-- **Progressive Enhancement**: Build on current `LibraryScanner` while adding modern concurrency
-
-## Implementation Approach
-
-### 1. Enhanced LibraryScanner with Task Integration
-
-**Integrate with existing scanner architecture** while adding Iced Task support:
+Replace manual thread pool with Task-based scanning:
 
 ```rust
-// abop-core/src/scanner/library_scanner.rs - Enhance existing implementation
-use iced::Task;
-use crate::error::AppError;  // Use existing error system
-use crate::config::AppConfig; // Use existing config
-use crate::db::LibraryRepository; // Use existing DB patterns
-
+// abop-core/src/scanner/library_scanner.rs - Add Task support
 impl LibraryScanner {
-    pub fn scan_with_tasks(&self, path: PathBuf) -> Task<ScanResult> {
+    pub fn scan_with_tasks(&self, paths: Vec<PathBuf>) -> Task<ScanResult> {
         let config = self.config.clone();
-        let db = self.db.clone();
+        let repo_manager = self.repo_manager.clone();
         
         Task::perform(
             async move {
-                let concurrency = config.scanner_concurrency().unwrap_or_else(|| num_cpus::get().min(8));
+                let concurrency = config.scanner.max_concurrent_files.unwrap_or(8);
                 let semaphore = Arc::new(Semaphore::new(concurrency));
                 
-                let files = Self::collect_audio_files(&path).await
-                    .map_err(AppError::Scanner)?;
-                    
-                let results: Vec<_> = stream::iter(files)
-                    .map(|file| {
+                let results: Vec<_> = stream::iter(paths)
+                    .map(|path| {
                         let semaphore = semaphore.clone();
-                        let db = db.clone();
+                        let repo_manager = repo_manager.clone();
                         async move {
-                            let _permit = semaphore.acquire().await.unwrap();
-                            Self::process_file_with_db(&file, &db).await
+                            let _permit = semaphore.acquire().await?;
+                            Self::scan_path(&path, &repo_manager).await
                         }
                     })
                     .buffer_unordered(concurrency)
                     .collect()
                     .await;
                     
-                Self::aggregate_results(results)
+                Ok(ScanResult::from_results(results))
             },
-            |result| ScanResult::Complete(result)
+            Message::ScanComplete
         )
     }
     
-    // Integrate with existing database patterns
-    async fn process_file_with_db(file: &Path, db: &LibraryRepository) -> Result<Audiobook, AppError> {
-        // Use existing AudioMetadata::from_file() pattern
-        let metadata = AudioMetadata::from_file(file)
-            .map_err(AppError::AudioProcessing)?;
-            
-        let audiobook = Audiobook::from_metadata(metadata, file)?;
+    async fn scan_path(path: &Path, repo_manager: &RepositoryManager) -> Result<Vec<Audiobook>, AppError> {
+        let metadata = AudioMetadata::from_file(path)?;
+        let audiobook = Audiobook::from_metadata(metadata, path)?;
         
-        // Use existing database persistence patterns
-        db.add_audiobook(&audiobook).await
+        repo_manager.audiobook_repo()
+            .add_audiobook(&audiobook).await?;
+            
+        Ok(vec![audiobook])
+    }
+}
+```
+
+## 2. Error Integration
+
+Leverage existing `AppError` hierarchy:
+
+```rust
+// Use existing error patterns from abop-core/src/error.rs
+pub type ScanResult = Result<Vec<Audiobook>, AppError>;
+
+impl From<ScanError> for AppError {
+    fn from(err: ScanError) -> Self {
+        match err {
+            ScanError::IoError(e) => AppError::Io(e),
+            ScanError::MetadataError(e) => AppError::AudioProcessing(e.into()),
+            ScanError::DatabaseError(e) => AppError::Database(e),
+        }
+    }
+}
+```
+
+## 3. Configuration Integration
+
+Use existing `Config` struct:
+
+```rust
+// abop-core/src/config.rs - Extend existing config
+impl Config {
+    pub fn scanner_concurrency(&self) -> usize {
+        self.scanner.max_concurrent_files.unwrap_or(8)
+    }
+    
+    pub fn scanner_timeout(&self) -> Duration {
+        Duration::from_secs(self.scanner.timeout_seconds.unwrap_or(30))
+    }
+}
+```
+
+## 4. GUI Integration
+
+Update message system:
+
+```rust
+// abop-gui/src/messages.rs
+#[derive(Debug, Clone)]
+pub enum Message {
+    // ...existing messages...
+    ScanProgress(ScanProgressMessage),
+    ScanComplete(Result<Vec<Audiobook>, AppError>),
+    ScanCancelled,
+}
+
+#[derive(Debug, Clone)]  
+pub enum ScanProgressMessage {
+    Started { total_files: usize },
+    FileProcessed { current: usize, file_name: String },
+    Complete { processed: usize, errors: usize },
+}
+```
+
+Progress UI component:
+
+```rust
+// abop-gui/src/components/scanner_progress.rs
+pub fn scanner_progress_view(progress: &ScanProgress) -> Element<Message> {
+    column![
+        progress_bar(0.0..=100.0, progress.percentage()),
+        text(&progress.status_message()),
+        button("Cancel").on_press(Message::CancelScan)
+    ]
+    .spacing(10)
+    .into()
+}
+```
+
+## 5. Migration Strategy
+
+**Phase 1**: Add Task support to existing `LibraryScanner`
+- Keep current sync methods for compatibility
+- Add new async Task-based methods
+
+**Phase 2**: Update GUI to use new Task system
+- Integrate with existing message handling
+- Add progress reporting components
+
+**Phase 3**: Remove legacy `ScanningThreadPool`
+- After thorough testing and validation
+- Maintain backward compatibility during transition
+
+## Key Benefits
+
+1. **Simplified Architecture**: Remove manual thread pool management
+2. **Better Integration**: Use existing error/config/database patterns
+3. **Improved UI**: Native Iced Task integration for better responsiveness
+4. **Maintained Performance**: Keep current parallel processing efficiency
+
+## Dependencies
+
+```toml
+[dependencies]
+iced = { version = "0.13", features = ["tokio", "advanced"] }
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+```
+
+This concise plan focuses on practical implementation while preserving existing architectural patterns.
             .map_err(AppError::Database)?;
             
         Ok(audiobook)
