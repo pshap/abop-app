@@ -1,0 +1,50 @@
+[package]
+name = "abop-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Core functionality for ABOP - Audiobook Organizer & Processor"
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+bench = ["simd"]  # Enable benchmarking features
+simd = []  # Enable SIMD optimizations where available
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "doc_cfg"]
+
+
+[dependencies]
+# Workspace dependencies
+thiserror.workspace = true
+log.workspace = true
+tracing.workspace = true
+serde.workspace = true
+toml.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+once_cell.workspace = true
+
+# File System & Database
+dirs.workspace = true
+walkdir.workspace = true
+rusqlite.workspace = true
+
+# Audio Processing
+symphonia.workspace = true
+rodio.workspace = true
+num-complex.workspace = true
+hound.workspace = true
+rayon.workspace = true
+bytemuck.workspace = true
+rand = "0.9.1"
+serde_json.workspace = true
+r2d2 = "0.8.10"
+r2d2_sqlite = "0.29.0"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3.8"
+approx = "0.5.1"  # For floating-point comparisons in tests

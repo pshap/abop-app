@@ -1,0 +1,56 @@
+[package]
+name = "abop-gui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Iced GUI for ABOP - Audiobook Organizer & Processor"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Internal dependencies
+abop-core = { path = "../abop-core" }
+
+# Iced with required features
+iced = { version = "0.13.1", features = [
+    "canvas",
+    "image",
+    "svg"
+] }
+
+# Font Awesome icons for Iced
+iced_font_awesome = "0.2.1"
+
+# Color science for Material Design 3 seed colors
+palette = "0.7.6"
+
+# File dialogs
+rfd = { workspace = true }
+
+# Workspace dependencies
+thiserror = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
+walkdir = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+dirs = { workspace = true }
+once_cell = { workspace = true }
+
+# File System & Database
+rusqlite = { workspace = true }
+
+# Audio Processing
+symphonia = { workspace = true }
+rodio = { workspace = true }
+num-complex = { workspace = true }
+hound = { workspace = true }
+rayon = { workspace = true }
+bytemuck = { workspace = true }
+material-color-utilities-rs = ">=0.2.0"
+
+[dev-dependencies]
+# Test dependencies

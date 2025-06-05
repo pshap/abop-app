@@ -1,0 +1,100 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo.lock is included for applications (this is an application)
+# Cargo.lock
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files (but allow specific project log directories)
+debug_test.pdb
+
+# Generated documentation
+/doc/
+
+# Local configuration files
+.env
+.env.local
+config.local.json
+
+# User-specific files
+*.rs.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Backup files
+*.bak
+
+# Dependency directories
+vendor/
+
+# Generated binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage reports
+coverage/
+*.lcov
+
+# Profiling data
+*.profile
+
+# Temporary files
+tmp/
+temp/
+
+# Audio files for testing (exclude large files, allow small test fixtures)
+*.mp3
+*.m4b
+*.m4a
+*.aac
+*.flac
+# But allow small test fixtures
+!**/fixtures/**/*.mp3
+!**/fixtures/**/*.m4b
+!**/fixtures/**/*.flac
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Project-specific files
+REFERENCE/abop
+
+# Reference files
+material-web-clean/
+
+# Windsurf IDE files
+.windsurf/
+
+# Log files (project-specific)
+*.log
+logs/
+
+# Python files (if not part of main project)
+*.pyc
+__pycache__/
+
+# Test data (keep small test fixtures, exclude large files)
+/test_data/
+*.test.mp3
+*.test.m4b
+*.test.flac
+assets/fonts/Font Awesome 6 Free-Solid-900.otf
+abop-gui/assets/fonts/roboto/Roboto-Bold.woff2
+abop-gui/assets/fonts/roboto/Roboto-Medium.woff2
+abop-gui/assets/fonts/roboto/Roboto-Regular.woff2
+abop-gui/assets/fonts/roboto.zip

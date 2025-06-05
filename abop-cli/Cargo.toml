@@ -1,0 +1,19 @@
+[package]
+name = "abop-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Command-line interface for ABOP - Audiobook Organizer & Processor"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# CLI Dependencies
+clap = { version = "4.0", features = ["derive"] }
+env_logger = "0.10"
+
+# Workspace dependencies
+log.workspace = true
+
+[dev-dependencies]
+# Test dependencies

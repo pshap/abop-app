@@ -1,0 +1,88 @@
+# Example Dark Theme Configuration
+# This demonstrates the dynamic theme loading capabilities
+
+[theme_info]
+name = "Ocean Dark"
+description = "A dark theme with ocean-inspired colors"
+author = "ABOP Team"
+version = "1.0.0"
+
+[colors]
+# Base colors
+background = "#0F1419"
+surface = "#1A1F26"
+surface_variant = "#252A33"
+outline = "#3D434D"
+outline_variant = "#2A2F38"
+
+# Content colors  
+on_background = "#E6E6E6"
+on_surface = "#D9D9D9"
+on_surface_variant = "#B8BCC8"
+
+# Primary colors
+primary = "#4FC3F7"
+on_primary = "#003544"
+primary_container = "#004D61"
+on_primary_container = "#B8E6FF"
+
+# Secondary colors
+secondary = "#81C784"
+on_secondary = "#003A00"
+secondary_container = "#0F5132"
+on_secondary_container = "#A5D6A7"
+
+# Tertiary colors
+tertiary = "#FFB74D"
+on_tertiary = "#442800"
+tertiary_container = "#633F00"
+on_tertiary_container = "#FFCC80"
+
+# Error colors
+error = "#FF5722"
+on_error = "#FFFFFF"
+error_container = "#D32F2F"
+on_error_container = "#FFEBEE"
+
+# Warning colors
+warning = "#FF9800"
+on_warning = "#000000"
+warning_container = "#F57C00"
+on_warning_container = "#FFF3E0"
+
+# Success colors
+success = "#4CAF50"
+on_success = "#FFFFFF"
+success_container = "#2E7D32"
+on_success_container = "#E8F5E8"
+
+# Info colors
+info = "#2196F3"
+on_info = "#FFFFFF"
+info_container = "#1565C0"
+on_info_container = "#E3F2FD"
+
+[component_tokens]
+button_border_radius = 8.0
+input_border_radius = 6.0
+container_border_radius = 12.0
+card_border_radius = 16.0
+
+button_border_width = 1.0
+input_border_width = 1.0
+container_border_width = 0.0
+
+spacing_xs = 4.0
+spacing_sm = 8.0
+spacing_md = 16.0
+spacing_lg = 24.0
+spacing_xl = 32.0
+
+font_size_sm = 12.0
+font_size_md = 14.0
+font_size_lg = 16.0
+font_size_xl = 20.0
+
+elevation_low = 2.0
+elevation_medium = 4.0
+elevation_high = 8.0

@@ -1,0 +1,79 @@
+{
+  "theme_info": {
+    "name": "Sunrise Light",
+    "description": "A warm light theme with sunrise colors",
+    "author": "ABOP Team",
+    "version": "1.0.0"
+  },
+  "colors": {
+    "background": "#FEFDF8",
+    "surface": "#FFF8E7",
+    "surface_variant": "#F5F0E1",
+    "outline": "#D4C4A8",
+    "outline_variant": "#E8DCC6",
+    
+    "on_background": "#1C1B16",
+    "on_surface": "#1C1B16",
+    "on_surface_variant": "#4A4739",
+    
+    "primary": "#FF6B35",
+    "on_primary": "#FFFFFF",
+    "primary_container": "#FFDBCF",
+    "on_primary_container": "#3D1A00",
+    
+    "secondary": "#7B5E57",
+    "on_secondary": "#FFFFFF",
+    "secondary_container": "#FFE0DB",
+    "on_secondary_container": "#2C1512",
+    
+    "tertiary": "#6A5D2F",
+    "on_tertiary": "#FFFFFF",
+    "tertiary_container": "#F2E5A6",
+    "on_tertiary_container": "#211B00",
+    
+    "error": "#D32F2F",
+    "on_error": "#FFFFFF",
+    "error_container": "#FFEBEE",
+    "on_error_container": "#5D1049",
+    
+    "warning": "#E65100",
+    "on_warning": "#FFFFFF",
+    "warning_container": "#FFF3E0",
+    "on_warning_container": "#3E2723",
+    
+    "success": "#2E7D32",
+    "on_success": "#FFFFFF",
+    "success_container": "#E8F5E8",
+    "on_success_container": "#0D5016",
+    
+    "info": "#1565C0",
+    "on_info": "#FFFFFF",
+    "info_container": "#E3F2FD",
+    "on_info_container": "#0A2E5C"
+  },
+  "component_tokens": {
+    "button_border_radius": 12.0,
+    "input_border_radius": 8.0,
+    "container_border_radius": 16.0,
+    "card_border_radius": 20.0,
+    
+    "button_border_width": 1.5,
+    "input_border_width": 1.0,
+    "container_border_width": 0.0,
+    
+    "spacing_xs": 4.0,
+    "spacing_sm": 8.0,
+    "spacing_md": 16.0,
+    "spacing_lg": 24.0,
+    "spacing_xl": 32.0,
+    
+    "font_size_sm": 12.0,
+    "font_size_md": 14.0,
+    "font_size_lg": 16.0,
+    "font_size_xl": 20.0,
+    
+    "elevation_low": 1.0,
+    "elevation_medium": 3.0,
+    "elevation_high": 6.0
+  }
+}

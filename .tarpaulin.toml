@@ -1,0 +1,14 @@
+[report]
+# Output types
+out = ["Stdout", "Html"]
+# Output file name
+output-dir = "coverage"
+
+[ignore]
+# Ignore files in the REFERENCE directory
+files = [
+    "REFERENCE/*",
+    "*/REFERENCE/*",
+    "*/*/REFERENCE/*",
+    "*/*/*/REFERENCE/*",
+]
