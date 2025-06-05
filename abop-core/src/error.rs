@@ -62,6 +62,10 @@ pub enum AppError {
         /// Actual elapsed time in milliseconds
         elapsed_ms: u64,
     },
+    
+    /// Error during scanning operations
+    #[error("Scan error: {0}")]
+    Scan(#[from] crate::scanner::ScanError),
 }
 
 /// Result type alias for fallible operations in the ABOP core
@@ -88,5 +92,17 @@ impl From<String> for AppError {
 impl From<&str> for AppError {
     fn from(err: &str) -> Self {
         Self::Other(err.to_string())
+    }
+}
+
+impl From<tokio::task::JoinError> for AppError {
+    fn from(err: tokio::task::JoinError) -> Self {
+        if err.is_cancelled() {
+            AppError::Scan(crate::scanner::ScanError::Cancelled)
+        } else if err.is_panic() {
+            AppError::Other("Task panicked".into())
+        } else {
+            AppError::Other("Task failed to complete".into())
+        }
     }
 }

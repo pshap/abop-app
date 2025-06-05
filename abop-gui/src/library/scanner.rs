@@ -1,8 +1,9 @@
 //! Library scanning functionality
 
-use abop_core::{db::Database, models::Audiobook, scanner::LibraryScanner};
+use abop_core::{db::Database, models::Audiobook, scanner::{LibraryScanner, LibraryScanResult}};
+use iced::Task;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Progress callback type for scanning operations
 pub type ProgressCallback = Box<dyn Fn(f32) + Send + Sync>;
@@ -39,17 +40,10 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
 /// - Library scanning fails
 /// - Database operations fail
 /// - File system access is denied
-pub async fn scan_library_async(library_path: PathBuf) -> Result<ScanResult, String> {
-    let start_time = Instant::now();
-    let audiobooks = scan_library_with_progress(library_path, None).await?;
-    let scan_duration = start_time.elapsed();
-
-    Ok(ScanResult {
-        processed_count: audiobooks.len(),
-        error_count: 0, // Simple implementation - could be enhanced with error tracking
-        audiobooks,
-        scan_duration,
-    })
+pub fn scan_library_async(_library_path: PathBuf, db: abop_core::db::Database, library: abop_core::models::Library) -> Task<LibraryScanResult> {
+    let scanner = LibraryScanner::new(db, library);
+    let audio_files = scanner.find_audio_files();
+    scanner.scan_with_tasks(audio_files)
 }
 
 /// Scan the library directory for audiobooks with optional progress reporting

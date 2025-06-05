@@ -15,7 +15,9 @@ abop-core = { path = "../abop-core" }
 iced = { version = "0.13.1", features = [
     "canvas",
     "image",
-    "svg"
+    "svg",
+    "tokio",
+    "advanced"
 ] }
 
 # Font Awesome icons for Iced

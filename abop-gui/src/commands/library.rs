@@ -2,7 +2,7 @@
 
 use iced::Task;
 
-use crate::library::{open_directory_dialog, scan_library_async};
+use crate::library::open_directory_dialog;
 use crate::messages::{Command, Message};
 use crate::state::{DirectoryInfo, UiState};
 use std::path::PathBuf;
@@ -36,17 +36,81 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<Task<Message>> {
     match command {
         Command::ScanLibrary { library_path } => {
+            use abop_core::db::Database;
+            use std::fs;
+            use std::path::PathBuf;
+
             state.scanning = true;
             state.scan_progress = Some(0.0);
-            // Remove duplicate status message - the StatusDisplay component already shows "Scanning library..." when scanning is true
             log::info!(
                 "Executing ScanLibrary command for path: {}",
                 library_path.display()
             );
-            Some(Task::perform(
-                scan_library_async(library_path),
-                Message::ScanComplete,
-            ))
+
+            // Prepare DB path
+            let data_dir = dirs::data_local_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("abop");
+            if let Err(e) = fs::create_dir_all(&data_dir) {
+                log::error!("Failed to create data dir: {e}");
+                return Some(Task::perform(
+                    async move { Err(format!("Failed to create data dir: {e}")) },
+                    Message::ScanComplete,
+                ));
+            }
+            let db_path = data_dir.join("library.db");
+
+            // Open DB and look up or create Library synchronously
+            let db = match Database::open(&db_path) {
+                Ok(db) => db,
+                Err(e) => {
+                    return Some(Task::perform(
+                        async move { Err(e.to_string()) },
+                        Message::ScanComplete,
+                    ));
+                }
+            };
+            let library = match db.libraries().find_by_name("Default Library") {
+                Ok(Some(lib)) => lib,
+                Ok(None) => match db.add_library("Default Library", &library_path) {
+                    Ok(lib) => lib,
+                    Err(e) => {
+                        return Some(Task::perform(
+                            async move { Err(e.to_string()) },
+                            Message::ScanComplete,
+                        ));
+                    }
+                },
+                Err(e) => {
+                    return Some(Task::perform(
+                        async move { Err(e.to_string()) },
+                        Message::ScanComplete,
+                    ));
+                }
+            };
+
+            // Create progress-enabled scanner and launch scan with progress reporting
+            let scanner = abop_core::scanner::LibraryScanner::new(db, library);
+            let audio_files = scanner.find_audio_files();
+            
+            // Create a Task that emits progress updates and final result
+            Some(
+                scanner
+                    .scan_with_tasks_and_progress(audio_files, |_progress| {
+                        // This will be handled via message subscription pattern
+                        // The actual progress updates will be sent through a channel
+                    })
+                    .map(|core_result| {
+                        // Convert abop_core::scanner::ScanResult to crate::library::ScanResult
+                        let gui_result = crate::library::ScanResult {
+                            audiobooks: core_result.audiobooks,
+                            scan_duration: core_result.scan_duration,
+                            processed_count: core_result.processed_count,
+                            error_count: core_result.error_count,
+                        };
+                        Message::ScanComplete(Ok(gui_result))
+                    })
+            )
         }
         Command::BrowseDirectory => {
             log::info!("Executing BrowseDirectory command");

@@ -44,6 +44,15 @@ serde_json.workspace = true
 r2d2 = "0.8.10"
 r2d2_sqlite = "0.29.0"
 
+# Async
+iced = { version = "0.13.1", features = ["tokio", "advanced"] }
+tokio = { version = "1.37", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+humantime-serde = "1.1"
+tokio-util = "0.7"
+tokio-stream = "0.1"
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.8"

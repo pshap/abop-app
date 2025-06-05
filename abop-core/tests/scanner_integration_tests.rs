@@ -7,7 +7,7 @@ use abop_core::{
     audio::AudioFormat,
     db::Database,
     models::{Audiobook, Library},
-    scanner::{LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS},
+    scanner::{LibraryScanner, LibraryScanResult, SUPPORTED_AUDIO_EXTENSIONS},
 };
 // chrono::Utc is not currently used
 use std::fs::File;
@@ -92,7 +92,6 @@ mod library_scanner_tests {
     #[test]
     fn test_scan_with_mixed_files() {
         use abop_core::models::Audiobook;
-        use abop_core::scanner::ScanResult;
         use std::path::PathBuf;
 
         // Create a mock scanner that returns a fixed set of results
@@ -107,7 +106,7 @@ mod library_scanner_tests {
                 Self { db, library }
             }
 
-            fn scan(&self) -> Result<ScanResult, Box<dyn std::error::Error>> {
+            fn scan(&self) -> Result<LibraryScanResult, Box<dyn std::error::Error>> {
                 // Simulate finding files with different extensions
                 let mut audiobooks = Vec::new();
 
@@ -148,11 +147,13 @@ mod library_scanner_tests {
                 };
                 audiobooks.push(flac_book);
 
-                // Simulate some errors for unsupported formats
-                let mut result = ScanResult::new();
-                result.audiobooks = audiobooks;
-                result.processed_count = 2; // Successfully processed MP3 and FLAC
-                result.error_count = 2; // Unsupported formats
+                // Create a proper LibraryScanResult
+                let result = LibraryScanResult {
+                    audiobooks,
+                    processed_count: 2, // Successfully processed MP3 and FLAC
+                    error_count: 2,     // Unsupported formats
+                    scan_duration: std::time::Duration::from_millis(100),
+                };
 
                 Ok(result)
             }
