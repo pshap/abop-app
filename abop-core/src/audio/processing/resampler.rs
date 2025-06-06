@@ -98,7 +98,7 @@ impl LinearResampler {
         #[cfg(feature = "simd")]
         {
             trace!("Using SIMD-accelerated resampling");
-            return Self::resample_buffer_simd(buffer, target_rate);
+            Self::resample_buffer_simd(buffer, target_rate)
         }
 
         #[cfg(not(feature = "simd"))]
@@ -247,7 +247,7 @@ mod tests {
         }
 
         // Only run SIMD tests if we're in release mode or explicitly enabled
-        if cfg!(debug_assertions) && !std::env::var("RUN_SIMD_TESTS").is_ok() {
+        if cfg!(debug_assertions) && std::env::var("RUN_SIMD_TESTS").is_err() {
             println!("Skipping SIMD tests in debug mode. Set RUN_SIMD_TESTS=1 to run them.");
             return;
         }
@@ -278,20 +278,15 @@ mod tests {
         assert_eq!(
             buffer.data.len(),
             buffer_simd.data.len(),
-            "Output buffer length mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate,
-            target_rate,
-            channels
+            "Output buffer length mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
         assert_eq!(
             buffer.sample_rate, buffer_simd.sample_rate,
-            "Sample rate mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate, target_rate, channels
+            "Sample rate mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
         assert_eq!(
             buffer.channels, buffer_simd.channels,
-            "Channel count mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate, target_rate, channels
+            "Channel count mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
 
         // Compare sample values with a small epsilon for floating-point imprecision
@@ -300,11 +295,7 @@ mod tests {
             let diff = (scalar - simd).abs();
             assert!(
                 diff <= epsilon,
-                "Sample {} differs by {} (scalar={}, simd={})",
-                i,
-                diff,
-                scalar,
-                simd
+                "Sample {i} differs by {diff} (scalar={scalar}, simd={simd})"
             );
         }
 

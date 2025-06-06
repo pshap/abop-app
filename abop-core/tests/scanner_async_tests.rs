@@ -105,7 +105,7 @@ mod async_scanner_tests {
                 // Expected timeout error
             }
             Err(other) => {
-                panic!("Unexpected error: {:?}", other);
+                panic!("Unexpected error: {other:?}");
             }
         }
     }
@@ -143,7 +143,7 @@ mod async_scanner_tests {
 
         // Create multiple test files
         for i in 0..10 {
-            let file_path = temp_dir.path().join(format!("test_{}.mp3", i));
+            let file_path = temp_dir.path().join(format!("test_{i}.mp3"));
             std::fs::write(&file_path, b"fake audio data").unwrap();
         }
 
@@ -190,7 +190,7 @@ mod async_scanner_tests {
 
         // Create multiple test files
         for i in 0..50 {
-            let file_path = temp_dir.path().join(format!("test_{}.mp3", i));
+            let file_path = temp_dir.path().join(format!("test_{i}.mp3"));
             std::fs::write(&file_path, b"fake audio data").unwrap();
         }
 
@@ -293,7 +293,7 @@ mod task_integration_tests {
 
         // Create some test files
         for i in 0..5 {
-            let file_path = temp_dir.path().join(format!("test_{}.mp3", i));
+            let file_path = temp_dir.path().join(format!("test_{i}.mp3"));
             std::fs::write(&file_path, b"fake audio data").unwrap();
         }
 

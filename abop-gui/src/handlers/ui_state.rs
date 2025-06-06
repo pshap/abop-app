@@ -1,13 +1,13 @@
 //! UI state message handlers
 //!
-//! Handles messages that only affect UI state without requiring async operations
+//! Handles messages that update UI state without requiring async operations
 
 use iced::Task;
 
 use crate::messages::Message;
 use crate::state::UiState;
 
-/// Handles pure UI state changes that don't require async operations
+/// Handles UI state changes that don't require async operations
 #[must_use]
 pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<Message>> {
     match message {
@@ -19,14 +19,17 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
             state.settings_open = false;
             Some(Task::none())
         }
+        Message::ShowRecentDirectories => {
+            state.recent_directories_open = true;
+            Some(Task::none())
+        }
+        Message::SetTheme(theme_mode) => {
+            state.theme_mode = theme_mode;
+            Some(Task::none())
+        }
         Message::SelectRecentDirectory(path) => {
             log::info!("Selected recent directory: {}", path.display());
             state.library_path = path;
-            Some(Task::none())
-        }
-        Message::SetTheme(theme) => {
-            state.theme_mode = theme;
-            log::info!("Theme changed to: {theme:?}");
             Some(Task::none())
         }
         Message::PlayPause => {

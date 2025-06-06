@@ -69,21 +69,16 @@ fn test_filled_button_contrast() {
         );
         assert!(
             text_contrast >= 3.0,
-            "Filled button text contrast ratio below 3.0 in state {:?}: {}",
-            state,
-            text_contrast
+            "Filled button text contrast ratio below 3.0 in state {state:?}: {text_contrast}"
         ); // Check icon contrast - icon should use a different color for better visibility
         if let Some(icon_color) = styling.icon_color {
             let icon_contrast = ColorUtils::contrast_ratio(bg_color, icon_color);
             println!(
-                "State {:?}: bg_color={:?}, icon_color={:?}, icon_contrast={}",
-                state, bg_color, icon_color, icon_contrast
+                "State {state:?}: bg_color={bg_color:?}, icon_color={icon_color:?}, icon_contrast={icon_contrast}"
             );
             assert!(
                 icon_contrast >= 3.0,
-                "Filled button icon contrast ratio below 3.0 in state {:?}: {}",
-                state,
-                icon_contrast
+                "Filled button icon contrast ratio below 3.0 in state {state:?}: {icon_contrast}"
             );
         }
     }
@@ -127,18 +122,14 @@ fn test_icon_button_contrast() {
             let icon_contrast = ColorUtils::contrast_ratio(bg_color, icon_color);
             assert!(
                 icon_contrast >= 3.0,
-                "Icon button icon contrast ratio below 3.0 in state {:?}: {}",
-                state,
-                icon_contrast
+                "Icon button icon contrast ratio below 3.0 in state {state:?}: {icon_contrast}"
             );
         } else {
             // If icon_color is not provided, fall back to text_color
             let text_contrast = ColorUtils::contrast_ratio(bg_color, styling.text_color);
             assert!(
                 text_contrast >= 3.0,
-                "Icon button text contrast ratio below 3.0 in state {:?}: {}",
-                state,
-                text_contrast
+                "Icon button text contrast ratio below 3.0 in state {state:?}: {text_contrast}"
             );
         }
     }

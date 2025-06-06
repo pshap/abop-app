@@ -28,7 +28,7 @@ fn handle_audio_message(state: &mut AppState, message: AudioMessage) -> Option<(
             add_notification(state, "Audio processing completed successfully");
         }
         AudioMessage::AudioError(error) => {
-            add_notification(state, &format!("Audio processing error: {}", error));
+            add_notification(state, &format!("Audio processing error: {error}"));
         }
         AudioMessage::Cancel => {
             add_notification(state, "Audio processing cancelled");
@@ -101,8 +101,7 @@ mod audio_handler_tests {
         assert!(
             notification.to_lowercase().contains("option")
                 || notification.to_lowercase().contains("select"),
-            "Notification: {:?}",
-            notification
+            "Notification: {notification:?}"
         );
     }
 

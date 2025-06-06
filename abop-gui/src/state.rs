@@ -113,7 +113,7 @@ pub struct UiState {
     pub recent_tasks: Vec<TaskInfo>,
     /// Whether to show task history
     pub show_task_history: bool,
-    /// Current state of the library scanner (idle, scanning, paused, etc.)
+    /// Current state of the library scanner
     pub scanner_state: ScannerState,
     /// Current progress information for an active scan
     pub scanner_progress: Option<ScanProgress>,
@@ -236,13 +236,25 @@ impl UiState {
     /// This method will update the scanner state to Complete or Error based on the scan result
     pub async fn start_scan(&mut self, _path: PathBuf) {
         if let Some(scanner) = &self.scanner {
-            let scanner = scanner.lock().await;
-            // LibraryScanner doesn't have scan_directory method, using scan instead
-            match scanner.scan() {
-                Ok(_result) => {
+            // Clone the Arc to avoid holding the lock during the scan operation
+            let scanner_arc = Arc::clone(scanner);
+
+            // Spawn the scan operation in a separate task to avoid blocking the UI
+            // This allows the scanner to run independently without holding any locks
+            let scan_result = tokio::spawn(async move {
+                let scanner_guard = scanner_arc.lock().await;
+                scanner_guard.scan_async(None).await
+            })
+            .await;
+
+            match scan_result {
+                Ok(Ok(_result)) => {
                     self.scanner_state = ScannerState::Complete;
                 }
-                Err(_e) => {
+                Ok(Err(_e)) => {
+                    self.scanner_state = ScannerState::Error;
+                }
+                Err(_join_error) => {
                     self.scanner_state = ScannerState::Error;
                 }
             }

@@ -86,7 +86,7 @@ pub fn create_test_library(name: &str, path: &std::path::Path) -> Library {
 /// ```
 #[allow(dead_code)]
 pub fn test_audio_path(extension: &str) -> PathBuf {
-    PathBuf::from(format!("test_file.{}", extension))
+    PathBuf::from(format!("test_file.{extension}"))
 }
 
 /// Creates a test directory structure with audio files.

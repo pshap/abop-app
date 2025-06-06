@@ -16,10 +16,10 @@ use abop_core::{Config, ServiceContainer};
 pub enum InitError {
     #[error("Failed to initialize logging: {0}")]
     Logging(#[from] tracing_subscriber::util::TryInitError),
-    
+
     #[error("Failed to parse logging directive: {0}")]
     LogDirective(#[from] tracing_subscriber::filter::ParseError),
-    
+
     #[error("Failed to load configuration: {0}")]
     Config(#[from] abop_core::AppError),
 }
@@ -29,11 +29,9 @@ fn init_logging() -> Result<(), InitError> {
         .add_directive("abop_gui=info".parse()?)
         .add_directive("abop_core=info".parse()?)
         .add_directive("iced=warn".parse()?);
-        
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .init();
-        
+
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+
     Ok(())
 }
 
@@ -52,11 +50,10 @@ fn main() -> iced::Result {
     info!("Material Design fonts registered");
 
     // Load configuration with fallback to defaults
-    let config = load_config_with_fallback()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to load configuration: {}. Using defaults.", e);
-            Config::default()
-        });
+    let config = load_config_with_fallback().unwrap_or_else(|e| {
+        log::warn!("Failed to load configuration: {e}. Using defaults.");
+        Config::default()
+    });
 
     // Initialize services
     let _services = ServiceContainer::new();

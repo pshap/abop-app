@@ -13,7 +13,7 @@ pub mod retry;
 pub mod statistics;
 
 use rusqlite::Connection;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
@@ -87,32 +87,38 @@ impl Database {
 
         // For initialization, we need to temporarily use the basic connection
         // since migrations require mutable access
-        let conn = self.repositories.connection().lock()
-            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock during initialization".into()))?;
+        let conn = self.repositories.connection().lock().map_err(|_| {
+            DatabaseError::ConnectionFailed(
+                "Failed to acquire connection lock during initialization".into(),
+            )
+        })?;
 
         conn.execute_batch(
             "PRAGMA foreign_keys = ON;\n\
              PRAGMA journal_mode = WAL;\n\
              PRAGMA synchronous = NORMAL;",
-        ).map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to configure database pragmas: {e}")
+        )
+        .map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Failed to configure database pragmas: {e}"),
         })?;
 
         log::debug!("Database settings configured");
 
         // Run migrations in a transaction
         log::debug!("Running migrations...");
-        let mut conn = self.repositories.connection().lock()
-            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for migrations".into()))?;
+        let mut conn = self.repositories.connection().lock().map_err(|_| {
+            DatabaseError::ConnectionFailed(
+                "Failed to acquire connection lock for migrations".into(),
+            )
+        })?;
 
-        migrations::run_migrations(&mut conn)
-            .map_err(|e| {
-                log::error!("Failed to run migrations: {e}");
-                DatabaseError::MigrationFailed {
-                    version: 0, // We don't know which version failed at this point
-                    message: format!("Migration failed: {e}")
-                }
-            })?;
+        migrations::run_migrations(&mut conn).map_err(|e| {
+            log::error!("Failed to run migrations: {e}");
+            DatabaseError::MigrationFailed {
+                version: 0, // We don't know which version failed at this point
+                message: format!("Migration failed: {e}"),
+            }
+        })?;
 
         log::debug!("Migrations completed successfully");
         log::debug!("Database initialization complete");
@@ -159,7 +165,8 @@ impl Database {
     /// - Failed to read connection timestamp
     /// - Database connection is unavailable
     pub fn connection_stats(&self) -> Result<ConnectionStats> {
-        self.enhanced_conn.stats()
+        self.enhanced_conn
+            .stats()
             .map_err(|e| crate::error::AppError::Other(e.to_string()))
     }
 
@@ -318,10 +325,14 @@ impl Database {
     /// - Connection lock acquisition fails
     pub fn migration_version(&self) -> Result<u32> {
         let manager = migrations::MigrationManager::new();
-        let conn = self.repositories.connection().lock()
-            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for version check".into()))?;
+        let conn = self.repositories.connection().lock().map_err(|_| {
+            DatabaseError::ConnectionFailed(
+                "Failed to acquire connection lock for version check".into(),
+            )
+        })?;
 
-        manager.current_version(&conn)
+        manager
+            .current_version(&conn)
             .map_err(std::convert::Into::into)
     }
 
@@ -343,10 +354,14 @@ impl Database {
     /// - Migration files are corrupted or missing
     pub fn migrate_up(&self) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock()
-            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for migration".into()))?;
+        let mut conn = self.repositories.connection().lock().map_err(|_| {
+            DatabaseError::ConnectionFailed(
+                "Failed to acquire connection lock for migration".into(),
+            )
+        })?;
 
-        manager.migrate_up(&mut conn)
+        manager
+            .migrate_up(&mut conn)
             .map_err(std::convert::Into::into)
     }
 
@@ -361,10 +376,12 @@ impl Database {
     /// - Connection lock acquisition fails
     pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock()
-            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for rollback".into()))?;
+        let mut conn = self.repositories.connection().lock().map_err(|_| {
+            DatabaseError::ConnectionFailed("Failed to acquire connection lock for rollback".into())
+        })?;
 
-        manager.migrate_down(&mut conn, target_version)
+        manager
+            .migrate_down(&mut conn, target_version)
             .map_err(std::convert::Into::into)
     }
 
@@ -413,8 +430,7 @@ mod tests {
         let (db, _temp) = create_test_db()?;
 
         // Add a library
-        let library = db
-            .add_library("Test Library", Path::new("/test/path"))?;
+        let library = db.add_library("Test Library", Path::new("/test/path"))?;
 
         // Get the library by ID
         let retrieved = db.get_library(&library.id)?.unwrap();
@@ -454,14 +470,13 @@ mod tests {
         let (db, _temp) = create_test_db()?;
 
         // Add a library
-        let library = db
-            .add_library("Test Library", Path::new("/test/path"))?;
+        let library = db.add_library("Test Library", Path::new("/test/path"))?;
 
         // Create an audiobook
         let audiobook = Audiobook {
             id: Uuid::new_v4().to_string(),
             library_id: library.id.clone(),
-            path: PathBuf::from("/test/path/book.mp3"),
+            path: Path::new("/test/path/book.mp3").to_path_buf(),
             title: Some("Test Book".to_string()),
             author: Some("Test Author".to_string()),
             narrator: Some("Test Narrator".to_string()),

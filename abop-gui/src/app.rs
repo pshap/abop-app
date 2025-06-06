@@ -1,16 +1,44 @@
-//! Main application module that ties together all the pieces
+//! Main application module
+//!
+//! This module contains the main application state and initialization logic.
 
-use iced::{Element, Subscription, keyboard, Task};
+use iced::{Element, Subscription, Task, keyboard};
 
+use crate::handlers;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::update::update;
-use crate::views::view;
+use crate::views;
 
-/// The application's entry point and interface with the Iced runtime
+/// Main application struct
+#[derive(Debug)]
 pub struct App {
-    /// The current GUI application state, including all user and view data
+    /// Current application state
     pub state: UiState,
+}
+
+impl App {
+    /// Creates a new application instance
+    pub fn new() -> Self {
+        Self {
+            state: UiState::default(),
+        }
+    }
+
+    /// Updates application state in response to messages
+    pub fn update_state(&mut self, message: Message) -> Task<Message> {
+        handlers::handle_message(&mut self.state, message)
+    }
+
+    /// Returns the current view of the application
+    pub fn render(&self) -> iced::Element<'_, Message> {
+        views::view(&self.state)
+    }
+
+    /// Returns the application theme
+    pub fn get_theme(&self) -> iced::Theme {
+        self.state.theme_mode.theme()
+    }
 }
 
 impl Default for App {
@@ -20,23 +48,17 @@ impl Default for App {
 }
 
 impl App {
-    /// Creates a new application with initial state
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            state: UiState::default(),
-        }
-    }
-
     /// Static update function to be used with iced's `application()` function
     pub fn update(app: &mut Self, message: Message) -> Task<Message> {
         update(&mut app.state, message)
     }
+
     /// Static view function to be used with iced's `application()` function
     #[must_use]
     pub fn view(app: &Self) -> Element<'_, Message> {
-        view(&app.state)
+        views::view(&app.state)
     }
+
     /// Static subscription function to handle keyboard events
     pub fn subscription(app: &Self) -> Subscription<Message> {
         // Only listen for escape key when settings dialog is open
@@ -48,14 +70,5 @@ impl App {
         } else {
             Subscription::none()
         }
-    }    /// Instance method for updating state
-    pub fn update_state(&mut self, message: Message) -> Task<Message> {
-        update(&mut self.state, message)
-    }
-    
-    /// Instance method for rendering UI
-    #[must_use]
-    pub fn render(&self) -> Element<'_, Message> {
-        view(&self.state)
     }
 }

@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+use super::constants::*;
+
 /// Configuration for the library scanner
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScannerConfig {
@@ -47,30 +49,70 @@ impl Default for ScannerConfig {
 fn default_concurrency() -> usize {
     std::thread::available_parallelism()
         .map(|n| n.get())
-        .unwrap_or(8)
+        .unwrap_or(DEFAULT_CONCURRENCY)
 }
 
 const fn default_batch_size() -> usize {
-    100
+    DEFAULT_BATCH_SIZE
 }
+
 const fn default_timeout() -> Option<Duration> {
-    Some(Duration::from_secs(30))
+    Some(DEFAULT_TIMEOUT)
 }
+
 const fn default_true() -> bool {
     true
 }
+
 const fn default_max_file_size() -> u64 {
-    1024 * 1024 * 1024
-} // 1GB
+    DEFAULT_MAX_FILE_SIZE
+}
 
 fn default_extensions() -> Vec<String> {
-    vec![
-        "mp3".into(),
-        "m4a".into(),
-        "m4b".into(),
-        "flac".into(),
-        "ogg".into(),
-        "wav".into(),
-        "aac".into(),
-    ]
+    SUPPORTED_AUDIO_EXTENSIONS
+        .iter()
+        .map(|&s| s.to_string())
+        .collect()
+}
+
+impl ScannerConfig {
+    /// Creates a configuration optimized for large libraries
+    pub fn for_large_libraries() -> Self {
+        let cpu_count = std::thread::available_parallelism()
+            .map(|n| n.get() * 2)
+            .unwrap_or(DEFAULT_CONCURRENCY * 2);
+
+        Self {
+            max_concurrent_tasks: cpu_count,
+            batch_size: DEFAULT_BATCH_SIZE * 2,
+            timeout: Some(DEFAULT_TIMEOUT * 2),
+            use_mmap: true,
+            extensions: default_extensions(),
+            max_file_size: DEFAULT_MAX_FILE_SIZE * 2,
+        }
+    }
+
+    /// Creates a configuration optimized for small libraries
+    pub fn for_small_libraries() -> Self {
+        Self {
+            max_concurrent_tasks: DEFAULT_CONCURRENCY / 2,
+            batch_size: DEFAULT_BATCH_SIZE / 2,
+            timeout: Some(DEFAULT_TIMEOUT / 2),
+            use_mmap: true,
+            extensions: default_extensions(),
+            max_file_size: DEFAULT_MAX_FILE_SIZE,
+        }
+    }
+
+    /// Creates a conservative configuration for resource-constrained environments
+    pub fn conservative() -> Self {
+        Self {
+            max_concurrent_tasks: 2,
+            batch_size: DEFAULT_BATCH_SIZE / 4,
+            timeout: Some(DEFAULT_TIMEOUT / 2),
+            use_mmap: false,
+            extensions: default_extensions(),
+            max_file_size: DEFAULT_MAX_FILE_SIZE / 2,
+        }
+    }
 }

@@ -399,8 +399,6 @@ impl StateRepairStrategy {
         _state: &mut AppState,
         _issues: &[&ValidationError],
     ) -> Vec<RepairAction> {
-        let mut actions = Vec::new();
-
         // File issues are typically handled by other repair methods
         // (e.g., removing audiobooks with missing files)
         // This method can be extended for file-specific repairs like:
@@ -408,13 +406,11 @@ impl StateRepairStrategy {
         // - Updating file references
         // - Repairing file permissions
 
-        actions.push(RepairAction::success(
+        vec![RepairAction::success(
             RepairActionType::Update,
             "File issues resolved by related repairs".to_string(),
             "files".to_string(),
-        ));
-
-        actions
+        )]
     }
 
     /// Repair integrity-related issues

@@ -279,6 +279,20 @@ impl ThroughputMonitor {
     }
 }
 
+/// Worker context containing all shared resources
+struct WorkerContext {
+    task_queue: Arc<Mutex<VecDeque<ScanTask>>>,
+    queue_condvar: Arc<Condvar>,
+    result_sender: mpsc::Sender<ScanTaskResult>,
+    shutdown_flag: Arc<AtomicBool>,
+    active_workers: Arc<AtomicUsize>,
+    throughput_monitor: Arc<ThroughputMonitor>,
+    completed_tasks: Arc<AtomicUsize>,
+    successful_tasks: Arc<AtomicUsize>,
+    failed_tasks: Arc<AtomicUsize>,
+    worker_timeout: Duration,
+}
+
 /// Configurable thread pool for scanning operations
 pub struct ScanningThreadPool {
     config: ThreadPoolConfig,
@@ -516,8 +530,7 @@ impl ScanningThreadPool {
             let handle = thread::Builder::new()
                 .name(format!("scanner-worker-{worker_id}"))
                 .spawn(move || {
-                    Self::worker_loop(
-                        worker_id,
+                    let context = WorkerContext {
                         task_queue,
                         queue_condvar,
                         result_sender,
@@ -528,7 +541,8 @@ impl ScanningThreadPool {
                         successful_tasks,
                         failed_tasks,
                         worker_timeout,
-                    );
+                    };
+                    Self::worker_loop(worker_id, context);
                 })
                 .map_err(|e| {
                     AppError::Threading(format!("Failed to start worker thread: {e}").into())
@@ -541,25 +555,13 @@ impl ScanningThreadPool {
     }
 
     /// Worker thread main loop
-    fn worker_loop(
-        worker_id: usize,
-        task_queue: Arc<Mutex<VecDeque<ScanTask>>>,
-        queue_condvar: Arc<Condvar>,
-        result_sender: mpsc::Sender<ScanTaskResult>,
-        shutdown_flag: Arc<AtomicBool>,
-        active_workers: Arc<AtomicUsize>,
-        throughput_monitor: Arc<ThroughputMonitor>,
-        completed_tasks: Arc<AtomicUsize>,
-        successful_tasks: Arc<AtomicUsize>,
-        failed_tasks: Arc<AtomicUsize>,
-        worker_timeout: Duration,
-    ) {
+    fn worker_loop(worker_id: usize, context: WorkerContext) {
         log::debug!("Worker {worker_id} started");
 
-        while !shutdown_flag.load(Ordering::Relaxed) {
+        while !context.shutdown_flag.load(Ordering::Relaxed) {
             // Try to get a task from the queue
             let task = {
-                let mut queue = match task_queue.lock() {
+                let mut queue = match context.task_queue.lock() {
                     Ok(queue) => queue,
                     Err(_) => {
                         log::error!("Worker {worker_id} failed to acquire queue lock");
@@ -569,8 +571,9 @@ impl ScanningThreadPool {
 
                 // Wait for tasks or timeout
                 if queue.is_empty() {
-                    let (mut updated_queue, timeout_result) = queue_condvar
-                        .wait_timeout(queue, worker_timeout)
+                    let (mut updated_queue, timeout_result) = context
+                        .queue_condvar
+                        .wait_timeout(queue, context.worker_timeout)
                         .unwrap_or_else(|_| panic!("Worker {worker_id} condvar wait failed"));
 
                     if timeout_result.timed_out() && updated_queue.is_empty() {
@@ -584,26 +587,26 @@ impl ScanningThreadPool {
             };
 
             if let Some(task) = task {
-                active_workers.fetch_add(1, Ordering::Relaxed);
+                context.active_workers.fetch_add(1, Ordering::Relaxed);
 
                 // Process the task
                 let result = Self::process_task(task);
 
                 // Update counters
-                completed_tasks.fetch_add(1, Ordering::Relaxed);
+                context.completed_tasks.fetch_add(1, Ordering::Relaxed);
                 if result.is_success() {
-                    successful_tasks.fetch_add(1, Ordering::Relaxed);
+                    context.successful_tasks.fetch_add(1, Ordering::Relaxed);
                 } else {
-                    failed_tasks.fetch_add(1, Ordering::Relaxed);
+                    context.failed_tasks.fetch_add(1, Ordering::Relaxed);
                 }
-                throughput_monitor.record_completion();
+                context.throughput_monitor.record_completion();
 
                 // Send result
-                if result_sender.send(result).is_err() {
+                if context.result_sender.send(result).is_err() {
                     log::warn!("Worker {worker_id} failed to send result");
                 }
 
-                active_workers.fetch_sub(1, Ordering::Relaxed);
+                context.active_workers.fetch_sub(1, Ordering::Relaxed);
             }
             // If no task was available (timeout), continue to check shutdown flag
         }

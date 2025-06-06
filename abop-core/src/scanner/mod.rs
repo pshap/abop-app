@@ -8,6 +8,7 @@
 //! for fine-grained control over scanning operations.
 
 pub mod config;
+pub mod constants;
 pub mod error;
 pub mod library_scanner;
 pub mod performance;
@@ -17,6 +18,7 @@ pub mod state;
 pub mod thread_pool;
 
 pub use config::*;
+pub use constants::*;
 pub use error::{ScanError, ScanResult};
 pub use library_scanner::{
     LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanProgressUpdate,

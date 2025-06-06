@@ -76,18 +76,18 @@ mod library_scanner_tests {
         // Test that scanner can be created without panicking
         // This is a basic smoke test
     }
-    #[test]
-    fn test_scan_empty_directory() {
+    #[tokio::test]
+    async fn test_scan_empty_directory() {
         let temp_dir = tempdir().unwrap();
         let db = Database::open(":memory:").unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let scan_result = scanner.scan().unwrap();
+        let scan_summary = scanner.scan_async(None).await.unwrap();
 
-        assert_eq!(scan_result.audiobooks.len(), 0);
-        assert_eq!(scan_result.processed_count, 0);
-        assert_eq!(scan_result.error_count, 0);
+        assert_eq!(scan_summary.new_files.len(), 0);
+        assert_eq!(scan_summary.processed, 0);
+        assert_eq!(scan_summary.errors, 0);
     }
     #[test]
     fn test_scan_with_mixed_files() {
