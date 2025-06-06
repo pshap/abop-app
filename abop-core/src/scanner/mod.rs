@@ -7,18 +7,25 @@
 //! a modern async/await implementation using Tokio and Iced's Task system
 //! for fine-grained control over scanning operations.
 
-pub mod library_scanner;
-pub mod thread_pool;
-pub mod error;
-pub mod progress;
 pub mod config;
-pub mod result;
+pub mod error;
+pub mod library_scanner;
 pub mod performance;
+pub mod progress;
+pub mod result;
+pub mod state;
+pub mod thread_pool;
 
-pub use library_scanner::{LibraryScanner, ScanProgressUpdate, LibraryScanResult, SUPPORTED_AUDIO_EXTENSIONS};
-pub use thread_pool::{ScanningThreadPool, ThreadPoolConfig, ScanTask, ScanTaskResult, ScanProgress as ThreadPoolScanProgress};
-pub use error::{ScanError, ScanResult};
-pub use progress::{ScanProgress, ProgressReporter, ChannelReporter};
-pub use performance::{PerformanceMonitor, PerformanceMetrics, OperationType, SlowOperation};
 pub use config::*;
+pub use error::{ScanError, ScanResult};
+pub use library_scanner::{
+    LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanProgressUpdate,
+};
+pub use performance::{OperationType, PerformanceMetrics, PerformanceMonitor, SlowOperation};
+pub use progress::{ChannelReporter, ProgressReporter, ScanProgress};
 pub use result::*;
+pub use state::ScannerState;
+pub use thread_pool::{
+    ScanProgress as ThreadPoolScanProgress, ScanTask, ScanTaskResult, ScanningThreadPool,
+    ThreadPoolConfig,
+};

@@ -62,7 +62,7 @@ pub enum AppError {
         /// Actual elapsed time in milliseconds
         elapsed_ms: u64,
     },
-    
+
     /// Error during scanning operations
     #[error("Scan error: {0}")]
     Scan(#[from] crate::scanner::ScanError),

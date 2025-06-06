@@ -92,7 +92,7 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
             // Create progress-enabled scanner and launch scan with progress reporting
             let scanner = abop_core::scanner::LibraryScanner::new(db, library);
             let audio_files = scanner.find_audio_files();
-            
+
             // Create a Task that emits progress updates and final result
             Some(
                 scanner
@@ -107,10 +107,9 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
                             scan_duration: core_result.scan_duration,
                             processed_count: core_result.processed_count,
                             error_count: core_result.error_count,
-                            performance_monitor: None,
                         };
                         Message::ScanComplete(Ok(gui_result))
-                    })
+                    }),
             )
         }
         Command::BrowseDirectory => {
