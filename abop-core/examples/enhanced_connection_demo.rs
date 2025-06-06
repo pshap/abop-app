@@ -68,7 +68,7 @@ fn demonstrate_connection_stats(db: &Database) -> Result<()> {
     // Perform some operations to generate statistics
     db.add_library("Demo Library", Path::new("/demo/path"))?;
 
-    let stats = db.connection_stats();
+    let stats = db.connection_stats()?;
     println!("📊 Connection Statistics:");
     println!(
         "   - Successful operations: {}",
@@ -191,7 +191,7 @@ fn demonstrate_bulk_operations(db: &Database) -> Result<()> {
     );
 
     // Show updated connection statistics
-    let stats = db.connection_stats();
+    let stats = db.connection_stats()?;
     println!("📊 Updated statistics after bulk operation:");
     println!(
         "   - Total successful operations: {}",
@@ -233,9 +233,9 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_enhanced_connection_demo() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let db = Database::open(temp_file.path()).expect("Failed to open database");
+    fn test_enhanced_connection_demo() -> Result<()> {
+        let temp_file = NamedTempFile::new()?;
+        let db = Database::open(temp_file.path())?;
 
         // Test basic functionality
         assert!(matches!(db.connection_health(), ConnectionHealth::Healthy));
@@ -244,11 +244,15 @@ mod tests {
         let result = db.execute_with_enhanced_connection(|conn| {
             use abop_core::db::error::DatabaseError;
             conn.execute("SELECT 1", []).map_err(DatabaseError::from)
-        });
+        })?;
         assert!(result.is_ok());
 
         // Test statistics are being tracked
-        let stats = db.connection_stats();
-        assert!(stats.successful_operations > 0);
+        let stats = db.connection_stats()?;
+        assert_eq!(stats.successful_operations, 1); // Initial connection
+        assert_eq!(stats.failed_operations, 0);
+        assert!(stats.avg_operation_duration_ms >= 0.0);
+
+        Ok(())
     }
 }

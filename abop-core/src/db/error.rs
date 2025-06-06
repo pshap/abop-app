@@ -102,6 +102,10 @@ pub enum DatabaseError {
     /// Query execution failed.
     #[error("Query failed: {0}")]
     Query(String),
+
+    /// I/O error occurred.
+    #[error("I/O error: {0}")]
+    Io(std::io::Error),
 }
 
 /// Convenient Result type for database operations
@@ -170,6 +174,12 @@ impl From<DatabaseError> for crate::error::AppError {
             DatabaseError::Sqlite(rusqlite_err) => Self::Database(rusqlite_err),
             other => Self::Other(other.to_string()),
         }
+    }
+}
+
+impl From<std::io::Error> for DatabaseError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(err)
     }
 }
 

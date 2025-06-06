@@ -6,11 +6,13 @@
 use crate::db::error::{DatabaseError, DbResult};
 use crate::db::health::HealthMonitor;
 use crate::db::retry::{RetryExecutor, RetryPolicy};
-use crate::db::statistics::{ConnectionStats, StatisticsCollector};
+use crate::db::statistics::{ConnectionStats, StatisticsCollector, StatisticsError, StatisticsResult};
 use rusqlite::{Connection, OpenFlags};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
+use chrono::{DateTime, Utc};
+use log::{debug, error, info, warn};
 
 /// Configuration for enhanced connection management
 #[derive(Debug, Clone)]
@@ -90,6 +92,7 @@ impl EnhancedConnection {
     /// - Database file is corrupted or inaccessible
     /// - Insufficient permissions to access the database file
     /// - Database configuration is invalid
+    /// - Failed to record connection statistics
     pub fn connect(&self) -> DbResult<()> {
         log::debug!(
             "Establishing database connection to: {}",
@@ -104,14 +107,17 @@ impl EnhancedConnection {
         match result {
             Ok(()) => {
                 self.health_monitor.set_healthy();
-                self.stats_collector.record_connection();
-                self.stats_collector.record_success(start_time.elapsed());
+                self.stats_collector.record_connection()
+                    .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record connection: {e}")))?;
+                self.stats_collector.record_success(start_time.elapsed())
+                    .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record success: {e}")))?;
                 log::info!("Database connection established successfully");
                 Ok(())
             }
             Err(e) => {
                 self.health_monitor.set_failed();
-                self.stats_collector.record_failure(start_time.elapsed());
+                self.stats_collector.record_failure(start_time.elapsed())
+                    .map_err(|stats_err| DatabaseError::ConnectionFailed(format!("Failed to record failure: {stats_err}")))?;
                 log::error!("Failed to establish database connection: {e}");
                 Err(e)
             }
@@ -189,6 +195,7 @@ impl EnhancedConnection {
     /// - The operation closure returns an error
     /// - Connection retry attempts are exhausted
     /// - Database is in an unrecoverable state
+    /// - Failed to record operation statistics
     pub fn with_connection<F, R>(&self, operation: F) -> DbResult<R>
     where
         F: Fn(&Connection) -> DbResult<R> + Send + 'static,
@@ -223,17 +230,26 @@ impl EnhancedConnection {
         });
 
         match &result {
-            Ok(_) => self.stats_collector.record_success(start_time.elapsed()),
-            Err(_) => self.stats_collector.record_failure(start_time.elapsed()),
+            Ok(_) => self.stats_collector.record_success(start_time.elapsed())
+                .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record success: {e}")))?,
+            Err(_) => self.stats_collector.record_failure(start_time.elapsed())
+                .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record failure: {e}")))?,
         }
 
         result
     }
 
     /// Get connection statistics
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if:
+    /// - Failed to acquire statistics lock
+    /// - Failed to read connection timestamp
     #[must_use]
-    pub fn stats(&self) -> ConnectionStats {
+    pub fn stats(&self) -> DbResult<ConnectionStats> {
         self.stats_collector.get_stats()
+            .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to get statistics: {e}")))
     }
 
     /// Get the current health status
@@ -291,6 +307,11 @@ impl EnhancedConnection {
         log::info!("Database connection closed successfully");
         Ok(())
     }
+
+    fn record_connection(&self) -> DbResult<()> {
+        self.stats_collector.record_connection()
+            .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record connection: {e}")))
+    }
 }
 
 impl Clone for EnhancedConnection {
@@ -312,29 +333,32 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_enhanced_connection_creation() {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn test_enhanced_connection_creation() -> DbResult<()> {
+        let temp_file = NamedTempFile::new()?;
         let conn = EnhancedConnection::new(temp_file.path());
 
-        assert_eq!(conn.stats().successful_operations, 0);
-        assert_eq!(conn.stats().failed_operations, 0);
+        let stats = conn.stats()?;
+        assert_eq!(stats.successful_operations, 0);
+        assert_eq!(stats.failed_operations, 0);
+        Ok(())
     }
 
     #[test]
-    fn test_connection_establishment() {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn test_connection_establishment() -> DbResult<()> {
+        let temp_file = NamedTempFile::new()?;
         let conn = EnhancedConnection::new(temp_file.path());
 
-        conn.connect().unwrap();
+        conn.connect()?;
         assert_eq!(conn.health_monitor.status(), ConnectionHealth::Healthy);
+        Ok(())
     }
 
     #[test]
-    fn test_operation_with_connection() {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn test_operation_with_connection() -> DbResult<()> {
+        let temp_file = NamedTempFile::new()?;
         let conn = EnhancedConnection::new(temp_file.path());
 
-        conn.connect().unwrap();
+        conn.connect()?;
 
         let result = conn
             .with_connection(|db_conn| {
@@ -344,19 +368,20 @@ mod tests {
                         message: format!("CREATE TABLE test failed: {e}"),
                     })?;
                 Ok(42)
-            })
-            .unwrap();
+            })?;
 
         assert_eq!(result, 42);
-        assert!(conn.stats().successful_operations > 0);
+        let stats = conn.stats()?;
+        assert!(stats.successful_operations > 0);
+        Ok(())
     }
 
     #[test]
-    fn test_connection_stats_tracking() {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn test_connection_stats_tracking() -> DbResult<()> {
+        let temp_file = NamedTempFile::new()?;
         let conn = EnhancedConnection::new(temp_file.path());
 
-        conn.connect().unwrap();
+        conn.connect()?;
         // Perform some operations
         for _ in 0..3 {
             conn.with_connection(|db_conn| {
@@ -367,25 +392,26 @@ mod tests {
                         message: format!("SELECT 1 failed: {e}"),
                     })?;
                 Ok(())
-            })
-            .unwrap();
+            })?;
         }
 
-        let stats = conn.stats();
+        let stats = conn.stats()?;
         assert_eq!(stats.successful_operations, 4); // 3 operations + 1 connect
         assert_eq!(stats.failed_operations, 0);
         assert!(stats.avg_operation_duration_ms >= 0.0);
+        Ok(())
     }
 
     #[test]
-    fn test_connection_close() {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn test_connection_close() -> DbResult<()> {
+        let temp_file = NamedTempFile::new()?;
         let conn = EnhancedConnection::new(temp_file.path());
 
-        conn.connect().unwrap();
+        conn.connect()?;
         assert_eq!(conn.health_monitor.status(), ConnectionHealth::Healthy);
 
-        conn.close().unwrap();
+        conn.close()?;
         assert_eq!(conn.health_monitor.status(), ConnectionHealth::Failed);
+        Ok(())
     }
 }
