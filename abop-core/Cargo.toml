@@ -42,7 +42,7 @@ bytemuck.workspace = true
 rand = "0.9.1"
 serde_json.workspace = true
 r2d2 = "0.8.10"
-r2d2_sqlite = "0.29.0"
+r2d2_sqlite = "^0.29.0"
 
 # Async
 iced = { version = "0.13.1", features = ["tokio", "advanced"] }

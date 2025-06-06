@@ -290,21 +290,55 @@ pub fn handle_data_message(state: &mut UiState, message: Message) -> Option<Task
         Message::ScanProgressEnhanced(enhanced_progress) => {
             // Update enhanced scan progress during scanning
             if state.scanning {
+                // Extract progress information from the ScanProgress enum
+                let (progress_percentage, processed, total, current_file) = match &enhanced_progress
+                {
+                    abop_core::scanner::ScanProgress::Started { total_files } => {
+                        (0.0, 0, *total_files, None)
+                    }
+                    abop_core::scanner::ScanProgress::FileProcessed {
+                        current,
+                        total,
+                        file_name,
+                        progress_percentage,
+                    } => (
+                        *progress_percentage,
+                        *current,
+                        *total,
+                        Some(file_name.clone()),
+                    ),
+                    abop_core::scanner::ScanProgress::BatchCommitted {
+                        total_processed, ..
+                    } => {
+                        // Calculate approximate progress
+                        let progress = if state.enhanced_scan_progress.is_some() {
+                            state.scan_progress.unwrap_or(0.0)
+                        } else {
+                            0.5 // Default to 50% for batch commits
+                        };
+                        (progress, *total_processed, *total_processed, None)
+                    }
+                    abop_core::scanner::ScanProgress::Complete { processed, .. } => {
+                        (1.0, *processed, *processed, None)
+                    }
+                    abop_core::scanner::ScanProgress::Cancelled { processed, .. } => {
+                        (0.0, *processed, *processed, None)
+                    }
+                };
+
                 // Convert enhanced progress to basic progress for compatibility
-                state.scan_progress = Some(enhanced_progress.progress_percentage);
-                
+                state.scan_progress = Some(progress_percentage);
+
                 // Store enhanced progress information
                 state.enhanced_scan_progress = Some(enhanced_progress.clone());
-                
+
                 // Log the enhanced information
                 log::debug!(
-                    "[SCAN] Enhanced progress: {}/{} files ({:.1}%), current: {:?}, throughput: {:.1} files/sec, ETA: {:?}",
-                    enhanced_progress.processed,
-                    enhanced_progress.total,
-                    enhanced_progress.progress_percentage * 100.0,
-                    enhanced_progress.current_file,
-                    enhanced_progress.throughput,
-                    enhanced_progress.eta
+                    "[SCAN] Enhanced progress: {}/{} files ({:.1}%), current: {:?}",
+                    processed,
+                    total,
+                    progress_percentage * 100.0,
+                    current_file,
                 );
             }
             Some(Task::none())

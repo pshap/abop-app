@@ -1,7 +1,7 @@
 //! Result types for scanner operations
 
-use std::time::{Duration, Instant};
 use crate::models::Audiobook;
+use std::time::{Duration, Instant};
 
 /// Summary of a scan operation
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ impl ScanSummary {
             updated_files: Vec::new(),
         }
     }
-    
+
     pub fn total_files(&self) -> usize {
         self.processed + self.errors
     }
@@ -58,8 +58,12 @@ impl InternalScanResult {
             start_time: Instant::now(),
         }
     }
-    
-    pub fn into_summary(self, new_files: Vec<Audiobook>, updated_files: Vec<Audiobook>) -> ScanSummary {
+
+    pub fn into_summary(
+        self,
+        new_files: Vec<Audiobook>,
+        updated_files: Vec<Audiobook>,
+    ) -> ScanSummary {
         ScanSummary {
             processed: self.processed_count,
             errors: self.error_count,

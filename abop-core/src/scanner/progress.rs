@@ -6,10 +6,8 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub enum ScanProgress {
     /// Scan has started with total number of files to process
-    Started {
-        total_files: usize,
-    },
-    
+    Started { total_files: usize },
+
     /// A file has been processed
     FileProcessed {
         /// Current file number being processed
@@ -21,7 +19,7 @@ pub enum ScanProgress {
         /// Progress percentage (0.0 to 1.0)
         progress_percentage: f32,
     },
-    
+
     /// A batch of files has been committed to the database
     BatchCommitted {
         /// Number of items in this batch
@@ -29,7 +27,7 @@ pub enum ScanProgress {
         /// Total processed so far
         total_processed: usize,
     },
-    
+
     /// Scan has completed
     Complete {
         /// Number of files successfully processed
@@ -39,7 +37,7 @@ pub enum ScanProgress {
         /// Total duration of the scan
         duration: Duration,
     },
-    
+
     /// Scan was cancelled
     Cancelled {
         /// Number of files processed before cancellation
@@ -53,7 +51,10 @@ pub enum ScanProgress {
 #[async_trait::async_trait]
 pub trait ProgressReporter: Send + Sync + 'static {
     /// Called when a progress event occurs
-    async fn report(&self, progress: ScanProgress) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    async fn report(
+        &self,
+        progress: ScanProgress,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Implementation that sends progress over a channel
@@ -73,7 +74,10 @@ impl<T: From<ScanProgress> + Send + Sync + 'static> ChannelReporter<T> {
 
 #[async_trait::async_trait]
 impl<T: From<ScanProgress> + Send + Sync + 'static> ProgressReporter for ChannelReporter<T> {
-    async fn report(&self, progress: ScanProgress) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    async fn report(
+        &self,
+        progress: ScanProgress,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.sender.send(progress.into()).await?;
         Ok(())
     }

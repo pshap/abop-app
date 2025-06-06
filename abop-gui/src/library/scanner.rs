@@ -1,14 +1,19 @@
 //! Library scanning functionality
 
 use abop_core::{
-    db::Database, 
-    models::Audiobook, 
-    scanner::{LibraryScanner, LibraryScanResult, performance::PerformanceMonitor}
+    db::Database,
+    error::{AppError, Result},
+    models::{Audiobook, Library},
+    scanner::{LibraryScanner, progress::ScanProgress},
 };
+use iced::Element;
 use iced::Task;
+use iced::widget::{column, progress_bar, text};
 use std::path::PathBuf;
 use std::time::Duration;
-use std::sync::Arc;
+use tokio::sync::mpsc;
+
+use crate::messages::Message;
 
 /// Progress callback type for scanning operations
 pub type ProgressCallback = Box<dyn Fn(f32) + Send + Sync>;
@@ -24,75 +29,6 @@ pub struct ScanResult {
     pub processed_count: usize,
     /// Number of files that had errors
     pub error_count: usize,
-    /// Performance metrics if monitoring was enabled
-    pub performance_monitor: Option<Arc<PerformanceMonitor>>,
-}
-
-/// Enhanced scanning result with detailed metrics
-#[derive(Debug, Clone)]
-pub struct EnhancedScanResult {
-    /// Base scan result
-    pub scan_result: LibraryScanResult,
-    /// Performance metrics
-    pub performance_metrics: Option<abop_core::scanner::performance::PerformanceMetrics>,
-    /// ETA information during scan
-    pub eta_history: Vec<Duration>,
-    /// Throughput history (files per second)
-    pub throughput_history: Vec<f64>,
-}
-
-/// Progress information for ongoing scans
-#[derive(Debug, Clone)]
-pub struct ScanProgress {
-    /// Current file being processed
-    pub current_file: Option<String>,
-    /// Number of files processed so far
-    pub processed: usize,
-    /// Total number of files to process
-    pub total: usize,
-    /// Current throughput (files per second)
-    pub throughput: f64,
-    /// Estimated time to completion
-    pub eta: Option<Duration>,
-    /// Current progress percentage (0.0 to 1.0)
-    pub progress_percentage: f32,
-}
-
-impl ScanProgress {
-    /// Create new scan progress
-    pub fn new(total: usize) -> Self {
-        Self {
-            current_file: None,
-            processed: 0,
-            total,
-            throughput: 0.0,
-            eta: None,
-            progress_percentage: 0.0,
-        }
-    }
-
-    /// Update progress with new file
-    pub fn update(&mut self, processed: usize, current_file: Option<String>, throughput: f64) {
-        self.processed = processed;
-        self.current_file = current_file;
-        self.throughput = throughput;
-        
-        if self.total > 0 {
-            self.progress_percentage = processed as f32 / self.total as f32;
-            
-            // Calculate ETA
-            if throughput > 0.0 {
-                let remaining = self.total.saturating_sub(processed) as f64;
-                let eta_seconds = remaining / throughput;
-                self.eta = Some(Duration::from_secs_f64(eta_seconds));
-            }
-        }
-    }
-
-    /// Check if scan is complete
-    pub fn is_complete(&self) -> bool {
-        self.processed >= self.total
-    }
 }
 
 /// Open a directory dialog and return the selected path
@@ -106,197 +42,301 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
         .map(|handle| handle.path().to_path_buf())
 }
 
-/// Scan the library directory for audiobooks with performance monitoring
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - Library scanning fails
-/// - Database operations fail
-/// - File system access is denied
-pub fn scan_library_async(_library_path: PathBuf, db: abop_core::db::Database, library: abop_core::models::Library) -> Task<LibraryScanResult> {
-    let scanner = LibraryScanner::new(db, library)
-        .with_performance_monitoring(); // Enable performance monitoring for GUI
-    let audio_files = scanner.find_audio_files();
-    scanner.scan_with_tasks(audio_files)
+/// Scans a library directory and returns a task that will complete with the scan result
+pub fn scan_library(
+    db: Database,
+    library: Library,
+    progress_tx: Option<mpsc::UnboundedSender<ScanProgress>>,
+) -> Task<Result<ScanResult>> {
+    Task::perform(
+        async move {
+            let scanner = LibraryScanner::new(db, library);
+
+            let result = scanner.scan_async(progress_tx).await?;
+
+            // Convert ScanSummary to ScanResult
+            let scan_result = ScanResult {
+                audiobooks: result.new_files,
+                scan_duration: result.duration,
+                processed_count: result.processed,
+                error_count: result.errors,
+            };
+
+            Ok(scan_result)
+        },
+        |result| result,
+    )
 }
 
-/// Scan the library directory for audiobooks with optional progress reporting
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - Library scanning fails
-/// - Database operations fail
-/// - File system access is denied
-/// - Data directory creation fails
-///
-/// # Panics
-///
-/// This function contains an `unwrap()` call on the progress callback, but it is logically safe
-/// because the function returns early if the callback is None.
-pub async fn scan_library_with_progress(
-    library_path: PathBuf,
-    progress_callback: Option<ProgressCallback>,
-) -> Result<Vec<Audiobook>, String> {
-    // Use a persistent database file in the user's data directory
-    let data_dir = dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("abop");
-    std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
-    let db_path = data_dir.join("library.db");
-
-    let db = Database::open(&db_path).map_err(|e| e.to_string())?;
-
-    // Check if library already exists, if not create it
-    let library = match db
-        .libraries()
-        .find_by_name("Default Library")
-        .map_err(|e| e.to_string())?
-    {
-        Some(existing_library) => existing_library,
-        None => db
-            .add_library("Default Library", &library_path)
-            .map_err(|e| e.to_string())?,
-    };
-
-    // If no progress callback, use the simple scanner
-    if progress_callback.is_none() {
-        let scanner = LibraryScanner::new(db, library);
-        let scan_result = scanner.scan().map_err(|e| e.to_string())?;
-        return Ok(scan_result.audiobooks);
-    }
-
-    // Custom scanning with progress reporting
-    scan_with_progress_reporting(db, library, progress_callback.unwrap()).await
+/// Scans a library directory with progress updates
+pub fn scan_library_with_progress(db: Database, library: Library) -> Task<Result<ScanResult>> {
+    scan_library(db, library, None)
 }
 
 /// Scan library with enhanced progress tracking and ETA calculation
 pub fn scan_library_with_enhanced_progress(
-    _library_path: PathBuf, 
-    db: Database, 
-    library: abop_core::models::Library,
-    progress_callback: impl Fn(ScanProgress) + Send + Sync + 'static
-) -> Task<EnhancedScanResult> {
+    _library_path: PathBuf,
+    db: Database,
+    library: Library,
+    progress_callback: impl Fn(ScanProgress) + Send + Sync + 'static,
+) -> Task<Result<ScanResult>> {
     Task::perform(
         async move {
-            let scanner = LibraryScanner::new(db, library)
-                .with_performance_monitoring();
-            
-            let audio_files = scanner.find_audio_files();
-            let total_files = audio_files.len();
-            let mut progress = ScanProgress::new(total_files);
-            
-            // Initial progress callback
-            progress_callback(progress.clone());
-            
-            let throughput_history = Vec::new();
-            let eta_history = Vec::new();
-            
-            // Use the scanner's manual async scan instead of tasks
-            let scan_result = match scanner.scan() {
-                Ok(result) => result,
-                Err(_e) => {
-                    // Return an empty result on error
-                    LibraryScanResult::new()
-                }
+            let scanner = LibraryScanner::new(db, library);
+            let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
+
+            // Start the scan in a background task
+            let scan_handle =
+                tokio::spawn(async move { scanner.scan_async(Some(progress_tx)).await });
+
+            // Process progress updates
+            let mut scan_result = ScanResult {
+                audiobooks: Vec::new(),
+                scan_duration: Duration::from_secs(0),
+                processed_count: 0,
+                error_count: 0,
             };
-            
-            // Get performance metrics if available
-            let performance_metrics = scanner.get_performance_monitor()
-                .map(|monitor| monitor.get_metrics());
-            
-            // Final progress update
-            progress.update(scan_result.processed_count, None, 0.0);
-            progress_callback(progress);
-            
-            EnhancedScanResult {
-                scan_result,
-                performance_metrics,
-                eta_history,
-                throughput_history,
+
+            let _start_time = std::time::Instant::now();
+            while let Some(progress_event) = progress_rx.recv().await {
+                let should_break = matches!(&progress_event, ScanProgress::Complete { .. });
+
+                match &progress_event {
+                    ScanProgress::Started { total_files: _ } => {
+                        scan_result.processed_count = 0;
+                        scan_result.error_count = 0;
+                    }
+                    ScanProgress::FileProcessed {
+                        current,
+                        total: _,
+                        file_name: _,
+                        progress_percentage: _,
+                    } => {
+                        scan_result.processed_count = *current;
+                    }
+                    ScanProgress::BatchCommitted {
+                        count: _,
+                        total_processed,
+                    } => {
+                        scan_result.processed_count = *total_processed;
+                    }
+                    ScanProgress::Complete {
+                        processed,
+                        errors,
+                        duration,
+                    } => {
+                        scan_result.processed_count = *processed;
+                        scan_result.error_count = *errors;
+                        scan_result.scan_duration = *duration;
+                    }
+                    ScanProgress::Cancelled {
+                        processed,
+                        duration,
+                    } => {
+                        scan_result.processed_count = *processed;
+                        scan_result.scan_duration = *duration;
+                        progress_callback(progress_event);
+                        return Err(AppError::Scan(
+                            abop_core::scanner::error::ScanError::Cancelled,
+                        ));
+                    }
+                }
+                progress_callback(progress_event);
+
+                if should_break {
+                    break;
+                }
+            }
+
+            // Get final result
+            match scan_handle.await {
+                Ok(Ok(summary)) => {
+                    scan_result.audiobooks = summary.new_files;
+                    scan_result.processed_count = summary.processed;
+                    scan_result.error_count = summary.errors;
+                    scan_result.scan_duration = summary.duration;
+                    Ok(scan_result)
+                }
+                Ok(Err(e)) => Err(AppError::Scan(e)),
+                Err(e) => Err(AppError::Threading(e.to_string().into())),
             }
         },
-        |result| result
+        |result| result,
     )
 }
 
-/// Enhanced scanning with progress reporting
+/// Helper function to scan with progress reporting
 async fn scan_with_progress_reporting(
     db: Database,
-    library: abop_core::models::Library,
+    library: Library,
     progress_callback: ProgressCallback,
-) -> Result<Vec<Audiobook>, String> {
-    use abop_core::audio::AudioMetadata;
-    use abop_core::scanner::SUPPORTED_AUDIO_EXTENSIONS;
-    use walkdir::WalkDir;
+) -> Result<Vec<Audiobook>> {
+    let scanner = LibraryScanner::new(db, library);
+    let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
 
-    // Report initial progress
-    progress_callback(0.0);
+    // Start the scan in a background task
+    let scan_handle = tokio::spawn(async move { scanner.scan_async(Some(progress_tx)).await });
 
-    // Step 1: Find all audio files (30% of progress)
-    let mut audio_files = Vec::new();
-    for entry in WalkDir::new(&library.path)
-        .follow_links(true)
-        .into_iter()
-        .filter_map(std::result::Result::ok)
-    {
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
+    // Process progress updates
+    let _start_time = std::time::Instant::now();
 
-        if let Some(ext) = path.extension() {
-            let ext_str = ext.to_string_lossy().to_lowercase();
-            if SUPPORTED_AUDIO_EXTENSIONS.iter().any(|e| e == &ext_str) {
-                audio_files.push(path.to_path_buf());
+    while let Some(progress) = progress_rx.recv().await {
+        match &progress {
+            ScanProgress::Started { total_files: _ } => {
+                progress_callback(0.0);
+            }
+            ScanProgress::FileProcessed {
+                current: _,
+                total: _,
+                file_name: _,
+                progress_percentage,
+            } => {
+                progress_callback(*progress_percentage);
+            }
+            ScanProgress::BatchCommitted {
+                count: _,
+                total_processed: _,
+            } => {
+                // No progress update needed for batch commits
+            }
+            ScanProgress::Complete {
+                processed: _,
+                errors: _,
+                duration: _,
+            } => {
+                progress_callback(1.0);
+                break;
+            }
+            ScanProgress::Cancelled {
+                processed: _,
+                duration: _,
+            } => {
+                return Err(AppError::Scan(
+                    abop_core::scanner::error::ScanError::Cancelled,
+                ));
             }
         }
     }
 
-    progress_callback(0.3);
-    log::info!("Found {} audio files", audio_files.len());
+    // Get final result
+    match scan_handle.await {
+        Ok(Ok(summary)) => Ok(summary.new_files),
+        Ok(Err(e)) => Err(AppError::Scan(e)),
+        Err(e) => Err(AppError::Threading(e.to_string().into())),
+    }
+}
 
-    if audio_files.is_empty() {
-        progress_callback(1.0);
-        return Ok(Vec::new());
+pub struct ScannerProgress {
+    progress: Option<ScanProgress>,
+    state: abop_core::scanner::ScannerState,
+    current_count: usize,
+    total_count: usize,
+    current_file: Option<String>,
+    error_count: usize,
+}
+
+impl Default for ScannerProgress {
+    fn default() -> Self {
+        Self {
+            progress: None,
+            state: abop_core::scanner::ScannerState::Idle,
+            current_count: 0,
+            total_count: 0,
+            current_file: None,
+            error_count: 0,
+        }
+    }
+}
+
+impl ScannerProgress {
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    // Step 2: Process files and save to database (70% of progress)
-    let mut audiobooks = Vec::new();
-    let total_files = audio_files.len();
+    pub fn view(&self) -> Element<Message> {
+        match self.state {
+            abop_core::scanner::ScannerState::Idle => column![].into(),
+            _ => {
+                let progress_percentage = if self.total_count > 0 {
+                    self.current_count as f32 / self.total_count as f32
+                } else {
+                    0.0
+                };
 
-    for (index, audio_file) in audio_files.iter().enumerate() {
-        // Extract metadata
-        let mut audiobook = abop_core::models::Audiobook::new(&library.id, audio_file);
-
-        if let Ok(metadata) = std::fs::metadata(audio_file) {
-            audiobook.size_bytes = Some(metadata.len());
-        }
-
-        if let Ok(metadata) = AudioMetadata::from_file(audio_file) {
-            audiobook.title = metadata.title;
-            audiobook.author = metadata.artist;
-            audiobook.narrator = metadata.narrator;
-            audiobook.duration_seconds = metadata.duration_seconds.map(|d| d.round() as u64);
-            if let Some(cover_art) = metadata.cover_art {
-                audiobook.cover_art = Some(cover_art);
+                column![
+                    text("Scanning Library...").size(20),
+                    progress_bar(0.0..=1.0, progress_percentage),
+                    text(format!(
+                        "Processed {}/{} files",
+                        self.current_count, self.total_count
+                    )),
+                    if let Some(file) = &self.current_file {
+                        text(format!("Current file: {file}"))
+                    } else {
+                        text("")
+                    },
+                    if self.error_count > 0 {
+                        text(format!("Errors: {}", self.error_count))
+                    } else {
+                        text("")
+                    },
+                ]
+                .spacing(10)
+                .padding(20)
+                .into()
             }
         }
-
-        // Save to database
-        if let Err(e) = db.add_audiobook(&audiobook) {
-            log::error!("Error saving {}: {}", audiobook.path.display(), e);
-        } else {
-            audiobooks.push(audiobook);
+    }
+    pub fn update(&mut self, progress: ScanProgress) {
+        match &progress {
+            ScanProgress::Started { total_files } => {
+                self.total_count = *total_files;
+                self.current_count = 0;
+                self.error_count = 0;
+                self.current_file = None;
+            }
+            ScanProgress::FileProcessed {
+                current,
+                total,
+                file_name,
+                ..
+            } => {
+                self.current_count = *current;
+                self.total_count = *total;
+                self.current_file = Some(file_name.clone());
+            }
+            ScanProgress::BatchCommitted {
+                total_processed, ..
+            } => {
+                self.current_count = *total_processed;
+            }
+            ScanProgress::Complete {
+                processed, errors, ..
+            } => {
+                self.current_count = *processed;
+                self.error_count = *errors;
+            }
+            ScanProgress::Cancelled { processed, .. } => {
+                self.current_count = *processed;
+            }
         }
-
-        // Report progress (0.3 to 1.0)
-        let file_progress = (index + 1) as f32 / total_files as f32;
-        let total_progress = file_progress.mul_add(0.7, 0.3);
-        progress_callback(total_progress);
+        self.progress = Some(progress);
     }
 
-    log::info!("Scan completed. Processed: {} audiobooks", audiobooks.len());
-    Ok(audiobooks)
+    pub fn set_state(&mut self, state: abop_core::scanner::ScannerState) {
+        self.state = state;
+    }
+}
+
+pub async fn start_scan(db: Database, library: Library) -> Result<()> {
+    let scanner = LibraryScanner::new(db, library);
+    // Note: LibraryScanner doesn't have scan_directory method, using scan_async instead
+    let _result = scanner.scan_async(None).await?;
+    Ok(())
+}
+
+pub async fn cancel_scan(db: Database, library: Library) -> Result<()> {
+    let scanner = LibraryScanner::new(db, library);
+    scanner.cancel_scan();
+    Ok(())
 }

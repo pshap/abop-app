@@ -2,12 +2,20 @@
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use tokio::sync::Mutex;
 
 use crate::styling::material::MaterialTokens;
-use crate::library::ScanProgress;
 use crate::theme::ThemeMode;
-use abop_core::{AppState, PlayerState, models::Audiobook};
+use abop_core::scanner::progress::ScanProgress;
+use abop_core::{
+    models::AppState,
+    scanner::{LibraryScanner, ScannerState},
+};
+
+use abop_core::audio::player::PlayerState;
+use abop_core::models::Audiobook;
 
 // ================================================================================================
 // HELPER FUNCTIONS
@@ -55,7 +63,7 @@ pub struct DirectoryInfo {
 // ================================================================================================
 
 /// GUI-specific wrapper around the centralized `AppState`
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct UiState {
     /// Core application state from abop-core
     pub core_state: AppState,
@@ -99,6 +107,15 @@ pub struct UiState {
     pub material_tokens: MaterialTokens,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
+    /// Current active task if any
+    pub active_task: Option<TaskInfo>,
+    /// List of recent tasks
+    pub recent_tasks: Vec<TaskInfo>,
+    /// Whether to show task history
+    pub show_task_history: bool,
+    pub scanner_state: ScannerState,
+    pub scanner_progress: Option<ScanProgress>,
+    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
 }
 
 impl UiState {
@@ -144,6 +161,12 @@ impl UiState {
                 .collect(),
             audiobooks: core_state.data.audiobooks,
             needs_redraw: false,
+            active_task: None,
+            recent_tasks: Vec::new(),
+            show_task_history: false,
+            scanner_state: ScannerState::Idle,
+            scanner_progress: None,
+            scanner: None,
         }
     }
 
@@ -173,7 +196,6 @@ impl UiState {
             }
         }
     }
-
     /// Create UI state from core state and ensure metadata is synchronized
     #[must_use]
     pub fn from_core_state_synced(core_state: AppState) -> Self {
@@ -201,13 +223,88 @@ impl UiState {
         self.theme_mode = ThemeMode::MaterialDynamic;
         self.material_tokens = MaterialTokens::from_seed_color(seed, is_dark);
     }
+    pub async fn start_scan(&mut self, _path: PathBuf) {
+        if let Some(scanner) = &self.scanner {
+            let scanner = scanner.lock().await;
+            // LibraryScanner doesn't have scan_directory method, using scan instead
+            match scanner.scan() {
+                Ok(_result) => {
+                    self.scanner_state = ScannerState::Complete;
+                }
+                Err(_e) => {
+                    self.scanner_state = ScannerState::Error;
+                }
+            }
+        }
+    }
+
+    pub async fn update_scan_progress(&mut self, progress: ScanProgress) {
+        self.scanner_progress = Some(progress);
+    }
+
+    pub async fn update_scan_state(&mut self, state: ScannerState) {
+        self.scanner_state = state;
+    }
+    pub async fn pause_scan(&mut self) {
+        // LibraryScanner doesn't have pause method - this is a no-op
+        self.scanner_state = ScannerState::Paused;
+    }
+
+    pub async fn resume_scan(&mut self) {
+        // LibraryScanner doesn't have resume method - this is a no-op
+        self.scanner_state = ScannerState::Scanning;
+    }
+
+    pub async fn cancel_scan(&mut self) {
+        if let Some(scanner) = &self.scanner {
+            let scanner = scanner.lock().await;
+            scanner.cancel_scan();
+            self.scanner_state = ScannerState::Cancelled;
+        }
+    }
 }
 
 impl Default for UiState {
     fn default() -> Self {
-        // Try to load persisted AppState, fall back to default if it fails
-        let app_state = AppState::load().unwrap_or_else(|_| AppState::default());
-        Self::from_core_state_synced(app_state)
+        let mut state = Self::from_core_state_synced(AppState::default());
+        state.scanner_state = ScannerState::Idle;
+        state.scanner_progress = None;
+        state.scanner = None;
+        state
+    }
+}
+
+impl std::fmt::Debug for UiState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UiState")
+            .field("core_state", &self.core_state)
+            .field("theme_mode", &self.theme_mode)
+            .field("material_tokens", &self.material_tokens)
+            .field("settings_open", &self.settings_open)
+            .field("recent_directories_open", &self.recent_directories_open)
+            .field("table_state", &self.table_state)
+            .field("selected_audiobooks", &self.selected_audiobooks)
+            .field("scanning", &self.scanning)
+            .field("scan_progress", &self.scan_progress)
+            .field("enhanced_scan_progress", &self.enhanced_scan_progress)
+            .field("saving", &self.saving)
+            .field("save_progress", &self.save_progress)
+            .field("processing_audio", &self.processing_audio)
+            .field("processing_progress", &self.processing_progress)
+            .field("processing_status", &self.processing_status)
+            .field("player_state", &self.player_state)
+            .field("current_playing_file", &self.current_playing_file)
+            .field("library_path", &self.library_path)
+            .field("recent_directories", &self.recent_directories)
+            .field("audiobooks", &self.audiobooks)
+            .field("needs_redraw", &self.needs_redraw)
+            .field("active_task", &self.active_task)
+            .field("recent_tasks", &self.recent_tasks)
+            .field("show_task_history", &self.show_task_history)
+            .field("scanner_state", &self.scanner_state)
+            .field("scanner_progress", &self.scanner_progress)
+            .field("scanner", &"<LibraryScanner>") // Handle non-Debug LibraryScanner
+            .finish()
     }
 }
 
@@ -225,6 +322,65 @@ impl Default for TableState {
         Self {
             sort_column: "title".to_string(),
             sort_ascending: true,
+        }
+    }
+}
+
+/// Information about a task
+#[derive(Debug, Clone)]
+pub struct TaskInfo {
+    /// Unique identifier for the task
+    pub id: String,
+    /// Task type
+    pub task_type: TaskType,
+    /// Current progress (0.0 to 1.0)
+    pub progress: f32,
+    /// Task status message
+    pub status: String,
+    /// Whether the task is currently running
+    pub is_running: bool,
+    /// Whether the task has completed
+    pub is_completed: bool,
+    /// Error message if task failed
+    pub error: Option<String>,
+    /// Start time of the task
+    pub start_time: chrono::DateTime<chrono::Local>,
+    /// End time of the task if completed
+    pub end_time: Option<chrono::DateTime<chrono::Local>>,
+}
+
+/// Types of tasks that can be performed
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TaskType {
+    Scan,
+    Process,
+    Import,
+    Export,
+}
+
+impl std::fmt::Display for TaskType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TaskType::Scan => write!(f, "Scanning"),
+            TaskType::Process => write!(f, "Processing"),
+            TaskType::Import => write!(f, "Importing"),
+            TaskType::Export => write!(f, "Exporting"),
+        }
+    }
+}
+
+impl Default for TaskInfo {
+    fn default() -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            task_type: TaskType::Scan,
+            progress: 0.0,
+            status: "Ready".to_string(),
+            is_running: false,
+            is_completed: false,
+            error: None,
+            start_time: chrono::Local::now(),
+            end_time: None,
         }
     }
 }

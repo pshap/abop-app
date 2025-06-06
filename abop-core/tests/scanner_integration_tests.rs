@@ -7,7 +7,7 @@ use abop_core::{
     audio::AudioFormat,
     db::Database,
     models::{Audiobook, Library},
-    scanner::{LibraryScanner, LibraryScanResult, SUPPORTED_AUDIO_EXTENSIONS},
+    scanner::{LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS},
 };
 // chrono::Utc is not currently used
 use std::fs::File;

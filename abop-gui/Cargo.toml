@@ -12,7 +12,7 @@ repository.workspace = true
 abop-core = { path = "../abop-core" }
 
 # Iced with required features
-iced = { version = "0.13.1", features = [
+iced = { version = ">=0.13.1", features = [
     "canvas",
     "image",
     "svg",
@@ -24,7 +24,7 @@ iced = { version = "0.13.1", features = [
 iced_font_awesome = "0.2.1"
 
 # Color science for Material Design 3 seed colors
-palette = "0.7.6"
+palette = ">=0.7.6"
 
 # File dialogs
 rfd = { workspace = true }
@@ -41,6 +41,7 @@ chrono = { workspace = true }
 uuid = { workspace = true }
 dirs = { workspace = true }
 once_cell = { workspace = true }
+tokio = { workspace = true }
 
 # File System & Database
 rusqlite = { workspace = true }

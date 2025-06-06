@@ -4,7 +4,7 @@ use iced::Length;
 use iced::widget::{column, container};
 
 use crate::components::audio_toolbar::AudioToolbar;
-use crate::components::status::{StatusDisplay, EnhancedStatusDisplayParams};
+use crate::components::status::{EnhancedStatusDisplayParams, StatusDisplay};
 use crate::components::table_core::AudiobookTable;
 use crate::messages::Message;
 use crate::state::UiState;
