@@ -113,8 +113,11 @@ pub struct UiState {
     pub recent_tasks: Vec<TaskInfo>,
     /// Whether to show task history
     pub show_task_history: bool,
+    /// Current state of the library scanner (idle, scanning, paused, etc.)
     pub scanner_state: ScannerState,
+    /// Current progress information for an active scan
     pub scanner_progress: Option<ScanProgress>,
+    /// Active library scanner instance if a scan is in progress
     pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
 }
 
@@ -223,6 +226,14 @@ impl UiState {
         self.theme_mode = ThemeMode::MaterialDynamic;
         self.material_tokens = MaterialTokens::from_seed_color(seed, is_dark);
     }
+
+    /// Starts a new library scan operation
+    ///
+    /// # Arguments
+    ///
+    /// * `_path` - Path to the library directory to scan (currently unused as scanner is pre-configured)
+    ///
+    /// This method will update the scanner state to Complete or Error based on the scan result
     pub async fn start_scan(&mut self, _path: PathBuf) {
         if let Some(scanner) = &self.scanner {
             let scanner = scanner.lock().await;
@@ -238,23 +249,43 @@ impl UiState {
         }
     }
 
+    /// Updates the current scan progress information
+    ///
+    /// # Arguments
+    ///
+    /// * `progress` - New progress information from the scanner
     pub async fn update_scan_progress(&mut self, progress: ScanProgress) {
         self.scanner_progress = Some(progress);
     }
 
+    /// Updates the current scanner state
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - New state for the scanner
     pub async fn update_scan_state(&mut self, state: ScannerState) {
         self.scanner_state = state;
     }
+
+    /// Pauses the current scan operation
+    ///
+    /// Note: This is currently a no-op as the LibraryScanner doesn't support pausing
     pub async fn pause_scan(&mut self) {
         // LibraryScanner doesn't have pause method - this is a no-op
         self.scanner_state = ScannerState::Paused;
     }
 
+    /// Resumes a paused scan operation
+    ///
+    /// Note: This is currently a no-op as the LibraryScanner doesn't support resuming
     pub async fn resume_scan(&mut self) {
         // LibraryScanner doesn't have resume method - this is a no-op
         self.scanner_state = ScannerState::Scanning;
     }
 
+    /// Cancels the current scan operation
+    ///
+    /// This will stop the scanner and update the state to Cancelled
     pub async fn cancel_scan(&mut self) {
         if let Some(scanner) = &self.scanner {
             let scanner = scanner.lock().await;
@@ -349,12 +380,16 @@ pub struct TaskInfo {
     pub end_time: Option<chrono::DateTime<chrono::Local>>,
 }
 
-/// Types of tasks that can be performed
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Types of background tasks that can be performed
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskType {
+    /// Scanning a library directory for audiobooks
     Scan,
+    /// Processing audio files (e.g., extracting metadata)
     Process,
+    /// Importing audiobooks from another source
     Import,
+    /// Exporting audiobooks to another format
     Export,
 }
 

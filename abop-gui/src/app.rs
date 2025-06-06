@@ -34,7 +34,7 @@ impl App {
     }
     /// Static view function to be used with iced's `application()` function
     #[must_use]
-    pub fn view(app: &Self) -> iced::Element<Message> {
+    pub fn view(app: &Self) -> iced::Element<'_, Message> {
         view(&app.state)
     }
     /// Static subscription function to handle keyboard events
@@ -56,7 +56,7 @@ impl App {
     }
     /// Instance method for rendering UI
     #[must_use]
-    pub fn render(&self) -> iced::Element<Message> {
+    pub fn render(&self) -> iced::Element<'_, Message> {
         view(&self.state)
     }
 }

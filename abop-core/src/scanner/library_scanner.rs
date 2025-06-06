@@ -36,18 +36,28 @@ pub const SUPPORTED_AUDIO_EXTENSIONS: &[&str] = &["mp3", "m4a", "m4b", "flac", "
 #[derive(Debug, Clone)]
 pub enum ScanProgressUpdate {
     /// Scanning started with total file count
-    Started { total_files: usize },
+    Started {
+        /// Total number of files that will be processed in this scan
+        total_files: usize,
+    },
     /// Individual file processed
     FileProcessed {
+        /// Current file number being processed (1-based index)
         current: usize,
+        /// Total number of files to process
         total: usize,
+        /// Name of the file currently being processed
         file_name: String,
+        /// Overall progress percentage (0.0 to 100.0)
         progress_percentage: f32,
     },
     /// Scanning completed
     Complete {
+        /// Number of files successfully processed
         processed: usize,
+        /// Number of files that encountered errors during processing
         errors: usize,
+        /// Total duration of the scan operation
         duration: std::time::Duration,
     },
 }

@@ -17,7 +17,6 @@ use crate::messages::Message;
 
 /// Progress callback type for scanning operations
 
-
 /// Result of a library scan operation including timing information
 #[derive(Debug, Clone)]
 pub struct ScanResult {
@@ -165,14 +164,22 @@ pub fn scan_library_with_enhanced_progress(
     )
 }
 
-
-
+/// Progress tracking and display for library scanning operations
+///
+/// This struct maintains the current state of a library scan operation and provides
+/// methods to update the progress and render a UI representation of the scan status.
 pub struct ScannerProgress {
+    /// Most recent progress event from the scanner
     progress: Option<ScanProgress>,
+    /// Current state of the scanner (idle, scanning, etc.)
     state: abop_core::scanner::ScannerState,
+    /// Number of files processed so far
     current_count: usize,
+    /// Total number of files to process
     total_count: usize,
+    /// Name of the file currently being processed
     current_file: Option<String>,
+    /// Number of errors encountered during scanning
     error_count: usize,
 }
 
@@ -190,11 +197,24 @@ impl Default for ScannerProgress {
 }
 
 impl ScannerProgress {
+    /// Creates a new scanner progress tracker in its default state
+    ///
+    /// # Returns
+    ///
+    /// A new ScannerProgress instance with all counters initialized to zero
+    /// and the scanner in the Idle state
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn view(&self) -> Element<Message> {
+    /// Renders the current scan progress as a UI element
+    ///
+    /// # Returns
+    ///
+    /// An iced Element containing a progress bar and status information
+    /// about the current scan operation. Returns an empty column if the
+    /// scanner is idle.
+    pub fn view(&self) -> Element<'_, Message> {
         match self.state {
             abop_core::scanner::ScannerState::Idle => column![].into(),
             _ => {
@@ -228,6 +248,12 @@ impl ScannerProgress {
             }
         }
     }
+
+    /// Updates the progress state with a new progress event
+    ///
+    /// # Arguments
+    ///
+    /// * `progress` - New progress event from the scanner
     pub fn update(&mut self, progress: ScanProgress) {
         match &progress {
             ScanProgress::Started { total_files } => {
@@ -264,11 +290,26 @@ impl ScannerProgress {
         self.progress = Some(progress);
     }
 
+    /// Updates the scanner state
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - New state for the scanner
     pub fn set_state(&mut self, state: abop_core::scanner::ScannerState) {
         self.state = state;
     }
 }
 
+/// Starts a new library scan operation
+///
+/// # Arguments
+///
+/// * `db` - Database connection to use for storing scan results
+/// * `library` - Library configuration for the scan
+///
+/// # Returns
+///
+/// A Result indicating success or failure of the scan operation
 pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
     // Note: LibraryScanner doesn't have scan_directory method, using scan_async instead
@@ -276,6 +317,16 @@ pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     Ok(())
 }
 
+/// Cancels an ongoing library scan operation
+///
+/// # Arguments
+///
+/// * `db` - Database connection used by the scanner
+/// * `library` - Library being scanned
+///
+/// # Returns
+///
+/// A Result indicating success or failure of the cancellation
 pub async fn cancel_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
     scanner.cancel_scan();
