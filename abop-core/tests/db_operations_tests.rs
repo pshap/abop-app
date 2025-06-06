@@ -11,7 +11,7 @@ mod db_operations_tests {
     use r2d2::Pool;
     use r2d2_sqlite::SqliteConnectionManager;
     use rusqlite::{Connection, params};
-    use serde_json;
+
     use std::fs;
     use std::thread;
     use tempfile::tempdir;
@@ -51,7 +51,7 @@ mod db_operations_tests {
         assert_eq!(loaded.author, ab.author);
         assert_eq!(loaded.duration_seconds, ab.duration_seconds);
         assert_eq!(loaded.path, ab.path);
-        assert_eq!(loaded.selected, false);
+        assert!(!loaded.selected);
     }
     #[test]
     fn test_save_multiple_audiobooks() {
@@ -318,11 +318,8 @@ mod db_operations_tests {
                 let pool = pool.clone();
                 thread::spawn(move || {
                     let conn = pool.get().unwrap();
-                    conn.execute(
-                        "INSERT INTO test (value) VALUES (?1)",
-                        [format!("val{}", i)],
-                    )
-                    .unwrap();
+                    conn.execute("INSERT INTO test (value) VALUES (?1)", [format!("val{i}")])
+                        .unwrap();
                 })
             })
             .collect();

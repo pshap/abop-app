@@ -2,8 +2,8 @@
 
 use iced::Task;
 
-use crate::library::open_directory_dialog;
-use crate::messages::{Command, Message};
+use crate::library::{open_directory_dialog, scan_library};
+use crate::messages::{Command as GuiCommand, Message};
 use crate::state::{DirectoryInfo, UiState};
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -33,9 +33,9 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 
 /// Handles library-related commands
 #[must_use]
-pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<Task<Message>> {
+pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
-        Command::ScanLibrary { library_path } => {
+        GuiCommand::ScanLibrary { library_path } => {
             use abop_core::db::Database;
             use std::fs;
             use std::path::PathBuf;
@@ -60,66 +60,60 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
             }
             let db_path = data_dir.join("library.db");
 
-            // Open DB and look up or create Library synchronously
-            let db = match Database::open(&db_path) {
-                Ok(db) => db,
-                Err(e) => {
-                    return Some(Task::perform(
-                        async move { Err(e.to_string()) },
-                        Message::ScanComplete,
-                    ));
-                }
-            };
-            let library = match db.libraries().find_by_name("Default Library") {
-                Ok(Some(lib)) => lib,
-                Ok(None) => match db.add_library("Default Library", &library_path) {
-                    Ok(lib) => lib,
-                    Err(e) => {
-                        return Some(Task::perform(
-                            async move { Err(e.to_string()) },
-                            Message::ScanComplete,
-                        ));
+            // Move all DB operations into the async task
+            Some(Task::perform(
+                async move {
+                    // Open DB asynchronously
+                    let db =
+                        match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
+                            Ok(Ok(db)) => db,
+                            Ok(Err(e)) => return Err(e.to_string()),
+                            Err(e) => return Err(format!("Failed to open database: {e}")),
+                        };
+
+                    // Look up or create library asynchronously
+                    let library = match tokio::task::spawn_blocking({
+                        let db = db.clone();
+                        move || db.libraries().find_by_name("Default Library")
+                    })
+                    .await
+                    {
+                        Ok(Ok(Some(lib))) => lib,
+                        Ok(Ok(None)) => {
+                            match tokio::task::spawn_blocking({
+                                let db = db.clone();
+                                let path = library_path.clone();
+                                move || db.add_library("Default Library", &path)
+                            })
+                            .await
+                            {
+                                Ok(Ok(lib)) => lib,
+                                Ok(Err(e)) => return Err(e.to_string()),
+                                Err(e) => return Err(format!("Failed to create library: {e}")),
+                            }
+                        }
+                        Ok(Err(e)) => return Err(e.to_string()),
+                        Err(e) => return Err(format!("Failed to find library: {e}")),
+                    };
+
+                    // Use our new unified scanning interface
+                    let scan_result = scan_library(db, library).await;
+                    match scan_result {
+                        Ok(result) => Ok(result),
+                        Err(e) => Err(e.to_string()),
                     }
                 },
-                Err(e) => {
-                    return Some(Task::perform(
-                        async move { Err(e.to_string()) },
-                        Message::ScanComplete,
-                    ));
-                }
-            };
-
-            // Create progress-enabled scanner and launch scan with progress reporting
-            let scanner = abop_core::scanner::LibraryScanner::new(db, library);
-            let audio_files = scanner.find_audio_files();
-
-            // Create a Task that emits progress updates and final result
-            Some(
-                scanner
-                    .scan_with_tasks_and_progress(audio_files, |_progress| {
-                        // This will be handled via message subscription pattern
-                        // The actual progress updates will be sent through a channel
-                    })
-                    .map(|core_result| {
-                        // Convert abop_core::scanner::ScanResult to crate::library::ScanResult
-                        let gui_result = crate::library::ScanResult {
-                            audiobooks: core_result.audiobooks,
-                            scan_duration: core_result.scan_duration,
-                            processed_count: core_result.processed_count,
-                            error_count: core_result.error_count,
-                        };
-                        Message::ScanComplete(Ok(gui_result))
-                    }),
-            )
+                Message::ScanComplete,
+            ))
         }
-        Command::BrowseDirectory => {
+        GuiCommand::BrowseDirectory => {
             log::info!("Executing BrowseDirectory command");
             Some(Task::perform(
                 open_directory_dialog(),
                 Message::DirectorySelected,
             ))
         }
-        Command::QuickScanDirectory { directory_path } => {
+        GuiCommand::QuickScanDirectory { directory_path } => {
             log::info!(
                 "Executing QuickScanDirectory command for path: {}",
                 directory_path.display()

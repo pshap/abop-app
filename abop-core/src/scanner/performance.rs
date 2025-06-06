@@ -6,6 +6,12 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 
+/// Type alias for operation timing data
+type OperationTimings = Vec<(OperationType, Duration)>;
+
+/// Type alias for thread-safe operation timing storage
+type SharedOperationTimings = Arc<Mutex<HashMap<String, OperationTimings>>>;
+
 /// Performance metrics for scanner operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PerformanceMetrics {
@@ -62,7 +68,7 @@ pub enum OperationType {
 pub struct PerformanceMonitor {
     start_time: Instant,
     metrics: Arc<Mutex<PerformanceMetrics>>,
-    operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+    operation_times: SharedOperationTimings,
     slowest_threshold: Duration,
 }
 
@@ -234,7 +240,7 @@ pub struct OperationTimer {
     file_path: String,
     operation_type: OperationType,
     start_time: Instant,
-    operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+    operation_times: SharedOperationTimings,
     slowest_threshold: Duration,
 }
 
@@ -242,7 +248,7 @@ impl OperationTimer {
     fn new(
         file_path: String,
         operation_type: OperationType,
-        operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+        operation_times: SharedOperationTimings,
         slowest_threshold: Duration,
     ) -> Self {
         Self {

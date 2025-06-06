@@ -37,7 +37,7 @@ fn bench_resampler(c: &mut Criterion) {
 
         // Benchmark using the public API
         group.bench_function(
-            format!("public_api_{}Hz_to_{}Hz_{}ch", src_rate, dst_rate, channels),
+            format!("public_api_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"),
             |b| {
                 let mut resampler = LinearResampler::with_target_rate(*dst_rate).unwrap();
                 b.iter(|| {
@@ -51,7 +51,7 @@ fn bench_resampler(c: &mut Criterion) {
         // Benchmark scalar implementation directly (for comparison)
         group.bench_function(
             format!(
-                "direct_scalar_{}Hz_to_{}Hz_{}ch", src_rate, dst_rate, channels
+                "direct_scalar_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"
             ),
             |b| {
                 b.iter(|| {

@@ -8,11 +8,11 @@ pub mod library;
 
 use iced::Task;
 
-use crate::messages::{Command, Message};
+use crate::messages::{Command as GuiCommand, Message};
 use crate::state::UiState;
 
 /// Routes commands to appropriate specialized handlers
-pub fn handle_command(state: &mut UiState, command: Command) -> Task<Message> {
+pub fn handle_command(state: &mut UiState, command: GuiCommand) -> Task<Message> {
     // Try audio commands first
     if let Some(task) = audio::handle_audio_command(state, command.clone()) {
         return task;

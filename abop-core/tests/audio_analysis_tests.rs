@@ -46,8 +46,7 @@ mod audio_analysis_tests {
                 // But be very lenient with the check since it's not critical for this test
                 assert!(
                     duration > 0.5 && duration < 10.0,
-                    "Duration {} is not within expected range (0.5-10.0)",
-                    duration
+                    "Duration {duration} is not within expected range (0.5-10.0)"
                 );
             } else {
                 // It's okay if duration is not set, as it's not always available

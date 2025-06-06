@@ -7,7 +7,7 @@ use crate::theme::ThemeMode;
 use iced::{Background, Border, Color, Shadow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock, PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// Plugin trait for style extensions
 pub trait StylePlugin: Send + Sync {
@@ -168,7 +168,8 @@ impl StylePluginRegistry {
             return Err(StylePluginError::ApiVersionMismatch {
                 expected: "1.0".to_string(),
                 actual: info.api_version,
-            }.into());
+            }
+            .into());
         }
 
         let mut plugins = self.plugins.write()?;

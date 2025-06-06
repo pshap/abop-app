@@ -15,7 +15,6 @@ simd = []  # Enable SIMD optimizations where available
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "doc_cfg"]
 
-
 [dependencies]
 # Workspace dependencies
 thiserror.workspace = true
@@ -27,10 +26,21 @@ chrono.workspace = true
 uuid.workspace = true
 once_cell.workspace = true
 
+# Common dependencies
+bitflags.workspace = true
+cfg_aliases.workspace = true
+fontdb.workspace = true
+getrandom.workspace = true
+hashbrown.workspace = true
+kurbo.workspace = true
+libloading.workspace = true
+
 # File System & Database
 dirs.workspace = true
 walkdir.workspace = true
 rusqlite.workspace = true
+r2d2.workspace = true
+r2d2_sqlite.workspace = true
 
 # Audio Processing
 symphonia.workspace = true
@@ -39,21 +49,19 @@ num-complex.workspace = true
 hound.workspace = true
 rayon.workspace = true
 bytemuck.workspace = true
-rand = "0.9.1"
+rand.workspace = true
 serde_json.workspace = true
-r2d2 = "0.8.10"
-r2d2_sqlite = "^0.29.0"
 
 # Async
 iced = { version = "0.13.1", features = ["tokio", "advanced"] }
-tokio = { version = "1.37", features = ["full"] }
-futures = "0.3"
-async-trait = "0.1"
-humantime-serde = "1.1"
-tokio-util = "0.7"
-tokio-stream = "0.1"
+tokio.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+humantime-serde.workspace = true
+tokio-util.workspace = true
+tokio-stream.workspace = true
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-tempfile = "3.8"
+tempfile.workspace = true
 approx = "0.5.1"  # For floating-point comparisons in tests

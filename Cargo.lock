@@ -33,14 +33,21 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "async-trait",
+ "bitflags 2.9.1",
  "bytemuck",
+ "cfg_aliases 0.2.1",
  "chrono",
  "criterion",
  "dirs 5.0.1",
+ "fontdb 0.18.0",
  "futures",
+ "getrandom 0.3.3",
+ "hashbrown 0.15.3",
  "hound",
  "humantime-serde",
  "iced",
+ "kurbo 0.11.2",
+ "libloading 0.8.8",
  "log",
  "num-complex",
  "once_cell",
@@ -1946,6 +1953,8 @@ version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84b26c544d002229e640969970a2e74021aadf6e2f96372b9c58eff97de08eb3"
 dependencies = [
+ "allocator-api2",
+ "equivalent",
  "foldhash",
 ]
 
@@ -4310,9 +4319,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.15.0"
+version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8917285742e9f3e1683f0a9c4e6b57960b7314d0b08d30d1ecd426713ee2eee9"
+checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "smithay-client-toolkit"

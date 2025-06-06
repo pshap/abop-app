@@ -46,7 +46,7 @@ mod tests {
 
         // Test tint opacity
         let opacity = tokens.elevation_tint_opacity(3);
-        assert!(opacity >= 0.0 && opacity <= 1.0); // Should be normalized between 0 and 1
+        assert!((0.0..=1.0).contains(&opacity)); // Should be normalized between 0 and 1
     }
 
     #[test]

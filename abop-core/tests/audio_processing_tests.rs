@@ -24,7 +24,7 @@ fn test_audio_processing_pipeline_creation() {
     // Verify the pipeline was created successfully
     match result {
         Ok(_pipeline) => { /* Test passed */ }
-        Err(e) => panic!("Pipeline creation failed: {:?}", e),
+        Err(e) => panic!("Pipeline creation failed: {e:?}"),
     }
 }
 
@@ -49,7 +49,7 @@ fn test_audio_processing_error_handling() {
         }
         Err(e) => {
             // Accept other error types for now since the validation might be different
-            println!("Got error: {:?}", e);
+            println!("Got error: {e:?}");
         }
     }
 }
@@ -91,6 +91,6 @@ fn test_processing_config_defaults() {
     let result = AudioProcessingPipeline::new(config);
     match result {
         Ok(_) => { /* Test passed */ }
-        Err(e) => panic!("Default config should be valid: {:?}", e),
+        Err(e) => panic!("Default config should be valid: {e:?}"),
     }
 }

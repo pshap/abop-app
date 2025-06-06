@@ -381,17 +381,17 @@ mod tests {
 
         // Print the curve values for debugging
         println!("Standard Easing Curve Values:");
-        println!("t=0.0 -> {}", t0);
-        println!("t=0.1 -> {}", t1);
-        println!("t=0.2 -> {}", t2);
-        println!("t=0.3 -> {}", t3);
-        println!("t=0.4 -> {}", t4);
-        println!("t=0.5 -> {}", t5);
-        println!("t=0.6 -> {}", t6);
-        println!("t=0.7 -> {}", t7);
-        println!("t=0.8 -> {}", t8);
-        println!("t=0.9 -> {}", t9);
-        println!("t=1.0 -> {}", t10);
+        println!("t=0.0 -> {t0}");
+        println!("t=0.1 -> {t1}");
+        println!("t=0.2 -> {t2}");
+        println!("t=0.3 -> {t3}");
+        println!("t=0.4 -> {t4}");
+        println!("t=0.5 -> {t5}");
+        println!("t=0.6 -> {t6}");
+        println!("t=0.7 -> {t7}");
+        println!("t=0.8 -> {t8}");
+        println!("t=0.9 -> {t9}");
+        println!("t=1.0 -> {t10}");
 
         // Verify the curve starts at 0 and ends at 1
         assert_eq!(t0, 0.0, "Curve should start at 0.0");

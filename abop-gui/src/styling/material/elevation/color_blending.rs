@@ -147,10 +147,7 @@ mod tests {
         let dist1 = color_distance(base, level1);
         let dist5 = color_distance(base, level5);
 
-        println!(
-            "Distance from base - Level 1: {:.6}, Level 5: {:.6}",
-            dist1, dist5
-        );
+        println!("Distance from base - Level 1: {dist1:.6}, Level 5: {dist5:.6}");
 
         // Higher elevation should be further from the base color (more tinted)
         assert!(

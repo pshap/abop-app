@@ -6,13 +6,11 @@
 use crate::db::error::{DatabaseError, DbResult};
 use crate::db::health::HealthMonitor;
 use crate::db::retry::{RetryExecutor, RetryPolicy};
-use crate::db::statistics::{ConnectionStats, StatisticsCollector, StatisticsError, StatisticsResult};
+use crate::db::statistics::{ConnectionStats, StatisticsCollector};
 use rusqlite::{Connection, OpenFlags};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use chrono::{DateTime, Utc};
-use log::{debug, error, info, warn};
+use std::time::Instant;
 
 /// Configuration for enhanced connection management
 #[derive(Debug, Clone)]
@@ -107,17 +105,26 @@ impl EnhancedConnection {
         match result {
             Ok(()) => {
                 self.health_monitor.set_healthy();
-                self.stats_collector.record_connection()
-                    .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record connection: {e}")))?;
-                self.stats_collector.record_success(start_time.elapsed())
-                    .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record success: {e}")))?;
+                self.stats_collector.record_connection().map_err(|e| {
+                    DatabaseError::ConnectionFailed(format!("Failed to record connection: {e}"))
+                })?;
+                self.stats_collector
+                    .record_success(start_time.elapsed())
+                    .map_err(|e| {
+                        DatabaseError::ConnectionFailed(format!("Failed to record success: {e}"))
+                    })?;
                 log::info!("Database connection established successfully");
                 Ok(())
             }
             Err(e) => {
                 self.health_monitor.set_failed();
-                self.stats_collector.record_failure(start_time.elapsed())
-                    .map_err(|stats_err| DatabaseError::ConnectionFailed(format!("Failed to record failure: {stats_err}")))?;
+                self.stats_collector
+                    .record_failure(start_time.elapsed())
+                    .map_err(|stats_err| {
+                        DatabaseError::ConnectionFailed(format!(
+                            "Failed to record failure: {stats_err}"
+                        ))
+                    })?;
                 log::error!("Failed to establish database connection: {e}");
                 Err(e)
             }
@@ -140,7 +147,7 @@ impl EnhancedConnection {
                     },
                 ),
                 Err(e) => {
-                    self.stats_collector.record_reconnection_attempt();
+                    let _ = self.stats_collector.record_reconnection_attempt();
                     Err(e)
                 }
             })
@@ -230,10 +237,18 @@ impl EnhancedConnection {
         });
 
         match &result {
-            Ok(_) => self.stats_collector.record_success(start_time.elapsed())
-                .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record success: {e}")))?,
-            Err(_) => self.stats_collector.record_failure(start_time.elapsed())
-                .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record failure: {e}")))?,
+            Ok(_) => self
+                .stats_collector
+                .record_success(start_time.elapsed())
+                .map_err(|e| {
+                    DatabaseError::ConnectionFailed(format!("Failed to record success: {e}"))
+                })?,
+            Err(_) => self
+                .stats_collector
+                .record_failure(start_time.elapsed())
+                .map_err(|e| {
+                    DatabaseError::ConnectionFailed(format!("Failed to record failure: {e}"))
+                })?,
         }
 
         result
@@ -246,9 +261,9 @@ impl EnhancedConnection {
     /// Returns a database error if:
     /// - Failed to acquire statistics lock
     /// - Failed to read connection timestamp
-    #[must_use]
     pub fn stats(&self) -> DbResult<ConnectionStats> {
-        self.stats_collector.get_stats()
+        self.stats_collector
+            .get_stats()
             .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to get statistics: {e}")))
     }
 
@@ -307,11 +322,6 @@ impl EnhancedConnection {
         log::info!("Database connection closed successfully");
         Ok(())
     }
-
-    fn record_connection(&self) -> DbResult<()> {
-        self.stats_collector.record_connection()
-            .map_err(|e| DatabaseError::ConnectionFailed(format!("Failed to record connection: {e}")))
-    }
 }
 
 impl Clone for EnhancedConnection {
@@ -360,15 +370,14 @@ mod tests {
 
         conn.connect()?;
 
-        let result = conn
-            .with_connection(|db_conn| {
-                db_conn
-                    .execute("CREATE TABLE test (id INTEGER PRIMARY KEY)", [])
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("CREATE TABLE test failed: {e}"),
-                    })?;
-                Ok(42)
-            })?;
+        let result = conn.with_connection(|db_conn| {
+            db_conn
+                .execute("CREATE TABLE test (id INTEGER PRIMARY KEY)", [])
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("CREATE TABLE test failed: {e}"),
+                })?;
+            Ok(42)
+        })?;
 
         assert_eq!(result, 42);
         let stats = conn.stats()?;
