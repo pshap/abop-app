@@ -10,7 +10,7 @@ use crate::db::statistics::{ConnectionStats, StatisticsCollector};
 use rusqlite::{Connection, OpenFlags};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Configuration for enhanced connection management
 #[derive(Debug, Clone)]
@@ -77,7 +77,7 @@ impl EnhancedConnection {
             connection: Arc::new(Mutex::new(None)),
             config,
             stats_collector: StatisticsCollector::new(),
-            health_monitor: Arc::new(HealthMonitor::new()),
+            health_monitor: Arc::new(HealthMonitor::new(Duration::from_secs(30))),
             retry_executor,
         }
     }
@@ -139,21 +139,21 @@ impl EnhancedConnection {
             self.config.path.display()
         );
 
-        self.health_monitor.set_connecting();
+        let _ = self.health_monitor.set_connecting();
 
         let start_time = Instant::now();
         let result = self.try_connect();
 
         match result {
             Ok(()) => {
-                self.health_monitor.set_healthy();
+                let _ = self.health_monitor.set_healthy();
                 self.stats_collector.record_connection();
                 self.stats_collector.record_success(start_time.elapsed());
                 log::info!("Database connection established successfully");
                 Ok(())
             }
             Err(e) => {
-                self.health_monitor.set_failed();
+                let _ = self.health_monitor.set_failed();
                 self.stats_collector.record_failure(start_time.elapsed());
                 log::error!("Failed to establish database connection: {e}");
                 Err(e)
@@ -257,6 +257,16 @@ impl EnhancedConnection {
     #[must_use]
     pub fn get_retry_policy(&self) -> RetryPolicy {
         self.config.retry_policy.clone()
+    }
+
+    /// Get the raw database connection
+    pub fn get_raw_connection(&self) -> DbResult<Connection> {
+        let mut conn = self.connection.lock().map_err(|_| {
+            DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
+        })?;
+        conn.take().ok_or_else(|| {
+            DatabaseError::ConnectionFailed("No active database connection".to_string())
+        })
     }
 }
 

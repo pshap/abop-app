@@ -164,14 +164,14 @@ impl StateValidator {
         }
 
         // Basic field validation
-        if let Some(ref title) = audiobook.title
-            && title.trim().is_empty()
-        {
-            result.add_issue(
-                ValidationError::warning("audiobook", "Audiobook title is empty")
-                    .with_file_path(audiobook.path.clone())
-                    .with_field("title"),
-            );
+        if let Some(ref title) = audiobook.title {
+            if title.trim().is_empty() {
+                result.add_issue(
+                    ValidationError::warning("audiobook", "Audiobook title is empty")
+                        .with_file_path(audiobook.path.clone())
+                        .with_field("title"),
+                );
+            }
         }
 
         // Duration validation
@@ -197,16 +197,17 @@ impl StateValidator {
         }
 
         // File size validation
-        if let Some(size) = audiobook.size_bytes
-            && let Some(max_size) = self.config.max_file_size
-            && size > max_size
-        {
-            result.add_issue(
-                ValidationError::warning("audiobook", "Audiobook file size exceeds maximum")
-                    .with_file_path(audiobook.path.clone())
-                    .with_field("size_bytes")
-                    .with_suggestion("Consider compressing the audio file"),
-            );
+        if let Some(size) = audiobook.size_bytes {
+            if let Some(max_size) = self.config.max_file_size {
+                if size > max_size {
+                    result.add_issue(
+                        ValidationError::warning("audiobook", "Audiobook file size exceeds maximum")
+                            .with_file_path(audiobook.path.clone())
+                            .with_field("size_bytes")
+                            .with_suggestion("Consider compressing the audio file"),
+                    );
+                }
+            }
         }
     }
 
@@ -233,14 +234,16 @@ impl StateValidator {
         if let Some(audiobook) = audiobooks
             .iter()
             .find(|book| book.id == progress.audiobook_id)
-            && let Some(duration) = audiobook.duration_seconds
-            && progress.position_seconds > duration
         {
-            result.add_issue(
-                ValidationError::error("progress", "Progress position exceeds audiobook duration")
-                    .with_field("position_seconds")
-                    .with_suggestion("Reset progress position to valid range"),
-            );
+            if let Some(duration) = audiobook.duration_seconds {
+                if progress.position_seconds > duration {
+                    result.add_issue(
+                        ValidationError::error("progress", "Progress position exceeds audiobook duration")
+                            .with_field("position_seconds")
+                            .with_suggestion("Reset progress position to valid range"),
+                    );
+                }
+            }
         }
     }
 

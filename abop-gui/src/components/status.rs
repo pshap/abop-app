@@ -1,16 +1,19 @@
 use iced::Element;
 use iced::Length;
-use iced::widget::{column, container, text, row};
+use iced::widget::{column, container, text, row, button};
 use std::path::PathBuf;
 
+use abop_core::{
+    PlayerState,
+    scanner::{ScannerState, ScanProgress},
+};
 
-use abop_core::PlayerState;
-use crate::library::ScanProgress;
-
-use crate::components::common::create_progress_indicator;
-use crate::messages::Message;
-use crate::styling::material::MaterialTokens;
-use crate::theme::ThemeMode;
+use crate::{
+    components::common::create_progress_indicator,
+    messages::Message,
+    styling::material::MaterialTokens,
+    theme::ThemeMode,
+};
 
 /// Parameters for the status display view
 #[derive(Debug, Clone)]
@@ -40,10 +43,10 @@ pub struct StatusDisplayParams<'a> {
 /// Parameters for the enhanced status display view
 #[derive(Debug, Clone)]
 pub struct EnhancedStatusDisplayParams<'a> {
-    /// Whether the library is being scanned
-    pub scanning: bool,
-    /// Enhanced scan progress information
-    pub scan_progress: Option<ScanProgress>,
+    /// Current scan progress
+    pub scan_progress: Option<&'a ScanProgress>,
+    /// Current scanner state
+    pub scanner_state: ScannerState,
     /// Whether audio is being processed
     pub processing_audio: bool,
     /// Progress of audio processing
@@ -126,101 +129,71 @@ impl StatusDisplay {
         status_column.spacing(tokens.spacing().md as u16).into()
     }
 
+    /// Enhanced status display with detailed progress information
+    #[must_use]
+    pub fn enhanced_view<'a>(
+        progress: &Option<ScanProgress>,
+        theme_mode: &ThemeMode,
+    ) -> Element<'a, Message> {
+        let content = if let Some(progress) = progress {
+            match progress {
+                ScanProgress::Started { total_files } => {
+                    column![
+                        text("Starting scan...").size(16),
+                        text(format!("Found {} files to process", total_files)).size(14),
+                    ]
+                }
+                ScanProgress::FileProcessed { current, total, file_name, progress_percentage } => {
+                    column![
+                        text("Scanning files...").size(16),
+                        text(format!("Processing: {}", file_name)).size(14),
+                        text(format!("Progress: {}/{} files ({}%)", current, total, (progress_percentage * 100.0) as u32)).size(14),
+                    ]
+                }
+                ScanProgress::BatchCommitted { count, total_processed } => {
+                    column![
+                        text("Committing batch...").size(16),
+                        text(format!("Processed {} files in current batch", count)).size(14),
+                        text(format!("Total processed: {}", total_processed)).size(14),
+                    ]
+                }
+                ScanProgress::Complete { processed, errors, duration } => {
+                    column![
+                        text("Scan complete!").size(16),
+                        text(format!("Processed {} files", processed)).size(14),
+                        text(format!("Errors: {}", errors)).size(14),
+                        text(format!("Duration: {:.2}s", duration.as_secs_f32())).size(14),
+                    ]
+                }
+                ScanProgress::Cancelled { processed, duration } => {
+                    column![
+                        text("Scan cancelled").size(16),
+                        text(format!("Processed {} files", processed)).size(14),
+                        text(format!("Duration: {:.2}s", duration.as_secs_f32())).size(14),
+                    ]
+                }
+            }
+        } else {
+            column![]
+        };
+
+        container(content)
+            .width(Length::Fill)
+            .padding(20)
+            .style(|theme| containers::container_style(theme, *theme_mode))
+            .into()
+    }
+
     /// Creates a footer bar for displaying the total audiobooks available
     #[must_use]
     pub fn app_footer<'a>(total_count: usize, _theme: ThemeMode) -> Element<'a, Message> {
         let footer_text = format!("{total_count} audiobooks available");
 
-        // Create a simple container with the footer text
         container(text(footer_text).size(14))
             .align_x(iced::alignment::Horizontal::Center)
             .align_y(iced::alignment::Vertical::Center)
             .width(Length::Fill)
-            .height(Length::Fixed(36.0)) // Fixed height for the footer
+            .height(Length::Fixed(36.0))
             .into()
-    }
-
-    /// Enhanced status display with detailed progress information and ETA
-    #[must_use]
-    pub fn enhanced_view<'a>(
-        params: EnhancedStatusDisplayParams<'a>,
-        tokens: &MaterialTokens,
-    ) -> Element<'a, Message> {
-        let mut status_column = column![];
-
-        // Show enhanced scanning progress if active
-        if params.scanning {
-            if let Some(progress) = &params.scan_progress {
-                let progress_text = if let Some(current_file) = &progress.current_file {
-                    format!(
-                        "Scanning: {} ({}/{}) - {:.1} files/sec",
-                        current_file
-                            .split(std::path::MAIN_SEPARATOR)
-                            .last()
-                            .unwrap_or(current_file),
-                        progress.processed,
-                        progress.total,
-                        progress.throughput
-                    )
-                } else {
-                    format!(
-                        "Scanning library... ({}/{}) - {:.1} files/sec",
-                        progress.processed,
-                        progress.total,
-                        progress.throughput
-                    )
-                };
-
-                let eta_text = if let Some(eta) = progress.eta {
-                    if eta.as_secs() > 0 {
-                        format!(" - ETA: {}s", eta.as_secs())
-                    } else {
-                        String::new()
-                    }
-                } else {
-                    String::new()
-                };
-
-                let full_text = format!("{}{}", progress_text, eta_text);
-
-                status_column = status_column.push(
-                    column![
-                        create_progress_indicator(
-                            Some(progress.progress_percentage),
-                            &full_text,
-                            params.theme,
-                            tokens,
-                        ),
-                        row![
-                            text(format!("Progress: {:.1}%", progress.progress_percentage * 100.0))
-                                .size(12),
-                            text(format!("Throughput: {:.1} files/sec", progress.throughput))
-                                .size(12),
-                        ]
-                        .spacing(tokens.spacing().md as u16)
-                    ]
-                    .spacing(tokens.spacing().sm as u16)
-                );
-            } else {
-                status_column = status_column.push(create_progress_indicator(
-                    None,
-                    "Scanning library...",
-                    params.theme,
-                    tokens,
-                ));
-            }
-        }
-
-        // Show audio processing progress if active
-        if params.processing_audio {
-            status_column = status_column.push(create_progress_indicator(
-                params.processing_progress,
-                params.processing_status.unwrap_or("Processing audio..."),
-                params.theme,
-                tokens,
-            ));
-        }
-
-        status_column.spacing(tokens.spacing().md as u16).into()
     }
 }

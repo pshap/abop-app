@@ -33,7 +33,7 @@ pub enum DatabaseError {
     },
 
     /// Record not found in the database.
-    #[error("Record not found: {entity} with id '{id}'")]
+    #[error("Record not found: {entity} with id {id}")]
     RecordNotFound {
         /// Entity type (e.g., table name) for the missing record.
         entity: String,
@@ -49,7 +49,7 @@ pub enum DatabaseError {
     },
 
     /// Data validation failed for a field.
-    #[error("Data validation failed: {field} - {message}")]
+    #[error("Validation failed for field {field}: {message}")]
     ValidationFailed {
         /// Name of the field that failed validation.
         field: String,
@@ -58,7 +58,7 @@ pub enum DatabaseError {
     },
 
     /// Duplicate entry detected in the database.
-    #[error("Duplicate entry: {entity} with {field} '{value}' already exists")]
+    #[error("Duplicate entry: {entity} with {field} = {value}")]
     DuplicateEntry {
         /// Entity type for the duplicate entry.
         entity: String,
@@ -102,6 +102,20 @@ pub enum DatabaseError {
     /// Query execution failed.
     #[error("Query failed: {0}")]
     Query(String),
+
+    /// Connection error.
+    #[error("Connection error: {message}")]
+    ConnectionError {
+        /// Error message describing the connection failure.
+        message: String,
+    },
+
+    /// Internal error.
+    #[error("Internal error: {message}")]
+    Internal {
+        /// Error message describing the internal failure.
+        message: String,
+    },
 }
 
 /// Convenient Result type for database operations
@@ -161,6 +175,22 @@ impl DatabaseError {
             message: message.to_string(),
         }
     }
+
+    /// Create a `ConnectionError` error
+    #[must_use]
+    pub fn connection_error(message: &str) -> Self {
+        Self::ConnectionError {
+            message: message.to_string(),
+        }
+    }
+
+    /// Create an `Internal` error
+    #[must_use]
+    pub fn internal(message: &str) -> Self {
+        Self::Internal {
+            message: message.to_string(),
+        }
+    }
 }
 
 // Integration with existing AppError
@@ -188,13 +218,13 @@ mod tests {
         let error = DatabaseError::validation_failed("title", "cannot be empty");
         assert_eq!(
             error.to_string(),
-            "Data validation failed: title - cannot be empty"
+            "Validation failed for field title: cannot be empty"
         );
 
         let error = DatabaseError::duplicate_entry("Library", "name", "My Library");
         assert_eq!(
             error.to_string(),
-            "Duplicate entry: Library with name 'My Library' already exists"
+            "Duplicate entry: Library with name 'My Library'"
         );
     }
 

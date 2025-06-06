@@ -26,6 +26,8 @@ pub mod icons;
 pub mod main_toolbar;
 /// Status display and information presentation widgets
 pub mod status;
+/// Task manager component for displaying active and recent tasks
+pub mod task_manager;
 /// Table core functionality - main table component
 pub mod table_core;
 /// Table header component with sorting functionality

@@ -5,13 +5,20 @@
 use rusqlite::{Connection, OptionalExtension};
 use std::sync::{Arc, Mutex};
 
-use super::super::error::DbResult;
-use super::{EnhancedRepository, Repository};
-use crate::models::Progress;
+use crate::db::error::DbResult;
+use crate::models::progress::Progress;
+use crate::db::repositories::Repository;
 
 /// Repository for progress-related database operations
+#[derive(Debug)]
 pub struct ProgressRepository {
     connection: Arc<Mutex<Connection>>,
+}
+
+impl Repository for ProgressRepository {
+    fn connection(&self) -> &Arc<Mutex<Connection>> {
+        &self.connection
+    }
 }
 
 impl ProgressRepository {
@@ -229,19 +236,16 @@ impl ProgressRepository {
         })
     }
 
-    /// Update the position for an audiobook
+    /// Update position for an audiobook
     ///
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn update_position(&self, audiobook_id: &str, position_seconds: f64) -> DbResult<bool> {
         self.execute_query(|conn| {
             let rows_affected = conn.execute(
-                "UPDATE progress SET
-                    position_seconds = ?1,
-                    last_played = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
+                "UPDATE progress SET position_seconds = ?1, last_played = CURRENT_TIMESTAMP
                  WHERE audiobook_id = ?2",
                 (position_seconds, audiobook_id),
             )?;
@@ -249,19 +253,16 @@ impl ProgressRepository {
         })
     }
 
-    /// Mark an audiobook as completed
+    /// Mark an audiobook as completed or not completed
     ///
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn mark_completed(&self, audiobook_id: &str, completed: bool) -> DbResult<bool> {
         self.execute_query(|conn| {
             let rows_affected = conn.execute(
-                "UPDATE progress SET
-                    completed = ?1,
-                    last_played = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
+                "UPDATE progress SET completed = ?1, updated_at = CURRENT_TIMESTAMP
                  WHERE audiobook_id = ?2",
                 (completed, audiobook_id),
             )?;
@@ -269,12 +270,12 @@ impl ProgressRepository {
         })
     }
 
-    /// Delete progress for an audiobook
+    /// Delete progress by audiobook ID
     ///
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn delete_by_audiobook(&self, audiobook_id: &str) -> DbResult<bool> {
         self.execute_query(|conn| {
             let rows_affected = conn.execute(
@@ -285,15 +286,18 @@ impl ProgressRepository {
         })
     }
 
-    /// Delete progress record by ID
+    /// Delete progress by ID
     ///
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn delete(&self, id: &str) -> DbResult<bool> {
         self.execute_query(|conn| {
-            let rows_affected = conn.execute("DELETE FROM progress WHERE id = ?1", [id])?;
+            let rows_affected = conn.execute(
+                "DELETE FROM progress WHERE id = ?1",
+                [id],
+            )?;
             Ok(rows_affected > 0)
         })
     }
@@ -306,33 +310,25 @@ impl ProgressRepository {
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn get_statistics(&self) -> DbResult<ProgressStatistics> {
         self.execute_query(|conn| {
-            let total_books: i64 =
-                conn.query_row("SELECT COUNT(*) FROM progress", [], |row| row.get(0))?;
-
-            let completed_books: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM progress WHERE completed = 1",
-                [],
-                |row| row.get(0),
+            let mut stmt = conn.prepare(
+                "SELECT
+                    COUNT(DISTINCT audiobook_id) as total_books,
+                    SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed_books,
+                    SUM(CASE WHEN completed = 0 AND position_seconds > 0 THEN 1 ELSE 0 END) as in_progress_books,
+                    SUM(position_seconds) as total_listening_time
+                 FROM progress"
             )?;
 
-            let in_progress_books: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM progress WHERE completed = 0 AND position_seconds > 0",
-                [],
-                |row| row.get(0),
-            )?;
+            let stats = stmt.query_row([], |row| {
+                Ok(ProgressStatistics {
+                    total_books: row.get::<_, i64>(0)? as usize,
+                    completed_books: row.get::<_, i64>(1)? as usize,
+                    in_progress_books: row.get::<_, i64>(2)? as usize,
+                    total_listening_time_seconds: row.get::<_, f64>(3)?,
+                })
+            })?;
 
-            let total_listening_time: f64 = conn.query_row(
-                "SELECT COALESCE(SUM(position_seconds), 0) FROM progress",
-                [],
-                |row| row.get(0),
-            )?;
-
-            Ok(ProgressStatistics {
-                total_books: crate::utils::casting::safe_db_count_to_usize(total_books),
-                completed_books: crate::utils::casting::safe_db_count_to_usize(completed_books),
-                in_progress_books: crate::utils::casting::safe_db_count_to_usize(in_progress_books),
-                total_listening_time_seconds: total_listening_time,
-            })
+            Ok(stats)
         })
     }
 
@@ -352,17 +348,39 @@ impl ProgressRepository {
             Ok(count > 0)
         })
     }
-}
 
-impl Repository for ProgressRepository {
-    fn connection(&self) -> &Arc<Mutex<Connection>> {
-        &self.connection
+    /// Batch add or update progress records
+    pub fn batch_add(&self, progress_records: &[Progress]) -> DbResult<()> {
+        let mut conn = self.connection.lock().unwrap();
+        let tx = conn.transaction()?;
+        for progress in progress_records {
+            tx.execute(
+                "INSERT OR REPLACE INTO progress (
+                    id, audiobook_id, position_seconds, completed, last_played, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)",
+                (
+                    &progress.id,
+                    &progress.audiobook_id,
+                    progress.position_seconds,
+                    progress.completed,
+                    &progress.last_played,
+                ),
+            )?;
+        }
+        tx.commit()?;
+        Ok(())
     }
 }
 
-impl EnhancedRepository for ProgressRepository {}
+impl Clone for ProgressRepository {
+    fn clone(&self) -> Self {
+        Self {
+            connection: Arc::clone(&self.connection),
+        }
+    }
+}
 
-/// Statistics about progress across all audiobooks
+/// Progress statistics
 #[derive(Debug, Clone)]
 pub struct ProgressStatistics {
     /// Total number of books with progress records

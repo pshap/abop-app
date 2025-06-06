@@ -2,9 +2,9 @@
 // This example shows how to use the enhanced connection features in ABOP
 
 use abop_core::{
-    db::{ConnectionHealth, Database, repositories::EnhancedRepository},
+    db::{health::ConnectionHealth, Database, repositories::EnhancedRepository},
     error::Result,
-    models::Audiobook,
+    models::{Audiobook, Library},
 };
 use std::path::Path;
 use tempfile::NamedTempFile;
@@ -12,7 +12,7 @@ use tempfile::NamedTempFile;
 fn main() -> Result<()> {
     // Create a temporary database for this example
     let temp_file = NamedTempFile::new().unwrap();
-    let db = Database::open(temp_file.path())?;
+    let db = Database::new(temp_file.path())?;
 
     println!("=== Phase 3 Enhanced Connection Management Demo ===\n");
 
@@ -40,7 +40,7 @@ fn demonstrate_health_monitoring(db: &Database) -> Result<()> {
     println!("===================");
 
     // Get current health status
-    let health = db.connection_health();
+    let health = db.get_connection_health()?;
     println!("Current connection health: {health:?}");
 
     // Force a health check
@@ -65,10 +65,17 @@ fn demonstrate_connection_stats(db: &Database) -> Result<()> {
     println!("2. Connection Statistics");
     println!("=======================");
 
-    // Perform some operations to generate statistics
-    db.add_library("Demo Library", Path::new("/demo/path"))?;
+    // Create a library for demo
+    let library = Library {
+        id: "demo".to_string(),
+        name: "Demo Library".to_string(),
+        path: Path::new("/demo/path").to_path_buf(),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
+    db.add_library(&library)?;
 
-    let stats = db.connection_stats();
+    let stats = db.get_connection_stats()?;
     println!("📊 Connection Statistics:");
     println!(
         "   - Successful operations: {}",
@@ -98,7 +105,7 @@ fn demonstrate_enhanced_operations(db: &Database) -> Result<()> {
     println!("======================================");
 
     // Example of using enhanced connection for custom operations
-    let result = db.execute_with_enhanced_connection(|conn| {
+    let result = db.with_enhanced_connection(|conn| {
         // This operation benefits from automatic retry logic and health monitoring
         use rusqlite::params;
 
@@ -118,13 +125,13 @@ fn demonstrate_repository_enhanced_access(db: &Database) -> Result<()> {
     println!("4. Repository-Level Enhanced Access");
     println!("==================================");
 
-    let repositories = db.repositories();
+    let repositories = db.get_repositories()?;
 
     // Check if enhanced connection is available
-    if let Some(enhanced_conn) = repositories.enhanced_connection() {
+    if let Some(enhanced_conn) = repositories.get_enhanced_connection() {
         println!("✅ Enhanced connection available through repository manager");
 
-        let health = enhanced_conn.health();
+        let health = enhanced_conn.get_health()?;
         println!("   Health via repository manager: {health:?}");
 
         // Use enhanced connection for a custom operation
@@ -144,7 +151,7 @@ fn demonstrate_repository_enhanced_access(db: &Database) -> Result<()> {
     }
 
     // Demonstrate enhanced repository trait
-    let library_repo = db.libraries();
+    let library_repo = db.get_library_repository()?;
     match library_repo.get_enhanced_connection() {
         Some(_) => println!("✅ Library repository has enhanced connection access"),
         None => println!("ℹ️  Library repository uses default enhanced connection behavior"),
@@ -159,7 +166,14 @@ fn demonstrate_bulk_operations(db: &Database) -> Result<()> {
     println!("==========================================");
 
     // First, create a library for our audiobooks
-    let library = db.add_library("Bulk Demo Library", Path::new("/bulk/demo"))?;
+    let library = Library {
+        id: "bulk_demo".to_string(),
+        name: "Bulk Demo Library".to_string(),
+        path: Path::new("/bulk/demo").to_path_buf(),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
+    db.add_library(&library)?;
 
     // Create some sample audiobooks
     let audiobooks = vec![
@@ -184,14 +198,14 @@ fn demonstrate_bulk_operations(db: &Database) -> Result<()> {
     println!("✅ Bulk insert completed in {elapsed:?}");
 
     // Verify the insert worked
-    let books_in_library = db.get_audiobooks_in_library(&library.id)?;
+    let books_in_library = db.get_audiobooks(&library.id)?;
     println!(
         "   Verified: {} audiobooks inserted",
         books_in_library.len()
     );
 
     // Show updated connection statistics
-    let stats = db.connection_stats();
+    let stats = db.get_connection_stats()?;
     println!("📊 Updated statistics after bulk operation:");
     println!(
         "   - Total successful operations: {}",

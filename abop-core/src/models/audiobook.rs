@@ -3,6 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use crate::error::Result;
 
 /// Common fallback text constants for better performance
 mod fallbacks {
@@ -46,7 +47,6 @@ impl Audiobook {
     /// Creates a new audiobook with default values
     #[must_use]
     pub fn new<P: AsRef<Path>>(library_id: &str, path: P) -> Self {
-        let now = Utc::now();
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             library_id: library_id.to_string(),
@@ -58,10 +58,35 @@ impl Audiobook {
             duration_seconds: None,
             size_bytes: None,
             cover_art: None,
-            created_at: now,
-            updated_at: now,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
             selected: false,
         }
+    }
+
+    /// Creates a new audiobook from audio metadata
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The file path is invalid
+    /// - The metadata is invalid
+    pub fn from_metadata<P: AsRef<Path>>(metadata: crate::audio::AudioMetadata, path: P) -> Result<Self> {
+        let path_buf = path.as_ref().to_path_buf();
+        let mut audiobook = Self::new("", &path_buf);
+        
+        audiobook.title = metadata.title;
+        audiobook.author = metadata.artist;
+        audiobook.narrator = metadata.narrator;
+        audiobook.description = metadata.description;
+        audiobook.duration_seconds = metadata.duration_seconds.map(|d| d.round() as u64);
+        audiobook.cover_art = metadata.cover_art;
+        
+        if let Ok(metadata) = std::fs::metadata(&path_buf) {
+            audiobook.size_bytes = Some(metadata.len());
+        }
+        
+        Ok(audiobook)
     }
 
     /// Gets the file name of the audiobook
@@ -112,6 +137,80 @@ impl Audiobook {
             || fallbacks::UNKNOWN.to_string(),
             crate::utils::size::format_bytes,
         )
+    }
+
+    /// Sets the library ID for this audiobook
+    pub fn with_library_id(mut self, library_id: &str) -> Self {
+        self.library_id = library_id.to_string();
+        self
+    }
+
+    /// Sets the title for this audiobook
+    pub fn with_title(mut self, title: &str) -> Self {
+        self.title = Some(title.to_string());
+        self
+    }
+
+    /// Sets the author for this audiobook
+    pub fn with_author(mut self, author: &str) -> Self {
+        self.author = Some(author.to_string());
+        self
+    }
+
+    /// Sets the narrator for this audiobook
+    pub fn with_narrator(mut self, narrator: &str) -> Self {
+        self.narrator = Some(narrator.to_string());
+        self
+    }
+
+    /// Sets the description for this audiobook
+    pub fn with_description(mut self, description: &str) -> Self {
+        self.description = Some(description.to_string());
+        self
+    }
+
+    /// Sets the duration in seconds for this audiobook
+    pub fn with_duration(mut self, duration_seconds: u64) -> Self {
+        self.duration_seconds = Some(duration_seconds);
+        self
+    }
+
+    /// Sets the file size in bytes for this audiobook
+    pub fn with_size(mut self, size_bytes: u64) -> Self {
+        self.size_bytes = Some(size_bytes);
+        self
+    }
+
+    /// Sets the cover art data for this audiobook
+    pub fn with_cover_art(mut self, cover_art: Vec<u8>) -> Self {
+        self.cover_art = Some(cover_art);
+        self
+    }
+
+    /// Marks this audiobook as selected
+    pub fn select(&mut self) {
+        self.selected = true;
+    }
+
+    /// Marks this audiobook as not selected
+    pub fn deselect(&mut self) {
+        self.selected = false;
+    }
+
+    /// Returns whether this audiobook is currently selected
+    pub fn is_selected(&self) -> bool {
+        self.selected
+    }
+
+    /// Updates the metadata of this audiobook with new information
+    pub fn update_metadata(&mut self, metadata: crate::audio::AudioMetadata) {
+        self.title = metadata.title;
+        self.author = metadata.artist;
+        self.narrator = metadata.narrator;
+        self.description = metadata.description;
+        self.duration_seconds = metadata.duration_seconds.map(|d| d.round() as u64);
+        self.cover_art = metadata.cover_art;
+        self.updated_at = Utc::now();
     }
 }
 

@@ -2,10 +2,17 @@
 
 // use std::collections::HashSet; // Commented out, unused import
 use std::path::PathBuf;
+use iced::widget::button;
+use abop_core::{
+    scanner::{ScannerState, ScanProgress},
+    models::Audiobook,
+    error::AppError,
+};
 
-use crate::state::DirectoryInfo;
-use crate::theme::ThemeMode;
-use abop_core::models::Audiobook;
+use crate::{
+    state::DirectoryInfo,
+    theme::ThemeMode,
+};
 
 // ================================================================================================
 // GUI MESSAGE SYSTEM
@@ -29,12 +36,24 @@ pub enum Message {
     QuickScanDirectory(PathBuf),
     /// Quick scan completed with directory metadata.
     QuickScanComplete(Result<DirectoryInfo, String>),
-    /// Indicates the library scan has completed with a result.
-    ScanComplete(Result<crate::library::ScanResult, String>),
-    /// Reports progress during library scanning (0.0 to 1.0).
-    ScanProgress(f32),
-    /// Reports enhanced scan progress with detailed information
-    ScanProgressEnhanced(crate::library::ScanProgress),
+
+    /// Start scanning a library
+    StartScan(PathBuf),
+
+    /// Update scan progress
+    ScanProgress(ScanProgress),
+
+    /// Scan completed with result
+    ScanComplete(Result<Vec<Audiobook>, String>),
+
+    /// Scan was cancelled
+    ScanCancelled,
+
+    /// Error occurred
+    Error(String),
+
+    /// Close the application
+    Close,
 
     /// Selects an audiobook by its ID.
     SelectAudiobook(String),
@@ -79,6 +98,53 @@ pub enum Message {
 
     /// Executes a high-level command.
     ExecuteCommand(Command),
+
+    /// Task management messages
+    /// Starts a new task
+    StartTask(TaskType),
+    /// Updates task progress
+    TaskProgress {
+        /// Task ID
+        task_id: String,
+        /// Progress value (0.0 to 1.0)
+        progress: f32,
+        /// Status message
+        status: String,
+    },
+    /// Marks a task as completed
+    TaskComplete {
+        /// Task ID
+        task_id: String,
+        /// Final status message
+        status: String,
+    },
+    /// Marks a task as failed
+    TaskFailed {
+        /// Task ID
+        task_id: String,
+        /// Error message
+        error: String,
+    },
+    /// Cancels the current task
+    CancelTask,
+    /// Toggles task history visibility
+    ToggleTaskHistory,
+    /// Clears task history
+    ClearTaskHistory,
+
+    // Scanner Messages
+    ScanStateChanged(ScannerState),
+    PauseScan,
+    ResumeScan,
+    CancelScan,
+    ScanCompleted,
+    ScanError(String),
+}
+
+impl From<AppError> for Message {
+    fn from(error: AppError) -> Self {
+        Message::Error(error.to_string())
+    }
 }
 
 // ================================================================================================
@@ -116,4 +182,15 @@ pub enum Command {
     },
     /// Command to stop audio playback.
     StopAudio,
+}
+
+/// Represents different types of tasks that can be performed
+#[derive(Debug, Clone)]
+pub enum TaskType {
+    /// Scanning a library for audiobooks
+    ScanLibrary(PathBuf),
+    /// Converting audiobooks to mono
+    ConvertToMono(Vec<String>),
+    /// Playing audio files
+    PlayAudio(Vec<String>),
 }

@@ -3,11 +3,32 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use iced::widget::Column;
+use iced::widget::table::State as TableState;
 
 use crate::styling::material::MaterialTokens;
-use crate::library::ScanProgress;
+use abop_core::scanner::progress::ScanProgress;
 use crate::theme::ThemeMode;
-use abop_core::{AppState, PlayerState, models::Audiobook};
+use abop_core::{
+    AppState as CoreAppState,
+    UserPreferences as CoreUserPreferences,
+    AppData as CoreAppData,
+    ViewType,
+    scanner::ScannerState as CoreScannerState,
+};
+use crate::core::scanner::{ScannerState as CoreScannerState, LibraryScanner};
+use crate::core::db::AudiobookRepository;
+
+use crate::{
+    messages::Message,
+    library::scanner::ScannerProgress,
+};
+
+use abop_core::models::{Audiobook, Library};
+use abop_core::player::PlayerState;
+use abop_core::scanner::library_scanner::ScannerState;
 
 // ================================================================================================
 // HELPER FUNCTIONS
@@ -99,6 +120,15 @@ pub struct UiState {
     pub material_tokens: MaterialTokens,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
+    /// Current active task if any
+    pub active_task: Option<TaskInfo>,
+    /// List of recent tasks
+    pub recent_tasks: Vec<TaskInfo>,
+    /// Whether to show task history
+    pub show_task_history: bool,
+    pub scanner_state: CoreScannerState,
+    pub scanner_progress: Option<ScanProgress>,
+    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
 }
 
 impl UiState {
@@ -144,6 +174,12 @@ impl UiState {
                 .collect(),
             audiobooks: core_state.data.audiobooks,
             needs_redraw: false,
+            active_task: None,
+            recent_tasks: Vec::new(),
+            show_task_history: false,
+            scanner_state: CoreScannerState::Idle,
+            scanner_progress: None,
+            scanner: None,
         }
     }
 
@@ -201,13 +237,53 @@ impl UiState {
         self.theme_mode = ThemeMode::MaterialDynamic;
         self.material_tokens = MaterialTokens::from_seed_color(seed, is_dark);
     }
+
+    pub async fn start_scan(&mut self, path: PathBuf) {
+        if let Some(scanner) = &self.scanner {
+            let mut scanner = scanner.lock().await;
+            if let Err(e) = scanner.scan_directory(path).await {
+                self.scanner_state = CoreScannerState::Error(e.to_string());
+            }
+        }
+    }
+
+    pub async fn update_scan_progress(&mut self, progress: ScanProgress) {
+        self.scanner_progress = Some(progress);
+    }
+
+    pub async fn update_scan_state(&mut self, state: CoreScannerState) {
+        self.scanner_state = state;
+    }
+
+    pub async fn pause_scan(&mut self) {
+        if let Some(scanner) = &self.scanner {
+            let mut scanner = scanner.lock().await;
+            scanner.pause().await;
+        }
+    }
+
+    pub async fn resume_scan(&mut self) {
+        if let Some(scanner) = &self.scanner {
+            let mut scanner = scanner.lock().await;
+            scanner.resume().await;
+        }
+    }
+
+    pub async fn cancel_scan(&mut self) {
+        if let Some(scanner) = &self.scanner {
+            let mut scanner = scanner.lock().await;
+            scanner.cancel().await;
+        }
+    }
 }
 
 impl Default for UiState {
     fn default() -> Self {
-        // Try to load persisted AppState, fall back to default if it fails
-        let app_state = AppState::load().unwrap_or_else(|_| AppState::default());
-        Self::from_core_state_synced(app_state)
+        let mut state = Self::from_core_state_synced(AppState::default());
+        state.scanner_state = CoreScannerState::Idle;
+        state.scanner_progress = None;
+        state.scanner = None;
+        state
     }
 }
 
@@ -226,5 +302,160 @@ impl Default for TableState {
             sort_column: "title".to_string(),
             sort_ascending: true,
         }
+    }
+}
+
+/// Information about a task
+#[derive(Debug, Clone)]
+pub struct TaskInfo {
+    /// Unique identifier for the task
+    pub id: String,
+    /// Task type
+    pub task_type: TaskType,
+    /// Current progress (0.0 to 1.0)
+    pub progress: f32,
+    /// Task status message
+    pub status: String,
+    /// Whether the task is currently running
+    pub is_running: bool,
+    /// Whether the task has completed
+    pub is_completed: bool,
+    /// Error message if task failed
+    pub error: Option<String>,
+    /// Start time of the task
+    pub start_time: chrono::DateTime<chrono::Local>,
+    /// End time of the task if completed
+    pub end_time: Option<chrono::DateTime<chrono::Local>>,
+}
+
+/// Types of tasks that can be performed
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TaskType {
+    Scan,
+    Process,
+    Import,
+    Export,
+}
+
+impl std::fmt::Display for TaskType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TaskType::Scan => write!(f, "Scanning"),
+            TaskType::Process => write!(f, "Processing"),
+            TaskType::Import => write!(f, "Importing"),
+            TaskType::Export => write!(f, "Exporting"),
+        }
+    }
+}
+
+impl Default for TaskInfo {
+    fn default() -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            task_type: TaskType::Scan,
+            progress: 0.0,
+            status: "Ready".to_string(),
+            is_running: false,
+            is_completed: false,
+            error: None,
+            start_time: chrono::Local::now(),
+            end_time: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ScannerState {
+    pub state: CoreScannerState,
+    pub progress: Option<ScanProgress>,
+    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
+}
+
+impl Default for ScannerState {
+    fn default() -> Self {
+        Self {
+            state: CoreScannerState::Idle,
+            progress: None,
+            scanner: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub core_state: CoreState,
+    pub theme_mode: ThemeMode,
+    pub settings_open: bool,
+    pub recent_directories_open: bool,
+    pub table_state: TableState,
+    pub scanner_progress: Option<ScanProgress>,
+    pub material_tokens: MaterialTokens,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreState {
+    pub data: AppData,
+    pub user_preferences: UserPreferences,
+    pub current_view: ViewType,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppData {
+    pub audiobooks: Vec<Audiobook>,
+    pub libraries: Vec<Library>,
+    pub player_state: PlayerState,
+}
+
+#[derive(Debug, Clone)]
+pub struct UserPreferences {
+    pub theme_mode: ThemeMode,
+    pub scan_interval: u64,
+    pub auto_scan: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum ViewType {
+    Library,
+    Player,
+    Settings,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self {
+            core_state: CoreState {
+                data: AppData {
+                    audiobooks: Vec::new(),
+                    libraries: Vec::new(),
+                    player_state: PlayerState::default(),
+                },
+                user_preferences: UserPreferences {
+                    theme_mode: ThemeMode::Light,
+                    scan_interval: 3600,
+                    auto_scan: true,
+                },
+                current_view: ViewType::Library,
+            },
+            theme_mode: ThemeMode::Light,
+            settings_open: false,
+            recent_directories_open: false,
+            table_state: TableState::default(),
+            scanner_progress: None,
+            material_tokens: MaterialTokens::default(),
+        }
+    }
+
+    pub fn update_scanner_progress(&mut self, progress: ScanProgress) {
+        self.scanner_progress = Some(progress);
+    }
+
+    pub fn clear_scanner_progress(&mut self) {
+        self.scanner_progress = None;
     }
 }

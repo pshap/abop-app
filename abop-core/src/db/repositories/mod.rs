@@ -45,69 +45,48 @@ pub trait EnhancedRepository: Repository {
     }
 }
 
-/// Repository manager that provides access to all repositories
+/// Manager for all repositories
+#[derive(Debug, Clone)]
 pub struct RepositoryManager {
+    /// Audiobook repository
+    audiobook: AudiobookRepository,
+    /// Library repository
+    library: LibraryRepository,
+    /// Progress repository
+    progress: ProgressRepository,
+    /// Shared connection
     connection: Arc<Mutex<Connection>>,
-    enhanced_connection: Option<Arc<EnhancedConnection>>,
-    audiobook_repo: AudiobookRepository,
-    library_repo: LibraryRepository,
-    progress_repo: ProgressRepository,
 }
 
 impl RepositoryManager {
-    /// Create a new repository manager with the given database connection
-    #[must_use]
+    /// Create a new repository manager
     pub fn new(connection: Arc<Mutex<Connection>>) -> Self {
         Self {
-            audiobook_repo: AudiobookRepository::new(connection.clone()),
-            library_repo: LibraryRepository::new(connection.clone()),
-            progress_repo: ProgressRepository::new(connection.clone()),
+            audiobook: AudiobookRepository::new(connection.clone()),
+            library: LibraryRepository::new(connection.clone()),
+            progress: ProgressRepository::new(connection.clone()),
             connection,
-            enhanced_connection: None,
         }
     }
 
-    /// Create a new repository manager with enhanced connection support
-    pub fn with_enhanced_connection(
-        connection: Arc<Mutex<Connection>>,
-        enhanced_connection: Arc<EnhancedConnection>,
-    ) -> Self {
-        Self {
-            audiobook_repo: AudiobookRepository::new(connection.clone()),
-            library_repo: LibraryRepository::new(connection.clone()),
-            progress_repo: ProgressRepository::new(connection.clone()),
-            connection,
-            enhanced_connection: Some(enhanced_connection),
-        }
-    }
     /// Get the audiobook repository
-    #[must_use]
-    pub const fn audiobooks(&self) -> &AudiobookRepository {
-        &self.audiobook_repo
+    pub fn audiobook(&self) -> &AudiobookRepository {
+        &self.audiobook
     }
 
     /// Get the library repository
-    #[must_use]
-    pub const fn libraries(&self) -> &LibraryRepository {
-        &self.library_repo
+    pub fn library(&self) -> &LibraryRepository {
+        &self.library
     }
 
     /// Get the progress repository
-    #[must_use]
-    pub const fn progress(&self) -> &ProgressRepository {
-        &self.progress_repo
+    pub fn progress(&self) -> &ProgressRepository {
+        &self.progress
     }
 
-    /// Get access to the raw connection for complex operations
-    #[must_use]
-    pub const fn connection(&self) -> &Arc<Mutex<Connection>> {
+    /// Get the shared connection
+    pub fn connection(&self) -> &Arc<Mutex<Connection>> {
         &self.connection
-    }
-
-    /// Get access to the enhanced connection if available
-    #[must_use]
-    pub const fn enhanced_connection(&self) -> Option<&Arc<EnhancedConnection>> {
-        self.enhanced_connection.as_ref()
     }
 
     /// Execute a transaction across multiple repositories
@@ -160,14 +139,3 @@ impl RepositoryManager {
     }
 }
 
-impl Clone for RepositoryManager {
-    fn clone(&self) -> Self {
-        Self {
-            audiobook_repo: AudiobookRepository::new(self.connection.clone()),
-            library_repo: LibraryRepository::new(self.connection.clone()),
-            progress_repo: ProgressRepository::new(self.connection.clone()),
-            connection: self.connection.clone(),
-            enhanced_connection: self.enhanced_connection.clone(),
-        }
-    }
-}

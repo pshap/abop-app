@@ -1,6 +1,8 @@
 //! Error handling for the ABOP core
 use hound;
 use thiserror::Error;
+use std::io;
+use serde_json;
 
 /// Central error type for the ABOP application
 ///
@@ -17,7 +19,7 @@ use thiserror::Error;
 pub enum AppError {
     /// I/O related errors (file system, network, etc.)
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(#[from] io::Error),
 
     /// Database errors from rusqlite
     #[error("Database error: {0}")]
@@ -51,7 +53,7 @@ pub enum AppError {
     TomlSer(#[from] toml::ser::Error),
     /// Threading and concurrency errors
     #[error("Threading error: {0}")]
-    Threading(#[from] Box<dyn std::error::Error + Send + Sync>),
+    Threading(String),
     /// Operation timeout error
     #[error("Operation '{operation}' timed out after {timeout_ms}ms (elapsed: {elapsed_ms}ms)")]
     Timeout {
@@ -65,7 +67,23 @@ pub enum AppError {
     
     /// Error during scanning operations
     #[error("Scan error: {0}")]
-    Scan(#[from] crate::scanner::ScanError),
+    Scan(#[from] crate::scanner::error::ScanError),
+
+    /// Internal errors (custom string context)
+    #[error("Internal error: {0}")]
+    Internal(String),
+
+    /// Serialization errors
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+
+    /// Validation errors
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    /// Unknown errors
+    #[error("Unknown error: {0}")]
+    Unknown(String),
 }
 
 /// Result type alias for fallible operations in the ABOP core
@@ -82,27 +100,35 @@ pub enum AppError {
 /// ```
 pub type Result<T> = std::result::Result<T, AppError>;
 
-// Ergonomic conversions for AppError
-impl From<String> for AppError {
-    fn from(err: String) -> Self {
-        Self::Other(err)
+impl AppError {
+    pub fn to_string(&self) -> String {
+        format!("{}", self)
     }
 }
 
-impl From<&str> for AppError {
-    fn from(err: &str) -> Self {
-        Self::Other(err.to_string())
-    }
-}
+#[derive(Error, Debug)]
+pub enum ScanError {
+    #[error("IO error during scan: {0}")]
+    Io(#[from] io::Error),
 
-impl From<tokio::task::JoinError> for AppError {
-    fn from(err: tokio::task::JoinError) -> Self {
-        if err.is_cancelled() {
-            AppError::Scan(crate::scanner::ScanError::Cancelled)
-        } else if err.is_panic() {
-            AppError::Other("Task panicked".into())
-        } else {
-            AppError::Other("Task failed to complete".into())
-        }
-    }
+    #[error("Database error during scan: {0}")]
+    DatabaseError(#[from] rusqlite::Error),
+
+    #[error("Processing error: {0}")]
+    ProcessingError(String),
+
+    #[error("Invalid file format: {0}")]
+    InvalidFormat(String),
+
+    #[error("Metadata extraction failed: {0}")]
+    MetadataError(String),
+
+    #[error("Scan cancelled")]
+    Cancelled,
+
+    #[error("Scan paused")]
+    Paused,
+
+    #[error("Unknown scan error: {0}")]
+    Unknown(String),
 }

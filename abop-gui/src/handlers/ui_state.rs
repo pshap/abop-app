@@ -3,9 +3,11 @@
 //! Handles messages that only affect UI state without requiring async operations
 
 use iced::Task;
-
+use abop_core::error::AppError;
 use crate::messages::Message;
 use crate::state::UiState;
+use abop_core::models::Audiobook;
+use abop_core::scanner::progress::ScanProgress;
 
 /// Handles pure UI state changes that don't require async operations
 #[must_use]
@@ -226,6 +228,141 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
             state.needs_redraw = false;
             Some(Task::none())
         }
+        Message::StartTask(task_type) => {
+            let task = TaskManager::create_task(task_type);
+            state.active_task = Some(task);
+            Some(Task::none())
+        }
+        Message::TaskProgress { task_id, progress, status } => {
+            if let Some(task) = &mut state.active_task {
+                if task.id == task_id {
+                    task.progress = progress;
+                    task.status = status;
+                }
+            }
+            Some(Task::none())
+        }
+        Message::TaskComplete { task_id, status } => {
+            if let Some(mut task) = state.active_task.take() {
+                if task.id == task_id {
+                    task.is_completed = true;
+                    task.is_running = false;
+                    task.status = status;
+                    task.end_time = Some(chrono::Local::now());
+                    state.recent_tasks.push(task);
+                }
+            }
+            Some(Task::none())
+        }
+        Message::TaskFailed { task_id, error } => {
+            if let Some(mut task) = state.active_task.take() {
+                if task.id == task_id {
+                    task.is_running = false;
+                    task.error = Some(error);
+                    task.end_time = Some(chrono::Local::now());
+                    state.recent_tasks.push(task);
+                }
+            }
+            Some(Task::none())
+        }
+        Message::CancelTask => {
+            if let Some(mut task) = state.active_task.take() {
+                task.is_running = false;
+                task.error = Some("Cancelled by user".to_string());
+                task.end_time = Some(chrono::Local::now());
+                state.recent_tasks.push(task);
+            }
+            Some(Task::none())
+        }
+        Message::ToggleTaskHistory => {
+            state.show_task_history = !state.show_task_history;
+            Some(Task::none())
+        }
+        Message::ClearTaskHistory => {
+            state.recent_tasks.clear();
+            Some(Task::none())
+        }
+        Message::ScanProgress(progress) => {
+            match progress {
+                ScanProgress::Started { total_files } => {
+                    state.processing_status = Some(format!("Starting scan of {} files...", total_files));
+                    state.scan_progress = Some(0.0);
+                }
+                ScanProgress::FileProcessed { current, total, file_name, progress_percentage } => {
+                    state.processing_status = Some(format!("Processing {} ({}/{})", file_name, current, total));
+                    state.scan_progress = Some(progress_percentage);
+                }
+                ScanProgress::BatchCommitted { count, total_processed } => {
+                    state.processing_status = Some(format!(
+                        "Committed batch of {} files (total: {})",
+                        count, total_processed
+                    ));
+                }
+                ScanProgress::Complete { processed, errors, duration } => {
+                    state.scanning = false;
+                    state.processing_status = Some(format!(
+                        "Scan complete: {} files processed ({} errors) in {:.2?}",
+                        processed, errors, duration
+                    ));
+                    state.scan_progress = Some(1.0);
+                }
+                ScanProgress::Cancelled { processed, duration } => {
+                    state.scanning = false;
+                    state.processing_status = Some(format!(
+                        "Scan cancelled after processing {} files in {:.2?}",
+                        processed, duration
+                    ));
+                    state.scan_progress = Some(0.0);
+                }
+            }
+            Some(Task::none())
+        }
+        Message::ScanComplete(result) => {
+            match result {
+                Ok(audiobooks) => {
+                    state.scanning = false;
+                    state.processing_status = Some("Scan completed successfully".to_string());
+                    state.scan_progress = Some(1.0);
+                    state.audiobooks = audiobooks;
+                }
+                Err(e) => {
+                    state.scanning = false;
+                    state.processing_status = Some(format!("Scan failed: {}", e));
+                    state.scan_progress = Some(0.0);
+                }
+            }
+            Some(Task::none())
+        }
+        Message::ScanCancelled => {
+            state.scanning = false;
+            state.processing_status = Some("Scan cancelled".to_string());
+            state.scan_progress = Some(0.0);
+            Some(Task::none())
+        }
+        Message::Error(e) => {
+            state.scanning = false;
+            state.processing_status = Some(format!("Error: {}", e));
+            state.scan_progress = Some(0.0);
+            Some(Task::none())
+        }
+        Message::Close => {
+            Some(Task::none())
+        }
         _ => None, // Not a UI message
+    }
+}
+
+/// Handles scan completion
+pub fn handle_scan_complete(state: &mut UiState, result: Result<(), AppError>) {
+    state.scanning = false;
+    match result {
+        Ok(()) => {
+            state.processing_status = Some("Scan completed successfully".to_string());
+            state.scan_progress = Some(1.0);
+        }
+        Err(e) => {
+            state.processing_status = Some(format!("Scan failed: {}", e));
+            state.scan_progress = Some(0.0);
+        }
     }
 }

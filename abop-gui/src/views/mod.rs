@@ -6,12 +6,16 @@ pub mod library;
 pub mod settings;
 
 use iced::widget::{center, column, container, mouse_area, opaque, stack};
-use iced::{Color, Element};
+use iced::{Color, Element, Length};
+use iced::widget::container::Style;
 
 use crate::components::main_toolbar::MainToolbar;
 use crate::messages::Message;
 use crate::state::UiState;
-use crate::styling::material::{DialogButton, MaterialDialog};
+use crate::design_tokens::constants::spacing;
+use abop_core::ViewType;
+use crate::styling::material::components::containers;
+use crate::components::task_manager::TaskManager;
 
 pub use about::about_view;
 pub use audio_processing::audio_processing_view;
@@ -47,40 +51,46 @@ fn modal<'a>(
 
 /// View function that renders the application UI based on current state
 #[must_use]
-pub fn view(state: &UiState) -> Element<'_, Message> {
-    // Unified toolbar at the top combining navigation and actions
-    let toolbar = MainToolbar::view(
+pub fn view(state: &UiState) -> Element<Message> {
+    let mut content = column![].spacing(spacing::MD);
+
+    // Add main toolbar
+    content = content.push(MainToolbar::view(
         &state.recent_directories,
         &state.library_path,
         &state.material_tokens,
-    );
-    let content = library_view(state);
+    ));
 
-    let main_content = column![toolbar, content]
-        .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)
-
-    // If settings dialog is open, show it as a modal overlay
-    if state.settings_open {
-        // Create the content with styled text for better contrast
-        let content_text = "Configure ABOP preferences and options.";
-
-        modal(
-            main_content,
-            MaterialDialog::form()
-                .title("Settings")
-                .content(content_text)
-                .secondary_button(DialogButton::Text, "Cancel")
-                .dismissible(true)
-                .view(
-                    &state.material_tokens,
-                    None,                         // No primary action
-                    Some(Message::CloseSettings), // Secondary (Cancel) closes dialog
-                    None,                         // No custom close button in header
-                ),
-            Message::CloseSettings,
-        )
-    } else {
-        main_content.into()
+    // Add task manager if there's an active task or task history is shown
+    if state.active_task.is_some() || state.show_task_history {
+        content = content.push(TaskManager::view(
+            &state.active_task,
+            &state.recent_tasks,
+            state.show_task_history,
+            state.theme_mode,
+            &state.material_tokens,
+        ));
     }
+
+    // Add main content
+    content = content.push(match state.core_state.current_view {
+        ViewType::Library => library_view(state),
+        ViewType::Player => audio_processing_view(state),
+        ViewType::Settings => settings_view(state),
+    });
+
+    // Add settings modal if open
+    if state.settings_open {
+        content = modal(
+            content,
+            settings_view(state),
+            Message::CloseSettings,
+        );
+    }
+
+    container(content)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(|theme| containers::container_style(theme, state.theme_mode))
+        .into()
 }

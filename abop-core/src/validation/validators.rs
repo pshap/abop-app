@@ -208,15 +208,15 @@ impl MetadataValidator {
         }
 
         // Check for reasonable title length
-        if let Some(ref title) = audiobook.title
-            && title.len() > 500
-        {
-            result.add_issue(
-                ValidationError::warning("metadata", "Audiobook title is unusually long")
-                    .with_file_path(audiobook.path.clone())
-                    .with_field("title")
-                    .with_suggestion("Consider truncating the title"),
-            );
+        if let Some(ref title) = audiobook.title {
+            if title.len() > 500 {
+                result.add_issue(
+                    ValidationError::warning("metadata", "Audiobook title is unusually long")
+                        .with_file_path(audiobook.path.clone())
+                        .with_field("title")
+                        .with_suggestion("Consider truncating the title"),
+                );
+            }
         }
     }
 }

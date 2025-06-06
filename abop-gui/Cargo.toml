@@ -1,7 +1,7 @@
 [package]
 name = "abop-gui"
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2021"
 authors.workspace = true
 description = "Iced GUI for ABOP - Audiobook Organizer & Processor"
 license.workspace = true
@@ -21,7 +21,7 @@ iced = { version = "0.13.1", features = [
 ] }
 
 # Font Awesome icons for Iced
-iced_font_awesome = "0.2.1"
+font-awesome = "0.1.0"
 
 # Color science for Material Design 3 seed colors
 palette = "0.7.6"
@@ -30,29 +30,37 @@ palette = "0.7.6"
 rfd = { workspace = true }
 
 # Workspace dependencies
-thiserror = { workspace = true }
-log = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
+thiserror.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-walkdir = { workspace = true }
-chrono = { workspace = true }
-uuid = { workspace = true }
-dirs = { workspace = true }
-once_cell = { workspace = true }
+walkdir.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+dirs.workspace = true
+once_cell.workspace = true
 
 # File System & Database
-rusqlite = { workspace = true }
+rusqlite.workspace = true
 
 # Audio Processing
-symphonia = { workspace = true }
-rodio = { workspace = true }
-num-complex = { workspace = true }
-hound = { workspace = true }
-rayon = { workspace = true }
-bytemuck = { workspace = true }
+symphonia.workspace = true
+rodio.workspace = true
+num-complex.workspace = true
+hound.workspace = true
+rayon.workspace = true
+bytemuck.workspace = true
 material-color-utilities-rs = ">=0.2.0"
+
+# Tokio dependency
+tokio = { version = "1.36", features = ["full"] }
+
+# Environment logger
+env_logger = "0.10"
+
+# Note: iced_font_awesome is removed to eliminate web-sys conflict
 
 [dev-dependencies]
 # Test dependencies

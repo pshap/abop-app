@@ -72,9 +72,10 @@ dependencies = [
  "bytemuck",
  "chrono",
  "dirs 6.0.0",
+ "env_logger",
+ "font-awesome",
  "hound",
  "iced",
- "iced_font_awesome",
  "log",
  "material-color-utilities-rs",
  "num-complex",
@@ -88,6 +89,7 @@ dependencies = [
  "serde_json",
  "symphonia",
  "thiserror 1.0.69",
+ "tokio",
  "toml",
  "tracing-subscriber",
  "uuid",
@@ -1592,6 +1594,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "font-awesome"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba583b3b1a2eb68e7b70319bbf626a4c86bf1345ec8a52d721f244694b47ba85"
+
+[[package]]
 name = "font-types"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2106,17 +2114,6 @@ dependencies = [
  "smol_str",
  "thiserror 1.0.69",
  "web-time",
-]
-
-[[package]]
-name = "iced_font_awesome"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "810ef61d81cd4e164a540a043bd080495f8906981bca263cbe7dacb0d7f1a6f0"
-dependencies = [
- "iced",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -5350,13 +5347,12 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.50"
+version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "555d470ec0bc3bb57890405e5d4322cc9ea83cebb085523ced7be4144dac1e61"
+checksum = "cc7ec4f8827a71586374db3e87abdb5a2bb3a15afed140221307c3ec06b1f63b"
 dependencies = [
  "cfg-if",
  "js-sys",
- "once_cell",
  "wasm-bindgen",
  "web-sys",
 ]

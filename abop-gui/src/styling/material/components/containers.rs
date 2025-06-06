@@ -9,6 +9,28 @@ use iced::{
 };
 
 use crate::styling::material::{MaterialTokens, elevation::ElevationLevel};
+use crate::theme::ThemeMode;
+
+/// Get the container style based on theme and theme mode
+pub fn container_style(theme: &Theme, theme_mode: ThemeMode) -> container::Style {
+    let colors = match theme_mode {
+        ThemeMode::Light => theme.palette().background,
+        ThemeMode::Dark => theme.palette().background,
+        ThemeMode::System => theme.palette().background,
+        ThemeMode::MaterialLight => theme.palette().background,
+        ThemeMode::MaterialDark => theme.palette().background,
+        ThemeMode::MaterialDynamic => theme.palette().background,
+    };
+
+    container::Style {
+        background: Some(Background::Color(colors)),
+        border: Border {
+            radius: 8.0.into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
 
 /// Material Design 3 Card component
 ///

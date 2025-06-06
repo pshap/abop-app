@@ -11,6 +11,7 @@ use crate::utils::sort_audiobooks;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
+use abop_core::scanner::progress::ScanProgress;
 
 /// Handles data updates and synchronous state changes
 #[must_use]

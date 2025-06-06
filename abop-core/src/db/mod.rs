@@ -1,388 +1,221 @@
 //! Database module for ABOP
 //!
-//! This module provides database functionality for storing and retrieving
-//! audiobook metadata and library information.
+//! This module provides database functionality for the ABOP application,
+//! including connection management, migrations, and repositories.
 
 pub mod connection;
-pub mod error;
-pub mod health;
-mod migrations;
-mod queries;
+pub mod migrations;
 pub mod repositories;
 pub mod retry;
 pub mod statistics;
+pub mod error;
+pub mod health;
 
-use rusqlite::Connection;
-use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use crate::db::error::{DatabaseError, DbResult};
+use crate::db::repositories::{AudiobookRepository, LibraryRepository, ProgressRepository};
+use crate::db::statistics::ConnectionStats;
+use std::sync::Mutex;
+use crate::models::{Library, Audiobook, Progress};
+use crate::error::AppError;
 
-pub use self::connection::{ConnectionConfig, EnhancedConnection};
-pub use self::error::{DatabaseError, DbResult};
-pub use self::health::ConnectionHealth;
-pub use self::migrations::{Migration, MigrationManager, MigrationResult};
-pub use self::repositories::{
-    AudiobookRepository, LibraryRepository, ProgressRepository, RepositoryManager,
-};
-pub use self::retry::{RetryExecutor, RetryPolicy};
-pub use self::statistics::ConnectionStats;
-use crate::{
-    error::Result,
-    models::{Audiobook, Library, Progress},
-};
+/// Database configuration
+#[derive(Debug, Clone)]
+pub struct DatabaseConfig {
+    /// Path to the database file
+    pub path: String,
+    /// Whether to use enhanced features
+    pub enhanced: bool,
+}
 
-/// Database connection wrapper with enhanced connection management
-#[derive(Clone)]
+/// Database connection manager
+#[derive(Debug)]
 pub struct Database {
-    enhanced_conn: Arc<EnhancedConnection>,
-    repositories: RepositoryManager,
+    /// Shared database connection
+    connection: Arc<Mutex<rusqlite::Connection>>,
+    /// Library repository
+    library: LibraryRepository,
+    /// Audiobook repository
+    audiobook: AudiobookRepository,
+    /// Progress repository
+    progress: ProgressRepository,
+    /// Connection statistics
+    stats: ConnectionStats,
 }
 
 impl Database {
-    /// Opens or creates a new database at the specified path
+    /// Create a new database connection
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database file cannot be created or opened
-    /// - The enhanced connection cannot be established
-    /// - Database initialization fails
-    /// - Schema creation or migration fails
-    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        log::debug!("Opening database at: {}", path.as_ref().display());
-
-        // Create enhanced connection with default configuration
-        let enhanced_conn = Arc::new(EnhancedConnection::new(path.as_ref()));
-
-        // Establish the connection first
-        enhanced_conn
-            .connect()
-            .map_err(|e| crate::error::AppError::Other(e.to_string()))?;
-
-        // Create a basic connection for the repositories with enhanced connection support
-        let conn = Connection::open(path)?;
-        let conn_arc = Arc::new(Mutex::new(conn));
-        let repositories =
-            RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
-
-        let db = Self {
-            enhanced_conn,
-            repositories,
-        };
-        db.init()?;
-        log::debug!("Database initialization complete");
-        Ok(db)
-    }
-
-    /// Initializes the database schema
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - Database pragmas cannot be set
-    /// - Schema migrations fail to run
-    /// - Database connection is unavailable
-    fn init(&self) -> Result<()> {
-        log::debug!("Initializing database schema...");
-
-        // For initialization, we need to temporarily use the basic connection
-        // since migrations require mutable access
-        self.repositories
-            .connection()
-            .lock()
-            .unwrap()
-            .execute_batch(
-                "PRAGMA foreign_keys = ON;\n\
-             PRAGMA journal_mode = WAL;\n\
-             PRAGMA synchronous = NORMAL;",
-            )?;
-
-        log::debug!("Database settings configured");
-
-        // Run migrations in a transaction
-        log::debug!("Running migrations...");
-        let mut conn = self.repositories.connection().lock().unwrap();
-        if let Err(e) = migrations::run_migrations(&mut conn) {
-            log::error!("Failed to run migrations: {e}");
-            return Err(e.into());
-        }
-
-        log::debug!("Migrations completed successfully");
-        log::debug!("Database initialization complete");
-
-        Ok(())
-    }
-
-    /// Get access to the repository manager
-    #[must_use]
-    pub const fn repositories(&self) -> &RepositoryManager {
-        &self.repositories
-    }
-
-    /// Get access to the library repository
-    #[must_use]
-    pub const fn libraries(&self) -> &LibraryRepository {
-        self.repositories.libraries()
-    }
-
-    /// Get access to the audiobook repository
-    #[must_use]
-    pub const fn audiobooks(&self) -> &AudiobookRepository {
-        self.repositories.audiobooks()
-    }
-
-    /// Get access to the progress repository
-    #[must_use]
-    pub const fn progress(&self) -> &ProgressRepository {
-        self.repositories.progress()
-    }
-
-    /// Get the current connection health
-    #[must_use]
-    pub fn connection_health(&self) -> ConnectionHealth {
-        self.enhanced_conn.health()
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to establish database connection.
+    pub fn new(config: DatabaseConfig) -> DbResult<Self> {
+        let connection = Arc::new(Mutex::new(rusqlite::Connection::open(&config.path)?));
+        
+        Ok(Self {
+            library: LibraryRepository::new(Arc::clone(&connection)),
+            audiobook: AudiobookRepository::new(Arc::clone(&connection)),
+            progress: ProgressRepository::new(Arc::clone(&connection)),
+            connection,
+            stats: ConnectionStats::default(),
+        })
     }
 
     /// Get connection statistics
     #[must_use]
-    pub fn connection_stats(&self) -> ConnectionStats {
-        self.enhanced_conn.stats()
+    pub fn stats(&self) -> &ConnectionStats {
+        &self.stats
     }
 
-    /// Force a connection health check
+    /// Add a library
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The health check operation fails
-    /// - The database connection is unavailable
-    pub fn check_connection_health(&self) -> DbResult<ConnectionHealth> {
-        self.enhanced_conn
-            .health_check()
-            .map(|()| self.enhanced_conn.health())
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    pub fn add_library(&self, library: &Library) -> DbResult<()> {
+        self.library.upsert(library)
     }
 
-    /// Execute a database operation with enhanced connection features
-    /// This provides retry logic and health monitoring
+    /// Get a library by ID
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database operation fails
-    /// - Connection retry attempts are exhausted
-    /// - The database connection is unavailable
-    pub fn execute_with_enhanced_connection<F, R>(&self, f: F) -> crate::error::Result<R>
-    where
-        F: Fn(&rusqlite::Connection) -> crate::db::error::DbResult<R> + Send + Sync + 'static,
-        R: Send + 'static,
-    {
-        self.enhanced_conn
-            .with_connection(f)
-            .map_err(|db_err| crate::error::AppError::Other(db_err.to_string()))
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_library(&self, id: &str) -> DbResult<Option<Library>> {
+        self.library.find_by_id(id)
     }
 
-    /// Adds a new library to the database
+    /// Get all libraries
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database operation fails
-    /// - A library with the same name already exists
-    /// - The path is invalid or inaccessible
-    pub fn add_library<P: AsRef<Path>>(&self, name: &str, path: P) -> Result<Library> {
-        self.libraries()
-            .create(name, path)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_libraries(&self) -> DbResult<Vec<Library>> {
+        self.library.find_all()
     }
 
-    /// Gets a library by ID
+    /// Add an audiobook
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database query fails
-    /// - The database connection is unavailable
-    pub fn get_library(&self, id: &str) -> Result<Option<Library>> {
-        self.libraries()
-            .find_by_id(id)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    pub fn add_audiobook(&self, audiobook: &Audiobook) -> DbResult<()> {
+        self.audiobook.upsert(audiobook)
     }
 
-    /// Gets all libraries
+    /// Get an audiobook by ID
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database query fails
-    /// - The database connection is unavailable
-    pub fn get_libraries(&self) -> Result<Vec<Library>> {
-        self.libraries()
-            .find_all()
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_audiobook(&self, id: &str) -> DbResult<Option<Audiobook>> {
+        self.audiobook.find_by_id(id)
     }
 
-    /// Adds an audiobook to the database
+    /// Get audiobooks by library ID
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database operation fails
-    /// - The audiobook data is invalid
-    /// - The associated library does not exist
-    pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
-        self.audiobooks()
-            .upsert(audiobook)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_audiobooks_by_library(&self, library_id: &str) -> DbResult<Vec<Audiobook>> {
+        self.audiobook.find_by_library(library_id)
     }
 
-    /// Gets an audiobook by ID
+    /// Get all audiobooks
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database query fails
-    /// - The database connection is unavailable
-    pub fn get_audiobook(&self, id: &str) -> Result<Option<Audiobook>> {
-        self.audiobooks()
-            .find_by_id(id)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_audiobooks(&self) -> DbResult<Vec<Audiobook>> {
+        self.audiobook.find_all()
     }
 
-    /// Gets all audiobooks in a library
+    /// Add progress record
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database query fails
-    /// - The database connection is unavailable
-    /// - The library ID does not exist
-    pub fn get_audiobooks_in_library(&self, library_id: &str) -> Result<Vec<Audiobook>> {
-        self.audiobooks()
-            .find_by_library(library_id)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    pub fn add_progress(&self, progress: &Progress) -> DbResult<()> {
+        self.progress.upsert(progress)
     }
 
-    /// Saves the playback progress of an audiobook
+    /// Get progress by audiobook ID
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database operation fails
-    /// - The progress data is invalid
-    /// - The associated audiobook does not exist
-    pub fn save_progress(&self, progress: &Progress) -> Result<()> {
-        self.progress()
-            .upsert(progress)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_progress(&self, audiobook_id: &str) -> DbResult<Option<Progress>> {
+        self.progress.find_by_audiobook(audiobook_id)
     }
 
-    /// Gets the playback progress for an audiobook
+    /// Get all progress records
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The database query fails
-    /// - The database connection is unavailable
-    pub fn get_progress(&self, audiobook_id: &str) -> Result<Option<Progress>> {
-        self.progress()
-            .find_by_audiobook(audiobook_id)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn get_all_progress(&self) -> DbResult<Vec<Progress>> {
+        self.progress.find_all()
     }
 
-    /// Get the current migration version of the database
-    ///
-    /// # Returns
-    ///
-    /// The current migration version number
+    /// Batch add multiple audiobooks
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - The migration version query fails
-    /// - The database connection is unavailable
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (which indicates a panic occurred
-    /// in another thread while holding the lock).
-    pub fn migration_version(&self) -> Result<u32> {
-        let manager = migrations::MigrationManager::new();
-        let conn = self.repositories.connection().lock().unwrap();
-        manager
-            .current_version(&conn)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    pub fn batch_add_audiobooks(&self, audiobooks: &[Audiobook]) -> DbResult<()> {
+        self.audiobook.batch_add(audiobooks)
     }
 
-    /// Apply all pending migrations
-    ///
-    /// This will run all migrations that haven't been applied yet,
-    /// bringing the database schema up to the latest version.
-    ///
-    /// # Returns
-    ///
-    /// A vector of migration results showing which migrations were applied
+    /// Batch add multiple progress records
     ///
     /// # Errors
     ///
-    /// Returns an error if:
-    /// - Migration operations fail
-    /// - The database connection is unavailable
-    /// - Migration files are corrupted or missing
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (which indicates a panic occurred
-    /// in another thread while holding the lock).
-    pub fn migrate_up(&self) -> Result<Vec<migrations::MigrationResult>> {
-        let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().unwrap();
-        manager
-            .migrate_up(&mut conn)
-            .map_err(std::convert::Into::into)
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
+    pub fn batch_add_progress(&self, progress_records: &[Progress]) -> DbResult<()> {
+        self.progress.batch_add(progress_records)
     }
+}
 
-    /// Rollback database migrations down to the specified target version
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - Migration rollback operations fail
-    /// - The target version is invalid
-    /// - The database connection is unavailable
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (another thread panicked while holding the lock)
-    pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
-        let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().unwrap();
-        manager
-            .migrate_down(&mut conn, target_version)
-            .map_err(std::convert::Into::into)
+impl Clone for Database {
+    fn clone(&self) -> Self {
+        Self {
+            connection: Arc::clone(&self.connection),
+            library: self.library.clone(),
+            audiobook: self.audiobook.clone(),
+            progress: self.progress.clone(),
+            stats: self.stats.clone(),
+        }
     }
+}
 
-    /// Get list of pending migrations
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The migration query fails
-    /// - The database connection is unavailable
-    /// - Migration metadata is corrupted
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (another thread panicked while holding the lock)
-    #[allow(clippy::significant_drop_tightening)]
-    pub fn pending_migrations(&self) -> Result<Vec<(u32, String)>> {
-        let manager = migrations::MigrationManager::new();
-        let conn_lock = self.repositories.connection().lock().unwrap();
-        let pending = manager
-            .pending_migrations(&conn_lock)
-            .map_err(|e: DatabaseError| crate::error::AppError::from(e))?;
-        Ok(pending
-            .into_iter()
-            .map(|m| (m.version, m.description.to_string()))
-            .collect())
+impl From<AppError> for DatabaseError {
+    fn from(err: AppError) -> Self {
+        match err {
+            AppError::Database(e) => DatabaseError::Sqlite(e),
+            other => DatabaseError::ExecutionFailed {
+                message: other.to_string(),
+            },
+        }
+    }
+}
+
+impl From<std::io::Error> for DatabaseError {
+    fn from(err: std::io::Error) -> Self {
+        DatabaseError::ExecutionFailed {
+            message: err.to_string(),
+        }
     }
 }
 
@@ -392,11 +225,16 @@ mod tests {
     use chrono::Utc;
     use tempfile::NamedTempFile;
     use uuid::Uuid;
+    use std::fs;
 
     fn create_test_db() -> (Database, NamedTempFile) {
         let temp_file = NamedTempFile::new().unwrap();
-        // Database::open already calls init() internally
-        let db = Database::open(temp_file.path()).expect("Failed to open test database");
+        let path = temp_file.path();
+        fs::write(path, "").unwrap();
+        let db = Database::new(DatabaseConfig {
+            path: path.to_string_lossy().to_string(),
+            enhanced: true,
+        }).unwrap();
         (db, temp_file)
     }
 
@@ -405,9 +243,12 @@ mod tests {
         let (db, _temp) = create_test_db();
 
         // Add a library
-        let library = db
-            .add_library("Test Library", Path::new("/test/path"))
-            .unwrap();
+        let library = Library {
+            id: Uuid::new_v4().to_string(),
+            name: "Test Library".to_string(),
+            path: Path::new("/test/path").to_path_buf(),
+        };
+        db.add_library(&library).unwrap();
 
         // Get the library by ID
         let retrieved = db.get_library(&library.id).unwrap().unwrap();
@@ -425,9 +266,12 @@ mod tests {
         let (db, _temp) = create_test_db();
 
         // Add a library
-        let library = db
-            .add_library("Test Library", Path::new("/test/path"))
-            .unwrap();
+        let library = Library {
+            id: Uuid::new_v4().to_string(),
+            name: "Test Library".to_string(),
+            path: Path::new("/test/path").to_path_buf(),
+        };
+        db.add_library(&library).unwrap();
 
         // Create an audiobook
         let audiobook = Audiobook {
@@ -455,7 +299,7 @@ mod tests {
         assert_eq!(retrieved.author, audiobook.author);
 
         // Get audiobooks in library
-        let audiobooks = db.get_audiobooks_in_library(&library.id).unwrap();
+        let audiobooks = db.get_audiobooks_by_library(&library.id).unwrap();
         assert_eq!(audiobooks.len(), 1);
         assert_eq!(audiobooks[0].id, audiobook.id);
     }

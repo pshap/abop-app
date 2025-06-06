@@ -51,14 +51,14 @@
 //! }
 //! ```
 
-pub mod library_scanner;
 pub mod error;
 pub mod progress;
+pub mod library_scanner;
 pub mod config;
 pub mod result;
 
-pub use library_scanner::LibraryScanner;
 pub use error::{ScanError, ScanResult};
 pub use progress::{ScanProgress, ProgressReporter, ChannelReporter, LoggingReporter};
+pub use library_scanner::LibraryScanner;
 pub use config::ScannerConfig;
 pub use result::ScanSummary;

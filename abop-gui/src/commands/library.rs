@@ -7,6 +7,12 @@ use crate::messages::{Command, Message};
 use crate::state::{DirectoryInfo, UiState};
 use std::path::PathBuf;
 use std::time::SystemTime;
+use abop_core::{
+    db::{Database, DatabaseConfig},
+    models::Library,
+    error::AppError,
+    scanner::progress::ScanProgress,
+};
 
 /// Scans a directory asynchronously and returns metadata about the scan
 pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String> {
@@ -36,7 +42,6 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<Task<Message>> {
     match command {
         Command::ScanLibrary { library_path } => {
-            use abop_core::db::Database;
             use std::fs;
             use std::path::PathBuf;
 
@@ -61,7 +66,10 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
             let db_path = data_dir.join("library.db");
 
             // Open DB and look up or create Library synchronously
-            let db = match Database::open(&db_path) {
+            let db = match Database::new(DatabaseConfig {
+                path: db_path.to_string_lossy().into_owned(),
+                enhanced: true,
+            }) {
                 Ok(db) => db,
                 Err(e) => {
                     return Some(Task::perform(
@@ -70,48 +78,39 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
                     ));
                 }
             };
-            let library = match db.libraries().find_by_name("Default Library") {
-                Ok(Some(lib)) => lib,
-                Ok(None) => match db.add_library("Default Library", &library_path) {
-                    Ok(lib) => lib,
-                    Err(e) => {
-                        return Some(Task::perform(
-                            async move { Err(e.to_string()) },
-                            Message::ScanComplete,
-                        ));
-                    }
-                },
-                Err(e) => {
-                    return Some(Task::perform(
-                        async move { Err(e.to_string()) },
-                        Message::ScanComplete,
-                    ));
-                }
+
+            // Create a new library
+            let library = Library {
+                id: uuid::Uuid::new_v4().to_string(),
+                name: "Default Library".to_string(),
+                path: library_path,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
             };
 
-            // Create progress-enabled scanner and launch scan with progress reporting
+            // Add the library to the database
+            if let Err(e) = db.add_library(&library) {
+                return Some(Task::perform(
+                    async move { Err(e.to_string()) },
+                    Message::ScanComplete,
+                ));
+            }
+
+            // Create scanner and launch scan with progress reporting
             let scanner = abop_core::scanner::LibraryScanner::new(db, library);
-            let audio_files = scanner.find_audio_files();
             
             // Create a Task that emits progress updates and final result
-            Some(
-                scanner
-                    .scan_with_tasks_and_progress(audio_files, |_progress| {
-                        // This will be handled via message subscription pattern
-                        // The actual progress updates will be sent through a channel
-                    })
-                    .map(|core_result| {
-                        // Convert abop_core::scanner::ScanResult to crate::library::ScanResult
-                        let gui_result = crate::library::ScanResult {
-                            audiobooks: core_result.audiobooks,
-                            scan_duration: core_result.scan_duration,
-                            processed_count: core_result.processed_count,
-                            error_count: core_result.error_count,
-                            performance_monitor: None,
-                        };
-                        Message::ScanComplete(Ok(gui_result))
-                    })
-            )
+            Some(Task::perform(
+                async move {
+                    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+                    let scan_result = scanner.scan_async(tx).await?;
+                    Ok(scan_result)
+                },
+                |result| match result {
+                    Ok(summary) => Message::ScanComplete(Ok(summary)),
+                    Err(e) => Message::ScanComplete(Err(e.to_string())),
+                },
+            ))
         }
         Command::BrowseDirectory => {
             log::info!("Executing BrowseDirectory command");
@@ -132,4 +131,28 @@ pub fn handle_library_command(state: &mut UiState, command: Command) -> Option<T
         }
         _ => None, // Not a library command
     }
+}
+
+/// Start scanning a library
+pub fn start_scan(library: Library, db: Database) -> Task<Message> {
+    Task::perform(
+        async move {
+            let scanner = abop_core::scanner::LibraryScanner::new(db, library);
+            let (tx, _rx) = tokio::sync::mpsc::channel(100);
+            let result = scanner.scan_async(tx).await?;
+            Ok(result)
+        },
+        |result| match result {
+            Ok(summary) => Message::ScanComplete(Ok(summary)),
+            Err(e) => Message::ScanComplete(Err(e.to_string())),
+        },
+    )
+}
+
+/// Cancel the current scan
+pub fn cancel_scan() -> Task<Message> {
+    Task::perform(
+        async move { () },
+        |_| Message::ScanCancelled,
+    )
 }

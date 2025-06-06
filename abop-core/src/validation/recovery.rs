@@ -182,10 +182,10 @@ impl StateRepairStrategy {
         let mut actions = Vec::new();
 
         // Create backup if requested
-        if self.create_backups
-            && let Some(backup_action) = self.create_backup(state)
-        {
-            actions.push(backup_action);
+        if self.create_backups {
+            if let Some(backup_action) = self.create_backup(state) {
+                actions.push(backup_action);
+            }
         }
 
         // Group issues by category for efficient processing
@@ -473,11 +473,11 @@ impl StateRepairStrategy {
     fn repair_invalid_durations(&self, state: &mut AppState) -> usize {
         let mut count = 0;
         for audiobook in &mut state.data.audiobooks {
-            if let Some(duration) = audiobook.duration_seconds
-                && duration == 0
-            {
-                audiobook.duration_seconds = None;
-                count += 1;
+            if let Some(duration) = audiobook.duration_seconds {
+                if duration == 0 {
+                    audiobook.duration_seconds = None;
+                    count += 1;
+                }
             }
         }
         count
@@ -493,11 +493,11 @@ impl StateRepairStrategy {
             .collect();
 
         for progress in &mut state.data.progress {
-            if let Some(&duration) = audiobook_durations.get(&progress.audiobook_id)
-                && progress.position_seconds > duration
-            {
-                progress.position_seconds = duration;
-                count += 1;
+            if let Some(&duration) = audiobook_durations.get(&progress.audiobook_id) {
+                if progress.position_seconds > duration {
+                    progress.position_seconds = duration;
+                    count += 1;
+                }
             }
         }
         count

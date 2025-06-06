@@ -1,19 +1,127 @@
 //! Library view module
 
-use iced::Length;
-use iced::widget::{column, container};
+use iced::{
+    widget::{button, column, container, progress_bar, row, text},
+    Alignment, Element, Length, Theme,
+};
 
-use crate::components::audio_toolbar::AudioToolbar;
-use crate::components::status::{StatusDisplay, EnhancedStatusDisplayParams};
-use crate::components::table_core::AudiobookTable;
-use crate::messages::Message;
-use crate::state::UiState;
-use crate::styling::container::LayoutContainerStyles;
-use crate::styling::material::{MaterialSurface, SurfaceVariant};
+use crate::{
+    messages::Message,
+    state::GuiState,
+    library::scanner::ScannerProgress,
+    components::{
+        status::StatusDisplay,
+        audio_toolbar::AudioToolbar,
+        audiobook_table::AudiobookTable,
+    },
+    styling::{
+        material::MaterialSurface,
+        layout::LayoutContainerStyles,
+        material::components::surface::SurfaceVariant,
+    },
+};
+
+pub struct LibraryView {
+    scanner_progress: ScannerProgress,
+}
+
+impl Default for LibraryView {
+    fn default() -> Self {
+        Self {
+            scanner_progress: ScannerProgress::default(),
+        }
+    }
+}
+
+impl LibraryView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn view(&self, state: &GuiState) -> Element<Message> {
+        // Use the enhanced StatusDisplay component with detailed progress information
+        let status_display = StatusDisplay::enhanced_view(
+            state.scanner_progress.progress.as_ref(),
+            state.scanner_progress.state,
+            &state.material_tokens,
+        );
+
+        // Use the AudiobookTable component with Material Design tokens
+        let table_content = AudiobookTable::view(
+            &state.core_state.data.audiobooks,
+            &state.core_state.data.selected_audiobooks,
+            &state.table_state,
+            &state.material_tokens,
+        );
+
+        // Create content with proper constraints
+        let content = column![
+            // Status display with fixed height
+            container(status_display)
+                .width(Length::Fill)
+                .height(Length::Shrink),
+            // Audio toolbar with fixed height
+            {
+                let mut toolbar = AudioToolbar::new();
+                toolbar.set_playing(matches!(
+                    state.core_state.data.player_state,
+                    abop_core::PlayerState::Playing
+                ));
+
+                container(toolbar.view(&state.material_tokens))
+                    .width(Length::Fill)
+                    .height(Length::Fixed(state.material_tokens.sizing().toolbar_height))
+            },
+            // Table content that will scroll
+            container(table_content)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .style(|_theme: &Theme| {
+                    MaterialSurface::new()
+                        .variant(SurfaceVariant::SurfaceContainerLow)
+                        .style(&state.material_tokens)
+                })
+                .padding(iced::Padding {
+                    top: 8.0,
+                    right: 8.0,
+                    bottom: 8.0,
+                    left: 8.0,
+                }),
+            // Footer
+            StatusDisplay::app_footer(
+                state.core_state.data.audiobooks.len(),
+                state.theme_mode
+            ),
+        ]
+        .spacing(state.material_tokens.spacing.xs)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(state.material_tokens.spacing.md);
+
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(LayoutContainerStyles::content(state.theme_mode))
+            .padding(state.material_tokens.spacing.sm)
+            .into()
+    }
+
+    pub fn update(&mut self, message: Message) {
+        match message {
+            Message::ScanProgress(progress) => {
+                self.scanner_progress.update(progress);
+            }
+            Message::ScanStateChanged(state) => {
+                self.scanner_progress.set_state(state);
+            }
+            _ => {}
+        }
+    }
+}
 
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
-pub fn library_view(state: &UiState) -> iced::Element<Message> {
+pub fn library_view(state: &GuiState) -> iced::Element<Message> {
     println!(
         "=== LIBRARY VIEW RENDER: {} audiobooks ===",
         state.audiobooks.len()
@@ -101,7 +209,8 @@ pub fn library_view(state: &UiState) -> iced::Element<Message> {
                 })
         },
         // Footer with fixed height (no need for additional container)
-        footer
+        footer,
+        self.scanner_progress.view().map(Message::Scanner),
     ]
     .spacing(state.material_tokens.spacing.xs) // Reduced from SM (8px) to XS (4px)
     .width(Length::Fill)

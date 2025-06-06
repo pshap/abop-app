@@ -3,24 +3,39 @@
 use thiserror::Error;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::io;
+use rusqlite;
+use std::sync::Arc;
 
 /// Errors that can occur during scanning operations
-#[derive(Error, Debug)]
+#[derive(Debug, Error, Clone)]
 pub enum ScanError {
     /// I/O error during file operations
-    #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("IO error during scan: {0}")]
+    Io(#[from] Arc<io::Error>),
     
-    /// Error processing audio metadata
-    #[error("Metadata error: {0}")]
-    Metadata(String),
+    /// Invalid file path
+    #[error("Invalid file path: {0}")]
+    InvalidPath(PathBuf),
     
-    /// Database operation failed
-    #[error("Database error: {0}")]
-    Database(#[from] rusqlite::Error),
+    /// Unsupported file type
+    #[error("Unsupported file type: {0}")]
+    UnsupportedFileType(String),
     
-    /// Operation was cancelled
-    #[error("Scan was cancelled")]
+    /// Metadata extraction failed
+    #[error("Metadata extraction failed: {0}")]
+    MetadataError(String),
+    
+    /// Database error
+    #[error("Database error during scan: {0}")]
+    Database(#[from] Arc<rusqlite::Error>),
+    
+    /// Validation error
+    #[error("Validation error: {0}")]
+    Validation(String),
+    
+    /// Operation cancelled
+    #[error("Scan cancelled")]
     Cancelled,
     
     /// Operation timed out
@@ -28,48 +43,48 @@ pub enum ScanError {
     Timeout(Duration),
     
     /// Invalid file format
-    #[error("Unsupported file format: {0}")]
-    UnsupportedFormat(String),
+    #[error("Invalid file format: {0}")]
+    InvalidFormat(String),
     
-    /// Invalid path
-    #[error("Invalid path: {0:?}")]
-    InvalidPath(PathBuf),
-    
-    /// Channel communication error
-    #[error("Channel error: {0}")]
-    Channel(String),
-    
-    /// Task join error
-    #[error("Task error: {0}")]
+    /// Task execution failed
+    #[error("Task failed: {0}")]
     Task(String),
+    
+    /// Scan paused
+    #[error("Scan paused")]
+    Paused,
+    
+    /// Unknown scan error
+    #[error("Unknown scan error: {0}")]
+    Unknown(String),
 }
 
 /// Result type for scan operations
-pub type ScanResult<T = ()> = std::result::Result<T, ScanError>;
+pub type ScanResult<T> = Result<T, ScanError>;
 
 /// Extension trait for adding context to Results
 pub trait Context<T, E> {
-    fn context<C>(self, context: C) -> Result<T, ScanError>
+    fn context<C>(self, context: C) -> ScanResult<T>
     where
         C: std::fmt::Display + Send + Sync + 'static;
 }
 
-impl<T, E> Context<T, E> for Result<T, E>
+impl<T, E> Context<T, E> for std::result::Result<T, E>
 where
     E: std::error::Error + Send + Sync + 'static,
 {
-    fn context<C>(self, context: C) -> Result<T, ScanError>
+    fn context<C>(self, context: C) -> ScanResult<T>
     where
         C: std::fmt::Display + Send + Sync + 'static,
     {
-        self.map_err(|e| ScanError::Metadata(format!("{}: {}", context, e)))
+        self.map_err(|e| ScanError::MetadataError(format!("{}: {}", context, e)))
     }
 }
 
 // Conversions from common error types
 impl From<tokio::sync::mpsc::error::SendError<crate::scanner::progress::ScanProgress>> for ScanError {
     fn from(_: tokio::sync::mpsc::error::SendError<crate::scanner::progress::ScanProgress>) -> Self {
-        ScanError::Channel("Failed to send progress update".into())
+        ScanError::Task("Failed to send progress update".into())
     }
 }
 
@@ -82,5 +97,17 @@ impl From<tokio::task::JoinError> for ScanError {
         } else {
             ScanError::Task("Task failed to complete".into())
         }
+    }
+}
+
+impl From<io::Error> for ScanError {
+    fn from(err: io::Error) -> Self {
+        ScanError::Io(Arc::new(err))
+    }
+}
+
+impl From<rusqlite::Error> for ScanError {
+    fn from(err: rusqlite::Error) -> Self {
+        ScanError::Database(Arc::new(err))
     }
 }

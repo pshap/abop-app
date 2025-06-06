@@ -517,3 +517,15 @@ where
         Self::new(button)
     }
 }
+
+/// Get the button style based on theme
+pub fn button_style(theme: &Theme, _theme_mode: &Theme) -> iced::widget::button::Style {
+    iced::widget::button::Style {
+        background: Some(Background::Color(theme.palette().primary)),
+        border: Border {
+            radius: 8.0.into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}

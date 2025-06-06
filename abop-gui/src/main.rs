@@ -4,12 +4,11 @@
 use abop_gui::app::App;
 use abop_gui::assets;
 
+use abop_core::{Config, ServiceContainer};
+
 use iced::{Size, Task};
 use log::info;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
-
-// Import centralized types from abop-core
-use abop_core::{Config, ServiceContainer};
 
 fn main() -> iced::Result {
     // Initialize logger with tracing
@@ -27,9 +26,9 @@ fn main() -> iced::Result {
         )
         .init();
 
-    info!("Starting ABOP GUI with Iced 0.13.1 (new functional approach)...");
+    info!("Starting ABOP GUI with Iced 0.13.1...");
 
-    // Register embedded fonts (Roboto only, Font Awesome handled by iced_font_awesome)
+    // Register embedded fonts
     assets::register_fonts();
     info!("Material Design fonts registered");
 
@@ -42,7 +41,7 @@ fn main() -> iced::Result {
     // Create the application instance
     let app = App::new();
 
-    // Run the application using the new modular approach with system font defaults
+    // Run the application using Iced 0.13's application builder
     iced::application(
         "ABOP - Audiobook Organizer & Processor",
         App::update,

@@ -39,12 +39,25 @@ impl Default for ConnectionStats {
     }
 }
 
-/// Collects and manages statistics for database operations
+/// Statistics collector for database operations
+#[derive(Debug)]
 pub struct StatisticsCollector {
     /// Internal statistics storage
     stats: Arc<RwLock<ConnectionStats>>,
     /// Connection establishment timestamp
     connected_at: Arc<RwLock<Option<Instant>>>,
+    /// Total number of successful operations
+    successful_operations: Arc<RwLock<usize>>,
+    /// Total number of failed operations
+    failed_operations: Arc<RwLock<usize>>,
+    /// Total number of reconnection attempts
+    reconnection_attempts: Arc<RwLock<usize>>,
+    /// Total number of connections established
+    connections_established: Arc<RwLock<usize>>,
+    /// Total time spent in successful operations (in nanoseconds)
+    total_success_time_ns: Arc<RwLock<u128>>,
+    /// Total time spent in failed operations (in nanoseconds)
+    total_failure_time_ns: Arc<RwLock<u128>>,
 }
 
 impl Default for StatisticsCollector {
@@ -60,6 +73,12 @@ impl StatisticsCollector {
         Self {
             stats: Arc::new(RwLock::new(ConnectionStats::default())),
             connected_at: Arc::new(RwLock::new(None)),
+            successful_operations: Arc::new(RwLock::new(0)),
+            failed_operations: Arc::new(RwLock::new(0)),
+            reconnection_attempts: Arc::new(RwLock::new(0)),
+            connections_established: Arc::new(RwLock::new(0)),
+            total_success_time_ns: Arc::new(RwLock::new(0)),
+            total_failure_time_ns: Arc::new(RwLock::new(0)),
         }
     }
 
@@ -70,7 +89,9 @@ impl StatisticsCollector {
     /// Panics if the `connected_at` `RwLock` is poisoned due to a panic in another thread.
     pub fn record_connection(&self) {
         *self.connected_at.write().unwrap() = Some(Instant::now());
+        *self.connections_established.write().unwrap() += 1;
     }
+
     /// Record a successful operation
     ///
     /// # Panics
@@ -82,6 +103,9 @@ impl StatisticsCollector {
         stats.last_successful_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
         drop(stats);
+
+        *self.successful_operations.write().unwrap() += 1;
+        *self.total_success_time_ns.write().unwrap() += duration.as_nanos();
     }
 
     /// Record a failed operation
@@ -95,6 +119,9 @@ impl StatisticsCollector {
         stats.last_failed_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
         drop(stats);
+
+        *self.failed_operations.write().unwrap() += 1;
+        *self.total_failure_time_ns.write().unwrap() += duration.as_nanos();
     }
 
     /// Record a reconnection attempt
@@ -104,6 +131,7 @@ impl StatisticsCollector {
     /// Panics if the statistics `RwLock` is poisoned due to a panic in another thread.
     pub fn record_reconnection_attempt(&self) {
         self.stats.write().unwrap().reconnection_attempts += 1;
+        *self.reconnection_attempts.write().unwrap() += 1;
     }
 
     /// Update the average operation duration using exponential moving average
@@ -171,8 +199,14 @@ impl StatisticsCollector {
 impl Clone for StatisticsCollector {
     fn clone(&self) -> Self {
         Self {
-            stats: self.stats.clone(),
-            connected_at: self.connected_at.clone(),
+            stats: Arc::clone(&self.stats),
+            connected_at: Arc::clone(&self.connected_at),
+            successful_operations: Arc::clone(&self.successful_operations),
+            failed_operations: Arc::clone(&self.failed_operations),
+            reconnection_attempts: Arc::clone(&self.reconnection_attempts),
+            connections_established: Arc::clone(&self.connections_established),
+            total_success_time_ns: Arc::clone(&self.total_success_time_ns),
+            total_failure_time_ns: Arc::clone(&self.total_failure_time_ns),
         }
     }
 }
