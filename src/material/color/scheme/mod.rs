@@ -19,12 +19,40 @@ pub enum ThemeVariant {
     Dark,
 }
 
-/// Theme data structure
+/// Theme data structure for Material Design 3
+///
+/// The `Theme` struct represents a complete Material Design 3 theme, including
+/// color roles, variant (light/dark), and other theme properties. It provides
+/// methods for creating, customizing, and managing themes.
+///
+/// # Examples
+///
+/// ```rust
+/// use abop_iced::material::color::{Theme, ThemeVariant, Srgb};
+///
+/// // Create a light theme
+/// let mut theme = Theme::light();
+///
+/// // Create a dark theme
+/// let dark_theme = Theme::dark();
+///
+/// // Create a theme from a seed color
+/// let custom_theme = Theme::from_seed(Srgb::new(0.5, 0.2, 0.8), ThemeVariant::Light);
+///
+/// // Toggle between light and dark
+/// theme.toggle();
+/// ```
 #[derive(Debug, Clone)]
 pub struct Theme {
     /// Color scheme variant (light/dark)
+    ///
+    /// Determines whether the theme uses light or dark color values.
+    /// This affects all color roles and their relationships.
     pub variant: ThemeVariant,
     /// Core color roles
+    ///
+    /// Contains all the semantic color roles used throughout the application,
+    /// including primary, secondary, tertiary, error, and surface colors.
     pub colors: ColorRoles,
     // ... other theme properties will be added in subsequent phases
 }

@@ -229,6 +229,25 @@ impl CastingBuilder {
     }
 
     /// Execute integer to integer conversion with configured settings
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The source integer value to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(T)` - The converted value if successful
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::new();
+    /// let result = builder.int_to_int::<i32, u32>(42);
+    /// assert!(result.is_ok());
+    /// ```
     pub fn int_to_int<T, U>(&self, value: T) -> Result<U, DomainCastError>
     where
         T: Into<i64> + Copy + std::fmt::Display,
@@ -264,10 +283,28 @@ impl CastingBuilder {
         })
     }
 
-    /// Convert sample rate with precision control
+    /// Convert sample count between different sample rates
     ///
-    /// # Errors
-    /// Returns an error if either sample rate is zero
+    /// # Arguments
+    ///
+    /// * `from_rate` - Source sample rate in Hz
+    /// * `to_rate` - Target sample rate in Hz
+    /// * `samples` - Number of samples to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(usize)` - The converted sample count
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::for_audio();
+    /// let result = builder.convert_sample_rate(44100, 48000, 1000);
+    /// assert!(result.is_ok());
+    /// ```
     pub fn convert_sample_rate(
         &self,
         from_rate: u32,
@@ -287,10 +324,27 @@ impl CastingBuilder {
         self.float_to_int(new_samples)
     }
 
-    /// Convert audio time to samples with validation
+    /// Convert time duration to sample count
     ///
-    /// # Errors
-    /// Returns an error if sample rate is zero
+    /// # Arguments
+    ///
+    /// * `time_secs` - Duration in seconds
+    /// * `sample_rate` - Sample rate in Hz
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(usize)` - The number of samples
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::for_audio();
+    /// let result = builder.time_to_samples(1.0, 44100);
+    /// assert_eq!(result.unwrap(), 44100);
+    /// ```
     pub fn time_to_samples(
         &self,
         time_secs: f32,
@@ -306,10 +360,28 @@ impl CastingBuilder {
         self.float_to_int(samples)
     }
 
-    /// Convert between audio formats with bit depth consideration
+    /// Convert audio sample value between different bit depths
     ///
-    /// # Errors
-    /// Returns an error if either bit depth is zero or too large
+    /// # Arguments
+    ///
+    /// * `value` - The audio sample value to convert
+    /// * `from_bits` - Source bit depth (e.g., 16, 24, 32)
+    /// * `to_bits` - Target bit depth
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(i64)` - The converted sample value
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::for_audio();
+    /// let result = builder.convert_audio_value(32767.0, 16, 24);
+    /// assert!(result.is_ok());
+    /// ```
     pub fn convert_audio_value(
         &self,
         value: f64,
@@ -332,10 +404,27 @@ impl CastingBuilder {
         self.float_to_int(scaled)
     }
 
-    /// Convert logical pixels to physical pixels with scaling
+    /// Convert logical UI units to physical pixels
     ///
-    /// # Errors
-    /// Returns an error if the conversion would overflow or underflow
+    /// # Arguments
+    ///
+    /// * `logical` - Logical UI units (e.g., points)
+    /// * `scale_factor` - Display scale factor (e.g., 1.0 for 100% DPI)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u16)` - The physical pixel value
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::for_ui();
+    /// let result = builder.logical_to_physical(100.0, 1.5);
+    /// assert_eq!(result.unwrap(), 150);
+    /// ```
     pub fn logical_to_physical(
         &self,
         logical: f32,
@@ -356,10 +445,27 @@ impl CastingBuilder {
         self.float_to_int(physical)
     }
 
-    /// Convert physical pixels to logical pixels
+    /// Convert physical pixels to logical UI units
     ///
-    /// # Errors
-    /// Returns an error if scale factor is zero or if the value would be infinite
+    /// # Arguments
+    ///
+    /// * `physical` - Physical pixel value
+    /// * `scale_factor` - Display scale factor (e.g., 1.0 for 100% DPI)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(f32)` - The logical UI units
+    /// * `Err(DomainCastError)` - If the conversion fails due to overflow or validation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_core::utils::casting::CastingBuilder;
+    ///
+    /// let builder = CastingBuilder::for_ui();
+    /// let result = builder.physical_to_logical(150, 1.5);
+    /// assert_eq!(result.unwrap(), 100.0);
+    /// ```
     pub fn physical_to_logical(
         &self,
         physical: u16,

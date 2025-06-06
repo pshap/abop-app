@@ -114,23 +114,91 @@ mod hct;
 mod contrast;
 
 /// Color in sRGB color space
+///
+/// The `Srgb` struct represents a color in the sRGB color space, which is the
+/// standard color space used for digital displays. Each component (red, green, blue)
+/// is represented as a floating-point value between 0.0 and 1.0.
+///
+/// # Examples
+///
+/// ```rust
+/// use abop_iced::material::color::Srgb;
+///
+/// // Create a red color
+/// let red = Srgb::new(1.0, 0.0, 0.0);
+///
+/// // Create a green color
+/// let green = Srgb::new(0.0, 1.0, 0.0);
+///
+/// // Create a blue color
+/// let blue = Srgb::new(0.0, 0.0, 1.0);
+///
+/// // Convert to RGBA
+/// let rgba = red.to_rgba(0.5); // Semi-transparent red
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Srgb {
     /// Red component (0.0 - 1.0)
+    ///
+    /// The red component of the color, where 0.0 is no red and 1.0 is full red.
     pub r: f32,
     /// Green component (0.0 - 1.0)
+    ///
+    /// The green component of the color, where 0.0 is no green and 1.0 is full green.
     pub g: f32,
     /// Blue component (0.0 - 1.0)
+    ///
+    /// The blue component of the color, where 0.0 is no blue and 1.0 is full blue.
     pub b: f32,
 }
 
 impl Srgb {
     /// Create a new sRGB color
+    ///
+    /// # Arguments
+    ///
+    /// * `r` - Red component (0.0 - 1.0)
+    /// * `g` - Green component (0.0 - 1.0)
+    /// * `b` - Blue component (0.0 - 1.0)
+    ///
+    /// # Returns
+    ///
+    /// A new `Srgb` color with the specified components.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_iced::material::color::Srgb;
+    ///
+    /// let color = Srgb::new(0.5, 0.2, 0.8);
+    /// assert_eq!(color.r, 0.5);
+    /// assert_eq!(color.g, 0.2);
+    /// assert_eq!(color.b, 0.8);
+    /// ```
     pub fn new(r: f32, g: f32, b: f32) -> Self {
         Self { r, g, b }
     }
 
     /// Convert to 32-bit RGBA color (0xAARRGGBB)
+    ///
+    /// # Arguments
+    ///
+    /// * `alpha` - Alpha component (0.0 - 1.0)
+    ///
+    /// # Returns
+    ///
+    /// A 32-bit unsigned integer representing the color in RGBA format,
+    /// where the bits are arranged as 0xAARRGGBB.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use abop_iced::material::color::Srgb;
+    ///
+    /// let color = Srgb::new(1.0, 0.0, 0.0);
+    /// let rgba = color.to_rgba(0.5);
+    /// assert_eq!(rgba, 0x80FF0000); // Semi-transparent red
+    /// ```
     pub fn to_rgba(&self, alpha: f32) -> u32 {
         let r = (self.r.clamp(0.0, 1.0) * 255.0) as u32;
         let g = (self.g.clamp(0.0, 1.0) * 255.0) as u32;
