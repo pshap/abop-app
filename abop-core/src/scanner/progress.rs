@@ -1,6 +1,7 @@
 //! Progress reporting system for scanner operations
 
 use std::time::Duration;
+use async_trait::async_trait;
 
 /// Events emitted during scanning to report progress
 #[derive(Debug, Clone)]
@@ -50,7 +51,7 @@ pub enum ScanProgress {
 }
 
 /// Trait for types that can receive scan progress updates
-#[async_trait::async_trait]
+#[async_trait]
 pub trait ProgressReporter: Send + Sync + 'static {
     /// Called when a progress event occurs
     async fn report(&self, progress: ScanProgress) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
@@ -71,10 +72,68 @@ impl<T: From<ScanProgress> + Send + Sync + 'static> ChannelReporter<T> {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<T: From<ScanProgress> + Send + Sync + 'static> ProgressReporter for ChannelReporter<T> {
     async fn report(&self, progress: ScanProgress) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.sender.send(progress.into()).await?;
+        Ok(())
+    }
+}
+
+/// Implementation that logs progress updates
+pub struct LoggingReporter {
+    level: log::Level,
+}
+
+impl LoggingReporter {
+    pub fn new(level: log::Level) -> Self {
+        Self { level }
+    }
+}
+
+#[async_trait]
+impl ProgressReporter for LoggingReporter {
+    async fn report(&self, progress: ScanProgress) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        match progress {
+            ScanProgress::Started { total_files } => {
+                log::log!(self.level, "Starting scan of {} files", total_files);
+            }
+            ScanProgress::FileProcessed { current, total, file_name, progress_percentage } => {
+                log::log!(
+                    self.level,
+                    "Processed {}/{} files ({}%) - {}",
+                    current,
+                    total,
+                    (progress_percentage * 100.0) as u32,
+                    file_name
+                );
+            }
+            ScanProgress::BatchCommitted { count, total_processed } => {
+                log::log!(
+                    self.level,
+                    "Committed batch of {} files (total: {})",
+                    count,
+                    total_processed
+                );
+            }
+            ScanProgress::Complete { processed, errors, duration } => {
+                log::log!(
+                    self.level,
+                    "Scan completed: {} files processed, {} errors, duration: {:?}",
+                    processed,
+                    errors,
+                    duration
+                );
+            }
+            ScanProgress::Cancelled { processed, duration } => {
+                log::log!(
+                    self.level,
+                    "Scan cancelled after processing {} files in {:?}",
+                    processed,
+                    duration
+                );
+            }
+        }
         Ok(())
     }
 }

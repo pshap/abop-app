@@ -284,10 +284,10 @@ fn process_metadata_tags(
     }
 
     // Extract cover art if available (first visual in the metadata)
-    if let Some(reader) = metadata.current()
-        && let Some(visual) = reader.visuals().iter().next()
-    {
-        meta.cover_art = Some(visual.data.to_vec());
+    if let Some(reader) = metadata.current() {
+        if let Some(visual) = reader.visuals().iter().next() {
+            meta.cover_art = Some(visual.data.to_vec());
+        }
     }
 
     meta

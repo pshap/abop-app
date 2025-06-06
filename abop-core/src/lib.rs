@@ -43,7 +43,6 @@ pub use config::Config;
 pub use constants::{config as config_constants, ui};
 
 // Re-exports from scanner module
-pub use scanner::SUPPORTED_AUDIO_EXTENSIONS;
 
 // Re-exports from error module
 pub use error::{AppError, Result};

@@ -193,19 +193,21 @@ impl ConfigValidator {
     /// Returns [`AppError::Audio`] if processor configurations are incompatible with each other.
     pub fn validate_config_compatibility(config: &ProcessingConfig) -> AppResult<()> {
         // Check resampler and normalizer compatibility
-        if let (Some(resampler), Some(_normalizer)) = (&config.resampler, &config.normalizer)
-            && let Some(target_rate) = resampler.target_sample_rate
-            && target_rate < 8000
-        {
-            log::warn!("Low sample rate may affect normalization accuracy: {target_rate} Hz");
+        if let (Some(resampler), Some(_normalizer)) = (&config.resampler, &config.normalizer) {
+            if let Some(target_rate) = resampler.target_sample_rate {
+                if target_rate < 8000 {
+                    log::warn!("Low sample rate may affect normalization accuracy: {target_rate} Hz");
+                }
+            }
         }
 
         // Check channel mixer and silence detector compatibility
-        if let (Some(mixer), Some(_silence)) = (&config.channel_mixer, &config.silence_detector)
-            && let Some(target_channels) = mixer.target_channels
-            && target_channels == 1
-        {
-            log::info!("Mono output selected - silence detection will work on mono signal");
+        if let (Some(mixer), Some(_silence)) = (&config.channel_mixer, &config.silence_detector) {
+            if let Some(target_channels) = mixer.target_channels {
+                if target_channels == 1 {
+                    log::info!("Mono output selected - silence detection will work on mono signal");
+                }
+            }
         }
 
         Ok(())

@@ -149,26 +149,26 @@ impl AudioProcessingPipeline {
             buffer.data.len()
         );
         // Apply resampling first if needed
-        if let Some(ref resampler_config) = self.config.resampler
-            && resampler_config.target_sample_rate.is_some()
-        {
-            self.resampler.process(buffer)?;
-            log::debug!(
-                "After resampling: {} Hz, {} samples",
-                buffer.sample_rate,
-                buffer.data.len()
-            );
+        if let Some(ref resampler_config) = self.config.resampler {
+            if let Some(_) = resampler_config.target_sample_rate {
+                self.resampler.process(buffer)?;
+                log::debug!(
+                    "After resampling: {} Hz, {} samples",
+                    buffer.sample_rate,
+                    buffer.data.len()
+                );
+            }
         }
         // Apply channel mixing if needed
-        if let Some(ref mixer_config) = self.config.channel_mixer
-            && mixer_config.target_channels.is_some()
-        {
-            self.channel_mixer.process(buffer)?;
-            log::debug!(
-                "After channel mixing: {} channels, {} samples",
-                buffer.channels,
-                buffer.data.len()
-            );
+        if let Some(ref mixer_config) = self.config.channel_mixer {
+            if let Some(_) = mixer_config.target_channels {
+                self.channel_mixer.process(buffer)?;
+                log::debug!(
+                    "After channel mixing: {} channels, {} samples",
+                    buffer.channels,
+                    buffer.data.len()
+                );
+            }
         }
         // Apply normalization if enabled
         if self.config.normalizer.is_some() {

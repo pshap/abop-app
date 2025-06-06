@@ -101,7 +101,9 @@ impl AudioPlayer {
 
         // Update state
         if let Ok(mut sink_opt) = self.sink.lock() {
-            *sink_opt = Some(sink);
+            if let Some(sink) = sink_opt.take() {
+                *sink_opt = Some(sink);
+            }
         }
         if let Ok(mut state) = self.state.lock() {
             *state = PlayerState::Playing;
@@ -116,11 +118,11 @@ impl AudioPlayer {
 
     /// Stops audio playback
     pub fn stop(&self) {
-        if let Ok(mut sink_opt) = self.sink.lock()
-            && let Some(sink) = sink_opt.take()
-        {
-            sink.stop();
-            log::info!("Stopped audio playback");
+        if let Ok(mut sink_opt) = self.sink.lock() {
+            if let Some(sink) = sink_opt.take() {
+                sink.stop();
+                log::info!("Stopped audio playback");
+            }
         }
 
         if let Ok(mut state) = self.state.lock() {
@@ -132,27 +134,27 @@ impl AudioPlayer {
     }
     /// Pauses audio playback
     pub fn pause(&self) {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
-            sink.pause();
-            if let Ok(mut state) = self.state.lock() {
-                *state = PlayerState::Paused;
+        if let Ok(sink_opt) = self.sink.lock() {
+            if let Some(ref sink) = *sink_opt {
+                sink.pause();
+                if let Ok(mut state) = self.state.lock() {
+                    *state = PlayerState::Paused;
+                }
+                log::info!("Paused audio playback");
             }
-            log::info!("Paused audio playback");
         }
     }
 
     /// Resumes audio playback
     pub fn resume(&self) {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
-            sink.play();
-            if let Ok(mut state) = self.state.lock() {
-                *state = PlayerState::Playing;
+        if let Ok(sink_opt) = self.sink.lock() {
+            if let Some(ref sink) = *sink_opt {
+                sink.play();
+                if let Ok(mut state) = self.state.lock() {
+                    *state = PlayerState::Playing;
+                }
+                log::info!("Resumed audio playback");
             }
-            log::info!("Resumed audio playback");
         }
     }
 
@@ -172,10 +174,10 @@ impl AudioPlayer {
             *vol = volume;
         }
 
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
-            sink.set_volume(volume);
+        if let Ok(sink_opt) = self.sink.lock() {
+            if let Some(ref sink) = *sink_opt {
+                sink.set_volume(volume);
+            }
         }
         log::debug!("Set volume to {:.1}%", volume * 100.0);
     }
@@ -213,10 +215,10 @@ impl AudioPlayer {
     /// Checks if the sink is empty (finished playing)
     #[must_use]
     pub fn is_finished(&self) -> bool {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
-            return sink.empty();
+        if let Ok(sink_opt) = self.sink.lock() {
+            if let Some(ref sink) = *sink_opt {
+                return sink.empty();
+            }
         }
         true
     }

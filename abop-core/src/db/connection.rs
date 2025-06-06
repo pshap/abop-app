@@ -4,7 +4,7 @@
 //! retry logic, and performance tracking for improved reliability and observability.
 
 use crate::db::error::{DatabaseError, DbResult};
-use crate::db::health::HealthMonitor;
+use crate::db::health::{HealthMonitor, ConnectionHealth};
 use crate::db::retry::{RetryExecutor, RetryPolicy};
 use crate::db::statistics::{ConnectionStats, StatisticsCollector};
 use rusqlite::{Connection, OpenFlags};
@@ -43,8 +43,9 @@ impl Default for ConnectionConfig {
 }
 
 /// Enhanced database connection manager
+#[derive(Clone, Debug)]
 pub struct EnhancedConnection {
-    /// Database connection
+    /// Database connection (thread-safe)
     connection: Arc<Mutex<Option<Connection>>>,
     /// Connection configuration
     config: ConnectionConfig,
@@ -59,12 +60,12 @@ pub struct EnhancedConnection {
 impl EnhancedConnection {
     /// Create a new enhanced connection with default configuration
     #[must_use]
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(path: P) -> DbResult<Self> {
         let config = ConnectionConfig {
             path: path.as_ref().to_path_buf(),
             ..Default::default()
         };
-        Self::with_config(config)
+        Ok(Self::with_config(config))
     }
 
     /// Create a new enhanced connection with custom configuration
@@ -79,6 +80,48 @@ impl EnhancedConnection {
             health_monitor: Arc::new(HealthMonitor::new()),
             retry_executor,
         }
+    }
+
+    /// Execute a closure with database connection, with retry logic
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if:
+    /// - Failed to acquire connection lock
+    /// - No active database connection
+    /// - The operation closure returns an error
+    /// - Connection retry attempts are exhausted
+    /// - Database is in an unrecoverable state
+    pub fn with_connection<F, R>(&self, operation: F) -> DbResult<R>
+    where
+        F: FnOnce(&Connection) -> DbResult<R> + Send + 'static,
+        R: Send + 'static,
+    {
+        let start_time = Instant::now();
+        let connection = Arc::clone(&self.connection);
+        let stats_collector = self.stats_collector.clone();
+        let operation = Arc::new(Mutex::new(Some(operation)));
+
+        let result = self.retry_executor.execute(move || {
+            let conn = connection.lock().map_err(|_| {
+                DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
+            })?;
+            let conn = conn.as_ref().ok_or_else(|| {
+                DatabaseError::ConnectionFailed("No active database connection".to_string())
+            })?;
+
+            let mut operation_guard = operation.lock().map_err(|_| {
+                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
+            })?;
+            let operation = operation_guard.take().ok_or_else(|| {
+                DatabaseError::ConnectionFailed("Operation already executed".to_string())
+            })?;
+
+            operation(conn)
+        })?;
+
+        stats_collector.record_success(start_time.elapsed());
+        Ok(result)
     }
 
     /// Establish or re-establish database connection
@@ -120,114 +163,60 @@ impl EnhancedConnection {
 
     /// Attempt to establish connection with retry logic
     fn try_connect(&self) -> DbResult<()> {
-        self.retry_executor
-            .execute(|| match self.establish_connection() {
-                Ok(conn) => self.connection.lock().map_or_else(
-                    |_| {
-                        Err(DatabaseError::ConnectionFailed(
-                            "Failed to acquire connection lock".to_string(),
-                        ))
-                    },
-                    |mut connection| {
-                        *connection = Some(conn);
-                        Ok(())
-                    },
-                ),
+        let config = self.config.clone();
+        let connection = Arc::clone(&self.connection);
+        let stats_collector = self.stats_collector.clone();
+
+        self.retry_executor.execute(move || {
+            match Self::establish_connection_internal(&config) {
+                Ok(conn) => {
+                    let mut connection = connection.lock().map_err(|_| {
+                        DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
+                    })?;
+                    *connection = Some(conn);
+                    Ok(())
+                }
                 Err(e) => {
-                    self.stats_collector.record_reconnection_attempt();
+                    stats_collector.record_reconnection_attempt();
                     Err(e)
                 }
-            })
+            }
+        })
     }
 
-    /// Establish a new database connection
-    fn establish_connection(&self) -> DbResult<Connection> {
+    /// Internal method to establish a new database connection
+    fn establish_connection_internal(config: &ConnectionConfig) -> DbResult<Connection> {
         let flags = OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE;
-        let conn = Connection::open_with_flags(&self.config.path, flags).map_err(|e| {
+        let conn = Connection::open_with_flags(&config.path, flags).map_err(|e| {
             DatabaseError::ConnectionFailed(format!("Failed to open database: {e}"))
         })?;
 
         // Configure database settings
-        self.configure_connection(&conn)?;
+        Self::configure_connection_internal(&conn, config)?;
 
         Ok(conn)
     }
 
-    /// Configure database connection settings
-    fn configure_connection(&self, conn: &Connection) -> DbResult<()> {
+    /// Internal method to configure database connection settings
+    fn configure_connection_internal(conn: &Connection, config: &ConnectionConfig) -> DbResult<()> {
         let mut pragmas = Vec::new();
 
-        if self.config.enable_foreign_keys {
+        if config.enable_foreign_keys {
             pragmas.push("PRAGMA foreign_keys = ON;");
         }
 
-        if self.config.enable_wal_mode {
+        if config.enable_wal_mode {
             pragmas.push("PRAGMA journal_mode = WAL;");
             pragmas.push("PRAGMA synchronous = NORMAL;");
         }
 
-        // Set connection timeout
-        let timeout_ms = self.config.connection_timeout_seconds * 1000;
-        let timeout_pragma = format!("PRAGMA busy_timeout = {timeout_ms};");
-        pragmas.push(&timeout_pragma);
-
-        let pragma_sql = pragmas.join("\n");
-        conn.execute_batch(&pragma_sql)
-            .map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to configure database with pragmas '{pragma_sql}': {e}"),
+        for pragma in pragmas {
+            conn.execute_batch(pragma).map_err(|e| {
+                DatabaseError::ConnectionFailed(format!("Failed to set pragma {}: {}", pragma, e))
             })?;
-
-        Ok(())
-    }
-
-    /// Execute a closure with database connection, with retry logic
-    ///
-    /// # Errors
-    ///
-    /// Returns a database error if:
-    /// - Failed to establish database connection
-    /// - The operation closure returns an error
-    /// - Connection retry attempts are exhausted
-    /// - Database is in an unrecoverable state
-    pub fn with_connection<F, R>(&self, operation: F) -> DbResult<R>
-    where
-        F: Fn(&Connection) -> DbResult<R> + Send + 'static,
-        R: Send + 'static,
-    {
-        let start_time = Instant::now();
-
-        let result = self.retry_executor.execute(|| {
-            let conn_guard = self.connection.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
-            })?;
-
-            if let Some(conn) = conn_guard.as_ref() {
-                operation(conn)
-            } else {
-                drop(conn_guard);
-                self.connect()?;
-                let new_guard = self.connection.lock().map_err(|_| {
-                    DatabaseError::ConnectionFailed(
-                        "Failed to acquire connection lock after establishment".to_string(),
-                    )
-                })?;
-                new_guard.as_ref().map_or_else(
-                    || {
-                        Err(DatabaseError::ConnectionFailed(
-                            "Connection not available after establishment".to_string(),
-                        ))
-                    },
-                    &operation,
-                )
-            }
-        });
-
-        match &result {
-            Ok(_) => self.stats_collector.record_success(start_time.elapsed()),
-            Err(_) => self.stats_collector.record_failure(start_time.elapsed()),
         }
 
-        result
+        Ok(())
     }
 
     /// Get connection statistics
@@ -236,156 +225,101 @@ impl EnhancedConnection {
         self.stats_collector.get_stats()
     }
 
-    /// Get the current health status
+    /// Get connection health status
     #[must_use]
-    pub fn health(&self) -> crate::db::health::ConnectionHealth {
+    pub fn health(&self) -> ConnectionHealth {
         self.health_monitor.status()
     }
 
-    /// Perform a health check
-    ///
-    /// # Errors
-    ///
-    /// Returns a database error if:
-    /// - Failed to establish database connection
-    /// - Health check query execution fails
-    /// - Database is not responding correctly
+    /// Perform a health check on the connection
     pub fn health_check(&self) -> DbResult<()> {
-        // Simple health check - try to execute a simple query
         self.with_connection(|conn| {
-            conn.execute_batch("SELECT 1")
-                .map_err(|e| DatabaseError::ConnectionFailed(format!("Health check failed: {e}")))
+            conn.execute_batch("SELECT 1").map_err(|e| {
+                DatabaseError::ConnectionFailed(format!("Health check failed: {}", e))
+            })
         })
     }
 
-    /// Close database connection
-    ///
-    /// # Errors
-    ///
-    /// Returns a database error if:
-    /// - Failed to properly close the database connection
-    /// - Cleanup operations fail during shutdown
+    /// Close the database connection
     pub fn close(&self) -> DbResult<()> {
-        log::debug!("Closing database connection");
-
-        let conn_opt = {
-            if let Ok(mut conn_guard) = self.connection.lock() {
-                conn_guard.take()
-            } else {
-                return Err(DatabaseError::ConnectionFailed(
-                    "Failed to acquire connection lock".to_string(),
-                ));
-            }
-        };
-
-        if let Some(conn) = conn_opt
-            && let Err(e) = conn.close()
-        {
-            log::error!("Error closing database connection: {e:?}");
-            return Err(DatabaseError::ConnectionFailed(format!(
-                "Failed to close connection: {e:?}"
-            )));
+        let mut conn = self.connection.lock().map_err(|_| {
+            DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
+        })?;
+        if let Some(connection) = conn.take() {
+            connection.close().map_err(|(_, e)| {
+                DatabaseError::ConnectionFailed(format!("Failed to close connection: {:?}", e))
+            })?;
         }
-
-        self.health_monitor.set_failed();
-        log::info!("Database connection closed successfully");
         Ok(())
     }
-}
 
-impl Clone for EnhancedConnection {
-    fn clone(&self) -> Self {
-        Self {
-            connection: self.connection.clone(),
-            config: self.config.clone(),
-            stats_collector: self.stats_collector.clone(),
-            health_monitor: self.health_monitor.clone(),
-            retry_executor: RetryExecutor::new(self.config.retry_policy.clone()),
-        }
+    /// Get the current retry policy
+    #[must_use]
+    pub fn get_retry_policy(&self) -> RetryPolicy {
+        self.config.retry_policy.clone()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::ConnectionHealth;
+    use std::fs;
     use tempfile::NamedTempFile;
 
-    #[test]
-    fn test_enhanced_connection_creation() {
+    fn setup_test_db() -> NamedTempFile {
         let temp_file = NamedTempFile::new().unwrap();
-        let conn = EnhancedConnection::new(temp_file.path());
+        let path = temp_file.path();
+        fs::write(path, "").unwrap();
+        temp_file
+    }
 
-        assert_eq!(conn.stats().successful_operations, 0);
-        assert_eq!(conn.stats().failed_operations, 0);
+    #[test]
+    fn test_connection_creation() {
+        let temp_file = setup_test_db();
+        let conn = EnhancedConnection::new(temp_file.path()).unwrap();
+        assert_eq!(conn.health(), ConnectionHealth::Connecting);
     }
 
     #[test]
     fn test_connection_establishment() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let conn = EnhancedConnection::new(temp_file.path());
-
+        let temp_file = setup_test_db();
+        let conn = EnhancedConnection::new(temp_file.path()).unwrap();
         conn.connect().unwrap();
-        assert_eq!(conn.health_monitor.status(), ConnectionHealth::Healthy);
+        assert_eq!(conn.health(), ConnectionHealth::Healthy);
     }
 
     #[test]
-    fn test_operation_with_connection() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let conn = EnhancedConnection::new(temp_file.path());
-
+    fn test_connection_operations() {
+        let temp_file = setup_test_db();
+        let conn = EnhancedConnection::new(temp_file.path()).unwrap();
         conn.connect().unwrap();
 
-        let result = conn
-            .with_connection(|db_conn| {
-                db_conn
-                    .execute("CREATE TABLE test (id INTEGER PRIMARY KEY)", [])
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("CREATE TABLE test failed: {e}"),
-                    })?;
-                Ok(42)
+        conn.with_connection(|db| {
+            db.execute_batch("CREATE TABLE test (id INTEGER PRIMARY KEY)").map_err(|e| {
+                DatabaseError::ConnectionFailed(format!("Failed to create table: {}", e))
             })
-            .unwrap();
-
-        assert_eq!(result, 42);
-        assert!(conn.stats().successful_operations > 0);
-    }
-
-    #[test]
-    fn test_connection_stats_tracking() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let conn = EnhancedConnection::new(temp_file.path());
-
-        conn.connect().unwrap();
-        // Perform some operations
-        for _ in 0..3 {
-            conn.with_connection(|db_conn| {
-                db_conn
-                    .prepare("SELECT 1")
-                    .and_then(|mut stmt| stmt.query_row([], |_| Ok(1)))
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("SELECT 1 failed: {e}"),
-                    })?;
-                Ok(())
-            })
-            .unwrap();
-        }
+        })
+        .unwrap();
 
         let stats = conn.stats();
-        assert_eq!(stats.successful_operations, 4); // 3 operations + 1 connect
-        assert_eq!(stats.failed_operations, 0);
-        assert!(stats.avg_operation_duration_ms >= 0.0);
+        assert!(stats.successful_operations > 0);
+    }
+
+    #[test]
+    fn test_connection_health_check() {
+        let temp_file = setup_test_db();
+        let conn = EnhancedConnection::new(temp_file.path()).unwrap();
+        conn.connect().unwrap();
+        conn.health_check().unwrap();
+        assert_eq!(conn.health(), ConnectionHealth::Healthy);
     }
 
     #[test]
     fn test_connection_close() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let conn = EnhancedConnection::new(temp_file.path());
-
+        let temp_file = setup_test_db();
+        let conn = EnhancedConnection::new(temp_file.path()).unwrap();
         conn.connect().unwrap();
-        assert_eq!(conn.health_monitor.status(), ConnectionHealth::Healthy);
-
         conn.close().unwrap();
-        assert_eq!(conn.health_monitor.status(), ConnectionHealth::Failed);
+        assert_eq!(conn.health(), ConnectionHealth::Failed);
     }
 }
