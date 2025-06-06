@@ -180,6 +180,7 @@ pub fn create_test_directory_structure(temp_dir: &TempDir) -> PathBuf {
 /// // ... use fixture ...
 /// cleanup_fixture(&mut fixture);
 /// ```
+#[allow(dead_code)]
 pub trait TestFixture {
     /// Creates a new instance of the fixture.
     fn setup() -> Self;
@@ -193,6 +194,7 @@ pub trait TestFixture {
 ///
 /// # Arguments
 /// * `fixture` - The fixture to clean up
+#[allow(dead_code)]
 pub fn cleanup_fixture<F: TestFixture>(fixture: &mut F) {
     fixture.teardown();
 }
