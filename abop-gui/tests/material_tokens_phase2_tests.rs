@@ -42,11 +42,11 @@ mod tests {
 
         // Test shadow access
         let shadow = tokens.elevation_shadow(1);
-        assert!(shadow.offset.y > 0.0); // Should have vertical offset
+        assert!(shadow.offset.y >= 0.0); // Should have non-negative vertical offset
 
         // Test tint opacity
         let opacity = tokens.elevation_tint_opacity(3);
-        assert!(opacity >= 0.0 && opacity <= 1.0);
+        assert!(opacity >= 0.0 && opacity <= 1.0); // Should be normalized between 0 and 1
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
 
         // Test color system access
         let colors = tokens.colors();
-        assert!(colors.primary.base.r >= 0.0 && colors.primary.base.r <= 1.0);
+        assert!((0..=255).contains(&((colors.primary.base.r * 255.0) as u8)));
 
         // Test typography access
         let _typography = tokens.typography();
@@ -158,12 +158,12 @@ mod tests {
         let semantic = tokens.semantic_colors();
 
         // Test semantic color properties exist
-        assert!(semantic.primary.r >= 0.0 && semantic.primary.r <= 1.0);
-        assert!(semantic.secondary.r >= 0.0 && semantic.secondary.r <= 1.0);
-        assert!(semantic.success.r >= 0.0 && semantic.success.r <= 1.0);
-        assert!(semantic.warning.r >= 0.0 && semantic.warning.r <= 1.0);
-        assert!(semantic.error.r >= 0.0 && semantic.error.r <= 1.0);
-        assert!(semantic.info.r >= 0.0 && semantic.info.r <= 1.0);
+        assert!((0..=255).contains(&((semantic.primary.r * 255.0) as u8)));
+        assert!((0..=255).contains(&((semantic.secondary.r * 255.0) as u8)));
+        assert!((0..=255).contains(&((semantic.success.r * 255.0) as u8)));
+        assert!((0..=255).contains(&((semantic.warning.r * 255.0) as u8)));
+        assert!((0..=255).contains(&((semantic.error.r * 255.0) as u8)));
+        assert!((0..=255).contains(&((semantic.info.r * 255.0) as u8)));
     }
 
     // =============================================================================

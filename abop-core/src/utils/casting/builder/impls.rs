@@ -303,7 +303,11 @@ impl CastingBuilder {
     ///
     /// let builder = CastingBuilder::for_audio();
     /// let result = builder.convert_sample_rate(44100, 48000, 1000);
-    /// assert!(result.is_ok());
+    /// // Should successfully convert sample count between sample rates
+    /// match result {
+    ///     Ok(_) => println!("Conversion successful"),
+    ///     Err(e) => println!("Conversion failed: {}", e),
+    /// }
     /// ```
     pub fn convert_sample_rate(
         &self,

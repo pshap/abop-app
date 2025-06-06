@@ -69,6 +69,7 @@ name = "abop-gui"
 version = "0.1.0"
 dependencies = [
  "abop-core",
+ "approx",
  "bytemuck",
  "chrono",
  "dirs 5.0.1",

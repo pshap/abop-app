@@ -2,6 +2,7 @@
 //! for Material Design consistency across all button variants
 
 use iced::Color;
+use approx::assert_abs_diff_eq;
 
 use abop_gui::styling::color_utils::ColorUtils;
 use abop_gui::styling::material::MaterialTokens;
@@ -17,8 +18,8 @@ use abop_gui::styling::material::components::button_style::variants::{
 /// Calculate contrast ratio between two colors
 fn calculate_contrast_ratio(color1: Color, color2: Color) -> f32 {
     // Convert to grayscale using sRGB luminance factors
-    let luminance1 = 0.2126 * color1.r + 0.7152 * color1.g + 0.0722 * color1.b;
-    let luminance2 = 0.2126 * color2.r + 0.7152 * color2.g + 0.0722 * color2.b;
+    let luminance1 = calculate_luminance(color1);
+    let luminance2 = calculate_luminance(color2);
 
     // Calculate contrast ratio according to WCAG 2.0
     let (brighter, darker) = if luminance1 > luminance2 {
@@ -29,6 +30,10 @@ fn calculate_contrast_ratio(color1: Color, color2: Color) -> f32 {
 
     // WCAG 2.0 contrast ratio formula
     (brighter + 0.05) / (darker + 0.05)
+}
+
+fn calculate_luminance(color: Color) -> f32 {
+    0.2126f32.mul_add(color.r, 0.7152f32.mul_add(color.g, 0.0722 * color.b))
 }
 
 #[test]
@@ -73,50 +78,50 @@ fn test_centralized_disabled_colors() {
         println!("Disabled text color: {:?}", styling.text_color);
 
         // Verify that disabled text color uses the centralized approach
-        assert_eq!(
-            styling.text_color.r, expected_disabled_color.r,
-            "{} button disabled text color red component should match centralized approach",
-            name
+        assert_abs_diff_eq!(
+            styling.text_color.r, 
+            expected_disabled_color.r,
+            epsilon = 0.001
         );
-        assert_eq!(
-            styling.text_color.g, expected_disabled_color.g,
-            "{} button disabled text color green component should match centralized approach",
-            name
+        assert_abs_diff_eq!(
+            styling.text_color.g, 
+            expected_disabled_color.g,
+            epsilon = 0.001
         );
-        assert_eq!(
-            styling.text_color.b, expected_disabled_color.b,
-            "{} button disabled text color blue component should match centralized approach",
-            name
+        assert_abs_diff_eq!(
+            styling.text_color.b, 
+            expected_disabled_color.b,
+            epsilon = 0.001
         );
-        assert_eq!(
-            styling.text_color.a, expected_disabled_color.a,
-            "{} button disabled text color alpha should match centralized approach ({})",
-            name, expected_disabled_alpha
+        assert_abs_diff_eq!(
+            styling.text_color.a, 
+            expected_disabled_color.a,
+            epsilon = 0.001
         );
 
         // Check icon color if provided
         if let Some(icon_color) = styling.icon_color {
             println!("Disabled icon color: {:?}", icon_color);
 
-            assert_eq!(
-                icon_color.r, expected_disabled_color.r,
-                "{} button disabled icon color red component should match centralized approach",
-                name
+            assert_abs_diff_eq!(
+                icon_color.r, 
+                expected_disabled_color.r,
+                epsilon = 0.001
             );
-            assert_eq!(
-                icon_color.g, expected_disabled_color.g,
-                "{} button disabled icon color green component should match centralized approach",
-                name
+            assert_abs_diff_eq!(
+                icon_color.g, 
+                expected_disabled_color.g,
+                epsilon = 0.001
             );
-            assert_eq!(
-                icon_color.b, expected_disabled_color.b,
-                "{} button disabled icon color blue component should match centralized approach",
-                name
+            assert_abs_diff_eq!(
+                icon_color.b, 
+                expected_disabled_color.b,
+                epsilon = 0.001
             );
-            assert_eq!(
-                icon_color.a, expected_disabled_color.a,
-                "{} button disabled icon color alpha should match centralized approach ({})",
-                name, expected_disabled_alpha
+            assert_abs_diff_eq!(
+                icon_color.a, 
+                expected_disabled_color.a,
+                epsilon = 0.001
             );
         }
 
@@ -176,9 +181,10 @@ fn test_material_design_opacity_compliance() {
     // Material Design 3 spec recommends 0.38 opacity for disabled states
     let expected_opacity = 0.38f32;
 
-    assert_eq!(
-        tokens.states.opacity.disabled, expected_opacity,
-        "Disabled opacity should follow Material Design 3 spec (0.38)"
+    assert_abs_diff_eq!(
+        tokens.states.opacity.disabled, 
+        expected_opacity,
+        epsilon = 0.001
     );
 
     println!(

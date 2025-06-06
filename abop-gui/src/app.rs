@@ -1,6 +1,6 @@
 //! Main application module that ties together all the pieces
 
-use iced::{Subscription, Task, keyboard};
+use iced::{Element, Subscription, keyboard, Task};
 
 use crate::messages::Message;
 use crate::state::UiState;
@@ -34,7 +34,7 @@ impl App {
     }
     /// Static view function to be used with iced's `application()` function
     #[must_use]
-    pub fn view(app: &Self) -> iced::Element<'_, Message> {
+    pub fn view(app: &Self) -> Element<'_, Message> {
         view(&app.state)
     }
     /// Static subscription function to handle keyboard events
@@ -48,15 +48,14 @@ impl App {
         } else {
             Subscription::none()
         }
-    }
-
-    /// Instance method for updating state
+    }    /// Instance method for updating state
     pub fn update_state(&mut self, message: Message) -> Task<Message> {
         update(&mut self.state, message)
     }
+    
     /// Instance method for rendering UI
     #[must_use]
-    pub fn render(&self) -> iced::Element<'_, Message> {
+    pub fn render(&self) -> Element<'_, Message> {
         view(&self.state)
     }
 }
