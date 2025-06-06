@@ -5,21 +5,41 @@ use abop_gui::app::App;
 use abop_gui::assets;
 
 use log::info;
+use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 
 // Import centralized types from abop-core
 use abop_core::{Config, ServiceContainer};
 
-fn main() -> iced::Result {
-    // Initialize logging
+/// Errors that can occur during application initialization
+#[derive(Error, Debug)]
+pub enum InitError {
+    #[error("Failed to initialize logging: {0}")]
+    Logging(#[from] tracing_subscriber::util::TryInitError),
+    
+    #[error("Failed to parse logging directive: {0}")]
+    LogDirective(#[from] tracing_subscriber::filter::ParseError),
+    
+    #[error("Failed to load configuration: {0}")]
+    Config(#[from] abop_core::AppError),
+}
+
+fn init_logging() -> Result<(), InitError> {
+    let filter = EnvFilter::default()
+        .add_directive("abop_gui=info".parse()?)
+        .add_directive("abop_core=info".parse()?)
+        .add_directive("iced=warn".parse()?);
+        
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::default()
-                .add_directive("abop_gui=info".parse().unwrap())
-                .add_directive("abop_core=info".parse().unwrap())
-                .add_directive("iced=warn".parse().unwrap()),
-        )
+        .with_env_filter(filter)
         .init();
+        
+    Ok(())
+}
+
+fn main() -> iced::Result {
+    // Initialize logging - panic on failure since this is critical
+    init_logging().expect("Failed to initialize logging");
 
     info!("Starting ABOP GUI with Iced 0.13.1 (new functional approach)...");
 
@@ -27,8 +47,14 @@ fn main() -> iced::Result {
     assets::register_fonts();
     info!("Material Design fonts registered");
 
-    // Load configuration
-    let config = Config::load().unwrap_or_default();
+    // Load configuration with fallback to defaults
+    let config = match Config::load() {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            log::warn!("Failed to load configuration: {}. Using defaults.", e);
+            Config::default()
+        }
+    };
 
     // Initialize services
     let _services = ServiceContainer::new();
