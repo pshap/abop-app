@@ -269,7 +269,7 @@ mod tests {
         // Process with scalar implementation
         let scalar_start = Instant::now();
         LinearResampler::resample_buffer_scalar(&mut buffer, target_rate).unwrap();
-        let scalar_duration = scalar_start.elapsed();
+        let _scalar_duration = scalar_start.elapsed();
 
         // Process with SIMD implementation
         LinearResampler::resample_buffer_simd(&mut buffer_simd, target_rate).unwrap();

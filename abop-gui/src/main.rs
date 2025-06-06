@@ -4,26 +4,20 @@
 use abop_gui::app::App;
 use abop_gui::assets;
 
-use iced::{Size, Task};
 use log::info;
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::EnvFilter;
 
 // Import centralized types from abop-core
 use abop_core::{Config, ServiceContainer};
 
 fn main() -> iced::Result {
-    // Initialize logger with tracing
-    tracing_subscriber::registry()
-        .with(
-            EnvFilter::from_default_env()
+    // Initialize logging
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::default()
                 .add_directive("abop_gui=info".parse().unwrap())
                 .add_directive("abop_core=info".parse().unwrap())
                 .add_directive("iced=warn".parse().unwrap()),
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_ansi(true)
-                .with_writer(std::io::stdout),
         )
         .init();
 
@@ -50,9 +44,9 @@ fn main() -> iced::Result {
     )
     .subscription(App::subscription)
     .theme(|app: &App| app.state.theme_mode.theme())
-    .window_size(Size::new(
+    .window_size(iced::Size::new(
         config.window.min_width as f32,
         config.window.min_height as f32,
     ))
-    .run_with(move || (app, Task::none()))
+    .run_with(move || (app, iced::Task::none()))
 }

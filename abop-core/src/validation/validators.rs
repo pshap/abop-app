@@ -8,17 +8,17 @@
 //!
 //! # Examples
 //! ```
-//! use abop_core::validation::validators::{AudioValidator, MetadataValidator};
 //! use abop_core::validation::{ValidationConfig, ValidationResult};
+//! use abop_core::validation::validators::{FileValidator, MetadataValidator};
 //! use std::path::PathBuf;
 //!
 //! let config = ValidationConfig::default();
-//! let audio_validator = AudioValidator::new(&config);
+//! let file_validator = FileValidator::new(&config);
 //! let mut result = ValidationResult::new();
 //!
-//! // Validate an audio file
+//! // Validate an audio file path
 //! let path = PathBuf::from("book.mp3");
-//! audio_validator.validate_audio_file_path(&path, &mut result);
+//! file_validator.validate_audio_file_path(&path, &mut result);
 //! ```
 
 use super::error::{ValidationError, ValidationResult};

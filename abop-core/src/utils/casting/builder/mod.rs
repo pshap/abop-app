@@ -9,6 +9,7 @@
 //!
 //! ```rust
 //! use abop_core::utils::casting::CastingBuilder;
+//! use abop_core::utils::casting::builder::{PrecisionMode, OverflowBehavior, RoundingMode, ValidationLevel};
 //!
 //! // Create a builder for audio processing
 //! let builder = CastingBuilder::for_audio();

@@ -7,7 +7,7 @@ use crate::theme::ThemeMode;
 use iced::{Background, Border, Color, Shadow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, PoisonError, RwLockReadGuard, RwLockWriteGuard};
 
 /// Plugin trait for style extensions
 pub trait StylePlugin: Send + Sync {
@@ -108,6 +108,29 @@ pub enum StylePluginError {
     DependencyMissing(String),
 }
 
+/// Style plugin errors
+#[derive(Debug, thiserror::Error)]
+pub enum StyleError {
+    /// Lock error
+    #[error("Lock error: {0}")]
+    LockError(String),
+    /// Plugin error
+    #[error("Plugin error: {0}")]
+    PluginError(#[from] StylePluginError),
+}
+
+impl<T> From<PoisonError<RwLockReadGuard<'_, T>>> for StyleError {
+    fn from(err: PoisonError<RwLockReadGuard<'_, T>>) -> Self {
+        StyleError::LockError(err.to_string())
+    }
+}
+
+impl<T> From<PoisonError<RwLockWriteGuard<'_, T>>> for StyleError {
+    fn from(err: PoisonError<RwLockWriteGuard<'_, T>>) -> Self {
+        StyleError::LockError(err.to_string())
+    }
+}
+
 /// Plugin registry for managing style plugins
 pub struct StylePluginRegistry {
     plugins: RwLock<HashMap<String, Box<dyn StylePlugin>>>,
@@ -137,7 +160,7 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry or theme `RwLock` is poisoned.
-    pub fn register_plugin(&self, plugin: Box<dyn StylePlugin>) -> Result<(), StylePluginError> {
+    pub fn register_plugin(&self, plugin: Box<dyn StylePlugin>) -> Result<(), StyleError> {
         let info = plugin.info();
 
         // Validate API version
@@ -145,11 +168,11 @@ impl StylePluginRegistry {
             return Err(StylePluginError::ApiVersionMismatch {
                 expected: "1.0".to_string(),
                 actual: info.api_version,
-            });
+            }.into());
         }
 
-        let mut plugins = self.plugins.write().unwrap();
-        let theme = self.current_theme.read().unwrap();
+        let mut plugins = self.plugins.write()?;
+        let theme = self.current_theme.read()?;
 
         let mut plugin = plugin;
         plugin.initialize(&theme)?;

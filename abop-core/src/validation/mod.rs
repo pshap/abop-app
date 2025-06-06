@@ -7,7 +7,7 @@
 mod error;
 mod recovery;
 mod state_validator;
-mod validators;
+pub mod validators;
 
 pub use error::{ValidationError, ValidationResult, ValidationSeverity};
 pub use recovery::{RepairAction, RepairContext, StateRepairStrategy};

@@ -66,6 +66,9 @@ authors = ["Your Name <your.email@example.com>"]
 description = "Audiobook Organizer & Processor"
 license = "MIT"
 repository = "https://github.com/yourusername/abop-iced"
+readme = "README.md"
+keywords = ["audio", "audiobook", "processing", "iced", "gui"]
+categories = ["multimedia::audio", "gui", "command-line-utilities"]
 
 [profile.release]
 opt-level = 3

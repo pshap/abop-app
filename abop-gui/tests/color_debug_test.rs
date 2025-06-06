@@ -12,7 +12,8 @@ fn debug_color_generation() {
     let palette = MaterialPalette::default();
     println!("Default palette primary tones (first 12):");
     for i in 0..12 {
-        println!("  Index {}: {:?}", i, palette.primary.tones[i]);
+        let value = palette.primary.tones[i];
+        println!("  Index {}: {:?}", i, value);
     }
 
     // Test MaterialColors from default palette
@@ -29,16 +30,14 @@ fn debug_color_generation() {
     println!("\nPalette from seed {:?}:", seed);
     println!("Primary tones (first 12):");
     for i in 0..12 {
-        println!("  Index {}: {:?}", i, palette_from_seed.primary.tones[i]);
+        let value = palette_from_seed.primary.tones[i];
+        println!("  Index {}: {:?}", i, value);
     }
 
     let colors_from_seed = MaterialColors::light(&palette_from_seed);
     println!("\nMaterialColors from seed (light theme):");
     println!("  primary.base: {:?}", colors_from_seed.primary.base);
-    println!(
-        "  primary.container: {:?}",
-        colors_from_seed.primary.container
-    );
+    println!("  primary.container: {:?}", colors_from_seed.primary.container);
     println!("  on_primary: {:?}", colors_from_seed.on_primary);
     // Check contrast ratios to verify if we have the right colors
     println!("\nContrast checks:");
