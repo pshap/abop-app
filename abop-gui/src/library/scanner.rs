@@ -16,7 +16,7 @@ use tokio::sync::mpsc;
 use crate::messages::Message;
 
 /// Progress callback type for scanning operations
-pub type ProgressCallback = Box<dyn Fn(f32) + Send + Sync>;
+
 
 /// Result of a library scan operation including timing information
 #[derive(Debug, Clone)]
@@ -165,66 +165,7 @@ pub fn scan_library_with_enhanced_progress(
     )
 }
 
-/// Helper function to scan with progress reporting
-async fn scan_with_progress_reporting(
-    db: Database,
-    library: Library,
-    progress_callback: ProgressCallback,
-) -> Result<Vec<Audiobook>> {
-    let scanner = LibraryScanner::new(db, library);
-    let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
 
-    // Start the scan in a background task
-    let scan_handle = tokio::spawn(async move { scanner.scan_async(Some(progress_tx)).await });
-
-    // Process progress updates
-    let _start_time = std::time::Instant::now();
-
-    while let Some(progress) = progress_rx.recv().await {
-        match &progress {
-            ScanProgress::Started { total_files: _ } => {
-                progress_callback(0.0);
-            }
-            ScanProgress::FileProcessed {
-                current: _,
-                total: _,
-                file_name: _,
-                progress_percentage,
-            } => {
-                progress_callback(*progress_percentage);
-            }
-            ScanProgress::BatchCommitted {
-                count: _,
-                total_processed: _,
-            } => {
-                // No progress update needed for batch commits
-            }
-            ScanProgress::Complete {
-                processed: _,
-                errors: _,
-                duration: _,
-            } => {
-                progress_callback(1.0);
-                break;
-            }
-            ScanProgress::Cancelled {
-                processed: _,
-                duration: _,
-            } => {
-                return Err(AppError::Scan(
-                    abop_core::scanner::error::ScanError::Cancelled,
-                ));
-            }
-        }
-    }
-
-    // Get final result
-    match scan_handle.await {
-        Ok(Ok(summary)) => Ok(summary.new_files),
-        Ok(Err(e)) => Err(AppError::Scan(e)),
-        Err(e) => Err(AppError::Threading(e.to_string().into())),
-    }
-}
 
 pub struct ScannerProgress {
     progress: Option<ScanProgress>,
