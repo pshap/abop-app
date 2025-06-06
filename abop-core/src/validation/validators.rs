@@ -1,4 +1,25 @@
-//! Specific validators for different aspects of application state
+//! Validation functions for audiobook data and metadata
+//!
+//! This module provides validation functions to ensure data integrity and consistency
+//! across the application. It includes validators for:
+//! - Audio file paths and formats
+//! - Metadata fields (title, author, duration, etc.)
+//! - Library structure and organization
+//!
+//! # Examples
+//! ```
+//! use abop_core::validation::validators::{AudioValidator, MetadataValidator};
+//! use abop_core::validation::{ValidationConfig, ValidationResult};
+//! use std::path::PathBuf;
+//!
+//! let config = ValidationConfig::default();
+//! let audio_validator = AudioValidator::new(&config);
+//! let mut result = ValidationResult::new();
+//!
+//! // Validate an audio file
+//! let path = PathBuf::from("book.mp3");
+//! audio_validator.validate_audio_file_path(&path, &mut result);
+//! ```
 
 use super::error::{ValidationError, ValidationResult};
 use super::state_validator::ValidationConfig;

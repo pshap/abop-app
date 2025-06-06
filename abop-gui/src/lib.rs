@@ -38,9 +38,6 @@ pub mod library;
 // Utility functions
 pub mod utils;
 
-// Legacy implementation (kept for reference temporarily)
-// pub mod app_new;
-
 // Component modules
 /// UI component modules for the ABOP graphical interface
 ///
