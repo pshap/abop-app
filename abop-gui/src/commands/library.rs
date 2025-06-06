@@ -19,13 +19,11 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
     let start = std::time::Instant::now();
     let mut book_count = 0;
 
-    let entries = std::fs::read_dir(&path).map_err(|e| e.to_string())?;
-
-    for entry in entries.flatten() {
-        if let Some(ext) = entry.path().extension()
-            && matches!(ext.to_str(), Some("mp3" | "m4a" | "flac" | "wav" | "ogg"))
-        {
-            book_count += 1;
+    let entries = std::fs::read_dir(&path).map_err(|e| e.to_string())?;    for entry in entries.flatten() {
+        if let Some(ext) = entry.path().extension() {
+            if matches!(ext.to_str(), Some("mp3" | "m4a" | "flac" | "wav" | "ogg")) {
+                book_count += 1;
+            }
         }
     }
 

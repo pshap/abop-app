@@ -70,13 +70,12 @@ pub fn view(state: &UiState) -> Element<Message> {
             state.theme_mode,
             &state.material_tokens,
         ));
-    }
-
-    // Add main content
+    }    // Add main content
     content = content.push(match state.core_state.current_view {
         ViewType::Library => library_view(state),
-        ViewType::Player => audio_processing_view(state),
+        ViewType::AudioProcessing => audio_processing_view(state),
         ViewType::Settings => settings_view(state),
+        ViewType::About => settings_view(state), // Temporary mapping until About view is implemented
     });
 
     // Add settings modal if open

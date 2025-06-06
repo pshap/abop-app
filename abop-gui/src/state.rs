@@ -5,30 +5,16 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use iced::widget::Column;
-use iced::widget::table::State as TableState;
 
 use crate::styling::material::MaterialTokens;
 use abop_core::scanner::progress::ScanProgress;
 use crate::theme::ThemeMode;
-use abop_core::{
-    AppState as CoreAppState,
-    UserPreferences as CoreUserPreferences,
-    AppData as CoreAppData,
-    ViewType,
-    scanner::ScannerState as CoreScannerState,
-};
-use crate::core::scanner::{ScannerState as CoreScannerState, LibraryScanner};
-use crate::core::db::AudiobookRepository;
+use abop_core::ViewType;
+use abop_core::scanner::{LibraryScanner, ScannerState};
 
-use crate::{
-    messages::Message,
-    library::scanner::ScannerProgress,
-};
-
-use abop_core::models::{Audiobook, Library};
-use abop_core::player::PlayerState;
-use abop_core::scanner::library_scanner::ScannerState;
+use abop_core::models::Audiobook;
+use abop_core::audio::player::PlayerState;
+use abop_core::models::AppState;
 
 // ================================================================================================
 // HELPER FUNCTIONS
@@ -126,13 +112,12 @@ pub struct UiState {
     pub recent_tasks: Vec<TaskInfo>,
     /// Whether to show task history
     pub show_task_history: bool,
-    pub scanner_state: CoreScannerState,
+    pub scanner_state: ScannerState,
     pub scanner_progress: Option<ScanProgress>,
     pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
 }
 
-impl UiState {
-    /// Create a new GUI state from a core `AppState`
+impl UiState {    /// Create a new GUI state from a core `AppState`
     #[must_use]
     pub fn from_core_state(core_state: AppState) -> Self {
         let theme_mode = ThemeMode::Dark;
@@ -177,7 +162,7 @@ impl UiState {
             active_task: None,
             recent_tasks: Vec::new(),
             show_task_history: false,
-            scanner_state: CoreScannerState::Idle,
+            scanner_state: ScannerState::Idle,
             scanner_progress: None,
             scanner: None,
         }
@@ -208,9 +193,7 @@ impl UiState {
                 }
             }
         }
-    }
-
-    /// Create UI state from core state and ensure metadata is synchronized
+    }    /// Create UI state from core state and ensure metadata is synchronized
     #[must_use]
     pub fn from_core_state_synced(core_state: AppState) -> Self {
         let mut ui_state = Self::from_core_state(core_state);
@@ -236,13 +219,11 @@ impl UiState {
     pub fn set_seed_color(&mut self, seed: iced::Color, is_dark: bool) {
         self.theme_mode = ThemeMode::MaterialDynamic;
         self.material_tokens = MaterialTokens::from_seed_color(seed, is_dark);
-    }
-
-    pub async fn start_scan(&mut self, path: PathBuf) {
+    }    pub async fn start_scan(&mut self, path: PathBuf) {
         if let Some(scanner) = &self.scanner {
             let mut scanner = scanner.lock().await;
-            if let Err(e) = scanner.scan_directory(path).await {
-                self.scanner_state = CoreScannerState::Error(e.to_string());
+            if let Err(_e) = scanner.scan_directory(path).await {
+                self.scanner_state = ScannerState::Error;
             }
         }
     }
@@ -251,7 +232,7 @@ impl UiState {
         self.scanner_progress = Some(progress);
     }
 
-    pub async fn update_scan_state(&mut self, state: CoreScannerState) {
+    pub async fn update_scan_state(&mut self, state: ScannerState) {
         self.scanner_state = state;
     }
 
@@ -279,8 +260,8 @@ impl UiState {
 
 impl Default for UiState {
     fn default() -> Self {
-        let mut state = Self::from_core_state_synced(AppState::default());
-        state.scanner_state = CoreScannerState::Idle;
+        let mut state = Self::from_core_state_synced(CoreAppState::default());
+        state.scanner_state = ScannerState::Idle;
         state.scanner_progress = None;
         state.scanner = None;
         state
@@ -360,102 +341,5 @@ impl Default for TaskInfo {
             error: None,
             start_time: chrono::Local::now(),
             end_time: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ScannerState {
-    pub state: CoreScannerState,
-    pub progress: Option<ScanProgress>,
-    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
-}
-
-impl Default for ScannerState {
-    fn default() -> Self {
-        Self {
-            state: CoreScannerState::Idle,
-            progress: None,
-            scanner: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    pub core_state: CoreState,
-    pub theme_mode: ThemeMode,
-    pub settings_open: bool,
-    pub recent_directories_open: bool,
-    pub table_state: TableState,
-    pub scanner_progress: Option<ScanProgress>,
-    pub material_tokens: MaterialTokens,
-}
-
-#[derive(Debug, Clone)]
-pub struct CoreState {
-    pub data: AppData,
-    pub user_preferences: UserPreferences,
-    pub current_view: ViewType,
-}
-
-#[derive(Debug, Clone)]
-pub struct AppData {
-    pub audiobooks: Vec<Audiobook>,
-    pub libraries: Vec<Library>,
-    pub player_state: PlayerState,
-}
-
-#[derive(Debug, Clone)]
-pub struct UserPreferences {
-    pub theme_mode: ThemeMode,
-    pub scan_interval: u64,
-    pub auto_scan: bool,
-}
-
-#[derive(Debug, Clone)]
-pub enum ViewType {
-    Library,
-    Player,
-    Settings,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AppState {
-    pub fn new() -> Self {
-        Self {
-            core_state: CoreState {
-                data: AppData {
-                    audiobooks: Vec::new(),
-                    libraries: Vec::new(),
-                    player_state: PlayerState::default(),
-                },
-                user_preferences: UserPreferences {
-                    theme_mode: ThemeMode::Light,
-                    scan_interval: 3600,
-                    auto_scan: true,
-                },
-                current_view: ViewType::Library,
-            },
-            theme_mode: ThemeMode::Light,
-            settings_open: false,
-            recent_directories_open: false,
-            table_state: TableState::default(),
-            scanner_progress: None,
-            material_tokens: MaterialTokens::default(),
-        }
-    }
-
-    pub fn update_scanner_progress(&mut self, progress: ScanProgress) {
-        self.scanner_progress = Some(progress);
-    }
-
-    pub fn clear_scanner_progress(&mut self) {
-        self.scanner_progress = None;
-    }
+        }    }
 }

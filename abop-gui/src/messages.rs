@@ -2,7 +2,6 @@
 
 // use std::collections::HashSet; // Commented out, unused import
 use std::path::PathBuf;
-use iced::widget::button;
 use abop_core::{
     scanner::{ScannerState, ScanProgress},
     models::Audiobook,

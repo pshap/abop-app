@@ -309,15 +309,14 @@ impl StyleCustomizationAPI {
         &self,
         component: &str,
         variant: &str,
-        context: Option<&str>,
-    ) -> Option<CustomComponentStyle> {
+        context: Option<&str>,    ) -> Option<CustomComponentStyle> {
         // Check context-specific overrides first
         if let Some(context) = context {
             let overrides = self.theme_overrides.read().unwrap();
-            if let Some(override_def) = overrides.get(context)
-                && let Some(style) = override_def.component_styles.get(component)
-            {
-                return Some(style.clone());
+            if let Some(override_def) = overrides.get(context) {
+                if let Some(style) = override_def.component_styles.get(component) {
+                    return Some(style.clone());
+                }
             }
         }
 

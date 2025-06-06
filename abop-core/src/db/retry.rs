@@ -6,6 +6,7 @@
 use crate::db::error::DatabaseError;
 use std::future::Future;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 use tokio::time;
 use tokio::runtime::Runtime;
@@ -181,13 +182,11 @@ fn is_retryable_error(error: &DatabaseError) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[tokio::test]
+    use super::*;    #[tokio::test]
     async fn test_retry_success() {
         let policy = RetryPolicy::default();
         let executor = RetryExecutor::new(policy);
-        let counter = Arc::new(AtomicU32::new(0));
+        let counter: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
 
         let result = executor
             .execute_async(|| {
@@ -208,10 +207,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_retry_failure() {
-        let policy = RetryPolicy::default();
+    async fn test_retry_failure() {        let policy = RetryPolicy::default();
         let executor = RetryExecutor::new(policy);
-        let counter = Arc::new(AtomicU32::new(0));
+        let counter: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
 
         let result = executor
             .execute_async(|| {
@@ -229,9 +227,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_retry_on_non_retryable_error() {
-        let policy = RetryPolicy::default();
-        let executor = RetryExecutor::new(policy);
-        let counter = Arc::new(AtomicU32::new(0));
+        let policy = RetryPolicy::default();        let executor = RetryExecutor::new(policy);
+        let counter: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
 
         let result = executor
             .execute_async(|| {
@@ -250,11 +247,10 @@ mod tests {
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
 
-    #[test]
-    fn test_blocking_retry_success() {
+    #[test]    fn test_blocking_retry_success() {
         let policy = RetryPolicy::default();
         let executor = RetryExecutor::new(policy);
-        let counter = Arc::new(AtomicU32::new(0));
+        let counter: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
 
         let result = executor.execute(|| {
             let count = counter.fetch_add(1, Ordering::SeqCst);
@@ -273,7 +269,7 @@ mod tests {
     fn test_blocking_retry_failure() {
         let policy = RetryPolicy::default();
         let executor = RetryExecutor::new(policy);
-        let counter = Arc::new(AtomicU32::new(0));
+        let counter: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
 
         let result = executor.execute(|| {
             counter.fetch_add(1, Ordering::SeqCst);

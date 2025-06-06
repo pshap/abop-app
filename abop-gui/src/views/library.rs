@@ -1,8 +1,8 @@
 //! Library view module
 
 use iced::{
-    widget::{button, column, container, progress_bar, row, text},
-    Alignment, Element, Length, Theme,
+    widget::{column, container},
+    Element, Length, Theme,
 };
 
 use crate::{

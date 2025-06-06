@@ -8,6 +8,7 @@ use crate::messages::Message;
 use crate::state::UiState;
 use abop_core::models::Audiobook;
 use abop_core::scanner::progress::ScanProgress;
+use crate::components::task_manager::TaskManager;
 
 /// Handles pure UI state changes that don't require async operations
 #[must_use]

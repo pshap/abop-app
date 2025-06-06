@@ -3,7 +3,7 @@
 use abop_core::{
     db::{Database, DatabaseConfig}, 
     models::{Audiobook, Library}, 
-    scanner::{LibraryScanner, progress::ScanProgress as CoreScanProgress},
+    scanner::{LibraryScanner, progress::ScanProgress},
     error::{AppError, Result}
 };
 use iced::Task;
@@ -11,7 +11,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use abop_core::scanner::progress::ScanProgress;
 use iced::widget::{button, column, container, progress_bar, row, text};
 use iced::{Alignment, Element, Length, Theme};
 
@@ -97,36 +96,21 @@ pub fn scan_library_with_enhanced_progress(
             };
 
             let mut progress = ScanProgress::new(0);
-            let start_time = std::time::Instant::now();
-
-            while let Some(progress_event) = progress_rx.recv().await {
-                match progress_event {
-                    CoreScanProgress::Started { total_files } => {
-                        progress = ScanProgress::new(total_files);
-                        scan_result.processed_count = 0;
-                        scan_result.error_count = 0;
-                    }
-                    CoreScanProgress::FileProcessed { current, total, file_name, progress_percentage } => {
-                        let elapsed = start_time.elapsed();
-                        let throughput = current as f64 / elapsed.as_secs_f64();
-                        progress.update(current, Some(file_name), throughput);
-                        progress_callback(progress.clone());
-                        scan_result.processed_count = current;
-                    }
-                    CoreScanProgress::BatchCommitted { count, total_processed } => {
-                        scan_result.processed_count = total_processed;
-                    }
-                    CoreScanProgress::Complete { processed, errors, duration } => {
-                        scan_result.processed_count = processed;
-                        scan_result.error_count = errors;
-                        scan_result.scan_duration = duration;
-                        break;
-                    }
-                    CoreScanProgress::Cancelled { processed, duration } => {
-                        scan_result.processed_count = processed;
-                        scan_result.scan_duration = duration;
-                        return Err(AppError::Scan(abop_core::scanner::error::ScanError::Cancelled));
-                    }
+            let start_time = std::time::Instant::now();            while let Some(progress_event) = progress_rx.recv().await {
+                // The progress_event is already a ScanProgress struct
+                let elapsed = start_time.elapsed();
+                let throughput = if elapsed.as_secs() > 0 {
+                    progress_event.files_processed as f64 / elapsed.as_secs_f64()
+                } else {
+                    0.0
+                };
+                
+                progress_callback(progress_event.clone());
+                scan_result.processed_count = progress_event.files_processed;
+                
+                // Check if scan is complete
+                if progress_event.files_processed >= progress_event.total_files {
+                    break;
                 }
             }
 
