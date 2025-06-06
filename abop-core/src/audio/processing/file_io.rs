@@ -1,5 +1,31 @@
-//! File I/O operations for audio process
+//! File I/O operations for audio processing
 //!
+//! This module provides functionality for reading, processing, and writing audio files.
+//! It handles the conversion between different audio formats and applies processing
+//! pipelines to audio data.
+//!
+//! # Examples
+//! ```
+//! use abop_core::audio::processing::file_io::{AudioFileProcessor, FileProcessingOptions};
+//! use abop_core::audio::processing::pipeline::AudioProcessingPipeline;
+//! use abop_core::audio::SampleFormat;
+//! use std::path::PathBuf;
+//!
+//! // Create a processing pipeline
+//! let pipeline = AudioProcessingPipeline::default();
+//!
+//! // Configure processing options
+//! let options = FileProcessingOptions {
+//!     output_format: SampleFormat::F32,
+//!     preserve_metadata: true,
+//!     output_directory: Some(PathBuf::from("processed")),
+//!     naming_pattern: "{filename}_processed".to_string(),
+//! };
+//!
+//! // Create a processor
+//! let processor = AudioFileProcessor::new(pipeline, options);
+//! ```
+
 /// Creates a new `AudioFileProcessor` with the given pipeline and options.
 ///
 /// # Arguments
@@ -23,15 +49,48 @@ use crate::error::Result;
 use std::path::{Path, PathBuf};
 
 /// Options for file processing, such as output format and naming pattern.
+///
+/// This struct configures how audio files are processed and saved, including
+/// the output format, metadata handling, and file naming conventions.
+///
+/// # Examples
+/// ```
+/// use abop_core::audio::processing::file_io::FileProcessingOptions;
+/// use abop_core::audio::SampleFormat;
+/// use std::path::PathBuf;
+///
+/// let options = FileProcessingOptions {
+///     output_format: SampleFormat::F32,
+///     preserve_metadata: true,
+///     output_directory: Some(PathBuf::from("output")),
+///     naming_pattern: "{filename}_normalized".to_string(),
+/// };
+/// ```
 #[derive(Debug, Clone)]
 pub struct FileProcessingOptions {
     /// Output audio sample format (e.g., F32, S16)
+    ///
+    /// This determines the precision and format of the processed audio samples.
+    /// F32 provides the highest quality but uses more storage space.
     pub output_format: SampleFormat,
-    /// Whether to preserve audio metadata
+
+    /// Whether to preserve audio metadata (tags, cover art, etc.)
+    ///
+    /// When true, metadata from the source file is copied to the output file.
+    /// When false, the output file will have no metadata.
     pub preserve_metadata: bool,
+
     /// Optional output directory for processed files
+    ///
+    /// If None, processed files are saved in the same directory as the source file.
+    /// If Some(path), all processed files are saved in the specified directory.
     pub output_directory: Option<PathBuf>,
-    /// Naming pattern for output files (e.g., "{filename}_processed")
+
+    /// Naming pattern for output files
+    ///
+    /// Uses a simple template system where {filename} is replaced with the
+    /// original filename (without extension). For example, "book.mp3" with
+    /// pattern "{filename}_processed" becomes "book_processed.mp3".
     pub naming_pattern: String,
 }
 
