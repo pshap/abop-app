@@ -37,6 +37,10 @@ fn init_logging() -> Result<(), InitError> {
     Ok(())
 }
 
+fn load_config_with_fallback() -> Result<Config, InitError> {
+    Config::load().map_err(InitError::Config)
+}
+
 fn main() -> iced::Result {
     // Initialize logging - panic on failure since this is critical
     init_logging().expect("Failed to initialize logging");
@@ -48,13 +52,11 @@ fn main() -> iced::Result {
     info!("Material Design fonts registered");
 
     // Load configuration with fallback to defaults
-    let config = match Config::load() {
-        Ok(cfg) => cfg,
-        Err(e) => {
+    let config = load_config_with_fallback()
+        .unwrap_or_else(|e| {
             log::warn!("Failed to load configuration: {}. Using defaults.", e);
             Config::default()
-        }
-    };
+        });
 
     // Initialize services
     let _services = ServiceContainer::new();
