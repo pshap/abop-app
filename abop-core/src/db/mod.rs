@@ -13,7 +13,7 @@ pub mod retry;
 pub mod statistics;
 
 use rusqlite::Connection;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
@@ -81,30 +81,38 @@ impl Database {
     /// - Database pragmas cannot be set
     /// - Schema migrations fail to run
     /// - Database connection is unavailable
+    /// - Connection lock acquisition fails
     fn init(&self) -> Result<()> {
         log::debug!("Initializing database schema...");
 
         // For initialization, we need to temporarily use the basic connection
         // since migrations require mutable access
-        self.repositories
-            .connection()
-            .lock()
-            .unwrap()
-            .execute_batch(
-                "PRAGMA foreign_keys = ON;\n\
+        let conn = self.repositories.connection().lock()
+            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock during initialization".into()))?;
+
+        conn.execute_batch(
+            "PRAGMA foreign_keys = ON;\n\
              PRAGMA journal_mode = WAL;\n\
              PRAGMA synchronous = NORMAL;",
-            )?;
+        ).map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Failed to configure database pragmas: {e}")
+        })?;
 
         log::debug!("Database settings configured");
 
         // Run migrations in a transaction
         log::debug!("Running migrations...");
-        let mut conn = self.repositories.connection().lock().unwrap();
-        if let Err(e) = migrations::run_migrations(&mut conn) {
-            log::error!("Failed to run migrations: {e}");
-            return Err(e.into());
-        }
+        let mut conn = self.repositories.connection().lock()
+            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for migrations".into()))?;
+
+        migrations::run_migrations(&mut conn)
+            .map_err(|e| {
+                log::error!("Failed to run migrations: {e}");
+                DatabaseError::MigrationFailed {
+                    version: 0, // We don't know which version failed at this point
+                    message: format!("Migration failed: {e}")
+                }
+            })?;
 
         log::debug!("Migrations completed successfully");
         log::debug!("Database initialization complete");
@@ -143,9 +151,16 @@ impl Database {
     }
 
     /// Get connection statistics
-    #[must_use]
-    pub fn connection_stats(&self) -> ConnectionStats {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Failed to acquire statistics lock
+    /// - Failed to read connection timestamp
+    /// - Database connection is unavailable
+    pub fn connection_stats(&self) -> Result<ConnectionStats> {
         self.enhanced_conn.stats()
+            .map_err(|e| crate::error::AppError::Other(e.to_string()))
     }
 
     /// Force a connection health check
@@ -155,6 +170,7 @@ impl Database {
     /// Returns an error if:
     /// - The health check operation fails
     /// - The database connection is unavailable
+    /// - Failed to record health check statistics
     pub fn check_connection_health(&self) -> DbResult<ConnectionHealth> {
         self.enhanced_conn
             .health_check()
@@ -299,16 +315,13 @@ impl Database {
     /// Returns an error if:
     /// - The migration version query fails
     /// - The database connection is unavailable
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (which indicates a panic occurred
-    /// in another thread while holding the lock).
+    /// - Connection lock acquisition fails
     pub fn migration_version(&self) -> Result<u32> {
         let manager = migrations::MigrationManager::new();
-        let conn = self.repositories.connection().lock().unwrap();
-        manager
-            .current_version(&conn)
+        let conn = self.repositories.connection().lock()
+            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for version check".into()))?;
+
+        manager.current_version(&conn)
             .map_err(std::convert::Into::into)
     }
 
@@ -326,17 +339,14 @@ impl Database {
     /// Returns an error if:
     /// - Migration operations fail
     /// - The database connection is unavailable
+    /// - Connection lock acquisition fails
     /// - Migration files are corrupted or missing
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (which indicates a panic occurred
-    /// in another thread while holding the lock).
     pub fn migrate_up(&self) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().unwrap();
-        manager
-            .migrate_up(&mut conn)
+        let mut conn = self.repositories.connection().lock()
+            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for migration".into()))?;
+
+        manager.migrate_up(&mut conn)
             .map_err(std::convert::Into::into)
     }
 
@@ -348,15 +358,13 @@ impl Database {
     /// - Migration rollback operations fail
     /// - The target version is invalid
     /// - The database connection is unavailable
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (another thread panicked while holding the lock)
+    /// - Connection lock acquisition fails
     pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().unwrap();
-        manager
-            .migrate_down(&mut conn, target_version)
+        let mut conn = self.repositories.connection().lock()
+            .map_err(|_| DatabaseError::ConnectionFailed("Failed to acquire connection lock for rollback".into()))?;
+
+        manager.migrate_down(&mut conn, target_version)
             .map_err(std::convert::Into::into)
     }
 
@@ -393,47 +401,67 @@ mod tests {
     use tempfile::NamedTempFile;
     use uuid::Uuid;
 
-    fn create_test_db() -> (Database, NamedTempFile) {
-        let temp_file = NamedTempFile::new().unwrap();
+    fn create_test_db() -> Result<(Database, NamedTempFile)> {
+        let temp_file = NamedTempFile::new()?;
         // Database::open already calls init() internally
-        let db = Database::open(temp_file.path()).expect("Failed to open test database");
-        (db, temp_file)
+        let db = Database::open(temp_file.path())?;
+        Ok((db, temp_file))
     }
 
     #[test]
-    fn test_add_and_get_library() {
-        let (db, _temp) = create_test_db();
+    fn test_add_and_get_library() -> Result<()> {
+        let (db, _temp) = create_test_db()?;
 
         // Add a library
         let library = db
-            .add_library("Test Library", Path::new("/test/path"))
-            .unwrap();
+            .add_library("Test Library", Path::new("/test/path"))?;
 
         // Get the library by ID
-        let retrieved = db.get_library(&library.id).unwrap().unwrap();
+        let retrieved = db.get_library(&library.id)?.unwrap();
         assert_eq!(retrieved.name, "Test Library");
         assert_eq!(retrieved.path, Path::new("/test/path"));
 
         // Get all libraries
-        let libraries = db.get_libraries().unwrap();
+        let libraries = db.get_libraries()?;
         assert_eq!(libraries.len(), 1);
         assert_eq!(libraries[0].name, "Test Library");
+        Ok(())
     }
 
     #[test]
-    fn test_add_and_get_audiobook() {
-        let (db, _temp) = create_test_db();
+    fn test_connection_stats() -> Result<()> {
+        let (db, _temp) = create_test_db()?;
+
+        // Get initial stats
+        let stats = db.connection_stats()?;
+        assert_eq!(stats.successful_operations, 1); // Initial connection
+        assert_eq!(stats.failed_operations, 0);
+
+        // Perform some operations
+        db.get_libraries()?;
+        db.get_libraries()?;
+
+        // Check updated stats
+        let stats = db.connection_stats()?;
+        assert_eq!(stats.successful_operations, 3); // Initial + 2 operations
+        assert_eq!(stats.failed_operations, 0);
+        assert!(stats.avg_operation_duration_ms >= 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_and_get_audiobook() -> Result<()> {
+        let (db, _temp) = create_test_db()?;
 
         // Add a library
         let library = db
-            .add_library("Test Library", Path::new("/test/path"))
-            .unwrap();
+            .add_library("Test Library", Path::new("/test/path"))?;
 
         // Create an audiobook
         let audiobook = Audiobook {
             id: Uuid::new_v4().to_string(),
             library_id: library.id.clone(),
-            path: Path::new("/test/path/book.mp3").to_path_buf(),
+            path: PathBuf::from("/test/path/book.mp3"),
             title: Some("Test Book".to_string()),
             author: Some("Test Author".to_string()),
             narrator: Some("Test Narrator".to_string()),
@@ -447,16 +475,17 @@ mod tests {
         };
 
         // Add the audiobook
-        db.add_audiobook(&audiobook).unwrap();
+        db.add_audiobook(&audiobook)?;
 
         // Get the audiobook by ID
-        let retrieved = db.get_audiobook(&audiobook.id).unwrap().unwrap();
+        let retrieved = db.get_audiobook(&audiobook.id)?.unwrap();
         assert_eq!(retrieved.title, audiobook.title);
         assert_eq!(retrieved.author, audiobook.author);
 
         // Get audiobooks in library
-        let audiobooks = db.get_audiobooks_in_library(&library.id).unwrap();
+        let audiobooks = db.get_audiobooks_in_library(&library.id)?;
         assert_eq!(audiobooks.len(), 1);
         assert_eq!(audiobooks[0].id, audiobook.id);
+        Ok(())
     }
 }
