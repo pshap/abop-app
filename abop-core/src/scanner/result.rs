@@ -19,6 +19,12 @@ pub struct ScanSummary {
 }
 
 impl ScanSummary {
+    /// Creates a new empty scan summary
+    ///
+    /// # Returns
+    ///
+    /// A new ScanSummary instance with all counters initialized to zero
+    /// and empty vectors for new and updated files
     pub fn new() -> Self {
         Self {
             processed: 0,
@@ -29,6 +35,13 @@ impl ScanSummary {
         }
     }
 
+    /// Gets the total number of files that were processed during the scan
+    ///
+    /// This includes both successfully processed files and files that encountered errors
+    ///
+    /// # Returns
+    ///
+    /// The sum of processed and error counts
     pub fn total_files(&self) -> usize {
         self.processed + self.errors
     }
@@ -39,5 +52,3 @@ impl Default for ScanSummary {
         Self::new()
     }
 }
-
-

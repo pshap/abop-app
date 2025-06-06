@@ -17,7 +17,7 @@ use crate::styling::container::LayoutContainerStyles;
 /// Note: Modal settings dialogs are handled directly in the main view module
 /// using `MaterialDialog` components for better integration and type safety.
 #[must_use]
-pub fn settings_view(state: &UiState) -> iced::Element<Message> {
+pub fn settings_view(state: &UiState) -> iced::Element<'_, Message> {
     let content = column![
         text("Settings").size(32),
         text("Configure ABOP preferences and options."),

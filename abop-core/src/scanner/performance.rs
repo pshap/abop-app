@@ -45,10 +45,15 @@ pub struct SlowOperation {
 /// Types of operations we track
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OperationType {
+    /// Reading audio file data from disk
     FileRead,
+    /// Extracting metadata (title, author, etc.) from audio files
     MetadataExtraction,
+    /// Inserting or updating records in the database
     DatabaseInsert,
+    /// Processing cover art images
     ImageProcessing,
+    /// Analyzing audio content (duration, format, etc.)
     AudioAnalysis,
 }
 

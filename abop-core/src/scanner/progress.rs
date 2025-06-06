@@ -6,7 +6,10 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub enum ScanProgress {
     /// Scan has started with total number of files to process
-    Started { total_files: usize },
+    Started {
+        /// Total number of files that will be processed in this scan operation
+        total_files: usize,
+    },
 
     /// A file has been processed
     FileProcessed {
@@ -59,11 +62,23 @@ pub trait ProgressReporter: Send + Sync + 'static {
 
 /// Implementation that sends progress over a channel
 pub struct ChannelReporter<T> {
+    /// Sender channel for progress updates
     sender: tokio::sync::mpsc::Sender<T>,
+    /// Phantom data to hold the type parameter
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: From<ScanProgress> + Send + Sync + 'static> ChannelReporter<T> {
+    /// Creates a new channel reporter that will send progress updates over the given channel
+    ///
+    /// # Arguments
+    ///
+    /// * `sender` - A channel sender that can send messages of type T, where T implements From<ScanProgress>
+    ///
+    /// # Returns
+    ///
+    /// A new ChannelReporter instance that will convert ScanProgress events into type T
+    /// and send them over the provided channel
     pub fn new(sender: tokio::sync::mpsc::Sender<T>) -> Self {
         Self {
             sender,

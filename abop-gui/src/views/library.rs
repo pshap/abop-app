@@ -13,7 +13,7 @@ use crate::styling::material::{MaterialSurface, SurfaceVariant};
 
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
-pub fn library_view(state: &UiState) -> iced::Element<Message> {
+pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
     println!(
         "=== LIBRARY VIEW RENDER: {} audiobooks ===",
         state.audiobooks.len()

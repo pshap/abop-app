@@ -49,6 +49,19 @@ pub type ScanResult<T = ()> = std::result::Result<T, ScanError>;
 
 /// Extension trait for adding context to Results
 pub trait Context<T, E> {
+    /// Adds context to an error result, converting it into a [`ScanError`].
+    ///
+    /// This method allows adding descriptive context to any error that can be converted
+    /// into a [`ScanError`]. The context is typically a string that describes the operation
+    /// that failed, making error messages more informative.
+    ///
+    /// # Arguments
+    ///
+    /// * `context` - A displayable value that provides context about where the error occurred
+    ///
+    /// # Returns
+    ///
+    /// A [`Result`] containing either the success value or a [`ScanError`] with the added context
     fn context<C>(self, context: C) -> Result<T, ScanError>
     where
         C: std::fmt::Display + Send + Sync + 'static;
