@@ -10,8 +10,7 @@ use super::{
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
-use crate::audio::{AudioBuffer, SampleFormat};
-use crate::test_utils::audio::{create_test_buffer, create_test_buffer_with_silence};
+use crate::audio::AudioBuffer;
 
 /// Normalization error type
 #[derive(Debug, thiserror::Error)]
@@ -284,7 +283,8 @@ impl Default for AudioNormalizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::audio::{create_test_buffer, create_test_buffer_with_silence};
+    use crate::audio::SampleFormat;
+    use crate::test_utils::audio::create_test_buffer;
 
     #[test]
     fn test_normalizer_creation() {

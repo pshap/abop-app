@@ -9,14 +9,13 @@
 use super::{
     casting_utils::{
         safe_conversions::{safe_f64_to_usize_samples, safe_usize_to_f64_audio},
-        sample_calculations::safe_duration_to_samples,
     },
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
-use crate::audio::{AudioBuffer, SampleFormat};
+use crate::audio::AudioBuffer;
 use log::trace;
 
 /// Audio resampling error type

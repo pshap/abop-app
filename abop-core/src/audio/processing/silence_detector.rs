@@ -337,7 +337,7 @@ impl Validatable for SilenceDetector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::audio::{create_test_buffer, create_test_buffer_with_silence};
+    use crate::test_utils::audio::create_test_buffer_with_silence;
 
     #[test]
     fn test_silence_detector_creation() {
