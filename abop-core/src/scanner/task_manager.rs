@@ -20,8 +20,10 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct TaskManager {
     /// Maximum number of concurrent file operations
+    #[allow(dead_code)]
     max_concurrent_tasks: usize,
     /// Maximum number of concurrent database operations
+    #[allow(dead_code)]
     max_concurrent_db_operations: usize,
     /// Cancellation token for async operations
     cancel_token: CancellationToken,
@@ -128,7 +130,6 @@ mod tests {
     use crate::scanner::{
         file_discovery::{DefaultFileDiscoverer, FileDiscoverer}, 
         file_processor::{DefaultFileProcessor, FileProcessor},
-        progress::TestReporter,
     };
     use crate::db::Database;
     use crate::scanner::Library;
@@ -179,6 +180,7 @@ mod tests {
             let start_time = std::time::Instant::now();
 
             for (index, path) in audio_files.into_iter().enumerate() {
+                let path_clone = path.clone();
                 match processor.process_file(path).await {
                     Ok(audiobook) => audiobooks.push(audiobook),
                     Err(e) => {
@@ -191,19 +193,20 @@ mod tests {
                     .report_file_processed(
                         index + 1,
                         total_files,
-                        path.to_string_lossy().into_owned(),
+                        path_clone.to_string_lossy().into_owned(),
                     )
                     .await;
             }
 
             let duration = start_time.elapsed();
+            let processed_count = audiobooks.len();
             reporter
-                .report_complete(audiobooks.len(), error_count, duration)
+                .report_complete(processed_count, error_count, duration)
                 .await;
             Ok(ScanSummary {
                 new_files: audiobooks,
                 scan_duration: duration,
-                processed: audiobooks.len(),
+                processed: processed_count,
                 errors: error_count,
             })
         };

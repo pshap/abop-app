@@ -1,4 +1,5 @@
-//! File discovery functionality for the scanner
+//! File discovery functional    /// Create a new file discoverer with specific extensions
+    //! File discovery for the scanner
 //!
 //! This module provides the core file discovery functionality, abstracted behind
 //! a trait to allow for different discovery strategies.
@@ -28,6 +29,7 @@ pub struct DefaultFileDiscoverer {
 
 impl DefaultFileDiscoverer {
     /// Create a new file discoverer with the given extensions
+    #[allow(dead_code)]
     #[must_use]
     pub fn new(extensions: Vec<String>) -> Self {
         Self { extensions }

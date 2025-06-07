@@ -119,7 +119,7 @@ impl Database {
     }
 
     /// Creates a new in-memory database for testing
-    #[must_use]
+    #[must_use = "Database should be used or an error handled"]
     pub fn in_memory() -> Result<Self> {
         let config = PoolConfig {
             path: ":memory:".to_string(),
@@ -131,6 +131,7 @@ impl Database {
             .block_on(async { Self::new(config).await })
     }
     /// Initializes the database schema
+    #[allow(dead_code)]
     #[instrument(skip(conn))]
     fn init_schema(conn: &Connection) -> Result<()> {
         conn.execute_batch(

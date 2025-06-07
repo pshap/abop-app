@@ -17,6 +17,7 @@ use tracing::error;
 use tracing::{debug, instrument};
 
 /// Cache for audio file metadata
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct MetadataCache {
     /// LRU cache for file metadata
@@ -57,6 +58,7 @@ impl MetadataCache {
 }
 
 /// Configuration for batch processing
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct BatchConfig {
     /// Maximum number of files to process in a single batch
@@ -95,6 +97,7 @@ pub trait FileProcessor: Send + Sync {
 }
 
 /// Default implementation of FileProcessor
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct DefaultFileProcessor {
     /// Database connection
@@ -279,7 +282,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_metadata_cache() {
-        let cache = MetadataCache::new(2);
+        let mut cache = MetadataCache::new(2);
         let path1 = PathBuf::from("test1.mp3");
         let path2 = PathBuf::from("test2.mp3");
         let path3 = PathBuf::from("test3.mp3");
