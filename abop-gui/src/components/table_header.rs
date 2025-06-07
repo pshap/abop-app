@@ -69,19 +69,21 @@ impl TableHeader {
                     .width(Length::Fill)
                     .height(Length::Fill)
                     .align_x(iced::Alignment::Start)
-                    .align_y(iced::Alignment::Center)
+                    .align_y(iced::Alignment::Center),
             )
             .width(width)
             .height(Length::Fill)
             .padding(Padding::from([8.0, 8.0]))
-            .style(move |theme, status| Self::header_cell_button_style(theme, status, tokens, is_sorted))
+            .style(move |theme, status| {
+                Self::header_cell_button_style(theme, status, tokens, is_sorted)
+            })
             .on_press(Message::SortBy(column.id.clone()))
             .into()
         } else {
             container(
                 text(header_text)
                     .size(tokens.typography().title_medium.size)
-                    .color(tokens.colors.on_surface_variant)
+                    .color(tokens.colors.on_surface_variant),
             )
             .width(width)
             .height(Length::Fill)
@@ -104,7 +106,7 @@ impl TableHeader {
         is_sorted: bool,
     ) -> button::Style {
         let colors = &tokens.colors;
-        
+
         // Base colors for normal state
         let base_background = if is_sorted {
             colors.primary_container
@@ -121,12 +123,15 @@ impl TableHeader {
                     b: colors.on_surface_variant.b,
                     a: 0.08,
                 };
-                
+
                 // Blend the hover overlay with the base background
                 Some(Background::Color(Color {
-                    r: (base_background.r * (1.0 - hover_overlay.a) + hover_overlay.r * hover_overlay.a),
-                    g: (base_background.g * (1.0 - hover_overlay.a) + hover_overlay.g * hover_overlay.a),
-                    b: (base_background.b * (1.0 - hover_overlay.a) + hover_overlay.b * hover_overlay.a),
+                    r: (base_background.r * (1.0 - hover_overlay.a)
+                        + hover_overlay.r * hover_overlay.a),
+                    g: (base_background.g * (1.0 - hover_overlay.a)
+                        + hover_overlay.g * hover_overlay.a),
+                    b: (base_background.b * (1.0 - hover_overlay.a)
+                        + hover_overlay.b * hover_overlay.a),
                     a: base_background.a.max(hover_overlay.a),
                 }))
             }
@@ -138,12 +143,15 @@ impl TableHeader {
                     b: colors.on_surface_variant.b,
                     a: 0.12,
                 };
-                
+
                 // Blend the pressed overlay with the base background
                 Some(Background::Color(Color {
-                    r: (base_background.r * (1.0 - pressed_overlay.a) + pressed_overlay.r * pressed_overlay.a),
-                    g: (base_background.g * (1.0 - pressed_overlay.a) + pressed_overlay.g * pressed_overlay.a),
-                    b: (base_background.b * (1.0 - pressed_overlay.a) + pressed_overlay.b * pressed_overlay.a),
+                    r: (base_background.r * (1.0 - pressed_overlay.a)
+                        + pressed_overlay.r * pressed_overlay.a),
+                    g: (base_background.g * (1.0 - pressed_overlay.a)
+                        + pressed_overlay.g * pressed_overlay.a),
+                    b: (base_background.b * (1.0 - pressed_overlay.a)
+                        + pressed_overlay.b * pressed_overlay.a),
                     a: base_background.a.max(pressed_overlay.a),
                 }))
             }

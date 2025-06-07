@@ -17,8 +17,6 @@ use iced::widget::text::LineHeight;
 use iced::widget::{Container, container, text};
 use iced::{Background, Border, Color, Element, Length, Padding};
 
-use crate::styling::material::spacing;
-
 /// Material Design 3 Data Table Configuration
 #[derive(Debug, Clone)]
 pub struct DataTableConfig {

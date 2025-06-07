@@ -5,14 +5,11 @@
 
 use crate::styling::material::{
     spacing::SpacingTokens,
-    typography::{MaterialTypography, TypeStyle, font_mapping::{MaterialFont, MaterialWeight}},
-    sizing::SizingTokens,
-    tokens::{semantic::SemanticColors, core::MaterialTokens},
-    colors::MaterialColors,
-    elevation::MaterialElevation,
-    shapes::MaterialShapes,
-    tokens::states::MaterialStates,
-    visual::VisualTokens,
+    tokens::{core::MaterialTokens, semantic::SemanticColors},
+    typography::{
+        MaterialTypography, TypeStyle,
+        font_mapping::{MaterialFont, MaterialWeight},
+    },
 };
 use iced::Color;
 use serde::{Deserialize, Serialize};
@@ -342,13 +339,14 @@ impl ThemeLoader {
         config.semantic_colors.to_semantic_colors()?;
 
         Ok(())
-    }    /// Convert serializable design tokens to runtime tokens
+    }
+    /// Convert serializable design tokens to runtime tokens
     fn convert_design_tokens(
         tokens: &SerializableDesignTokens,
     ) -> Result<MaterialTokens, ThemeLoadError> {
         // Create Material tokens with simplified conversion
         let mut material_tokens = MaterialTokens::default();
-        
+
         // Update spacing tokens
         material_tokens.spacing = SpacingTokens {
             xs: tokens.spacing.xs,
@@ -772,9 +770,6 @@ mod tests {
                     display_medium: 26,
                     display_large: 32,
                 },
-                radius: HashMap::new(),
-                elevation: HashMap::new(),
-                sizing: HashMap::new(),
             },
             component_overrides: HashMap::new(),
         };

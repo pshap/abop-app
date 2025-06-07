@@ -199,8 +199,8 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
             Some(Task::none())
         }
         Message::SortBy(column_id) => {
-            log::info!("Sorting by column: {}", column_id);
-            
+            log::info!("Sorting by column: {column_id}");
+
             // Update the sort state
             if state.table_state.sort_column == column_id {
                 // If clicking the same column, toggle sort direction
@@ -210,16 +210,20 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
                 state.table_state.sort_column = column_id;
                 state.table_state.sort_ascending = true;
             }
-            
+
             // Apply the sort to the audiobooks
             crate::utils::sort_audiobooks(state);
-            
+
             log::info!(
-                "Sorted by {} ({})", 
+                "Sorted by {} ({})",
                 state.table_state.sort_column,
-                if state.table_state.sort_ascending { "ascending" } else { "descending" }
+                if state.table_state.sort_ascending {
+                    "ascending"
+                } else {
+                    "descending"
+                }
             );
-            
+
             Some(Task::none())
         }
         _ => None, // Not a UI message

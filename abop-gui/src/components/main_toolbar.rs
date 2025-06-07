@@ -33,7 +33,6 @@ impl MainToolbar {
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-
         let mut toolbar = row![]
             .spacing(material_tokens.spacing().xs) // Use extra small spacing between toolbar items
             .align_y(Alignment::Center)

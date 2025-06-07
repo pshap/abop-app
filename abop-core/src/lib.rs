@@ -41,7 +41,7 @@ pub use component::{Component, Renderable, Updatable};
 pub use config::Config;
 
 // Re-exports from constants module
-pub use constants::{config as config_constants};
+pub use constants::config as config_constants;
 
 // Re-exports from scanner module
 pub use scanner::SUPPORTED_AUDIO_EXTENSIONS;
@@ -68,7 +68,7 @@ pub mod prelude {
         },
         component::{Component, Renderable, Updatable},
         config::Config,
-        constants::{config as config_constants},
+        constants::config as config_constants,
         error::{AppError, Result},
         message::AppMessage,
         models::{AppData, AppState, ThemeConfig, UserPreferences, ViewType},
