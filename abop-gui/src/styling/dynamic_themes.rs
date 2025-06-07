@@ -344,126 +344,124 @@ impl ThemeLoader {
     fn convert_design_tokens(
         tokens: &SerializableDesignTokens,
     ) -> Result<MaterialTokens, ThemeLoadError> {
-        // Create Material tokens with simplified conversion
-        let mut material_tokens = MaterialTokens::default();
-
-        // Update spacing tokens
-        material_tokens.spacing = SpacingTokens {
-            xs: tokens.spacing.xs,
-            sm: tokens.spacing.sm,
-            md: tokens.spacing.md,
-            lg: tokens.spacing.lg,
-            xl: tokens.spacing.xl,
-            xxl: tokens.spacing.xxl,
-        };
-
-        // Update typography tokens with Material Design scale
-        material_tokens.typography = MaterialTypography {
-            display_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_large as f32,
-                64.0,
-                0.0,
-            ),
-            display_medium: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_medium as f32,
-                52.0,
-                0.0,
-            ),
-            display_small: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_small as f32,
-                44.0,
-                0.0,
-            ),
-            headline_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_large as f32,
-                40.0,
-                0.0,
-            ),
-            headline_medium: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_medium as f32,
-                36.0,
-                0.0,
-            ),
-            headline_small: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_small as f32,
-                32.0,
-                0.0,
-            ),
-            title_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Medium,
-                tokens.typography.title_large as f32,
-                28.0,
-                0.0,
-            ),
-            title_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.title_medium as f32,
-                24.0,
-                0.15,
-            ),
-            title_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.title_small as f32,
-                22.0,
-                0.1,
-            ),
-            label_large: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_large as f32,
-                20.0,
-                0.1,
-            ),
-            label_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_medium as f32,
-                16.0,
-                0.5,
-            ),
-            label_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_small as f32,
-                14.0,
-                0.1,
-            ),
-            body_large: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_large as f32,
-                24.0,
-                0.15,
-            ),
-            body_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_medium as f32,
-                20.0,
-                0.25,
-            ),
-            body_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_small as f32,
-                16.0,
-                0.4,
-            ),
+        // Create Material tokens with proper initialization
+        let material_tokens = MaterialTokens {
+            spacing: SpacingTokens {
+                xs: tokens.spacing.xs,
+                sm: tokens.spacing.sm,
+                md: tokens.spacing.md,
+                lg: tokens.spacing.lg,
+                xl: tokens.spacing.xl,
+                xxl: tokens.spacing.xxl,
+            },
+            typography: MaterialTypography {
+                display_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_large as f32,
+                    64.0,
+                    0.0,
+                ),
+                display_medium: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_medium as f32,
+                    52.0,
+                    0.0,
+                ),
+                display_small: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_small as f32,
+                    44.0,
+                    0.0,
+                ),
+                headline_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_large as f32,
+                    40.0,
+                    0.0,
+                ),
+                headline_medium: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_medium as f32,
+                    36.0,
+                    0.0,
+                ),
+                headline_small: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_small as f32,
+                    32.0,
+                    0.0,
+                ),
+                title_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_large as f32,
+                    28.0,
+                    0.0,
+                ),
+                title_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_medium as f32,
+                    24.0,
+                    0.15,
+                ),
+                title_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_small as f32,
+                    22.0,
+                    0.1,
+                ),
+                label_large: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_large as f32,
+                    20.0,
+                    0.1,
+                ),
+                label_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_medium as f32,
+                    16.0,
+                    0.5,
+                ),
+                label_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_small as f32,
+                    14.0,
+                    0.1,
+                ),
+                body_large: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_large as f32,
+                    24.0,
+                    0.15,
+                ),
+                body_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_medium as f32,
+                    20.0,
+                    0.25,
+                ),
+                body_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_small as f32,
+                    16.0,
+                    0.4,
+                ),
+            },
+            ..Default::default()
         };
 
         // Keep other Material Design defaults
@@ -557,125 +555,123 @@ impl SerializableTheme {
     fn convert_material_tokens(
         tokens: &SerializableMaterialTokens,
     ) -> Result<MaterialTokens, ThemeLoadError> {
-        let mut material_tokens = MaterialTokens::default();
-
-        // Update spacing tokens
-        material_tokens.spacing = SpacingTokens {
-            xs: tokens.spacing.xs,
-            sm: tokens.spacing.sm,
-            md: tokens.spacing.md,
-            lg: tokens.spacing.lg,
-            xl: tokens.spacing.xl,
-            xxl: tokens.spacing.xxl,
-        };
-
-        // Update typography tokens
-        material_tokens.typography = MaterialTypography {
-            display_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_large as f32,
-                64.0, // line height
-                0.0,  // letter spacing
-            ),
-            display_medium: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_medium as f32,
-                52.0,
-                0.0,
-            ),
-            display_small: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.display_small as f32,
-                44.0,
-                0.0,
-            ),
-            headline_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_large as f32,
-                40.0,
-                0.0,
-            ),
-            headline_medium: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_medium as f32,
-                36.0,
-                0.0,
-            ),
-            headline_small: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Regular,
-                tokens.typography.headline_small as f32,
-                32.0,
-                0.0,
-            ),
-            title_large: TypeStyle::new(
-                MaterialFont::Brand,
-                MaterialWeight::Medium,
-                tokens.typography.title_large as f32,
-                28.0,
-                0.0,
-            ),
-            title_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.title_medium as f32,
-                24.0,
-                0.15,
-            ),
-            title_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.title_small as f32,
-                22.0,
-                0.1,
-            ),
-            label_large: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_large as f32,
-                20.0,
-                0.1,
-            ),
-            label_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_medium as f32,
-                16.0,
-                0.5,
-            ),
-            label_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Medium,
-                tokens.typography.label_small as f32,
-                14.0,
-                0.1,
-            ),
-            body_large: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_large as f32,
-                24.0,
-                0.15,
-            ),
-            body_medium: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_medium as f32,
-                20.0,
-                0.25,
-            ),
-            body_small: TypeStyle::new(
-                MaterialFont::Plain,
-                MaterialWeight::Regular,
-                tokens.typography.body_small as f32,
-                16.0,
-                0.4,
-            ),
+        let material_tokens = MaterialTokens {
+            spacing: SpacingTokens {
+                xs: tokens.spacing.xs,
+                sm: tokens.spacing.sm,
+                md: tokens.spacing.md,
+                lg: tokens.spacing.lg,
+                xl: tokens.spacing.xl,
+                xxl: tokens.spacing.xxl,
+            },
+            typography: MaterialTypography {
+                display_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_large as f32,
+                    64.0, // line height
+                    0.0,  // letter spacing
+                ),
+                display_medium: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_medium as f32,
+                    52.0,
+                    0.0,
+                ),
+                display_small: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.display_small as f32,
+                    44.0,
+                    0.0,
+                ),
+                headline_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_large as f32,
+                    40.0,
+                    0.0,
+                ),
+                headline_medium: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_medium as f32,
+                    36.0,
+                    0.0,
+                ),
+                headline_small: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Regular,
+                    tokens.typography.headline_small as f32,
+                    32.0,
+                    0.0,
+                ),
+                title_large: TypeStyle::new(
+                    MaterialFont::Brand,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_large as f32,
+                    28.0,
+                    0.0,
+                ),
+                title_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_medium as f32,
+                    24.0,
+                    0.15,
+                ),
+                title_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.title_small as f32,
+                    22.0,
+                    0.1,
+                ),
+                label_large: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_large as f32,
+                    20.0,
+                    0.1,
+                ),
+                label_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_medium as f32,
+                    16.0,
+                    0.5,
+                ),
+                label_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Medium,
+                    tokens.typography.label_small as f32,
+                    14.0,
+                    0.1,
+                ),
+                body_large: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_large as f32,
+                    24.0,
+                    0.15,
+                ),
+                body_medium: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_medium as f32,
+                    20.0,
+                    0.25,
+                ),
+                body_small: TypeStyle::new(
+                    MaterialFont::Plain,
+                    MaterialWeight::Regular,
+                    tokens.typography.body_small as f32,
+                    16.0,
+                    0.4,
+                ),
+            },
+            ..Default::default()
         };
 
         // Update other tokens as needed
