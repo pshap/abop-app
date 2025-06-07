@@ -33,6 +33,9 @@ impl MainToolbar {
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
+        // Debug: Log the current path being passed to MainToolbar
+        log::info!("MainToolbar::view: Received current_path: {}", current_path.display());
+        
         let mut toolbar = row![]
             .spacing(material_tokens.spacing().xs) // Use extra small spacing between toolbar items
             .align_y(Alignment::Center)
@@ -91,6 +94,9 @@ impl MainToolbar {
             material_tokens,
         );
 
+        // Debug: Log the path being used for the scan command
+        log::info!("MainToolbar::view: Creating scan button with path: {}", current_path.display());
+        
         toolbar = toolbar.push(scan_button);
 
         // Recent directories dropdown if available

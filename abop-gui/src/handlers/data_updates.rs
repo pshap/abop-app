@@ -27,46 +27,18 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
         Message::QuickScanComplete(result) => {
             match result {
                 Ok(info) => {
+                    // Update the library path to the newly selected directory
+                    state.library_path = info.path.clone();
+                    
                     // Add to recent directories
                     state.recent_directories.push(info.clone());
 
-                    // Now start the full scan
-                    // Create a database connection for the scan operation
-                    let db = match abop_core::db::Database::open(":memory:") {
-                        Ok(db) => db,
-                        Err(_e) => {
-                            log::error!("Failed to create database connection: {_e}");
-                            state.scanner_state = ScannerState::Error;
-                            state.scanning = false;
-                            return Some(Task::none());
-                        }
-                    };
-
-                    // Create a library for the scanned directory
-                    // Create a library for the scanned directory
-                    let library = match db.add_library("Scanned Library", &info.path) {
-                        Ok(library) => library,
-                        Err(_e) => {
-                            log::error!("Failed to create library: {_e}");
-                            state.scanner_state = ScannerState::Error;
-                            state.scanning = false;
-                            return Some(Task::none());
-                        }
-                    };
-
-                    Some(Task::perform(
-                        async move {
-                            match library::scan_library(db, library).await {
-                                Ok(result) => Message::ScanComplete(Ok(result)),
-                                Err(e) => Message::ScanComplete(Err(e.to_string())),
-                            }
-                        },
-                        |message| message,
-                    ))
+                    // Quick scan complete - just update UI state, don't auto-start full scan
+                    // The user can manually click the scan button if they want a full scan
+                    Some(Task::none())
                 }
                 Err(_e) => {
-                    state.scanner_state = ScannerState::Error;
-                    state.scanning = false;
+                    log::error!("Quick scan failed: {_e}");
                     Some(Task::none())
                 }
             }
