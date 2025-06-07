@@ -2,15 +2,15 @@
 //!
 //! This is the main entry point for the ABOP CLI application.
 
-use clap::{Parser, Subcommand};
-use log::{info, error, warn, debug};
-use std::path::PathBuf;
-use std::time::Instant;
-use anyhow::{Result, Context};
 use abop_core::{
     db::Database,
     scanner::{LibraryScanner, ScannerConfig},
 };
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
+use log::{debug, error, info, warn};
+use std::path::PathBuf;
+use std::time::Instant;
 
 /// Command line arguments for ABOP CLI
 #[derive(Parser, Debug)]
@@ -117,11 +117,13 @@ async fn main() -> Result<()> {
                 max_concurrent_tasks,
                 max_concurrent_db_operations,
                 progress,
-            ).await
+            )
+            .await
         }
-        Commands::Db { database, operation } => {
-            handle_db_operation(database, operation).await
-        }
+        Commands::Db {
+            database,
+            operation,
+        } => handle_db_operation(database, operation).await,
     }
 }
 
@@ -133,14 +135,20 @@ async fn scan_library(
     max_concurrent_db_operations: Option<usize>,
     show_progress: bool,
 ) -> Result<()> {
-    info!("Scanning library: {:?}", library_path);
+    info!("Scanning library: {library_path:?}");
 
     // Validate library path
     if !library_path.exists() {
-        return Err(anyhow::anyhow!("Library path does not exist: {:?}", library_path));
+        return Err(anyhow::anyhow!(
+            "Library path does not exist: {:?}",
+            library_path
+        ));
     }
     if !library_path.is_dir() {
-        return Err(anyhow::anyhow!("Library path is not a directory: {:?}", library_path));
+        return Err(anyhow::anyhow!(
+            "Library path is not a directory: {:?}",
+            library_path
+        ));
     }
 
     // Initialize database
@@ -150,11 +158,12 @@ async fn scan_library(
         path
     });
 
-    info!("Using database: {:?}", db_path);
+    info!("Using database: {db_path:?}");
     let db = Database::open(&db_path).context("Failed to initialize database")?;
 
     // Create a library record first
-    let library = db.add_library("CLI Library", &library_path)
+    let library = db
+        .add_library("CLI Library", &library_path)
         .context("Failed to create library record")?;
 
     // Configure scanner
@@ -164,7 +173,7 @@ async fn scan_library(
         "conservative" => ScannerConfig::conservative(),
         "default" => ScannerConfig::default(),
         _ => {
-            warn!("Unknown config preset '{}', using default", config_preset);
+            warn!("Unknown config preset '{config_preset}', using default");
             ScannerConfig::default()
         }
     };
@@ -177,23 +186,26 @@ async fn scan_library(
         scanner_config.max_concurrent_db_operations = db_ops;
     }
 
-    info!("Scanner config: max_concurrent_tasks={}, max_concurrent_db_operations={}", 
-          scanner_config.max_concurrent_tasks, 
-          scanner_config.max_concurrent_db_operations);
+    info!(
+        "Scanner config: max_concurrent_tasks={}, max_concurrent_db_operations={}",
+        scanner_config.max_concurrent_tasks, scanner_config.max_concurrent_db_operations
+    );
 
     // Create scanner
     let scanner = LibraryScanner::new(db.clone(), library).with_config(scanner_config);
-    
+
     let start_time = Instant::now();
-    
+
     if show_progress {
         info!("Starting scan with progress monitoring...");
         scan_with_progress(scanner, &db, &library_path).await?;
     } else {
         info!("Starting scan...");
-        let result = scanner.scan_async(None).await
-            .context("Scan failed")?;
-        info!("Scan result: processed={}, errors={}", result.processed, result.errors);
+        let result = scanner.scan_async(None).await.context("Scan failed")?;
+        info!(
+            "Scan result: processed={}, errors={}",
+            result.processed, result.errors
+        );
     }
 
     let elapsed = start_time.elapsed();
@@ -210,13 +222,12 @@ async fn scan_with_progress(
     _db: &Database,
     _library_path: &PathBuf,
 ) -> Result<()> {
-    use tokio::time::{interval, Duration};    // Start scan in background
-    let mut scan_handle = tokio::spawn(async move {
-        scanner.scan_async(None).await
-    });
+    use tokio::time::{Duration, interval}; // Start scan in background
+    let mut scan_handle = tokio::spawn(async move { scanner.scan_async(None).await });
 
     // Monitor progress
-    let mut progress_interval = interval(Duration::from_secs(2));    loop {
+    let mut progress_interval = interval(Duration::from_secs(2));
+    loop {
         tokio::select! {
             result = &mut scan_handle => {
                 match result {
@@ -226,11 +237,11 @@ async fn scan_with_progress(
                         break;
                     }
                     Ok(Err(e)) => {
-                        error!("✗ Scan failed: {}", e);
+                        error!("✗ Scan failed: {e}");
                         return Err(e.into());
                     }
                     Err(e) => {
-                        error!("✗ Scan task panicked: {}", e);
+                        error!("✗ Scan task panicked: {e}");
                         return Err(e.into());
                     }
                 }
@@ -252,67 +263,76 @@ async fn get_audiobook_count(db: &Database) -> Result<usize> {
 
 async fn show_scan_results(db: &Database) -> Result<()> {
     let count = get_audiobook_count(db).await?;
-    
+
     if count == 0 {
         warn!("No audiobooks found in the library");
     } else {
-        info!("📚 Total audiobooks found: {}", count);
-          // Show first few audiobooks as examples
+        info!("📚 Total audiobooks found: {count}");
+        // Show first few audiobooks as examples
         let audiobooks = db.get_audiobooks_in_library("1")?;
-          info!("Sample audiobooks:");
+        info!("Sample audiobooks:");
         for (i, book) in audiobooks.iter().take(5).enumerate() {
-            info!("  {}. {} - {}", i + 1, 
-                  book.title.as_deref().unwrap_or("Unknown Title"), 
-                  book.author.as_deref().unwrap_or("Unknown"));
+            info!(
+                "  {}. {} - {}",
+                i + 1,
+                book.title.as_deref().unwrap_or("Unknown Title"),
+                book.author.as_deref().unwrap_or("Unknown")
+            );
         }
-        
+
         if audiobooks.len() > 5 {
             info!("  ... and {} more", audiobooks.len() - 5);
         }
     }
-    
+
     Ok(())
 }
 
 async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
     match operation {
         DbOperations::Init => {
-            info!("Initializing database: {:?}", database_path);
+            info!("Initializing database: {database_path:?}");
             let _db = Database::open(&database_path).context("Failed to initialize database")?;
             info!("✓ Database initialized successfully");
         }
         DbOperations::List => {
-            info!("Listing audiobooks in: {:?}", database_path);
+            info!("Listing audiobooks in: {database_path:?}");
             let db = Database::open(&database_path).context("Failed to open database")?;
-            
-            let audiobooks = db.get_audiobooks_in_library("1").context("Failed to get audiobooks")?;
-            
+
+            let audiobooks = db
+                .get_audiobooks_in_library("1")
+                .context("Failed to get audiobooks")?;
+
             if audiobooks.is_empty() {
                 info!("No audiobooks found in database");
-            } else {                info!("Found {} audiobooks:", audiobooks.len());
+            } else {
+                info!("Found {} audiobooks:", audiobooks.len());
                 for (i, book) in audiobooks.iter().enumerate() {
-                    println!("{}. {} - {} ({})", 
-                             i + 1, 
-                             book.title.as_deref().unwrap_or("Unknown Title"),
-                             book.author.as_deref().unwrap_or("Unknown"),
-                             book.path.display());
+                    println!(
+                        "{}. {} - {} ({})",
+                        i + 1,
+                        book.title.as_deref().unwrap_or("Unknown Title"),
+                        book.author.as_deref().unwrap_or("Unknown"),
+                        book.path.display()
+                    );
                 }
             }
         }
         DbOperations::Stats => {
-            info!("Database statistics: {:?}", database_path);
+            info!("Database statistics: {database_path:?}");
             let db = Database::open(&database_path).context("Failed to open database")?;
-            
+
             let count = get_audiobook_count(&db).await?;
-            info!("Total audiobooks: {}", count);
-        }        DbOperations::Clean => {
-            info!("Cleaning database: {:?}", database_path);
+            info!("Total audiobooks: {count}");
+        }
+        DbOperations::Clean => {
+            info!("Cleaning database: {database_path:?}");
             let _db = Database::open(&database_path).context("Failed to open database")?;
-            
+
             // TODO: Implement database cleanup/optimization
             info!("✓ Database cleanup completed");
         }
     }
-    
+
     Ok(())
 }
