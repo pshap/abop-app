@@ -126,9 +126,12 @@ async fn main() -> Result<()> {
             database,
             operation,
         } => {
-            debug!("Executing database command: {:?} on {:?}", operation, database);
+            debug!(
+                "Executing database command: {:?} on {:?}",
+                operation, database
+            );
             handle_db_operation(database, operation).await
-        },
+        }
     }
 }
 
@@ -168,7 +171,7 @@ async fn scan_library(
 
     // Create a library record first
     let library = db
-        .add_library("CLI Library", &library_path)
+        .add_library("CLI Library", library_path.clone())
         .context("Failed to create library record")?;
 
     // Configure scanner
@@ -263,16 +266,14 @@ async fn scan_with_progress(
 async fn get_audiobook_count(db: &Database) -> Result<usize> {
     // Get all libraries first
     let libraries = db.get_libraries()?;
-    
+
     if libraries.is_empty() {
         return Ok(0);
     }
-    
+
     // Use the first available library, or default to "1"
-    let library_id = libraries.first()
-        .map(|lib| lib.id.as_str())
-        .unwrap_or("1");
-        
+    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
 }
@@ -284,13 +285,11 @@ async fn show_scan_results(db: &Database) -> Result<()> {
         warn!("No audiobooks found in the library");
     } else {
         info!("📚 Total audiobooks found: {count}");
-        
+
         // Get all libraries and use the first one, or default to "1"
         let libraries = db.get_libraries()?;
-        let library_id = libraries.first()
-            .map(|lib| lib.id.as_str())
-            .unwrap_or("1");
-            
+        let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+
         // Show first few audiobooks as examples
         let audiobooks = db.get_audiobooks_in_library(library_id)?;
         info!("Sample audiobooks:");
@@ -329,22 +328,26 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
 
             // Get all libraries first
             let libraries = db.get_libraries().context("Failed to get libraries")?;
-            
+
             if libraries.is_empty() {
                 info!("No libraries found in database. You may need to scan a library first.");
                 return Ok(());
             }
-            
-            // Use the first available library, or default to "1"
-            let library_id = libraries.first()
-                .map(|lib| lib.id.as_str())
-                .unwrap_or("1");
 
-            debug!("About to call get_audiobooks_in_library() with library_id: {}", library_id);
+            // Use the first available library, or default to "1"
+            let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+
+            debug!(
+                "About to call get_audiobooks_in_library() with library_id: {}",
+                library_id
+            );
             let audiobooks = db
                 .get_audiobooks_in_library(library_id)
                 .context("Failed to get audiobooks")?;
-            debug!("get_audiobooks_in_library() completed, found {} audiobooks", audiobooks.len());
+            debug!(
+                "get_audiobooks_in_library() completed, found {} audiobooks",
+                audiobooks.len()
+            );
 
             if audiobooks.is_empty() {
                 info!("No audiobooks found in database. Try scanning a library directory first.");

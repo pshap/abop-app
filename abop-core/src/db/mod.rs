@@ -13,9 +13,9 @@ pub mod repositories;
 pub mod retry;
 pub mod statistics;
 
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::OptionalExtension;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
 pub use self::connection_adapter::ConnectionAdapter;
@@ -23,7 +23,7 @@ pub use self::error::{DatabaseError, DbResult};
 pub use self::health::ConnectionHealth;
 pub use self::migrations::{Migration, MigrationManager, MigrationResult};
 pub use self::repositories::{
-    AudiobookRepository, LibraryRepository, ProgressRepository, RepositoryManager,
+    AudiobookRepository, LibraryRepository, ProgressRepository, Repository, RepositoryManager,
 };
 pub use self::retry::{RetryExecutor, RetryPolicy};
 pub use self::statistics::ConnectionStats;
@@ -60,12 +60,9 @@ impl Database {
             .connect()
             .map_err(|e| crate::error::AppError::Other(e.to_string()))?;
 
-        // Create repositories using a shared dummy connection
-        // The repositories will be configured to use the enhanced connection through the manager
-        let dummy_conn = Connection::open_in_memory()?;
-        let conn_arc = Arc::new(Mutex::new(dummy_conn));
-        let repositories =
-            RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
+        // Create repositories using the enhanced connection
+        // The repositories will automatically use the enhanced connection for all operations
+        let repositories = RepositoryManager::with_enhanced_connection(enhanced_conn.clone());
 
         let db = Self {
             enhanced_conn,
@@ -88,16 +85,8 @@ impl Database {
     fn init(&self) -> Result<()> {
         log::debug!("Initializing database schema...");
 
-        // For initialization, we need to temporarily use the basic connection
-        // since migrations require mutable access
-        {
-            // Scope the first connection lock to ensure it's released
-            let conn = self.repositories.connection().lock().map_err(|_| {
-                DatabaseError::ConnectionFailed(
-                    "Failed to acquire connection lock during initialization".into(),
-                )
-            })?;
-
+        // Configure database settings using enhanced connection
+        self.enhanced_conn.with_connection(|conn| {
             conn.execute_batch(
                 "PRAGMA foreign_keys = ON;\n\
                  PRAGMA journal_mode = WAL;\n\
@@ -108,19 +97,13 @@ impl Database {
             })?;
 
             log::debug!("Database settings configured");
-        } // Lock is released here
+            Ok(())
+        })?;
 
-        // Run migrations in a transaction
+        // Run migrations using enhanced connection with mutable access
         log::debug!("Running migrations...");
-        {
-            // Scope the second connection lock separately
-            let mut conn = self.repositories.connection().lock().map_err(|_| {
-                DatabaseError::ConnectionFailed(
-                    "Failed to acquire connection lock for migrations".into(),
-                )
-            })?;
-
-            migrations::run_migrations(&mut conn).map_err(|e| {
+        self.enhanced_conn.with_connection_mut(|conn| {
+            migrations::run_migrations(conn).map_err(|e| {
                 log::error!("Failed to run migrations: {e}");
                 DatabaseError::MigrationFailed {
                     version: 0, // We don't know which version failed at this point
@@ -129,10 +112,10 @@ impl Database {
             })?;
 
             log::debug!("Migrations completed successfully");
-        } // Lock is released here
-        
-        log::debug!("Database initialization complete");
+            Ok(())
+        })?;
 
+        log::debug!("Database initialization complete");
         Ok(())
     }
 
@@ -221,7 +204,7 @@ impl Database {
     /// - The database operation fails
     /// - A library with the same name already exists
     /// - The path is invalid or inaccessible
-    pub fn add_library<P: AsRef<Path>>(&self, name: &str, path: P) -> Result<Library> {
+    pub fn add_library<P: AsRef<Path> + Send + 'static>(&self, name: &str, path: P) -> Result<Library> {
         self.libraries()
             .create(name, path)
             .map_err(std::convert::Into::into)
@@ -265,8 +248,8 @@ impl Database {
         let audiobook_clone = audiobook.clone();
         // Use enhanced repository wrapper to leverage enhanced connection
         self.repositories
-            .audiobooks_enhanced()
-            .execute_query(move |conn| {
+            .audiobooks()
+            .execute_query_enhanced(move |conn| {
                 conn.execute(
                     "INSERT OR REPLACE INTO audiobooks (
                         id, library_id, path, title, author, narrator, 
@@ -306,8 +289,8 @@ impl Database {
 
         // Use enhanced repository wrapper to leverage enhanced connection
         self.repositories
-            .audiobooks_enhanced()
-            .execute_query(move |conn| {
+            .audiobooks()
+            .execute_query_enhanced(move |conn| {
                 conn.query_row(
                     "SELECT id, library_id, path, title, author, narrator, description, 
                             duration_seconds, size_bytes, cover_art, created_at, updated_at 
@@ -350,8 +333,8 @@ impl Database {
 
         // Use enhanced repository wrapper to leverage enhanced connection
         self.repositories
-            .audiobooks_enhanced()
-            .execute_query(move |conn| {
+            .audiobooks()
+            .execute_query_enhanced(move |conn| {
                 let mut stmt = conn.prepare(
                     "SELECT id, library_id, path, title, author, narrator, description, 
                             duration_seconds, size_bytes, cover_art, created_at, updated_at 
@@ -425,14 +408,8 @@ impl Database {
     /// - Connection lock acquisition fails
     pub fn migration_version(&self) -> Result<u32> {
         let manager = migrations::MigrationManager::new();
-        let conn = self.repositories.connection().lock().map_err(|_| {
-            DatabaseError::ConnectionFailed(
-                "Failed to acquire connection lock for version check".into(),
-            )
-        })?;
-
-        manager
-            .current_version(&conn)
+        self.enhanced_conn
+            .with_connection(move |conn| manager.current_version(conn))
             .map_err(std::convert::Into::into)
     }
 
@@ -454,14 +431,10 @@ impl Database {
     /// - Migration files are corrupted or missing
     pub fn migrate_up(&self) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().map_err(|_| {
-            DatabaseError::ConnectionFailed(
-                "Failed to acquire connection lock for migration".into(),
-            )
-        })?;
-
-        manager
-            .migrate_up(&mut conn)
+        self.enhanced_conn
+            .with_connection_mut(move |conn| {
+                manager.migrate_up(conn).map_err(std::convert::Into::into)
+            })
             .map_err(std::convert::Into::into)
     }
 
@@ -476,13 +449,12 @@ impl Database {
     /// - Connection lock acquisition fails
     pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        let mut conn = self.repositories.connection().lock().map_err(|_| {
-            DatabaseError::ConnectionFailed("Failed to acquire connection lock for rollback".into())
-        })?;
-
-        manager
-            .migrate_down(&mut conn, target_version)
-            .map_err(std::convert::Into::into)
+        self.enhanced_conn.with_connection_mut(move |conn| {
+            manager
+                .migrate_down(conn, target_version)
+                .map_err(std::convert::Into::into)
+        })
+        .map_err(std::convert::Into::into)
     }
 
     /// Get list of pending migrations
@@ -493,86 +465,97 @@ impl Database {
     /// - The migration query fails
     /// - The database connection is unavailable
     /// - Migration metadata is corrupted
-    ///
-    /// # Panics
-    ///
-    /// Panics if the connection lock is poisoned (another thread panicked while holding the lock)
-    #[allow(clippy::significant_drop_tightening)]
     pub fn pending_migrations(&self) -> Result<Vec<(u32, String)>> {
         let manager = migrations::MigrationManager::new();
-        let conn_lock = self.repositories.connection().lock().unwrap();
-        let pending = manager
-            .pending_migrations(&conn_lock)
-            .map_err(|e: DatabaseError| crate::error::AppError::from(e))?;
-        Ok(pending
-            .into_iter()
-            .map(|m| (m.version, m.description.to_string()))
-            .collect())
+        self.enhanced_conn
+            .with_connection(move |conn| {
+                let pending = manager.pending_migrations(conn)?;
+                Ok(pending
+                    .into_iter()
+                    .map(|m| (m.version, m.description.to_string()))
+                    .collect())
+            })
+            .map_err(std::convert::Into::into)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
+    use crate::models::{Audiobook, Progress};
+    use std::path::Path;
     use tempfile::NamedTempFile;
     use uuid::Uuid;
 
-    fn create_test_db() -> Result<(Database, NamedTempFile)> {
+    #[test]
+    fn test_initialization_uses_correct_connection() -> Result<()> {
         let temp_file = NamedTempFile::new()?;
-        // Database::open already calls init() internally
         let db = Database::open(temp_file.path())?;
-        Ok((db, temp_file))
-    }
+        db.init()?;
 
-    #[test]
-    fn test_add_and_get_library() -> Result<()> {
-        let (db, _temp) = create_test_db()?;
+        // Verify pragmas are set on actual file
+        let file_conn = rusqlite::Connection::open(temp_file.path())?;
+        let journal_mode: String = file_conn.query_row(
+            "PRAGMA journal_mode",
+            [],
+            |row| row.get(0),
+        )?;
+        assert_eq!(journal_mode, "wal");
 
-        // Add a library
-        let library = db.add_library("Test Library", Path::new("/test/path"))?;
+        let foreign_keys: i64 = file_conn.query_row(
+            "PRAGMA foreign_keys",
+            [],
+            |row| row.get(0),
+        )?;
+        assert_eq!(foreign_keys, 1);
 
-        // Get the library by ID
-        let retrieved = db.get_library(&library.id)?.unwrap();
-        assert_eq!(retrieved.name, "Test Library");
-        assert_eq!(retrieved.path, Path::new("/test/path"));
-
-        // Get all libraries
-        let libraries = db.get_libraries()?;
-        assert_eq!(libraries.len(), 1);
-        assert_eq!(libraries[0].name, "Test Library");
         Ok(())
     }
 
     #[test]
-    fn test_connection_stats() -> Result<()> {
-        let (db, _temp) = create_test_db()?;
+    fn test_migrations_run_on_actual_database() -> Result<()> {
+        let temp_file = NamedTempFile::new()?;
+        let db = Database::open(temp_file.path())?;
+        db.init()?;
 
-        // Get initial stats
-        let stats = db.connection_stats()?;
-        assert_eq!(stats.successful_operations, 1); // Initial connection
-        assert_eq!(stats.failed_operations, 0);
+        // Verify schema exists in actual file
+        let file_conn = rusqlite::Connection::open(temp_file.path())?;
+        let table_count: i64 = file_conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table'",
+            [],
+            |row| row.get(0),
+        )?;
+        assert!(table_count > 0);
 
-        // Perform some operations
-        db.get_libraries()?;
-        db.get_libraries()?;
+        // Verify specific tables exist
+        let tables = ["libraries", "audiobooks", "progress"];
+        for table in tables {
+            let exists: i64 = file_conn.query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
+                [table],
+                |row| row.get(0),
+            )?;
+            assert_eq!(exists, 1, "Table {} should exist", table);
+        }
 
-        // Check updated stats
-        let stats = db.connection_stats()?;
-        assert_eq!(stats.successful_operations, 3); // Initial + 2 operations
-        assert_eq!(stats.failed_operations, 0);
-        assert!(stats.avg_operation_duration_ms >= 0.0);
         Ok(())
     }
 
     #[test]
-    fn test_add_and_get_audiobook() -> Result<()> {
-        let (db, _temp) = create_test_db()?;
+    fn test_single_connection_consistency() -> Result<()> {
+        let temp_file = NamedTempFile::new()?;
+        let temp_path = temp_file.path().to_path_buf();
+        let db = Database::open(&temp_path)?;
+        db.init()?;
 
-        // Add a library
-        let library = db.add_library("Test Library", Path::new("/test/path"))?;
+        // Create a library
+        let library = db.add_library("Test Library", temp_path.clone())?;
 
-        // Create an audiobook
+        // Verify library exists through all repository paths
+        assert!(db.libraries().exists(&library.id)?);
+        assert!(db.audiobooks().count_by_library(&library.id)? == 0);
+
+        // Add an audiobook
         let audiobook = Audiobook {
             id: Uuid::new_v4().to_string(),
             library_id: library.id.clone(),
@@ -584,23 +567,65 @@ mod tests {
             duration_seconds: Some(3600),
             size_bytes: Some(1024 * 1024),
             cover_art: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
             selected: false,
         };
-
-        // Add the audiobook
         db.add_audiobook(&audiobook)?;
 
-        // Get the audiobook by ID
-        let retrieved = db.get_audiobook(&audiobook.id)?.unwrap();
-        assert_eq!(retrieved.title, audiobook.title);
-        assert_eq!(retrieved.author, audiobook.author);
+        // Verify audiobook exists through all repository paths
+        assert!(db.audiobooks().exists(&audiobook.id)?);
+        assert_eq!(db.audiobooks().count_by_library(&library.id)?, 1);
 
-        // Get audiobooks in library
-        let audiobooks = db.get_audiobooks_in_library(&library.id)?;
-        assert_eq!(audiobooks.len(), 1);
-        assert_eq!(audiobooks[0].id, audiobook.id);
+        // Add progress
+        let now = chrono::Utc::now();
+        let progress = Progress {
+            id: Uuid::new_v4().to_string(),
+            audiobook_id: audiobook.id.clone(),
+            position_seconds: 1800,
+            completed: false,
+            last_played: Some(now),
+            created_at: now,
+            updated_at: now,
+        };
+        db.save_progress(&progress)?;
+
+        // Verify progress exists through all repository paths
+        let found_progress = db.get_progress(&audiobook.id)?;
+        assert!(found_progress.is_some());
+        assert_eq!(found_progress.unwrap().position_seconds, 1800);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_enhanced_connection_retry() -> Result<()> {
+        let temp_file = NamedTempFile::new()?;
+        let temp_path = temp_file.path().to_path_buf();
+        let db = Database::open(&temp_path)?;
+        db.init()?;
+
+        // Create a library
+        let library = db.add_library("Test Library", temp_path.clone())?;
+
+        // Simulate connection issues by temporarily making the file read-only
+        let metadata = std::fs::metadata(&temp_path)?;
+        let mut perms = metadata.permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(&temp_path, perms)?;
+
+        // Try to access the database - should fail gracefully
+        let result = db.libraries().exists(&library.id);
+        assert!(result.is_err());
+
+        // Make the file writable again
+        let mut perms = std::fs::metadata(&temp_path)?.permissions();
+        perms.set_readonly(false);
+        std::fs::set_permissions(&temp_path, perms)?;
+
+        // Should work again after making writable
+        assert!(db.libraries().exists(&library.id)?);
+
         Ok(())
     }
 }

@@ -83,7 +83,7 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                             match tokio::task::spawn_blocking({
                                 let db = db.clone();
                                 let path = library_path.clone();
-                                move || db.add_library("Default Library", &path)
+                                move || db.add_library("Default Library", path)
                             })
                             .await
                             {
