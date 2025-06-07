@@ -2,7 +2,7 @@
 //!
 //! This module handles all database operations related to libraries.
 
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::OptionalExtension;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -43,6 +43,11 @@ impl LibraryRepository {
         let path_buf = path.as_ref().to_path_buf();
 
         let result = self.execute_query(move |conn| {
+            let id = id.clone();
+            let name_owned = name_owned.clone();
+            let path_str = path_str.clone();
+            let path_buf = path_buf.clone();
+
             // Check if library with same name already exists
             let existing_check = conn
                 .query_row(
@@ -75,9 +80,7 @@ impl LibraryRepository {
         result.map_err(|e| {
             // Convert constraint violations to our specific error type
             match &e {
-                DatabaseError::Sqlite(rusqlite::Error::SqliteFailure(err, Some(_msg)))
-                    if err.code == rusqlite::ErrorCode::ConstraintViolation =>
-                {
+                DatabaseError::Sqlite(err_msg) if err_msg.contains("UNIQUE constraint failed") => {
                     DatabaseError::duplicate_entry("Library", "name", name)
                 }
                 _ => e,
@@ -94,6 +97,7 @@ impl LibraryRepository {
     pub fn find_by_id(&self, id: &str) -> DbResult<Option<Library>> {
         let id = id.to_string();
         self.execute_query(move |conn| {
+            let id = id.clone();
             conn.query_row(
                 "SELECT id, name, path FROM libraries WHERE id = ?1",
                 [id],
@@ -118,6 +122,7 @@ impl LibraryRepository {
     pub fn find_by_name(&self, name: &str) -> DbResult<Option<Library>> {
         let name = name.to_string();
         self.execute_query(move |conn| {
+            let name = name.clone();
             conn.query_row(
                 "SELECT id, name, path FROM libraries WHERE name = ?1",
                 [name],
@@ -206,11 +211,9 @@ impl LibraryRepository {
             Ok(rows_affected > 0)
         })
         .map_err(|e| match &e {
-            DatabaseError::Sqlite(rusqlite::Error::SqliteFailure(err, Some(msg)))
-                if err.code == rusqlite::ErrorCode::ConstraintViolation =>
-            {
+            DatabaseError::Sqlite(err_msg) if err_msg.contains("FOREIGN KEY constraint failed") => {
                 DatabaseError::ConstraintViolation {
-                    message: msg.clone(),
+                    message: err_msg.clone(),
                 }
             }
             _ => e,
@@ -226,6 +229,7 @@ impl LibraryRepository {
     pub fn exists(&self, id: &str) -> DbResult<bool> {
         let id = id.to_string();
         self.execute_query(move |conn| {
+            let id = id.clone();
             let count: i64 = conn.query_row(
                 "SELECT COUNT(*) FROM libraries WHERE id = ?1",
                 [id],
@@ -237,28 +241,9 @@ impl LibraryRepository {
 }
 
 impl Repository for LibraryRepository {
-    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
-    where
-        F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        // We need to work around the fact that with_connection expects Fn but we have FnOnce
-        // We'll use a thread-safe approach by wrapping the operation
-        let operation = std::sync::Arc::new(std::sync::Mutex::new(Some(f)));
-        self.enhanced_connection.with_connection(move |conn| {
-            let mut op_guard = operation.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
-            })?;
-            let op = op_guard.take().ok_or_else(|| {
-                DatabaseError::ConnectionFailed("Operation already consumed".to_string())
-            })?;
-            op(conn).map_err(DatabaseError::from)
-        })
+    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+        &self.enhanced_connection
     }
 }
 
-impl EnhancedRepository for LibraryRepository {
-    fn get_enhanced_connection(&self) -> Option<&Arc<EnhancedConnection>> {
-        Some(&self.enhanced_connection)
-    }
-}
+impl EnhancedRepository for LibraryRepository {}

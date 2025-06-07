@@ -4,11 +4,16 @@ use abop_core::{
     db::Database,
     error::Result,
     models::{Audiobook, Library},
-    scanner::LibraryScanner,
+    scanner::{
+        LibraryScanner,
+        progress::{CallbackReporter, ScanProgress},
+    },
 };
 use iced::Element;
 use iced::widget::{column, progress_bar, text};
 use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::messages::Message;
 
@@ -45,7 +50,7 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
 /// Scans a library directory and returns a task that will complete with the scan result
 pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> {
     let scanner = LibraryScanner::new(db, library);
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
 
     // Start scan with progress reporting
     let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await });
@@ -60,7 +65,7 @@ pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> 
 
     while let Some(progress) = rx.recv().await {
         match progress {
-            abop_core::scanner::progress::ScanProgress::Complete {
+            ScanProgress::Complete {
                 processed,
                 errors,
                 duration,
@@ -156,64 +161,76 @@ impl Default for ScannerProgress {
 }
 
 impl ScannerProgress {
-    /// Creates a new scanner progress tracker in its default state
+    /// Creates a new scanner progress tracker
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Renders the current scan progress as a UI element
-    pub fn view(&self) -> Element<'_, Message> {
-        match self.state {
-            abop_core::scanner::ScannerState::Idle => column![].into(),
-            _ => {
-                let progress_percentage = if self.total_count > 0 {
-                    self.current_count as f32 / self.total_count as f32
-                } else {
-                    0.0
-                };
-
-                column![
-                    progress_bar(0.0..=1.0, progress_percentage),
-                    text(format!(
-                        "Processed {}/{} files",
-                        self.current_count, self.total_count
-                    )),
-                    if let Some(file) = &self.current_file {
-                        text(format!("Current file: {file}"))
-                    } else {
-                        text("")
-                    },
-                    if self.error_count > 0 {
-                        text(format!("Errors: {}", self.error_count))
-                    } else {
-                        text("")
-                    },
-                ]
-                .spacing(10)
-                .padding(20)
-                .into()
-            }
-        }
-    }
-
-    /// Updates the progress state with a new progress event
-    pub fn update(&mut self, progress: f32) {
+    /// Updates the progress state with a new progress value
+    pub fn update_progress(&mut self, progress: f32) {
         self.progress = Some(progress);
-        if progress >= 1.0 {
-            self.state = abop_core::scanner::ScannerState::Complete;
-        } else {
-            self.state = abop_core::scanner::ScannerState::Scanning;
-        }
     }
 
     /// Updates the current file being processed
-    pub fn update_current_file(&mut self, file: String) {
-        self.current_file = Some(file);
+    pub fn update_current_file(&mut self, file_name: String) {
+        self.current_file = Some(file_name);
+    }
+
+    /// Updates the total number of files to process
+    pub fn update_total_count(&mut self, total: usize) {
+        self.total_count = total;
+    }
+
+    /// Increments the current file count
+    pub fn increment_count(&mut self) {
+        self.current_count += 1;
     }
 
     /// Increments the error count
     pub fn increment_error_count(&mut self) {
         self.error_count += 1;
+    }
+
+    /// Updates the scanner state
+    pub fn update_state(&mut self, state: abop_core::scanner::ScannerState) {
+        self.state = state;
+    }
+
+    /// Gets the current progress percentage
+    #[must_use]
+    pub fn get_progress(&self) -> Option<f32> {
+        self.progress
+    }
+
+    /// Gets the current scanner state
+    #[must_use]
+    pub fn get_state(&self) -> abop_core::scanner::ScannerState {
+        self.state
+    }
+
+    /// Gets the current file count
+    #[must_use]
+    pub fn get_current_count(&self) -> usize {
+        self.current_count
+    }
+
+    /// Gets the total file count
+    #[must_use]
+    pub fn get_total_count(&self) -> usize {
+        self.total_count
+    }
+
+    /// Gets the current file being processed
+    #[must_use]
+    pub fn get_current_file(&self) -> Option<&str> {
+        self.current_file.as_deref()
+    }
+
+    /// Gets the error count
+    #[must_use]
+    pub fn get_error_count(&self) -> usize {
+        self.error_count
     }
 
     /// Resets the progress state
@@ -234,7 +251,6 @@ impl ScannerProgress {
 /// A Result indicating success or failure of the scan operation
 pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
-    // Note: LibraryScanner doesn't have scan_directory method, using scan_async instead
     let _result = scanner.scan_async(None).await?;
     Ok(())
 }
@@ -253,4 +269,22 @@ pub async fn cancel_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
     scanner.cancel_scan();
     Ok(())
+}
+
+/// Creates a progress bar widget for the scanner
+#[must_use]
+pub fn create_progress_bar(progress: &ScannerProgress) -> Element<Message> {
+    let progress_value = progress.get_progress().unwrap_or(0.0);
+    let current_file = progress.get_current_file().unwrap_or("Scanning...");
+    let current_count = progress.get_current_count();
+    let total_count = progress.get_total_count();
+
+    column![
+        progress_bar(0.0..=1.0, progress_value),
+        text(format!(
+            "{} ({}/{})",
+            current_file, current_count, total_count
+        ))
+    ]
+    .into()
 }

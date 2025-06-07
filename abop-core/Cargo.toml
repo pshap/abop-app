@@ -3,7 +3,7 @@ name = "abop-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "Core functionality for ABOP - Audiobook Organizer & Processor"
+description.workspace = true
 license.workspace = true
 repository.workspace = true
 
@@ -19,14 +19,10 @@ rustdoc-args = ["--cfg", "doc_cfg"]
 # Workspace dependencies
 thiserror.workspace = true
 log.workspace = true
-tracing.workspace = true
-serde.workspace = true
 toml.workspace = true
 chrono.workspace = true
 uuid.workspace = true
 once_cell.workspace = true
-
-# Common dependencies
 bitflags.workspace = true
 cfg_aliases.workspace = true
 fontdb.workspace = true
@@ -34,15 +30,10 @@ getrandom.workspace = true
 hashbrown.workspace = true
 kurbo.workspace = true
 libloading.workspace = true
-
-# File System & Database
 dirs.workspace = true
 walkdir.workspace = true
-rusqlite.workspace = true
 r2d2.workspace = true
 r2d2_sqlite.workspace = true
-
-# Audio Processing
 symphonia.workspace = true
 rodio.workspace = true
 num-complex.workspace = true
@@ -50,18 +41,28 @@ hound.workspace = true
 rayon.workspace = true
 bytemuck.workspace = true
 rand.workspace = true
-serde_json.workspace = true
-
-# Async
-iced = { version = "0.13.1", features = ["tokio", "advanced"] }
-tokio.workspace = true
-futures.workspace = true
 async-trait.workspace = true
 humantime-serde.workspace = true
-tokio-util.workspace = true
 tokio-stream.workspace = true
+tempfile.workspace = true
+rusqlite.workspace = true
+
+# Non-workspace dependencies that override workspace versions
+iced = { version = "0.13.1", features = ["tokio", "advanced"] }
+serde_json = "1.0"
+tokio = { version = "1.36", features = ["full"] }
+futures = "0.3"
+tokio-util = "0.7"
+lru = "0.12"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+id3 = "1.12"
+mp4ameta = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+num_cpus = "1.16"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-tempfile.workspace = true
 approx = "0.5.1"  # For floating-point comparisons in tests
+tokio-test.workspace = true

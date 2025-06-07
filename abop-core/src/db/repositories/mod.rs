@@ -18,6 +18,9 @@ use std::sync::Arc;
 
 /// Base repository trait for common functionality
 pub trait Repository {
+    /// Get the enhanced connection
+    fn get_connection(&self) -> &Arc<EnhancedConnection>;
+
     /// Execute a query with proper error handling
     ///
     /// # Errors
@@ -27,27 +30,54 @@ pub trait Repository {
     /// - The query execution fails
     fn execute_query<F, R>(&self, f: F) -> DbResult<R>
     where
-        F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
+        F: Fn(&Connection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
     {
-        // Default implementation uses enhanced connection through repository manager
-        // Individual repositories should override this to use their manager's enhanced connection
-        self.execute_query_enhanced(f)
+        self.get_connection()
+            .with_connection(move |conn| f(conn).map_err(DatabaseError::from))
     }
 
     /// Execute a query with enhanced connection
-    /// This method must be implemented by repositories to use the enhanced connection
     fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
     where
-        F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static;
+        F: Fn(&EnhancedConnection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
+        R: Send + 'static,
+    {
+        let config = self.get_connection().config().clone();
+        self.get_connection().with_connection(move |_| {
+            let enhanced = EnhancedConnection::with_config(config.clone());
+            f(&enhanced).map_err(DatabaseError::from)
+        })
+    }
+
+    /// Execute a transaction with enhanced connection features
+    fn execute_transaction<F, R>(&self, f: F) -> DbResult<R>
+    where
+        F: Fn(&rusqlite::Transaction) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
+        R: Send + 'static,
+    {
+        self.get_connection().with_connection_mut(move |conn| {
+            let tx = conn.transaction().map_err(DatabaseError::from)?;
+            let result = f(&tx).map_err(DatabaseError::from);
+            match result {
+                Ok(r) => {
+                    tx.commit().map_err(DatabaseError::from)?;
+                    Ok(r)
+                }
+                Err(e) => {
+                    let _ = tx.rollback(); // Ignore rollback errors
+                    Err(e)
+                }
+            }
+        })
+    }
 }
 
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
 pub trait EnhancedRepository: Repository {
-    /// Get access to enhanced connection if available through the repository manager
-    fn get_enhanced_connection(&self) -> Option<&Arc<EnhancedConnection>> {
-        None // Default implementation returns None
+    /// Get access to enhanced connection
+    fn get_enhanced_connection(&self) -> &Arc<EnhancedConnection> {
+        self.get_connection()
     }
 }
 
@@ -61,7 +91,6 @@ pub struct RepositoryManager {
 
 impl RepositoryManager {
     /// Create a new repository manager with enhanced connection support
-    /// This is the preferred method for creating repositories that use the enhanced connection
     pub fn with_enhanced_connection(enhanced_connection: Arc<EnhancedConnection>) -> Self {
         Self {
             audiobook_repo: AudiobookRepository::new(enhanced_connection.clone()),
@@ -98,7 +127,7 @@ impl RepositoryManager {
     /// Execute a query using the enhanced connection
     pub fn execute_repository_query<F, R>(&self, f: F) -> DbResult<R>
     where
-        F: Fn(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
+        F: Fn(&Connection) -> rusqlite::Result<R> + Send + 'static,
         R: Send + 'static,
     {
         self.enhanced_connection
@@ -108,20 +137,12 @@ impl RepositoryManager {
     /// Execute a transaction with enhanced connection features
     pub fn with_enhanced_transaction<F, R>(&self, f: F) -> DbResult<R>
     where
-        F: FnOnce(&rusqlite::Transaction) -> DbResult<R> + Send + 'static,
+        F: Fn(&rusqlite::Transaction) -> DbResult<R> + Send + 'static,
         R: Send + 'static,
     {
-        // Use the same approach as the repository implementations
-        let operation = std::sync::Arc::new(std::sync::Mutex::new(Some(f)));
         self.enhanced_connection.with_connection_mut(move |conn| {
             let tx = conn.transaction().map_err(DatabaseError::from)?;
-            let mut op_guard = operation.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
-            })?;
-            let op = op_guard.take().ok_or_else(|| {
-                DatabaseError::ConnectionFailed("Operation already consumed".to_string())
-            })?;
-            match op(&tx) {
+            match f(&tx) {
                 Ok(result) => {
                     tx.commit().map_err(DatabaseError::from)?;
                     Ok(result)
@@ -156,7 +177,7 @@ impl<'a, T: Repository> EnhancedRepositoryWrapper<'a, T> {
     /// Execute a query using the enhanced connection if available, otherwise fall back to the repository's own connection
     pub fn execute_query<F, R>(&self, f: F) -> DbResult<R>
     where
-        F: Fn(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
+        F: Fn(&Connection) -> rusqlite::Result<R> + Send + 'static,
         R: Send + 'static,
     {
         // Use manager's enhanced connection if available

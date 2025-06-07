@@ -383,6 +383,12 @@ impl EnhancedConnection {
         log::info!("Database connection closed successfully");
         Ok(())
     }
+
+    /// Get a reference to the connection configuration
+    #[must_use]
+    pub const fn config(&self) -> &ConnectionConfig {
+        &self.config
+    }
 }
 
 impl Clone for EnhancedConnection {

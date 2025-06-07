@@ -1,49 +1,25 @@
-//! Result types for scanner operations
+//! Scan result types
 
 use crate::models::Audiobook;
 use std::time::Duration;
 
-/// Summary of a scan operation
+/// Summary of a library scan operation
 #[derive(Debug, Clone)]
 pub struct ScanSummary {
-    /// Number of files successfully processed
-    pub processed: usize,
-    /// Number of errors encountered
-    pub errors: usize,
-    /// Total duration of the scan
-    pub duration: Duration,
-    /// New audiobooks discovered
+    /// New audiobooks discovered during the scan
     pub new_files: Vec<Audiobook>,
-    /// Updated audiobooks
-    pub updated_files: Vec<Audiobook>,
+    /// Duration of the scan operation
+    pub scan_duration: Duration,
 }
 
 impl ScanSummary {
-    /// Creates a new empty scan summary
-    ///
-    /// # Returns
-    ///
-    /// A new ScanSummary instance with all counters initialized to zero
-    /// and empty vectors for new and updated files
-    pub fn new() -> Self {
+    /// Create a new empty scan summary
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
-            processed: 0,
-            errors: 0,
-            duration: Duration::default(),
             new_files: Vec::new(),
-            updated_files: Vec::new(),
+            scan_duration: Duration::new(0, 0),
         }
-    }
-
-    /// Gets the total number of files that were processed during the scan
-    ///
-    /// This includes both successfully processed files and files that encountered errors
-    ///
-    /// # Returns
-    ///
-    /// The sum of processed and error counts
-    pub fn total_files(&self) -> usize {
-        self.processed + self.errors
     }
 }
 

@@ -41,7 +41,7 @@ impl AudioDecoder {
     /// or no suitable codec is found for the audio stream.
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         // Open the file
-        let file = File::open(path.as_ref()).map_err(AppError::Io)?; // Create a media source from the file
+        let file = File::open(path.as_ref())?; // Create a media source from the file
         let mss = MediaSourceStream::new(
             Box::new(file) as Box<dyn MediaSource>,
             MediaSourceStreamOptions::default(),

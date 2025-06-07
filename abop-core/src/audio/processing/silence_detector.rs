@@ -226,7 +226,8 @@ impl SilenceDetector {
         if in_silence {
             let silence_length_frames = num_frames - silence_start_frame;
             if silence_length_frames >= min_samples {
-                let duration_secs = safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
+                let duration_secs =
+                    safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
                 segments.push(SilenceSegment {
                     start: silence_start_frame * channels,
                     end: buffer.data.len(),
@@ -506,16 +507,21 @@ mod tests {
 
         // Check that we found the silence segment
         let silence_segment = segments.first().unwrap();
-        let start_secs =
-            safe_samples_to_duration(silence_segment.start / buffer.channels as usize, buffer.sample_rate).unwrap_or(0.0);
-        
+        let start_secs = safe_samples_to_duration(
+            silence_segment.start / buffer.channels as usize,
+            buffer.sample_rate,
+        )
+        .unwrap_or(0.0);
+
         assert!(
             (start_secs - 0.3).abs() < 0.02,
-            "Silence start time should be approximately 0.3s, but was {:.3}s", start_secs
+            "Silence start time should be approximately 0.3s, but was {:.3}s",
+            start_secs
         );
         assert!(
             (silence_segment.duration_secs - 0.2).abs() < 0.02,
-            "Silence duration should be approximately 0.2s, but was {:.3}s", silence_segment.duration_secs
+            "Silence duration should be approximately 0.2s, but was {:.3}s",
+            silence_segment.duration_secs
         );
     }
 

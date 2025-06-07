@@ -16,14 +16,16 @@ use walkdir::WalkDir;
 use crate::{
     audio::AudioMetadata,
     db::Database,
-    error::{AppError, Result},
+    error::Result,
     models::{Audiobook, Library},
     scanner::{
         config::ScannerConfig,
         error::{ScanError, ScanResult},
+        file_processor::FileProcessor,
         performance::{OperationType, PerformanceMonitor},
-        progress::ScanProgress,
+        progress::{ChannelReporter, ProgressReporter, ScanProgress},
         result::ScanSummary,
+        task_manager::TaskManager,
     },
 };
 use iced::Task;
@@ -68,12 +70,14 @@ pub struct LibraryScanner {
     db: Database,
     /// The library being scanned
     library: Library,
-    /// Configuration for async scanning operations
+    /// Configuration for scanning operations
     config: ScannerConfig,
-    /// Cancellation token for async operations
-    cancel_token: CancellationToken,
+    /// Task manager for async operations
+    task_manager: TaskManager,
     /// Performance monitor for tracking operation times
     performance_monitor: Option<Arc<PerformanceMonitor>>,
+    /// Cancel token for cancelling operations
+    cancel_token: CancellationToken,
 }
 
 impl LibraryScanner {
@@ -84,30 +88,38 @@ impl LibraryScanner {
             db,
             library,
             config: ScannerConfig::default(),
-            cancel_token: CancellationToken::new(),
+            task_manager: TaskManager::new(),
             performance_monitor: Some(Arc::new(PerformanceMonitor::new())),
+            cancel_token: CancellationToken::new(),
         }
     }
 
-    /// Creates a new scanner with custom configuration
+    /// Creates a new scanner with custom configuration    #[must_use]
     pub fn with_config(mut self, config: ScannerConfig) -> Self {
+        let max_concurrent_tasks = config.max_concurrent_tasks;
+        let max_concurrent_db_operations = config.max_concurrent_db_operations;
         self.config = config;
+        self.task_manager =
+            TaskManager::with_settings(max_concurrent_tasks, max_concurrent_db_operations);
         self
     }
 
     /// Enables performance monitoring for this scanner
+    #[must_use]
     pub fn with_performance_monitoring(mut self) -> Self {
         self.performance_monitor = Some(Arc::new(PerformanceMonitor::new()));
         self
     }
 
     /// Disables performance monitoring for this scanner
+    #[must_use]
     pub fn without_performance_monitoring(mut self) -> Self {
         self.performance_monitor = None;
         self
     }
 
     /// Gets the performance monitor if enabled
+    #[must_use]
     pub fn get_performance_monitor(&self) -> Option<Arc<PerformanceMonitor>> {
         self.performance_monitor.clone()
     }
@@ -179,171 +191,136 @@ impl LibraryScanner {
         result
     }
 
-    /// Unified scanning interface with progress reporting
-    ///
-    /// This method provides a single entry point for all scanning operations,
-    /// supporting both synchronous and asynchronous progress reporting through
-    /// callbacks or channels.
-    ///
-    /// # Arguments
-    ///
-    /// * `progress_handler` - Optional callback for progress updates
-    /// * `message_handler` - Optional callback for completion message
-    ///
-    /// # Returns
-    ///
-    /// A Task that yields either progress updates or the final scan result
-    pub fn scan_with_progress<F, M>(
+    /// Cancels any ongoing scan operations
+    pub fn cancel_scan(&self) {
+        self.task_manager.cancel();
+    }
+
+    /// Scans the library directory for audio files and updates the database
+    pub async fn scan_async(
         &self,
-        progress_handler: Option<F>,
-        message_handler: Option<M>,
-    ) -> Task<LibraryScanResult>
-    where
-        F: Fn(f32) + Send + Sync + 'static + Clone,
-        M: Fn(LibraryScanResult) + Send + Sync + 'static,
-    {
+        progress_tx: Option<mpsc::Sender<ScanProgress>>,
+    ) -> ScanResult<ScanSummary> {
+        let config = self.config.clone(); // Clone config to avoid move issues
+        let library_id = self.library.id.clone();
+        let library_path = self.library.path.clone();
         let db = self.db.clone();
-        let library = self.library.clone();
-        let _config = self.config.clone();
-        let performance_monitor = self.performance_monitor.clone();
         let cancel_token = self.cancel_token.clone();
+        let performance_monitor = self.performance_monitor.clone();
 
-        Task::perform(
-            async move {
-                let start_time = std::time::Instant::now();
-                let semaphore = Arc::new(Semaphore::new(_config.max_concurrent_tasks));
-                let db_semaphore = Arc::new(Semaphore::new(_config.max_concurrent_db_operations));
+        // Create progress reporter if channel provided
+        let progress_reporter = progress_tx.map(|tx| {
+            let reporter = ChannelReporter::new(tx);
+            Arc::new(reporter) as Arc<dyn ProgressReporter>
+        });
 
-                // Initial progress
-                if let Some(ref handler) = progress_handler {
-                    handler(0.0);
-                }
+        // Find all audio files
+        let audio_files = self.find_audio_files();
+        let total_files = audio_files.len();
 
-                // Discover files
-                let audio_files =
-                    Self::find_audio_files_in_path_async(&library.path, &_config.extensions).await;
-                if audio_files.is_empty() {
-                    if let Some(ref handler) = progress_handler {
-                        handler(1.0);
+        // Report scan start
+        if let Some(reporter) = &progress_reporter {
+            reporter.report_started(total_files).await;
+        }
+
+        let start_time = std::time::Instant::now();
+        let mut new_files = Vec::new();
+        let mut errors = 0;
+
+        // Process files in batches
+        for chunk in audio_files.chunks(config.batch_size) {
+            if cancel_token.is_cancelled() {
+                return Err(ScanError::Cancelled);
+            }
+
+            let mut batch = Vec::with_capacity(chunk.len());
+            for path in chunk {
+                match Self::extract_audiobook_metadata_with_monitoring(
+                    &library_id,
+                    path,
+                    performance_monitor.as_deref(),
+                ) {
+                    Ok(mut audiobook) => {
+                        audiobook.library_id = library_id.clone();
+                        batch.push(audiobook);
                     }
-                    return LibraryScanResult::new();
-                }
-
-                let total_files = audio_files.len();
-
-                // Process files
-                let results: Vec<_> = stream::iter(
-                    audio_files
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, p)| (i, p.to_path_buf())),
-                )
-                .map(|(index, path)| {
-                    let semaphore = semaphore.clone();
-                    let db_semaphore = db_semaphore.clone();
-                    let db = db.clone();
-                    let library_id = library.id.clone();
-                    let _config = _config.clone();
-                    let performance_monitor = performance_monitor.as_deref();
-                    let progress_handler = progress_handler.clone();
-                    let cancel_token = cancel_token.clone();
-
-                    async move {
-                        // Check for cancellation
-                        if cancel_token.is_cancelled() {
-                            return Err(ScanError::Cancelled);
-                        }
-
-                        let _permit = semaphore
-                            .acquire()
-                            .await
-                            .map_err(|_| ScanError::Cancelled)?;
-
-                        // Process the file
-                        let result = match Self::extract_audiobook_metadata_with_monitoring(
-                            &library_id,
-                            &path,
-                            performance_monitor,
-                        ) {
-                            Ok(audiobook) => {
-                                // Acquire database semaphore before database operation
-                                let _db_permit = db_semaphore
-                                    .acquire()
-                                    .await
-                                    .map_err(|_| ScanError::Cancelled)?;
-
-                                // Convert the Result to a Future
-                                match tokio::task::spawn_blocking({
-                                    let db = db.clone();
-                                    let audiobook = audiobook.clone();
-                                    move || db.add_audiobook(&audiobook)
-                                })
-                                .await
-                                {
-                                    Ok(Ok(())) => Ok(audiobook),
-                                    Ok(Err(e)) => match e {
-                                        AppError::Database(e) => Err(ScanError::Database(e)),
-                                        AppError::Io(e) => Err(ScanError::Io(e)),
-                                        e => Err(ScanError::Metadata(e.to_string())),
-                                    },
-                                    Err(e) => Err(ScanError::Task(e.to_string())),
-                                }
-                            }
-                            Err(e) => match e {
-                                AppError::Database(e) => Err(ScanError::Database(e)),
-                                AppError::Io(e) => Err(ScanError::Io(e)),
-                                e => Err(ScanError::Metadata(e.to_string())),
-                            },
-                        };
-
-                        // Update progress
-                        if let Some(ref handler) = progress_handler {
-                            let progress = (index + 1) as f32 / total_files as f32;
-                            handler(progress);
-                        }
-
-                        result
+                    Err(e) => {
+                        warn!("Error processing {}: {}", path.display(), e);
+                        errors += 1;
                     }
-                })
-                .buffer_unordered(_config.max_concurrent_tasks)
-                .collect()
+                }
+            }
+
+            // Process batch
+            if !batch.is_empty() {
+                self.process_batch(&batch).await?;
+                new_files.extend(batch);
+            } // Report progress
+            if let Some(reporter) = &progress_reporter {
+                reporter
+                    .report_file_processed(new_files.len(), total_files, "Processing files".into())
+                    .await;
+            }
+        }
+
+        let duration = start_time.elapsed();
+
+        // Report completion
+        if let Some(reporter) = &progress_reporter {
+            reporter
+                .report_complete(new_files.len(), errors, duration)
                 .await;
+        }
 
-                // Collect results
-                let mut scan_result = LibraryScanResult::new();
-                scan_result.scan_duration = start_time.elapsed();
+        Ok(ScanSummary {
+            new_files,
+            scan_duration: duration,
+        })
+    }
 
-                for res in results {
-                    match res {
-                        Ok(audiobook) => {
-                            scan_result.processed_count += 1;
-                            scan_result.audiobooks.push(audiobook);
-                        }
-                        Err(_e) => {
-                            scan_result.error_count += 1;
-                        }
-                    }
-                }
-
-                // Final progress
-                if let Some(ref handler) = progress_handler {
-                    handler(1.0);
-                }
-
-                // Send completion message if handler provided
-                if let Some(ref handler) = message_handler {
-                    handler(scan_result.clone());
-                }
-
-                // Log performance summary if monitoring is enabled
-                if let Some(monitor) = &performance_monitor {
-                    monitor.log_summary();
-                }
-
-                scan_result
-            },
+    /// Creates a task for scanning the library
+    pub fn scan_with_task(
+        &self,
+        progress_tx: mpsc::Sender<ScanProgress>,
+    ) -> Task<ScanResult<ScanSummary>> {
+        let scanner = self.clone();
+        Task::perform(
+            async move { scanner.scan_async(Some(progress_tx)).await },
             |result| result,
         )
+    }
+
+    /// Processes a batch of audiobooks
+    async fn process_batch(&self, batch: &[Audiobook]) -> ScanResult<()> {
+        let db = self.db.clone();
+        let library_id = self.library.id.clone();
+
+        // Use a semaphore to limit concurrent DB operations
+        let semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_db_operations));
+        let mut handles = Vec::with_capacity(batch.len());
+
+        for audiobook in batch {
+            let db = db.clone();
+            let library_id = library_id.clone();
+            let semaphore = semaphore.clone();
+            let audiobook = audiobook.clone();
+
+            let handle = tokio::spawn(async move {
+                let _permit = semaphore.acquire().await?;
+                let repo = db.audiobook_repository();
+                repo.upsert(&audiobook).map_err(ScanError::from)?;
+                Ok::<_, ScanError>(())
+            });
+
+            handles.push(handle);
+        }
+
+        // Wait for all operations to complete
+        for handle in handles {
+            handle.await??;
+        }
+
+        Ok(())
     }
 
     /// Finds all audio files in the library directory
@@ -422,388 +399,29 @@ impl LibraryScanner {
             })
     }
 
-    /// Asynchronously scans the library with progress reporting
-    ///
-    /// # Arguments
-    ///
-    /// * `progress_tx` - Optional channel sender for progress updates
-    ///
-    /// # Returns
-    ///
-    /// A Result containing either a ScanSummary or a ScanError
-    pub async fn scan_async(
-        &self,
-        progress_tx: Option<mpsc::UnboundedSender<ScanProgress>>,
-    ) -> ScanResult<ScanSummary> {
-        let start_time = std::time::Instant::now();
-        let mut summary = ScanSummary::new();
-
-        // Send initial progress
-        if let Some(tx) = &progress_tx {
-            let _ = tx.send(ScanProgress::Started {
-                total_files: 0, // Will be updated after file discovery
-            });
-        }
-
-        // Find audio files
-        let audio_files = self.find_audio_files_async().await;
-        let total_files = audio_files.len();
-
-        // Update total files in progress
-        if let Some(tx) = &progress_tx {
-            let _ = tx.send(ScanProgress::Started { total_files });
-        }
-
-        // Process files with concurrency control
-        let semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_tasks));
-        let db_semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_db_operations));
-        let mut tasks = Vec::new();
-
-        for (index, path) in audio_files.into_iter().enumerate() {
-            // Check for cancellation
-            if self.cancel_token.is_cancelled() {
-                return Err(ScanError::Cancelled);
-            }
-
-            let semaphore = semaphore.clone();
-            let db_semaphore = db_semaphore.clone();
-            let db = self.db.clone();
-            let library_id = self.library.id.clone();
-            let progress_tx = progress_tx.clone();
-            let performance_monitor = self.performance_monitor.clone();
-
-            let task = tokio::spawn(async move {
-                let _permit = semaphore
-                    .acquire()
-                    .await
-                    .map_err(|_| ScanError::Cancelled)?;
-                let performance_monitor = performance_monitor.as_deref();
-                // Process the file
-                let result = match Self::extract_audiobook_metadata_with_monitoring(
-                    &library_id,
-                    &path,
-                    performance_monitor,
-                ) {
-                    Ok(audiobook) => {
-                        // Acquire database semaphore before database operation
-                        let _db_permit = db_semaphore
-                            .acquire()
-                            .await
-                            .map_err(|_| ScanError::Cancelled)?;
-
-                        // Convert the Result to a Future
-                        match tokio::task::spawn_blocking({
-                            let db = db.clone();
-                            let audiobook = audiobook.clone();
-                            move || db.add_audiobook(&audiobook)
-                        })
-                        .await
-                        {
-                            Ok(Ok(())) => Ok(audiobook),
-                            Ok(Err(e)) => match e {
-                                AppError::Database(e) => Err(ScanError::Database(e)),
-                                AppError::Io(e) => Err(ScanError::Io(e)),
-                                e => Err(ScanError::Metadata(e.to_string())),
-                            },
-                            Err(e) => Err(ScanError::Task(e.to_string())),
-                        }
-                    }
-                    Err(e) => match e {
-                        AppError::Database(e) => Err(ScanError::Database(e)),
-                        AppError::Io(e) => Err(ScanError::Io(e)),
-                        e => Err(ScanError::Metadata(e.to_string())),
-                    },
-                };
-
-                // Send progress update
-                if let Some(tx) = &progress_tx {
-                    let progress = ScanProgress::FileProcessed {
-                        current: index + 1,
-                        total: total_files,
-                        file_name: path
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("unknown")
-                            .to_string(),
-                        progress_percentage: (index + 1) as f32 / total_files as f32 * 100.0,
-                    };
-                    let _ = tx.send(progress);
-                }
-
-                result
-            });
-
-            tasks.push(task);
-        }
-
-        // Collect results
-        for task in tasks {
-            match task.await {
-                Ok(Ok(audiobook)) => {
-                    summary.processed += 1;
-                    summary.new_files.push(audiobook);
-                }
-                Ok(Err(e)) => {
-                    summary.errors += 1;
-                    warn!("Error processing file: {}", e);
-                }
-                Err(e) => {
-                    summary.errors += 1;
-                    warn!("Task error: {}", e);
-                }
-            }
-        }
-
-        summary.duration = start_time.elapsed();
-
-        // Send completion progress
-        if let Some(tx) = &progress_tx {
-            let _ = tx.send(ScanProgress::Complete {
-                processed: summary.processed,
-                errors: summary.errors,
-                duration: summary.duration,
-            });
-        }
-
-        Ok(summary)
-    }
-
-    /// Cancels any ongoing scan operation
-    pub fn cancel_scan(&self) {
-        self.cancel_token.cancel();
-    }
-
-    /// Creates a new scan task for Iced integration
-    pub fn scan_with_tasks(&self, audio_files: Vec<PathBuf>) -> Task<LibraryScanResult> {
-        let db = self.db.clone();
-        let library = self.library.clone();
-        let config = self.config.clone();
-        let performance_monitor = self.performance_monitor.clone();
-        let cancel_token = self.cancel_token.clone();
-
-        Task::perform(
-            async move {
-                let start_time = std::time::Instant::now();
-                let mut result = LibraryScanResult::new();
-                let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-                let db_semaphore = Arc::new(Semaphore::new(config.max_concurrent_db_operations));
-
-                let mut tasks = Vec::new();
-                for path in audio_files {
-                    if cancel_token.is_cancelled() {
-                        return result;
-                    }
-
-                    let semaphore = semaphore.clone();
-                    let db_semaphore = db_semaphore.clone();
-                    let db = db.clone();
-                    let library_id = library.id.clone();
-                    let performance_monitor = performance_monitor.clone();
-
-                    let task = tokio::spawn(async move {
-                        let _permit = semaphore
-                            .acquire()
-                            .await
-                            .map_err(|_| ScanError::Cancelled)?;
-                        let performance_monitor = performance_monitor.as_deref();
-                        match Self::extract_audiobook_metadata_with_monitoring(
-                            &library_id,
-                            &path,
-                            performance_monitor,
-                        ) {
-                            Ok(audiobook) => {
-                                // Acquire database semaphore before database operation
-                                let _db_permit = db_semaphore
-                                    .acquire()
-                                    .await
-                                    .map_err(|_| ScanError::Cancelled)?;
-
-                                tokio::task::spawn_blocking({
-                                    let db = db.clone();
-                                    let audiobook = audiobook.clone();
-                                    move || db.add_audiobook(&audiobook)
-                                })
-                                .await
-                                .map_err(|e| ScanError::Task(e.to_string()))?
-                                .map_err(|e| match e {
-                                    AppError::Database(e) => ScanError::Database(e),
-                                    AppError::Io(e) => ScanError::Io(e),
-                                    e => ScanError::Metadata(e.to_string()),
-                                })?;
-
-                                Ok(audiobook)
-                            }
-                            Err(e) => match e {
-                                AppError::Database(e) => Err(ScanError::Database(e)),
-                                AppError::Io(e) => Err(ScanError::Io(e)),
-                                e => Err(ScanError::Metadata(e.to_string())),
-                            },
-                        }
-                    });
-
-                    tasks.push(task);
-                }
-
-                for task in tasks {
-                    match task.await {
-                        Ok(Ok(audiobook)) => {
-                            result.processed_count += 1;
-                            result.audiobooks.push(audiobook);
-                        }
-                        Ok(Err(e)) => {
-                            result.error_count += 1;
-                            warn!("Error processing file: {}", e);
-                        }
-                        Err(e) => {
-                            result.error_count += 1;
-                            warn!("Task error: {}", e);
-                        }
-                    }
-                }
-
-                result.scan_duration = start_time.elapsed();
-                result
-            },
-            |result| result,
-        )
-    }
-
-    /// Creates a new scan task with progress reporting for Iced integration
-    pub fn scan_with_tasks_and_progress<F>(
-        &self,
-        audio_files: Vec<PathBuf>,
-        progress_handler: F,
-    ) -> Task<LibraryScanResult>
-    where
-        F: Fn(f32) + Send + Sync + 'static + Clone,
-    {
-        let db = self.db.clone();
-        let library = self.library.clone();
-        let config = self.config.clone();
-        let performance_monitor = self.performance_monitor.clone();
-        let cancel_token = self.cancel_token.clone();
-
-        Task::perform(
-            async move {
-                let start_time = std::time::Instant::now();
-                let mut result = LibraryScanResult::new();
-                let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-                let db_semaphore = Arc::new(Semaphore::new(config.max_concurrent_db_operations));
-                let total_files = audio_files.len();
-
-                // Initial progress
-                progress_handler(0.0);
-
-                let mut tasks = Vec::new();
-                for (index, path) in audio_files.into_iter().enumerate() {
-                    if cancel_token.is_cancelled() {
-                        return result;
-                    }
-
-                    let semaphore = semaphore.clone();
-                    let db_semaphore = db_semaphore.clone();
-                    let db = db.clone();
-                    let library_id = library.id.clone();
-                    let performance_monitor = performance_monitor.clone();
-                    let progress_handler = progress_handler.clone();
-
-                    let task = tokio::spawn(async move {
-                        let _permit = semaphore
-                            .acquire()
-                            .await
-                            .map_err(|_| ScanError::Cancelled)?;
-                        let performance_monitor = performance_monitor.as_deref();
-                        let file_result = match Self::extract_audiobook_metadata_with_monitoring(
-                            &library_id,
-                            &path,
-                            performance_monitor,
-                        ) {
-                            Ok(audiobook) => {
-                                // Acquire database semaphore before database operation
-                                let _db_permit = db_semaphore
-                                    .acquire()
-                                    .await
-                                    .map_err(|_| ScanError::Cancelled)?;
-
-                                tokio::task::spawn_blocking({
-                                    let db = db.clone();
-                                    let audiobook = audiobook.clone();
-                                    move || db.add_audiobook(&audiobook)
-                                })
-                                .await
-                                .map_err(|e| ScanError::Task(e.to_string()))?
-                                .map_err(|e| match e {
-                                    AppError::Database(e) => ScanError::Database(e),
-                                    AppError::Io(e) => ScanError::Io(e),
-                                    e => ScanError::Metadata(e.to_string()),
-                                })?;
-
-                                Ok(audiobook)
-                            }
-                            Err(e) => match e {
-                                AppError::Database(e) => Err(ScanError::Database(e)),
-                                AppError::Io(e) => Err(ScanError::Io(e)),
-                                e => Err(ScanError::Metadata(e.to_string())),
-                            },
-                        };
-
-                        // Update progress
-                        let progress = (index + 1) as f32 / total_files as f32;
-                        progress_handler(progress);
-
-                        file_result
-                    });
-
-                    tasks.push(task);
-                }
-
-                for task in tasks {
-                    match task.await {
-                        Ok(Ok(audiobook)) => {
-                            result.processed_count += 1;
-                            result.audiobooks.push(audiobook);
-                        }
-                        Ok(Err(e)) => {
-                            result.error_count += 1;
-                            warn!("Error processing file: {}", e);
-                        }
-                        Err(e) => {
-                            result.error_count += 1;
-                            warn!("Task error: {}", e);
-                        }
-                    }
-                }
-
-                // Final progress
-                progress_handler(1.0);
-
-                result.scan_duration = start_time.elapsed();
-                result
-            },
-            |result| result,
-        )
-    }
-
     /// Enhanced async scan operation with modern async patterns
     /// Implements the specifications from the thread pool refactoring roadmap
     pub async fn scan_async_enhanced(
-        &self,        progress_tx: mpsc::Sender<ScanProgress>,
+        &self,
+        progress_tx: mpsc::Sender<ScanProgress>,
     ) -> ScanResult<LibraryScanResult> {
         let start_time = std::time::Instant::now();
         let mut scan_result = LibraryScanResult::new();
-        
+
         // Find all audio files
         let files = self.find_audio_files();
         let total_files = files.len();
-        
+
         // Send initial progress
-        progress_tx.send(ScanProgress::Started { total_files }).await
+        progress_tx
+            .send(ScanProgress::Started { total_files })
+            .await
             .map_err(|_| ScanError::Cancelled)?;
-          // Process files in parallel with backpressure
+        // Process files in parallel with backpressure
         let (result_tx, mut result_rx) = mpsc::channel(100);
         let semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_tasks));
         let max_concurrent_tasks = self.config.max_concurrent_tasks;
-        
+
         let process_task = tokio::spawn({
             let files = files.clone();
             let semaphore = semaphore.clone();
@@ -811,7 +429,7 @@ impl LibraryScanner {
             let cancel_token = self.cancel_token.clone();
             let performance_monitor = self.performance_monitor.clone();
             let progress_tx = progress_tx.clone();
-            
+
             async move {
                 stream::iter(files.into_iter().enumerate())
                     .for_each_concurrent(Some(max_concurrent_tasks), |(index, path)| {
@@ -821,57 +439,64 @@ impl LibraryScanner {
                         let cancel_token = cancel_token.clone();
                         let library_id = library_id.clone();
                         let monitor = performance_monitor.as_deref();
-                        
+
                         async move {
                             // Check for cancellation
                             if cancel_token.is_cancelled() {
                                 return;
                             }
-                            
+
                             // Acquire semaphore permit
                             let _permit = match semaphore.acquire().await {
                                 Ok(p) => p,
                                 Err(_) => return,
                             };
-                            
+
                             // Process file with performance monitoring
-                            let result = Self::extract_audiobook_metadata_with_monitoring(&library_id, &path, monitor);
-                            
+                            let result = Self::extract_audiobook_metadata_with_monitoring(
+                                &library_id,
+                                &path,
+                                monitor,
+                            );
+
                             // Send result
                             let _ = result_tx.send(result).await;
-                            
+
                             // Update progress with detailed information
                             let progress = (index + 1) as f32 / total_files as f32;
-                            let file_name = path.file_name()
+                            let file_name = path
+                                .file_name()
                                 .and_then(|n| n.to_str())
                                 .unwrap_or("Unknown")
                                 .to_string();
-                                
-                            let _ = progress_tx.send(ScanProgress::FileProcessed {
-                                current: index + 1,
-                                total: total_files,
-                                file_name,
-                                progress_percentage: progress,
-                            }).await;
+
+                            let _ = progress_tx
+                                .send(ScanProgress::FileProcessed {
+                                    current: index + 1,
+                                    total: total_files,
+                                    file_name,
+                                    progress_percentage: progress,
+                                })
+                                .await;
                         }
                     })
                     .await;
             }
         });
-          // Process results with batch processing
+        // Process results with batch processing
         let batch_size = self.config.batch_size;
         let process_results = async {
             let mut batch = Vec::with_capacity(batch_size);
             let mut processed_count = 0;
             let mut error_count = 0;
             let progress_tx = progress_tx.clone();
-            
+
             while let Some(result) = result_rx.recv().await {
                 match result {
                     Ok(audiobook) => {
                         batch.push(audiobook);
                         processed_count += 1;
-                        
+
                         // Process batch if full
                         if batch.len() >= batch_size {
                             if let Err(e) = self.process_batch(&batch).await {
@@ -879,13 +504,15 @@ impl LibraryScanner {
                                 error_count += batch.len();
                             } else {
                                 // Send batch committed progress
-                                let _ = progress_tx.send(ScanProgress::BatchCommitted {
-                                    count: batch.len(),
-                                    total_processed: processed_count,
-                                }).await;
+                                let _ = progress_tx
+                                    .send(ScanProgress::BatchCommitted {
+                                        count: batch.len(),
+                                        total_processed: processed_count,
+                                    })
+                                    .await;
                             }
-                            
-                            scan_result.audiobooks.extend(batch.drain(..));
+
+                            scan_result.audiobooks.append(&mut batch);
                         }
                     }
                     Err(_) => {
@@ -893,90 +520,74 @@ impl LibraryScanner {
                     }
                 }
             }
-            
+
             // Process remaining items in final batch
             if !batch.is_empty() {
                 if let Err(e) = self.process_batch(&batch).await {
                     tracing::error!("Failed to add final batch: {}", e);
                     error_count += batch.len();
                 } else {
-                    let _ = progress_tx.send(ScanProgress::BatchCommitted {
-                        count: batch.len(),
-                        total_processed: processed_count,
-                    }).await;
+                    let _ = progress_tx
+                        .send(ScanProgress::BatchCommitted {
+                            count: batch.len(),
+                            total_processed: processed_count,
+                        })
+                        .await;
                 }
-                
+
                 scan_result.audiobooks.extend(batch);
             }
-            
+
             scan_result.processed_count = processed_count;
             scan_result.error_count = error_count;
-            
+
             Ok::<_, ScanError>(())
         };
-        
+
         // Wait for both tasks to complete
-        let (process_results, _) = tokio::join!(
-            process_results,
-            process_task
-        );
-        
+        let (process_results, _) = tokio::join!(process_results, process_task);
+
         // Check for cancellation
         if self.cancel_token.is_cancelled() {
             let duration = start_time.elapsed();
-            let _ = progress_tx.send(ScanProgress::Cancelled {
-                processed: scan_result.processed_count,
-                duration,
-            }).await;
+            let _ = progress_tx
+                .send(ScanProgress::Cancelled {
+                    processed: scan_result.processed_count,
+                    duration,
+                })
+                .await;
             return Err(ScanError::Cancelled);
         }
-        
+
         process_results?;
-        
+
         // Calculate final duration and send completion
         scan_result.scan_duration = start_time.elapsed();
-        
-        let _ = progress_tx.send(ScanProgress::Complete {
-            processed: scan_result.processed_count,
-            errors: scan_result.error_count,
-            duration: scan_result.scan_duration,
-        }).await;
-        
+
+        let _ = progress_tx
+            .send(ScanProgress::Complete {
+                processed: scan_result.processed_count,
+                errors: scan_result.error_count,
+                duration: scan_result.scan_duration,
+            })
+            .await;
+
         // Log performance summary if monitoring is enabled
         if let Some(monitor) = &self.performance_monitor {
             monitor.log_summary();
         }
-        
+
         Ok(scan_result)
     }
-      /// Process a batch of audiobooks asynchronously
-    async fn process_batch(&self, batch: &[Audiobook]) -> ScanResult<()> {
-        // For now, process items individually but this could be optimized
-        // with a batch database insert method in the future
-        for audiobook in batch {
-            self.db.add_audiobook(audiobook)
-                .map_err(|e| match e {
-                    crate::error::AppError::Database(rusqlite_err) => ScanError::Database(rusqlite_err),
-                    other => ScanError::Database(rusqlite::Error::SqliteFailure(
-                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
-                        Some(format!("Database operation failed: {}", other))
-                    ))
-                })?;
-        }
-        Ok(())
-    }
-
     /// Creates an enhanced Task-based scan with modern async patterns and cancellation
     pub fn scan_async_task(
         &self,
         progress_tx: mpsc::Sender<ScanProgress>,
     ) -> Task<ScanResult<LibraryScanResult>> {
         let scanner = self.clone();
-        
+
         Task::perform(
-            async move {
-                scanner.scan_async_enhanced(progress_tx).await
-            },
+            async move { scanner.scan_async_enhanced(progress_tx).await },
             |result| result,
         )
     }
@@ -1057,5 +668,36 @@ mod tests {
         assert!(audio_files.iter().any(|p| p.ends_with(file::TEST_M4B)));
         assert!(audio_files.iter().any(|p| p.ends_with(file::TEST_FLAC)));
         assert!(!audio_files.iter().any(|p| p.ends_with(file::TEST_TXT)));
+    }
+
+    #[tokio::test]
+    async fn test_scan_async() {
+        let db = Database::in_memory().unwrap();
+        let library = Library {
+            id: "test".to_string(),
+            name: "Test Library".to_string(),
+            path: PathBuf::from("test_data"),
+            ..Default::default()
+        };
+        let scanner = LibraryScanner::new(db, library);
+        let (tx, _rx) = mpsc::channel(100);
+        let result = scanner.scan_async(Some(tx)).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_cancellation() {
+        let db = Database::in_memory().unwrap();
+        let library = Library {
+            id: "test".to_string(),
+            name: "Test Library".to_string(),
+            path: PathBuf::from("test_data"),
+            ..Default::default()
+        };
+        let scanner = LibraryScanner::new(db, library);
+        scanner.cancel_scan();
+        let (tx, _rx) = mpsc::channel(100);
+        let result = scanner.scan_async(Some(tx)).await;
+        assert!(matches!(result, Err(ScanError::Cancelled)));
     }
 }
