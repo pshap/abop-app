@@ -29,7 +29,7 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
                 Ok(info) => {
                     // Update the library path to the newly selected directory
                     state.library_path = info.path.clone();
-                    
+
                     // Add to recent directories
                     state.recent_directories.push(info.clone());
 

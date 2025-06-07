@@ -209,6 +209,7 @@ impl LibraryScanner {
             async move {
                 let start_time = std::time::Instant::now();
                 let semaphore = Arc::new(Semaphore::new(_config.max_concurrent_tasks));
+                let db_semaphore = Arc::new(Semaphore::new(_config.max_concurrent_db_operations));
 
                 // Initial progress
                 if let Some(ref handler) = progress_handler {
@@ -236,6 +237,7 @@ impl LibraryScanner {
                 )
                 .map(|(index, path)| {
                     let semaphore = semaphore.clone();
+                    let db_semaphore = db_semaphore.clone();
                     let db = db.clone();
                     let library_id = library.id.clone();
                     let _config = _config.clone();
@@ -261,6 +263,12 @@ impl LibraryScanner {
                             performance_monitor,
                         ) {
                             Ok(audiobook) => {
+                                // Acquire database semaphore before database operation
+                                let _db_permit = db_semaphore
+                                    .acquire()
+                                    .await
+                                    .map_err(|_| ScanError::Cancelled)?;
+
                                 // Convert the Result to a Future
                                 match tokio::task::spawn_blocking({
                                     let db = db.clone();
@@ -445,6 +453,7 @@ impl LibraryScanner {
 
         // Process files with concurrency control
         let semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_tasks));
+        let db_semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_db_operations));
         let mut tasks = Vec::new();
 
         for (index, path) in audio_files.into_iter().enumerate() {
@@ -454,6 +463,7 @@ impl LibraryScanner {
             }
 
             let semaphore = semaphore.clone();
+            let db_semaphore = db_semaphore.clone();
             let db = self.db.clone();
             let library_id = self.library.id.clone();
             let progress_tx = progress_tx.clone();
@@ -472,6 +482,12 @@ impl LibraryScanner {
                     performance_monitor,
                 ) {
                     Ok(audiobook) => {
+                        // Acquire database semaphore before database operation
+                        let _db_permit = db_semaphore
+                            .acquire()
+                            .await
+                            .map_err(|_| ScanError::Cancelled)?;
+
                         // Convert the Result to a Future
                         match tokio::task::spawn_blocking({
                             let db = db.clone();
@@ -567,6 +583,7 @@ impl LibraryScanner {
                 let start_time = std::time::Instant::now();
                 let mut result = LibraryScanResult::new();
                 let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
+                let db_semaphore = Arc::new(Semaphore::new(config.max_concurrent_db_operations));
 
                 let mut tasks = Vec::new();
                 for path in audio_files {
@@ -575,6 +592,7 @@ impl LibraryScanner {
                     }
 
                     let semaphore = semaphore.clone();
+                    let db_semaphore = db_semaphore.clone();
                     let db = db.clone();
                     let library_id = library.id.clone();
                     let performance_monitor = performance_monitor.clone();
@@ -591,6 +609,12 @@ impl LibraryScanner {
                             performance_monitor,
                         ) {
                             Ok(audiobook) => {
+                                // Acquire database semaphore before database operation
+                                let _db_permit = db_semaphore
+                                    .acquire()
+                                    .await
+                                    .map_err(|_| ScanError::Cancelled)?;
+
                                 tokio::task::spawn_blocking({
                                     let db = db.clone();
                                     let audiobook = audiobook.clone();
@@ -661,6 +685,7 @@ impl LibraryScanner {
                 let start_time = std::time::Instant::now();
                 let mut result = LibraryScanResult::new();
                 let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
+                let db_semaphore = Arc::new(Semaphore::new(config.max_concurrent_db_operations));
                 let total_files = audio_files.len();
 
                 // Initial progress
@@ -673,6 +698,7 @@ impl LibraryScanner {
                     }
 
                     let semaphore = semaphore.clone();
+                    let db_semaphore = db_semaphore.clone();
                     let db = db.clone();
                     let library_id = library.id.clone();
                     let performance_monitor = performance_monitor.clone();
@@ -690,6 +716,12 @@ impl LibraryScanner {
                             performance_monitor,
                         ) {
                             Ok(audiobook) => {
+                                // Acquire database semaphore before database operation
+                                let _db_permit = db_semaphore
+                                    .acquire()
+                                    .await
+                                    .map_err(|_| ScanError::Cancelled)?;
+
                                 tokio::task::spawn_blocking({
                                     let db = db.clone();
                                     let audiobook = audiobook.clone();

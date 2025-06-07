@@ -193,7 +193,8 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
                 }
             }
             Some(Task::none())
-        }        Message::ResetRedrawFlag => {
+        }
+        Message::ResetRedrawFlag => {
             state.needs_redraw = false;
             Some(Task::none())
         }
