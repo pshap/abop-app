@@ -11,8 +11,11 @@ repository.workspace = true
 # CLI Dependencies
 clap = { version = "4.0", features = ["derive"] }
 env_logger = "0.10"
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
 
 # Workspace dependencies
+abop-core = { path = "../abop-core" }
 log.workspace = true
 
 [dev-dependencies]

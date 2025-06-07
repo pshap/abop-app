@@ -22,9 +22,12 @@ checksum = "c71b1793ee61086797f5c80b6efa2b8ffa6d5dd703f118545808a7f2e27f7046"
 name = "abop-cli"
 version = "0.1.0"
 dependencies = [
+ "abop-core",
+ "anyhow",
  "clap",
  "env_logger",
  "log",
+ "tokio",
 ]
 
 [[package]]
@@ -276,6 +279,12 @@ dependencies = [
  "once_cell_polyfill",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "anyhow"
+version = "1.0.98"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
 name = "approx"
