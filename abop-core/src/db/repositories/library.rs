@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use super::super::error::{DbResult, DatabaseError};
+use super::super::error::{DatabaseError, DbResult};
 use super::{EnhancedRepository, Repository};
-use crate::models::Library;
 use crate::db::EnhancedConnection;
+use crate::models::Library;
 
 /// Repository for library-related database operations
 pub struct LibraryRepository {
@@ -20,8 +20,11 @@ pub struct LibraryRepository {
 impl LibraryRepository {
     /// Create a new library repository
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
-        Self { enhanced_connection }
-    }    /// Add a new library to the database
+        Self {
+            enhanced_connection,
+        }
+    }
+    /// Add a new library to the database
     ///
     /// # Errors
     ///
@@ -29,7 +32,11 @@ impl LibraryRepository {
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails due to constraint violations or invalid data.
     /// Returns [`DatabaseError::DuplicateEntry`] if a library with the same name already exists.
     /// Returns [`DatabaseError::ValidationFailed`] if the library data fails validation.
-    pub fn create<P: AsRef<Path> + Send + 'static>(&self, name: &str, path: P) -> DbResult<Library> {
+    pub fn create<P: AsRef<Path> + Send + 'static>(
+        &self,
+        name: &str,
+        path: P,
+    ) -> DbResult<Library> {
         let id = Uuid::new_v4().to_string();
         let name_owned = name.to_string();
         let path_str = path.as_ref().to_string_lossy().to_string();
@@ -38,15 +45,17 @@ impl LibraryRepository {
         let result = self.execute_query(move |conn| {
             // Check if library with same name already exists
             let existing_check = conn
-                .query_row("SELECT id FROM libraries WHERE name = ?1", [&name_owned], |row| {
-                    row.get::<_, String>(0)
-                })
+                .query_row(
+                    "SELECT id FROM libraries WHERE name = ?1",
+                    [&name_owned],
+                    |row| row.get::<_, String>(0),
+                )
                 .optional();
 
             if let Ok(Some(_)) = existing_check {
                 return Err(rusqlite::Error::SqliteFailure(
                     rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
-                    Some(format!("Library with name '{}' already exists", name_owned)),
+                    Some(format!("Library with name '{name_owned}' already exists")),
                 ));
             }
 
@@ -157,7 +166,7 @@ impl LibraryRepository {
         let id = id.to_string();
         let name = name.to_string();
         let path_str = path.to_string_lossy().to_string();
-        
+
         self.execute_query(move |conn| {
             let rows_affected = conn.execute(
                 "UPDATE libraries SET name = ?1, path = ?2 WHERE id = ?3",
@@ -188,7 +197,7 @@ impl LibraryRepository {
                 return Err(rusqlite::Error::SqliteFailure(
                     rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
                     Some(format!(
-                        "Cannot delete library: {} audiobooks depend on it", audiobook_count
+                        "Cannot delete library: {audiobook_count} audiobooks depend on it"
                     )),
                 ));
             }
@@ -227,7 +236,8 @@ impl LibraryRepository {
     }
 }
 
-impl Repository for LibraryRepository {    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
+impl Repository for LibraryRepository {
+    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
     where
         F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,

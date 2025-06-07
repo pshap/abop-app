@@ -5,10 +5,10 @@
 use rusqlite::{Connection, OptionalExtension};
 use std::sync::Arc;
 
-use super::super::error::{DbResult, DatabaseError};
+use super::super::error::{DatabaseError, DbResult};
 use super::{EnhancedRepository, Repository};
-use crate::models::Progress;
 use crate::db::EnhancedConnection;
+use crate::models::Progress;
 
 /// Repository for progress-related database operations
 pub struct ProgressRepository {
@@ -18,7 +18,9 @@ pub struct ProgressRepository {
 impl ProgressRepository {
     /// Create a new progress repository
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
-        Self { enhanced_connection }
+        Self {
+            enhanced_connection,
+        }
     }
 
     /// Save or update progress for an audiobook
@@ -295,16 +297,17 @@ impl ProgressRepository {
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn get_statistics(&self) -> DbResult<(i64, i64, i64)> {
         self.execute_query(move |conn| {
-            let total: i64 = conn.query_row("SELECT COUNT(*) FROM progress", [], |row| row.get(0))?;
+            let total: i64 =
+                conn.query_row("SELECT COUNT(*) FROM progress", [], |row| row.get(0))?;
             let completed: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM progress WHERE completed = 1", 
-                [], 
-                |row| row.get(0)
+                "SELECT COUNT(*) FROM progress WHERE completed = 1",
+                [],
+                |row| row.get(0),
             )?;
             let in_progress: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM progress WHERE completed = 0 AND position_seconds > 0", 
-                [], 
-                |row| row.get(0)
+                "SELECT COUNT(*) FROM progress WHERE completed = 0 AND position_seconds > 0",
+                [],
+                |row| row.get(0),
             )?;
             Ok((total, completed, in_progress))
         })
