@@ -167,9 +167,17 @@ async fn scan_library(
     let db = Database::open(&db_path).context("Failed to initialize database")?;
 
     // Create a library record first
-    let library = db
-        .add_library("CLI Library", library_path.clone())
+    let library_id = db
+        .add_library_with_path("CLI Library", library_path.clone())
+        .await
         .context("Failed to create library record")?;
+
+    // Get the actual library struct
+    let library = db
+        .libraries()
+        .find_by_id(&library_id)
+        .context("Failed to get library record")?
+        .context("Library not found after creation")?;
 
     // Configure scanner
     let mut scanner_config = match config_preset.as_str() {

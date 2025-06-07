@@ -4,16 +4,11 @@ use abop_core::{
     db::Database,
     error::Result,
     models::{Audiobook, Library},
-    scanner::{
-        LibraryScanner,
-        progress::{CallbackReporter, ScanProgress},
-    },
+    scanner::{LibraryScanner, ScanProgress},
 };
 use iced::Element;
 use iced::widget::{column, progress_bar, text};
 use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 use crate::messages::Message;
 
@@ -206,7 +201,7 @@ impl ScannerProgress {
     /// Gets the current scanner state
     #[must_use]
     pub fn get_state(&self) -> abop_core::scanner::ScannerState {
-        self.state
+        self.state.clone()
     }
 
     /// Gets the current file count
@@ -281,10 +276,7 @@ pub fn create_progress_bar(progress: &ScannerProgress) -> Element<Message> {
 
     column![
         progress_bar(0.0..=1.0, progress_value),
-        text(format!(
-            "{} ({}/{})",
-            current_file, current_count, total_count
-        ))
+        text(format!("{current_file} ({current_count}/{total_count})"))
     ]
     .into()
 }

@@ -10,6 +10,10 @@ pub struct ScanSummary {
     pub new_files: Vec<Audiobook>,
     /// Duration of the scan operation
     pub scan_duration: Duration,
+    /// Number of files processed during the scan
+    pub processed: usize,
+    /// Number of errors encountered during the scan
+    pub errors: usize,
 }
 
 impl ScanSummary {
@@ -19,6 +23,8 @@ impl ScanSummary {
         Self {
             new_files: Vec::new(),
             scan_duration: Duration::new(0, 0),
+            processed: 0,
+            errors: 0,
         }
     }
 }

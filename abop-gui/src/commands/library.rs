@@ -80,16 +80,36 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                     {
                         Ok(Ok(Some(lib))) => lib,
                         Ok(Ok(None)) => {
-                            match tokio::task::spawn_blocking({
+                            // Create library and then fetch the actual Library struct
+                            let library_id = match tokio::task::spawn_blocking({
                                 let db = db.clone();
                                 let path = library_path.clone();
-                                move || db.add_library("Default Library", path)
+                                move || {
+                                    tokio::runtime::Handle::current().block_on(async {
+                                        db.add_library_with_path("Default Library", path).await
+                                    })
+                                }
                             })
                             .await
                             {
-                                Ok(Ok(lib)) => lib,
+                                Ok(Ok(lib_id)) => lib_id,
                                 Ok(Err(e)) => return Err(e.to_string()),
                                 Err(e) => return Err(format!("Failed to create library: {e}")),
+                            };
+
+                            // Now get the actual Library struct
+                            match tokio::task::spawn_blocking({
+                                let db = db.clone();
+                                move || db.libraries().find_by_id(&library_id)
+                            })
+                            .await
+                            {
+                                Ok(Ok(Some(lib))) => lib,
+                                Ok(Ok(None)) => {
+                                    return Err("Library not found after creation".to_string());
+                                }
+                                Ok(Err(e)) => return Err(e.to_string()),
+                                Err(e) => return Err(format!("Failed to get library: {e}")),
                             }
                         }
                         Ok(Err(e)) => return Err(e.to_string()),
