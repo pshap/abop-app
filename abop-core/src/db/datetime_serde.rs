@@ -1,7 +1,7 @@
-//! DateTime serialization helpers for SQLite
+//! `DateTime` serialization helpers for `SQLite`
 //!
 //! This module provides custom serialization and deserialization functions
-//! for chrono::DateTime<Utc> to work with rusqlite's ToSql and FromSql traits.
+//! for `chrono::DateTime<Utc>` to work with rusqlite's `ToSql` and `FromSql` traits.
 
 use chrono::{DateTime, Utc};
 use rusqlite::{
@@ -9,7 +9,7 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef},
 };
 
-/// Wrapper for DateTime<Utc> that implements rusqlite traits
+/// Wrapper for `DateTime<Utc>` that implements rusqlite traits
 #[derive(Debug, Clone, Copy)]
 pub struct SqliteDateTime(pub DateTime<Utc>);
 
@@ -40,13 +40,13 @@ impl FromSql for SqliteDateTime {
     }
 }
 
-/// Custom error types for DateTime serialization operations
+/// Custom error types for `DateTime` serialization operations
 #[derive(Debug, thiserror::Error)]
 pub enum DateTimeError {
-    /// SQLite database operation error
+    /// `SQLite` database operation error
     #[error("SQLite error: {0}")]
     Sqlite(#[from] SqliteError),
-    /// DateTime parsing error when converting from string
+    /// `DateTime` parsing error when converting from string
     #[error("DateTime parse error: {0}")]
     Parse(#[from] chrono::ParseError),
 }
@@ -62,13 +62,17 @@ impl From<DateTimeError> for SqliteError {
     }
 }
 
-/// Helper function to convert DateTime<Utc> to SQL string
+/// Helper function to convert `DateTime<Utc>` to SQL string
 #[must_use]
 pub fn datetime_to_sql(dt: &DateTime<Utc>) -> String {
     dt.to_rfc3339()
 }
 
-/// Helper function to parse SQL string to DateTime<Utc>
+/// Helper function to parse SQL string to `DateTime<Utc>`
+///
+/// # Errors
+///
+/// Returns [`DateTimeError::Parse`] if the input string is not a valid RFC3339 datetime format.
 pub fn datetime_from_sql(s: &str) -> Result<DateTime<Utc>, DateTimeError> {
     DateTime::parse_from_rfc3339(s)
         .map(|dt| dt.with_timezone(&Utc))
