@@ -157,24 +157,13 @@ impl RetryExecutor {
             }
         }
     }
-
     /// Determine if an error is retryable
-    const fn is_retryable_error(error: &DatabaseError) -> bool {
+    fn is_retryable_error(error: &DatabaseError) -> bool {
         match error {
             DatabaseError::ConnectionFailed(_) | DatabaseError::LockTimeout { .. } => true,
-            DatabaseError::Sqlite(rusqlite_err) => {
+            DatabaseError::Sqlite(err_msg) => {
                 // Retry on busy or locked errors
-                matches!(
-                    rusqlite_err,
-                    rusqlite::Error::SqliteFailure(
-                        rusqlite::ffi::Error {
-                            code: rusqlite::ffi::ErrorCode::DatabaseBusy
-                                | rusqlite::ffi::ErrorCode::DatabaseLocked,
-                            ..
-                        },
-                        _
-                    )
-                )
+                err_msg.contains("database is locked") || err_msg.contains("database is busy")
             }
             _ => false,
         }

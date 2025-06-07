@@ -73,7 +73,7 @@ impl AudioPlayer {
             .map_err(|e| AppError::Audio(format!("Failed to create audio output stream: {e}")))?;
 
         // Open the audio file
-        let file = File::open(file_path).map_err(AppError::Io)?;
+        let file = File::open(file_path)?;
 
         let buf_reader = BufReader::new(file);
 

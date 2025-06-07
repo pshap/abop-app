@@ -21,7 +21,9 @@ impl LibraryRepository {
     /// Create a new library repository
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
         Self { enhanced_connection }
-    }    /// Add a new library to the database
+    }
+
+    /// Add a new library to the database
     ///
     /// # Errors
     ///
@@ -73,7 +75,9 @@ impl LibraryRepository {
                 _ => e,
             }
         })
-    }    /// Find a library by its ID
+    }
+
+    /// Find a library by its ID
     ///
     /// # Errors
     ///
@@ -95,7 +99,9 @@ impl LibraryRepository {
             )
             .optional()
         })
-    }    /// Find a library by its name
+    }
+
+    /// Find a library by its name
     ///
     /// # Errors
     ///
@@ -124,7 +130,8 @@ impl LibraryRepository {
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.    pub fn find_all(&self) -> DbResult<Vec<Library>> {
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn find_all(&self) -> DbResult<Vec<Library>> {
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare("SELECT id, name, path FROM libraries ORDER BY name")?;
             let libraries = stmt
@@ -217,29 +224,9 @@ impl LibraryRepository {
 }
 
 impl Repository for LibraryRepository {
-    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
-    where
-        F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        // We need to work around the fact that with_connection expects Fn but we have FnOnce
-        // We'll use a thread-safe approach by wrapping the operation
-        let operation = std::sync::Arc::new(std::sync::Mutex::new(Some(f)));
-        self.enhanced_connection.with_connection(move |conn| {
-            let mut op_guard = operation.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
-            })?;
-            let op = op_guard.take().ok_or_else(|| {
-                DatabaseError::ConnectionFailed("Operation already consumed".to_string())
-            })?;
-            drop(op_guard); // Release the lock before calling the operation
-            op(conn).map_err(DatabaseError::from)
-        })
+    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+        &self.enhanced_connection
     }
 }
 
-impl EnhancedRepository for LibraryRepository {
-    fn get_enhanced_connection(&self) -> Option<&Arc<EnhancedConnection>> {
-        Some(&self.enhanced_connection)
-    }
-}
+impl EnhancedRepository for LibraryRepository {}

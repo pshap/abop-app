@@ -1,5 +1,7 @@
 //! Error types for scanner operations
 
+use crate::db::error::DatabaseError;
+use crate::error::AppError;
 use std::path::PathBuf;
 use std::time::Duration;
 use thiserror::Error;
@@ -17,7 +19,7 @@ pub enum ScanError {
 
     /// Database operation failed
     #[error("Database error: {0}")]
-    Database(#[from] rusqlite::Error),
+    Database(String),
 
     /// Operation was cancelled
     #[error("Scan was cancelled")]
@@ -99,5 +101,42 @@ impl From<tokio::task::JoinError> for ScanError {
         } else {
             ScanError::Task("Task failed to complete".into())
         }
+    }
+}
+
+impl From<AppError> for ScanError {
+    fn from(err: AppError) -> Self {
+        match err {
+            AppError::Io(e) => ScanError::Metadata(format!("I/O error: {e}")),
+            AppError::Database(e) => match e {
+                DatabaseError::Sqlite(e) => ScanError::Database(e),
+                _ => ScanError::Metadata(e.to_string()),
+            },
+            AppError::Scan(e) => ScanError::Metadata(e),
+            AppError::InvalidData(msg) => ScanError::Metadata(msg),
+            AppError::Cancelled => ScanError::Cancelled,
+            AppError::Timeout {
+                operation: _,
+                timeout_ms: _,
+                elapsed_ms,
+            } => ScanError::Timeout(Duration::from_millis(elapsed_ms)),
+            AppError::Metadata(msg) => ScanError::Metadata(msg),
+            AppError::Library(msg) => ScanError::Metadata(format!("Library error: {msg}")),
+            AppError::Progress(msg) => ScanError::Channel(msg),
+            AppError::Task(msg) => ScanError::Task(msg),
+            _ => ScanError::Metadata(err.to_string()),
+        }
+    }
+}
+
+impl From<tokio::sync::AcquireError> for ScanError {
+    fn from(_: tokio::sync::AcquireError) -> Self {
+        ScanError::Cancelled
+    }
+}
+
+impl From<rusqlite::Error> for ScanError {
+    fn from(err: rusqlite::Error) -> Self {
+        ScanError::Database(err.to_string())
     }
 }

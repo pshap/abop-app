@@ -6,9 +6,6 @@ authors.workspace = true
 description = "Iced GUI for ABOP - Audiobook Organizer & Processor"
 license.workspace = true
 repository.workspace = true
-readme.workspace = true
-keywords.workspace = true
-categories.workspace = true
 
 [dependencies]
 # Internal dependencies
@@ -38,7 +35,7 @@ log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
-tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
+tracing-subscriber = { version = "^0.3.18", features = ["env-filter", "fmt"] }
 walkdir.workspace = true
 chrono.workspace = true
 uuid.workspace = true
@@ -54,7 +51,7 @@ rayon.workspace = true
 bytemuck.workspace = true
 
 # Direct dependencies (not in workspace)
-material-color-utilities-rs = "0.2.0"
+material-color-utilities-rs = "^0.2.0"
 
 [dev-dependencies]
 approx = "0.5.1"

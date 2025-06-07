@@ -88,7 +88,7 @@ impl AudioFormat {
 }
 
 /// Represents an audio stream with its properties
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AudioStream {
     /// The sample rate in Hz
     pub sample_rate: u32,

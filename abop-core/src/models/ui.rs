@@ -162,7 +162,7 @@ impl AppState {
                     parent.display(),
                     e
                 );
-                return Err(AppError::Io(e));
+                return Err(AppError::Io(e.to_string()));
             }
         }
 
@@ -181,7 +181,7 @@ impl AppState {
             }
             Err(e) => {
                 log::error!("save_blocking: TOML serialization FAILED: {e}");
-                return Err(AppError::TomlSer(e));
+                return Err(AppError::TomlSer(e.to_string()));
             }
         };
 
@@ -195,7 +195,7 @@ impl AppState {
                 state_path.display(),
                 e
             );
-            return Err(AppError::Io(e));
+            return Err(AppError::Io(e.to_string()));
         }
 
         log::info!(
@@ -250,7 +250,7 @@ impl AppState {
                     parent.display(),
                     e
                 );
-                return Err(AppError::Io(e));
+                return Err(AppError::Io(e.to_string()));
             }
         }
         send_progress(0.2); // 20% - Directory created
@@ -286,7 +286,7 @@ impl AppState {
             }
             Err(e) => {
                 log::error!("save_blocking_with_progress: TOML serialization FAILED: {e}");
-                return Err(AppError::TomlSer(e));
+                return Err(AppError::TomlSer(e.to_string()));
             }
         };
 
@@ -302,7 +302,7 @@ impl AppState {
                 state_path.display(),
                 e
             );
-            return Err(AppError::Io(e));
+            return Err(AppError::Io(e.to_string()));
         }
 
         send_progress(1.0); // 100% - Complete

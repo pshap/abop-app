@@ -155,3 +155,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 *Built with modern Rust for performance, safety, and maintainability*
+
+## Feature Limitations
+
+The following features are intentionally not supported at this time:
+- Cover art extraction or display
+- Additional audio formats beyond MP3, M4B, and FLAC
+- Online metadata fetching or enrichment
+
+These limitations are by design to maintain focus on core functionality and performance.

@@ -274,12 +274,20 @@ impl MigrationManager {
 
 /// Gets all migrations in order with rollback SQL
 fn get_migrations() -> Vec<Migration> {
-    vec![Migration {
-        version: 1,
-        up_sql: include_str!("migrations/001_initial_schema.sql"),
-        down_sql: include_str!("migrations/001_initial_schema_down.sql"),
-        description: "Initial database schema with libraries, audiobooks, and progress tracking",
-    }]
+    vec![
+        Migration {
+            version: 1,
+            up_sql: include_str!("migrations/001_initial_schema.sql"),
+            down_sql: include_str!("migrations/001_initial_schema_down.sql"),
+            description: "Initial database schema with libraries, audiobooks, and progress tracking",
+        },
+        Migration {
+            version: 2,
+            up_sql: include_str!("migrations/002_add_selected_column.sql"),
+            down_sql: include_str!("migrations/002_add_selected_column_down.sql"),
+            description: "Add selected column to audiobooks table for UI selection state",
+        },
+    ]
 }
 
 /// Simplified migration runner that uses the enhanced migration manager
@@ -390,13 +398,19 @@ mod tests {
         // Test invalid rollback (trying to rollback to same or higher version)
         manager.migrate_up(&mut conn).unwrap(); // Go back to version 1
         let current_version = manager.current_version(&conn).unwrap();
-        
+
         // Try to rollback to same version (should fail)
         let result = manager.migrate_down(&mut conn, current_version);
-        assert!(result.is_err(), "Should fail when trying to rollback to same version");
-        
+        assert!(
+            result.is_err(),
+            "Should fail when trying to rollback to same version"
+        );
+
         // Try to rollback to higher version (should fail)
         let result = manager.migrate_down(&mut conn, current_version + 1);
-        assert!(result.is_err(), "Should fail when trying to rollback to higher version");
+        assert!(
+            result.is_err(),
+            "Should fail when trying to rollback to higher version"
+        );
     }
 }

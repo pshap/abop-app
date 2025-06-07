@@ -8,7 +8,7 @@ use super::{AudioStream, SampleFormat};
 use crate::error::{AppError, Result};
 
 /// Represents the metadata for an audio file
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct AudioMetadata {
     /// The title of the audio
     pub title: Option<String>,
@@ -55,7 +55,7 @@ impl AudioMetadata {
         let mut meta = Self::new();
 
         // Try to read metadata using symphonia
-        let file = std::fs::File::open(path).map_err(AppError::Io)?;
+        let file = std::fs::File::open(path)?;
         let mss = symphonia::core::io::MediaSourceStream::new(
             Box::new(file),
             symphonia::core::io::MediaSourceStreamOptions::default(),

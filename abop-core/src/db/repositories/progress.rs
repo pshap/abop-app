@@ -2,12 +2,13 @@
 //!
 //! This module handles all database operations related to audiobook progress tracking.
 
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::{OptionalExtension, params};
 use std::sync::Arc;
 
-use super::super::error::{DatabaseError, DbResult};
+use super::super::error::DbResult;
 use super::{EnhancedRepository, Repository};
 use crate::db::EnhancedConnection;
+use crate::db::datetime_serde::SqliteDateTime;
 use crate::models::Progress;
 
 /// Repository for progress-related database operations
@@ -33,17 +34,18 @@ impl ProgressRepository {
     pub fn upsert(&self, progress: &Progress) -> DbResult<()> {
         let progress = progress.clone();
         self.execute_query(move |conn| {
+            let last_played_sql = progress.last_played.map(SqliteDateTime::from);
             conn.execute(
                 "INSERT OR REPLACE INTO progress (
                     id, audiobook_id, position_seconds, completed, last_played, updated_at
                 ) VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)",
-                (
+                params![
                     &progress.id,
                     &progress.audiobook_id,
                     progress.position_seconds,
                     progress.completed,
-                    &progress.last_played,
-                ),
+                    last_played_sql,
+                ],
             )?;
             Ok(())
         })
@@ -58,19 +60,23 @@ impl ProgressRepository {
     pub fn find_by_audiobook(&self, audiobook_id: &str) -> DbResult<Option<Progress>> {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
+            let audiobook_id = audiobook_id.clone();
             conn.query_row(
                 "SELECT id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at
                  FROM progress WHERE audiobook_id = ?1",
                 [audiobook_id],
                 |row| {
+                    let last_played: Option<SqliteDateTime> = row.get(4)?;
+                    let created_at: SqliteDateTime = row.get(5)?;
+                    let updated_at: SqliteDateTime = row.get(6)?;
                     Ok(Progress {
                         id: row.get(0)?,
                         audiobook_id: row.get(1)?,
                         position_seconds: row.get(2)?,
                         completed: row.get(3)?,
-                        last_played: row.get(4)?,
-                        created_at: row.get(5)?,
-                        updated_at: row.get(6)?,
+                        last_played: last_played.map(|dt| dt.into()),
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                     })
                 },
             ).optional()
@@ -86,19 +92,23 @@ impl ProgressRepository {
     pub fn find_by_id(&self, id: &str) -> DbResult<Option<Progress>> {
         let id = id.to_string();
         self.execute_query(move |conn| {
+            let id = id.clone();
             conn.query_row(
                 "SELECT id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at
                  FROM progress WHERE id = ?1",
                 [id],
                 |row| {
+                    let last_played: Option<SqliteDateTime> = row.get(4)?;
+                    let created_at: SqliteDateTime = row.get(5)?;
+                    let updated_at: SqliteDateTime = row.get(6)?;
                     Ok(Progress {
                         id: row.get(0)?,
                         audiobook_id: row.get(1)?,
                         position_seconds: row.get(2)?,
                         completed: row.get(3)?,
-                        last_played: row.get(4)?,
-                        created_at: row.get(5)?,
-                        updated_at: row.get(6)?,
+                        last_played: last_played.map(|dt| dt.into()),
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                     })
                 },
             ).optional()
@@ -118,14 +128,17 @@ impl ProgressRepository {
                  FROM progress ORDER BY updated_at DESC"
             )?;
             let progress_list = stmt.query_map([], |row| {
+                let last_played: Option<SqliteDateTime> = row.get(4)?;
+                let created_at: SqliteDateTime = row.get(5)?;
+                let updated_at: SqliteDateTime = row.get(6)?;
                 Ok(Progress {
                     id: row.get(0)?,
                     audiobook_id: row.get(1)?,
                     position_seconds: row.get(2)?,
                     completed: row.get(3)?,
-                    last_played: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    last_played: last_played.map(|dt| dt.into()),
+                    created_at: created_at.into(),
+                    updated_at: updated_at.into(),
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
             Ok(progress_list)
@@ -148,14 +161,17 @@ impl ProgressRepository {
                  ORDER BY last_played DESC"
             )?;
             let progress_list = stmt.query_map([days], |row| {
+                let last_played: Option<SqliteDateTime> = row.get(4)?;
+                let created_at: SqliteDateTime = row.get(5)?;
+                let updated_at: SqliteDateTime = row.get(6)?;
                 Ok(Progress {
                     id: row.get(0)?,
                     audiobook_id: row.get(1)?,
                     position_seconds: row.get(2)?,
                     completed: row.get(3)?,
-                    last_played: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    last_played: last_played.map(|dt| dt.into()),
+                    created_at: created_at.into(),
+                    updated_at: updated_at.into(),
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
             Ok(progress_list)
@@ -175,14 +191,17 @@ impl ProgressRepository {
                  FROM progress WHERE completed = 1 ORDER BY updated_at DESC"
             )?;
             let progress_list = stmt.query_map([], |row| {
+                let last_played: Option<SqliteDateTime> = row.get(4)?;
+                let created_at: SqliteDateTime = row.get(5)?;
+                let updated_at: SqliteDateTime = row.get(6)?;
                 Ok(Progress {
                     id: row.get(0)?,
                     audiobook_id: row.get(1)?,
                     position_seconds: row.get(2)?,
                     completed: row.get(3)?,
-                    last_played: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    last_played: last_played.map(|dt| dt.into()),
+                    created_at: created_at.into(),
+                    updated_at: updated_at.into(),
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
             Ok(progress_list)
@@ -203,14 +222,17 @@ impl ProgressRepository {
                  ORDER BY updated_at DESC"
             )?;
             let progress_list = stmt.query_map([], |row| {
+                let last_played: Option<SqliteDateTime> = row.get(4)?;
+                let created_at: SqliteDateTime = row.get(5)?;
+                let updated_at: SqliteDateTime = row.get(6)?;
                 Ok(Progress {
                     id: row.get(0)?,
                     audiobook_id: row.get(1)?,
                     position_seconds: row.get(2)?,
                     completed: row.get(3)?,
-                    last_played: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    last_played: last_played.map(|dt| dt.into()),
+                    created_at: created_at.into(),
+                    updated_at: updated_at.into(),
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
             Ok(progress_list)
@@ -226,6 +248,7 @@ impl ProgressRepository {
     pub fn update_position(&self, audiobook_id: &str, position_seconds: i64) -> DbResult<bool> {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
+            let audiobook_id = audiobook_id.clone();
             let rows_affected = conn.execute(
                 "UPDATE progress SET 
                     position_seconds = ?1,
@@ -247,6 +270,7 @@ impl ProgressRepository {
     pub fn mark_completed(&self, audiobook_id: &str, completed: bool) -> DbResult<bool> {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
+            let audiobook_id = audiobook_id.clone();
             let rows_affected = conn.execute(
                 "UPDATE progress SET 
                     completed = ?1,
@@ -267,6 +291,7 @@ impl ProgressRepository {
     pub fn delete_by_audiobook(&self, audiobook_id: &str) -> DbResult<bool> {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
+            let audiobook_id = audiobook_id.clone();
             let rows_affected = conn.execute(
                 "DELETE FROM progress WHERE audiobook_id = ?1",
                 [audiobook_id],
@@ -284,6 +309,7 @@ impl ProgressRepository {
     pub fn delete(&self, id: &str) -> DbResult<bool> {
         let id = id.to_string();
         self.execute_query(move |conn| {
+            let id = id.clone();
             let rows_affected = conn.execute("DELETE FROM progress WHERE id = ?1", [id])?;
             Ok(rows_affected > 0)
         })
@@ -322,6 +348,7 @@ impl ProgressRepository {
     pub fn exists_for_audiobook(&self, audiobook_id: &str) -> DbResult<bool> {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
+            let audiobook_id = audiobook_id.clone();
             let count: i64 = conn.query_row(
                 "SELECT COUNT(*) FROM progress WHERE audiobook_id = ?1",
                 [audiobook_id],
@@ -333,28 +360,9 @@ impl ProgressRepository {
 }
 
 impl Repository for ProgressRepository {
-    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
-    where
-        F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        // We need to work around the fact that with_connection expects Fn but we have FnOnce
-        // We'll use a thread-safe approach by wrapping the operation
-        let operation = std::sync::Arc::new(std::sync::Mutex::new(Some(f)));
-        self.enhanced_connection.with_connection(move |conn| {
-            let mut op_guard = operation.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
-            })?;
-            let op = op_guard.take().ok_or_else(|| {
-                DatabaseError::ConnectionFailed("Operation already consumed".to_string())
-            })?;
-            op(conn).map_err(DatabaseError::from)
-        })
+    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+        &self.enhanced_connection
     }
 }
 
-impl EnhancedRepository for ProgressRepository {
-    fn get_enhanced_connection(&self) -> Option<&Arc<EnhancedConnection>> {
-        Some(&self.enhanced_connection)
-    }
-}
+impl EnhancedRepository for ProgressRepository {}
