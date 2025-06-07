@@ -26,7 +26,7 @@ pub trait Repository {
     fn connection_adapter(&self) -> Option<&ConnectionAdapter> {
         None
     }
-    
+
     /// Execute a query with proper error handling
     ///
     /// # Errors
@@ -43,7 +43,7 @@ pub trait Repository {
         let conn = self.connection().lock().unwrap();
         f(&conn).map_err(DatabaseError::from)
     }
-    
+
     /// Execute a query with enhanced connection if available
     /// This method should be overridden by repositories that have access to enhanced connection
     fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
@@ -200,7 +200,8 @@ impl RepositoryManager {
         // For now, enhanced transactions use the same approach as regular transactions
         // The enhanced connection monitoring is applied at a higher level
         self.with_transaction(f)
-    }    /// Execute a query using the appropriate connection method
+    }
+    /// Execute a query using the appropriate connection method
     /// This method handles the logic of choosing between adapter and direct connection
     pub fn execute_repository_query<F, R>(&self, f: F) -> DbResult<R>
     where
@@ -210,9 +211,7 @@ impl RepositoryManager {
         // If we have an enhanced connection, use it instead of the dummy connection
         if let Some(enhanced_conn) = &self.enhanced_connection {
             // Use the enhanced connection's with_connection method which handles retry logic
-            enhanced_conn.with_connection(move |conn| {
-                f(conn).map_err(DatabaseError::from)
-            })
+            enhanced_conn.with_connection(move |conn| f(conn).map_err(DatabaseError::from))
         } else if let Some(_adapter) = &self.connection_adapter {
             // Connection adapter path - for now fall back to direct connection
             let conn = self.connection.lock().unwrap();
@@ -222,7 +221,8 @@ impl RepositoryManager {
             let conn = self.connection.lock().unwrap();
             f(&conn).map_err(DatabaseError::from)
         }
-    }    /// Get an enhanced wrapper for the audiobook repository
+    }
+    /// Get an enhanced wrapper for the audiobook repository
     #[must_use]
     pub fn audiobooks_enhanced(&self) -> EnhancedRepositoryWrapper<'_, AudiobookRepository> {
         EnhancedRepositoryWrapper {
@@ -269,7 +269,8 @@ pub struct EnhancedRepositoryWrapper<'a, T: Repository> {
     manager: &'a RepositoryManager,
 }
 
-impl<'a, T: Repository> EnhancedRepositoryWrapper<'a, T> {    /// Execute a query using the enhanced connection if available, otherwise fall back to the repository's own connection
+impl<'a, T: Repository> EnhancedRepositoryWrapper<'a, T> {
+    /// Execute a query using the enhanced connection if available, otherwise fall back to the repository's own connection
     pub fn execute_query<F, R>(&self, f: F) -> DbResult<R>
     where
         F: Fn(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
@@ -282,7 +283,7 @@ impl<'a, T: Repository> EnhancedRepositoryWrapper<'a, T> {    /// Execute a quer
 
 impl<'a, T: Repository> std::ops::Deref for EnhancedRepositoryWrapper<'a, T> {
     type Target = T;
-    
+
     fn deref(&self) -> &Self::Target {
         self.repo
     }

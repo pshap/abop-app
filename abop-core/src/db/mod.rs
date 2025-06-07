@@ -64,7 +64,8 @@ impl Database {
         // The repositories will be configured to use the enhanced connection through the manager
         let dummy_conn = Connection::open_in_memory()?;
         let conn_arc = Arc::new(Mutex::new(dummy_conn));
-        let repositories = RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
+        let repositories =
+            RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
 
         let db = Self {
             enhanced_conn,
@@ -256,7 +257,8 @@ impl Database {
     pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
         let audiobook_clone = audiobook.clone();
         // Use enhanced repository wrapper to leverage enhanced connection
-        self.repositories.audiobooks_enhanced()
+        self.repositories
+            .audiobooks_enhanced()
             .execute_query(move |conn| {
                 conn.execute(
                     "INSERT OR REPLACE INTO audiobooks (
@@ -294,9 +296,10 @@ impl Database {
     pub fn get_audiobook(&self, id: &str) -> Result<Option<Audiobook>> {
         use std::path::PathBuf;
         let id_clone = id.to_string();
-        
+
         // Use enhanced repository wrapper to leverage enhanced connection
-        self.repositories.audiobooks_enhanced()
+        self.repositories
+            .audiobooks_enhanced()
             .execute_query(move |conn| {
                 conn.query_row(
                     "SELECT id, library_id, path, title, author, narrator, description, 
@@ -337,9 +340,10 @@ impl Database {
     pub fn get_audiobooks_in_library(&self, library_id: &str) -> Result<Vec<Audiobook>> {
         use std::path::PathBuf;
         let library_id_clone = library_id.to_string();
-        
+
         // Use enhanced repository wrapper to leverage enhanced connection
-        self.repositories.audiobooks_enhanced()
+        self.repositories
+            .audiobooks_enhanced()
             .execute_query(move |conn| {
                 let mut stmt = conn.prepare(
                     "SELECT id, library_id, path, title, author, narrator, description, 
@@ -365,7 +369,8 @@ impl Database {
                     })
                 })?;
 
-                let audiobooks: Vec<Audiobook> = rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
+                let audiobooks: Vec<Audiobook> =
+                    rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
 
                 Ok(audiobooks)
             })

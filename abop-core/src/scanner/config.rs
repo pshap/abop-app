@@ -12,6 +12,10 @@ pub struct ScannerConfig {
     #[serde(default = "default_concurrency")]
     pub max_concurrent_tasks: usize,
 
+    /// Maximum number of concurrent database operations (should be lower than file operations)
+    #[serde(default = "default_db_concurrency")]
+    pub max_concurrent_db_operations: usize,
+
     /// Number of items to process before committing to database
     #[serde(default = "default_batch_size")]
     pub batch_size: usize,
@@ -37,6 +41,7 @@ impl Default for ScannerConfig {
     fn default() -> Self {
         Self {
             max_concurrent_tasks: default_concurrency(),
+            max_concurrent_db_operations: default_db_concurrency(),
             batch_size: default_batch_size(),
             timeout: default_timeout(),
             use_mmap: true,
@@ -50,6 +55,12 @@ fn default_concurrency() -> usize {
     std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(DEFAULT_CONCURRENCY)
+}
+
+fn default_db_concurrency() -> usize {
+    // Limit database operations to prevent mutex contention
+    // Use at most 2 concurrent database operations regardless of CPU count
+    2
 }
 
 const fn default_batch_size() -> usize {
@@ -84,6 +95,7 @@ impl ScannerConfig {
 
         Self {
             max_concurrent_tasks: cpu_count,
+            max_concurrent_db_operations: 2, // Keep database operations limited
             batch_size: DEFAULT_BATCH_SIZE * 2,
             timeout: Some(DEFAULT_TIMEOUT * 2),
             use_mmap: true,
@@ -96,6 +108,7 @@ impl ScannerConfig {
     pub fn for_small_libraries() -> Self {
         Self {
             max_concurrent_tasks: DEFAULT_CONCURRENCY / 2,
+            max_concurrent_db_operations: 1, // Very conservative for small libraries
             batch_size: DEFAULT_BATCH_SIZE / 2,
             timeout: Some(DEFAULT_TIMEOUT / 2),
             use_mmap: true,
@@ -108,6 +121,7 @@ impl ScannerConfig {
     pub fn conservative() -> Self {
         Self {
             max_concurrent_tasks: 2,
+            max_concurrent_db_operations: 1, // Single-threaded database access for safety
             batch_size: DEFAULT_BATCH_SIZE / 4,
             timeout: Some(DEFAULT_TIMEOUT / 2),
             use_mmap: false,
