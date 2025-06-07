@@ -21,7 +21,6 @@ use crate::{
     scanner::{
         config::ScannerConfig,
         error::{ScanError, ScanResult},
-        file_processor::FileProcessor,
         performance::{OperationType, PerformanceMonitor},
         progress::{ChannelReporter, ProgressReporter, ScanProgress},
         result::ScanSummary,
@@ -203,8 +202,8 @@ impl LibraryScanner {
     ) -> ScanResult<ScanSummary> {
         let config = self.config.clone(); // Clone config to avoid move issues
         let library_id = self.library.id.clone();
-        let library_path = self.library.path.clone();
-        let db = self.db.clone();
+        let _library_path = self.library.path.clone();
+        let _db = self.db.clone();
         let cancel_token = self.cancel_token.clone();
         let performance_monitor = self.performance_monitor.clone();
 
@@ -266,15 +265,16 @@ impl LibraryScanner {
         let duration = start_time.elapsed();
 
         // Report completion
+        let processed = new_files.len();
         if let Some(reporter) = &progress_reporter {
-            reporter
-                .report_complete(new_files.len(), errors, duration)
-                .await;
+            reporter.report_complete(processed, errors, duration).await;
         }
 
         Ok(ScanSummary {
             new_files,
             scan_duration: duration,
+            processed,
+            errors,
         })
     }
 
@@ -301,7 +301,7 @@ impl LibraryScanner {
 
         for audiobook in batch {
             let db = db.clone();
-            let library_id = library_id.clone();
+            let _library_id = library_id.clone();
             let semaphore = semaphore.clone();
             let audiobook = audiobook.clone();
 

@@ -83,9 +83,12 @@ impl TaskManager {
         match result {
             Ok(summary) => {
                 let duration = start_time.elapsed();
+                let processed = summary.new_files.len();
                 Ok(ScanSummary {
+                    new_files: summary.new_files,
                     scan_duration: duration,
-                    ..summary
+                    processed,
+                    errors: 0, // No errors if we reached this point
                 })
             }
             Err(e) => {
@@ -199,6 +202,8 @@ mod tests {
             Ok(ScanSummary {
                 new_files: audiobooks,
                 scan_duration: duration,
+                processed: audiobooks.len(),
+                errors: error_count,
             })
         };
 

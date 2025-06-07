@@ -484,6 +484,11 @@ impl Database {
 
         Ok(())
     }
+    /// Gets a connection from the database connection pool
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if unable to acquire a connection from the pool
     pub fn connect(&self) -> Result<r2d2::PooledConnection<SqliteConnectionManager>> {
         self.pool
             .get()
@@ -525,5 +530,32 @@ impl Database {
         tokio::runtime::Runtime::new()
             .unwrap()
             .block_on(async { Self::new(config).await })
+    }
+
+    /// Gets all libraries from the database
+    #[instrument(skip(self))]
+    pub fn get_libraries(&self) -> Result<Vec<Library>> {
+        let repo = self.library_repository();
+        repo.find_all().map_err(AppError::from)
+    }
+
+    /// Gets audiobooks in a specific library by library ID
+    #[instrument(skip(self, library_id))]
+    pub fn get_audiobooks_in_library(&self, library_id: &str) -> Result<Vec<Audiobook>> {
+        let repo = self.audiobook_repository();
+        repo.find_by_library(library_id)
+    }
+
+    /// Gets a library repository for more complex operations
+    #[must_use]
+    pub fn libraries(&self) -> LibraryRepository {
+        self.library_repository()
+    }
+
+    /// Create a new library and add it to the database
+    #[instrument(skip(self))]
+    pub async fn add_library_with_path(&self, name: &str, path: PathBuf) -> Result<String> {
+        let library = Library::new(name, path);
+        self.add_library(&library).await
     }
 }

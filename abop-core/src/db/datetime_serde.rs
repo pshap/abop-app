@@ -8,7 +8,6 @@ use rusqlite::{
     Error as SqliteError, Result as SqliteResult,
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef},
 };
-use std::str::FromStr;
 
 /// Wrapper for DateTime<Utc> that implements rusqlite traits
 #[derive(Debug, Clone, Copy)]
@@ -41,10 +40,13 @@ impl FromSql for SqliteDateTime {
     }
 }
 
+/// Custom error types for DateTime serialization operations
 #[derive(Debug, thiserror::Error)]
 pub enum DateTimeError {
+    /// SQLite database operation error
     #[error("SQLite error: {0}")]
     Sqlite(#[from] SqliteError),
+    /// DateTime parsing error when converting from string
     #[error("DateTime parse error: {0}")]
     Parse(#[from] chrono::ParseError),
 }
@@ -53,7 +55,9 @@ impl From<DateTimeError> for SqliteError {
     fn from(err: DateTimeError) -> Self {
         match err {
             DateTimeError::Sqlite(e) => e,
-            DateTimeError::Parse(e) => SqliteError::InvalidParameterName(e.to_string()),
+            DateTimeError::Parse(e) => {
+                SqliteError::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+            }
         }
     }
 }
@@ -65,9 +69,10 @@ pub fn datetime_to_sql(dt: &DateTime<Utc>) -> String {
 }
 
 /// Helper function to parse SQL string to DateTime<Utc>
-#[must_use]
 pub fn datetime_from_sql(s: &str) -> Result<DateTime<Utc>, DateTimeError> {
-    DateTime::from_str(s).map_err(DateTimeError::Parse)
+    DateTime::parse_from_rfc3339(s)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(DateTimeError::Parse)
 }
 
 /// Convert DateTime<Utc> to ToSqlOutput

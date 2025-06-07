@@ -1,4 +1,4 @@
-//! Audiobook repository for database operations
+﻿//! Audiobook repository for database operations
 //!
 //! This module handles all database operations related to audiobooks.
 
@@ -10,7 +10,7 @@ use super::super::error::DbResult;
 use super::{EnhancedRepository, Repository};
 use crate::db::{
     EnhancedConnection,
-    datetime_serde::{SqliteDateTime, datetime_from_sql, datetime_to_sql},
+    datetime_serde::{datetime_from_sql, datetime_to_sql, optional_datetime_to_sql_output, SqliteDateTime},
 };
 use crate::error::{AppError, Result};
 use crate::models::Audiobook;
@@ -104,8 +104,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: row.get::<_, SqliteDateTime>()?.into(),
+                        updated_at: row.get::<_, SqliteDateTime>()?.into(),
                         selected: row.get(12)?,
                     })
                 })
@@ -142,8 +142,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: row.get::<_, SqliteDateTime>()?.into(),
+                        updated_at: row.get::<_, SqliteDateTime>()?.into(),
                         selected: row.get(12)?,
                     })
                 })?
@@ -180,8 +180,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: row.get::<_, SqliteDateTime>()?.into(),
+                        updated_at: row.get::<_, SqliteDateTime>()?.into(),
                         selected: row.get(12)?,
                     })
                 })?
@@ -218,8 +218,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: row.get::<_, SqliteDateTime>()?.into(),
+                        updated_at: row.get::<_, SqliteDateTime>()?.into(),
                         selected: row.get(12)?,
                     })
                 })
@@ -255,8 +255,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: row.get::<_, SqliteDateTime>()?.into(),
+                        updated_at: row.get::<_, SqliteDateTime>()?.into(),
                         selected: row.get(12)?,
                     })
                 })?
@@ -285,7 +285,7 @@ impl AudiobookRepository {
         let duration_seconds = audiobook.duration_seconds;
         let size_bytes = audiobook.size_bytes;
         let cover_art = audiobook.cover_art.clone();
-        let updated_at = datetime_to_sql(&audiobook.updated_at);
+        let updated_at = SqliteDateTime::from().to_sql()?;
         let selected = audiobook.selected;
 
         self.execute_query(move |conn| {
@@ -397,3 +397,4 @@ impl Repository for AudiobookRepository {
 }
 
 impl EnhancedRepository for AudiobookRepository {}
+

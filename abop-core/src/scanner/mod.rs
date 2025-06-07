@@ -13,7 +13,7 @@ mod file_discovery;
 mod file_processor;
 mod library_scanner;
 mod performance;
-mod progress;
+pub mod progress;
 mod result;
 mod state;
 mod task_manager;
