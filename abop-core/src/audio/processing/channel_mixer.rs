@@ -10,7 +10,6 @@ use super::{
     validation::ConfigValidator,
 };
 use crate::audio::AudioBuffer;
-use std::fmt;
 
 /// Channel mixing error type
 #[derive(Debug, thiserror::Error)]

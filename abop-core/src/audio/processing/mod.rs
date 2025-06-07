@@ -5,17 +5,28 @@
 //! silence detection, and channel mixing.
 
 pub mod casting_utils;
+/// Channel mixer configuration and implementation.
 pub mod channel_mixer;
+/// Audio processing configuration module.
 pub mod config;
 pub mod error;
+/// Normalizer configuration and implementation.
 pub mod normalizer;
+/// Audio processing pipeline implementation.
 pub mod pipeline;
+/// Resampler configuration and implementation.
 pub mod resampler;
+/// Silence detector configuration and implementation.
 pub mod silence_detector;
+/// Processing traits and common interfaces.
 pub mod traits;
+/// Utility functions for audio processing.
 pub mod utils;
+/// Validation functionality for processing configuration.
 pub mod validation;
+/// File I/O operations for audio processing.
 pub mod file_io;
+/// Batch processor for handling multiple audio files.
 pub mod batch_processor;
 
 // Re-export main types
