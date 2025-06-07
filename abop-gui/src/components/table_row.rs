@@ -112,16 +112,23 @@ impl TableRow {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::Fill(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Shrink | data::ColumnWidth::FitContent => Length::Shrink, // FitContent behaves like Shrink in Iced
-        }; // Use consistent color with material tokens
-        let text_color = iced::Color::WHITE; // Force white for visibility
+        };
+
+        // Use proper Material Design text color
+        let text_color = tokens.colors.on_surface;
         log::debug!("Table cell text: {} (column: {})", cell_text, column.id);
+
         container(
             text(cell_text)
-                .size(tokens.typography().body_medium.size) // Restore original size
+                .size(tokens.typography().body_medium.size)
+                .line_height(iced::widget::text::LineHeight::Absolute(
+                    tokens.typography().body_medium.line_height,
+                ))
                 .color(text_color),
         )
         .width(width)
-        .padding(Padding::from([4, 8])) // MD3 compact: 4px vertical, 8px horizontal
+        .padding(Padding::from([8, 8])) // Increased padding for Standard density
+        .align_y(iced::alignment::Vertical::Center) // Center text vertically
         .into()
     }
 
