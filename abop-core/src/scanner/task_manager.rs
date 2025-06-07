@@ -126,12 +126,13 @@ impl Default for TaskManager {
 mod tests {
     use super::*;
     use crate::scanner::{
-        file_discovery::DefaultFileDiscoverer, file_processor::DefaultFileProcessor,
+        file_discovery::{DefaultFileDiscoverer, FileDiscoverer}, 
+        file_processor::{DefaultFileProcessor, FileProcessor},
         progress::TestReporter,
     };
-    use std::fs::File;
-    use std::io::Write;
-    use tempfile::tempdir;
+    use crate::db::Database;
+    use crate::scanner::Library;
+    use log::debug;
 
     #[tokio::test]
     async fn test_task_manager_cancellation() {
