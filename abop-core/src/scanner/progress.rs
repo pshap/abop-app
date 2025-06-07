@@ -270,27 +270,29 @@ mod tests {
 
     #[tokio::test]
     async fn test_callback_reporter() {
-        let mut last_progress = 0.0;
-        let callback = |progress: f32| {
-            last_progress = progress;
+        use std::sync::{Arc, Mutex};
+        let last_progress = Arc::new(Mutex::new(0.0));
+        let last_progress_clone = Arc::clone(&last_progress);
+        let callback = move |progress: f32| {
+            *last_progress_clone.lock().unwrap() = progress;
         };
         let reporter = CallbackReporter::new(callback);
 
         // Test started
         reporter.report_started(10).await;
-        assert_eq!(last_progress, 0.0);
+        assert_eq!(*last_progress.lock().unwrap(), 0.0);
 
         // Test file processed
         reporter
             .report_file_processed(5, 10, "test.mp3".to_string())
             .await;
-        assert_eq!(last_progress, 0.5);
+        assert_eq!(*last_progress.lock().unwrap(), 0.5);
 
         // Test complete
         reporter
             .report_complete(10, 0, std::time::Duration::from_secs(1))
             .await;
-        assert_eq!(last_progress, 1.0);
+        assert_eq!(*last_progress.lock().unwrap(), 1.0);
     }
 
     #[tokio::test]
