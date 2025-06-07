@@ -436,8 +436,7 @@ impl Database {
     pub fn migrate_up(&self) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
         self.enhanced_conn
-            .with_connection_mut(move |conn| {
-                manager.migrate_up(conn)})
+            .with_connection_mut(move |conn| manager.migrate_up(conn))
             .map_err(std::convert::Into::into)
     }
 
@@ -453,9 +452,7 @@ impl Database {
     pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
         self.enhanced_conn
-            .with_connection_mut(move |conn| {
-                manager
-                    .migrate_down(conn, target_version)})
+            .with_connection_mut(move |conn| manager.migrate_down(conn, target_version))
             .map_err(std::convert::Into::into)
     }
 

@@ -126,9 +126,7 @@ async fn main() -> Result<()> {
             database,
             operation,
         } => {
-            debug!(
-                "Executing database command: {operation:?} on {database:?}"
-            );
+            debug!("Executing database command: {operation:?} on {database:?}");
             handle_db_operation(database, operation).await
         }
     }
@@ -336,9 +334,7 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
             // Use the first available library, or default to "1"
             let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
 
-            debug!(
-                "About to call get_audiobooks_in_library() with library_id: {library_id}"
-            );
+            debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
             let audiobooks = db
                 .get_audiobooks_in_library(library_id)
                 .context("Failed to get audiobooks")?;
