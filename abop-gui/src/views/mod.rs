@@ -48,7 +48,6 @@ fn modal<'a>(
 /// View function that renders the application UI based on current state
 #[must_use]
 pub fn view(state: &UiState) -> Element<'_, Message> {
-
     // Unified toolbar at the top combining navigation and actions
     let toolbar = MainToolbar::view(
         &state.recent_directories,
