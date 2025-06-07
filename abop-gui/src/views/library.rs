@@ -14,10 +14,7 @@ use crate::styling::material::{MaterialSurface, SurfaceVariant};
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
 pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
-    println!(
-        "=== LIBRARY VIEW RENDER: {} audiobooks ===",
-        state.audiobooks.len()
-    );
+    log::debug!("LIBRARY VIEW RENDER: {} audiobooks", state.audiobooks.len());
 
     // Use the enhanced StatusDisplay component with detailed progress information
     let status_display = StatusDisplay::enhanced_view(
@@ -50,8 +47,8 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
         &state.material_tokens,
     );
 
-    println!(
-        "=== TABLE CONTENT CREATED: {} audiobooks ===",
+    log::debug!(
+        "TABLE CONTENT CREATED: {} audiobooks",
         state.audiobooks.len()
     );
     // Combine components into the library view with proper space allocation
@@ -78,7 +75,7 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
         },
         // Table content that will scroll - wrapped in a fixed height container
         {
-            println!("=== CREATING TABLE CONTAINER ===");
+            log::debug!("CREATING TABLE CONTAINER");
 
             // Debug container with border and background
             let debug_container = container(table_content)

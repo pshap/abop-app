@@ -66,8 +66,8 @@ impl AudiobookTable {
         table_state: &'a TableState,
         material_tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-        println!(
-            "=== AudiobookTable::view called with {} audiobooks ===",
+        log::debug!(
+            "AudiobookTable::view called with {} audiobooks",
             audiobooks.len()
         );
         log::debug!(

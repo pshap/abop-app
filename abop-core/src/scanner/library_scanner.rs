@@ -353,14 +353,20 @@ impl LibraryScanner {
 
     /// Finds all audio files in a given directory path
     pub fn find_audio_files_in_path(path: &Path, extensions: &[String]) -> Vec<PathBuf> {
-        log::warn!("🔍 SCANNER DEBUG: Starting scan of path: {}", path.display());
-        
+        log::debug!(
+            "🔍 SCANNER DEBUG: Starting scan of path: {}",
+            path.display()
+        );
+
         let results: Vec<PathBuf> = WalkDir::new(path)
             .into_iter()
             .filter_map(|entry| match entry {
                 Ok(entry) => {
                     let entry_path = entry.path();
-                    log::debug!("🔍 SCANNER DEBUG: Examining entry: {}", entry_path.display());
+                    log::debug!(
+                        "🔍 SCANNER DEBUG: Examining entry: {}",
+                        entry_path.display()
+                    );
                     Some(entry)
                 }
                 Err(e) => {
@@ -377,7 +383,7 @@ impl LibraryScanner {
                     .map(str::to_lowercase)
                 {
                     if extensions.contains(&ext) {
-                        log::warn!("🎵 SCANNER DEBUG: Found audio file: {}", path.display());
+                        log::debug!("🎵 SCANNER DEBUG: Found audio file: {}", path.display());
                         Some(entry.into_path())
                     } else {
                         None
@@ -388,7 +394,10 @@ impl LibraryScanner {
             })
             .collect();
 
-        log::warn!("🔍 SCANNER DEBUG: Completed scan, found {} files", results.len());
+        log::debug!(
+            "🔍 SCANNER DEBUG: Completed scan, found {} files",
+            results.len()
+        );
         results
     }
 

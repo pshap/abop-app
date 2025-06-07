@@ -82,8 +82,12 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                         Ok(Ok(Some(mut lib))) => {
                             // Check if the path has changed and update if necessary
                             if lib.path != library_path {
-                                log::warn!("📝 LIBRARY PATH UPDATE: {} -> {}", lib.path.display(), library_path.display());
-                                
+                                log::warn!(
+                                    "📝 LIBRARY PATH UPDATE: {} -> {}",
+                                    lib.path.display(),
+                                    library_path.display()
+                                );
+
                                 match tokio::task::spawn_blocking({
                                     let db = db.clone();
                                     let lib_id = lib.id.clone();
@@ -97,9 +101,17 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                                         log::warn!("✅ LIBRARY PATH UPDATED SUCCESSFULLY");
                                         lib
                                     }
-                                    Ok(Ok(false)) => return Err("Failed to update library path".to_string()),
-                                    Ok(Err(e)) => return Err(format!("Database error updating library: {e}")),
-                                    Err(e) => return Err(format!("Task error updating library: {e}")),
+                                    Ok(Ok(false)) => {
+                                        return Err("Failed to update library path".to_string());
+                                    }
+                                    Ok(Err(e)) => {
+                                        return Err(format!(
+                                            "Database error updating library: {e}"
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        return Err(format!("Task error updating library: {e}"));
+                                    }
                                 }
                             } else {
                                 lib

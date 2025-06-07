@@ -34,11 +34,11 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
         .pick_folder()
         .await
         .map(|handle| handle.path().to_path_buf());
-    
+
     if let Some(path) = &result {
         log::warn!("🗂️  FOLDER SELECTED: {}", path.display());
     }
-    
+
     result
 }
 

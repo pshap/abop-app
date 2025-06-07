@@ -16,7 +16,7 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
             if let Some(p) = &path {
                 log::warn!("📨 DIRECTORY SELECTED MESSAGE: {}", p.display());
             }
-            
+
             path.map(|path| {
                 Task::perform(
                     async move {
@@ -28,12 +28,12 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
                     |message| message,
                 )
             })
-        },
+        }
         Message::QuickScanComplete(result) => {
             match result {
                 Ok(info) => {
                     log::warn!("💾 STATE UPDATE: library_path = {}", info.path.display());
-                    
+
                     // Update the library path to the newly selected directory
                     state.library_path = info.path.clone();
 
