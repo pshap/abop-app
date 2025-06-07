@@ -103,7 +103,7 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
         // Footer with fixed height (no need for additional container)
         footer
     ]
-    .spacing(state.material_tokens.spacing.xs) // Reduced from SM (8px) to XS (4px)
+    .spacing(4) // MD3: minimal vertical spacing between toolbars
     .width(Length::Fill)
     .height(Length::Fill) // Fill available height
     .padding(state.material_tokens.spacing.md); // Add some padding around the content

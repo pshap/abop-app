@@ -29,11 +29,17 @@ pub struct ScanResult {
 pub async fn open_directory_dialog() -> Option<PathBuf> {
     use rfd::AsyncFileDialog;
 
-    AsyncFileDialog::new()
+    let result = AsyncFileDialog::new()
         .set_title("Select Audiobook Library Directory")
         .pick_folder()
         .await
-        .map(|handle| handle.path().to_path_buf())
+        .map(|handle| handle.path().to_path_buf());
+    
+    if let Some(path) = &result {
+        log::warn!("🗂️  FOLDER SELECTED: {}", path.display());
+    }
+    
+    result
 }
 
 /// Scans a library directory and returns a task that will complete with the scan result

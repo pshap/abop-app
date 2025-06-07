@@ -12,20 +12,28 @@ use iced::Task;
 #[must_use]
 pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<Message>> {
     match message {
-        Message::DirectorySelected(path) => path.map(|path| {
-            Task::perform(
-                async move {
-                    match scan_directory_async(path.clone()).await {
-                        Ok(info) => Message::QuickScanComplete(Ok(info)),
-                        Err(e) => Message::QuickScanComplete(Err(e)),
-                    }
-                },
-                |message| message,
-            )
-        }),
+        Message::DirectorySelected(path) => {
+            if let Some(p) = &path {
+                log::warn!("📨 DIRECTORY SELECTED MESSAGE: {}", p.display());
+            }
+            
+            path.map(|path| {
+                Task::perform(
+                    async move {
+                        match scan_directory_async(path.clone()).await {
+                            Ok(info) => Message::QuickScanComplete(Ok(info)),
+                            Err(e) => Message::QuickScanComplete(Err(e)),
+                        }
+                    },
+                    |message| message,
+                )
+            })
+        },
         Message::QuickScanComplete(result) => {
             match result {
                 Ok(info) => {
+                    log::warn!("💾 STATE UPDATE: library_path = {}", info.path.display());
+                    
                     // Update the library path to the newly selected directory
                     state.library_path = info.path.clone();
 

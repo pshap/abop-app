@@ -98,8 +98,8 @@ impl MainToolbar {
         );
 
         // Debug: Log the path being used for the scan command
-        log::info!(
-            "MainToolbar::view: Creating scan button with path: {}",
+        log::warn!(
+            "🔍 SCAN BUTTON CREATED: Will scan {}",
             current_path.display()
         );
 

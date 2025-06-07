@@ -83,7 +83,7 @@ impl TableHeader {
         )
         .width(width)
         .height(Length::Fill)
-        .padding(Padding::from([8.0, 16.0])) // Better padding for header cells
+        .padding(Padding::from([4.0, 8.0])) // MD3 compact: 4px vertical, 8px horizontal
         .style(data::MaterialDataTable::header_cell(
             tokens,
             column.sortable,
