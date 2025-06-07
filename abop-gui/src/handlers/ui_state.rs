@@ -193,39 +193,7 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
                 }
             }
             Some(Task::none())
-        }
-        Message::QuickScanComplete(result) => {
-            match result {
-                Ok(directory_info) => {
-                    log::info!(
-                        "Quick scan completed for {}: {} books found in {:?}",
-                        directory_info.path.display(),
-                        directory_info.book_count,
-                        directory_info.scan_duration
-                    );
-
-                    // Update or add to recent directories
-                    if let Some(existing) = state
-                        .recent_directories
-                        .iter_mut()
-                        .find(|dir| dir.path == directory_info.path)
-                    {
-                        *existing = directory_info;
-                    } else {
-                        state.recent_directories.push(directory_info);
-                        // Keep only the 10 most recent directories
-                        if state.recent_directories.len() > 10 {
-                            state.recent_directories.remove(0);
-                        }
-                    }
-                }
-                Err(error) => {
-                    log::error!("Quick scan failed: {error}");
-                }
-            }
-            Some(Task::none())
-        }
-        Message::ResetRedrawFlag => {
+        }        Message::ResetRedrawFlag => {
             state.needs_redraw = false;
             Some(Task::none())
         }

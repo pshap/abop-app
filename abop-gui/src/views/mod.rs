@@ -48,6 +48,9 @@ fn modal<'a>(
 /// View function that renders the application UI based on current state
 #[must_use]
 pub fn view(state: &UiState) -> Element<'_, Message> {
+    // Debug: Log what library path the view function sees
+    log::info!("view: Using library_path: {}", state.library_path.display());
+    
     // Unified toolbar at the top combining navigation and actions
     let toolbar = MainToolbar::view(
         &state.recent_directories,
