@@ -32,7 +32,7 @@ impl AudiobookTable {
             row_actions: false,
             resizable_columns: false,
             min_column_width: 120.0,
-            density: data::TableDensity::Compact,
+            density: data::TableDensity::Standard,
         }
     }
 

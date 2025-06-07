@@ -33,11 +33,6 @@ impl MainToolbar {
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-        // Debug: Log the current path being passed to MainToolbar
-        log::info!(
-            "MainToolbar::view: Received current_path: {}",
-            current_path.display()
-        );
 
         let mut toolbar = row![]
             .spacing(material_tokens.spacing().xs) // Use extra small spacing between toolbar items
@@ -95,12 +90,6 @@ impl MainToolbar {
                 library_path: current_path.to_path_buf(),
             }),
             material_tokens,
-        );
-
-        // Debug: Log the path being used for the scan command
-        log::warn!(
-            "🔍 SCAN BUTTON CREATED: Will scan {}",
-            current_path.display()
         );
 
         toolbar = toolbar.push(scan_button);

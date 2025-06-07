@@ -448,8 +448,10 @@ where
 
                 if self.state != new_state {
                     self.state = new_state;
+                    event::Status::Captured
+                } else {
+                    event::Status::Ignored
                 }
-                event::Status::Captured
             }
             _ => event::Status::Ignored,
         };
