@@ -5,20 +5,18 @@
 #[cfg(test)]
 mod tests {
     use abop_gui::styling::material::{
-        MaterialStates, MaterialTokens, SemanticColors,
-        elevation::ElevationLevel,
-        themes::ThemeMode,
+        MaterialStates, MaterialTokens, SemanticColors, elevation::ElevationLevel,
     };
     use iced::Color;
 
     #[test]
     fn test_material_tokens_creation() {
         let tokens = MaterialTokens::new();
-        
+
         // Test basic token access
         let colors = tokens.colors();
         assert!((0..=255).contains(&((colors.primary.base.r * 255.0) as u8)));
-        
+
         let states = tokens.states();
         assert_eq!(states.opacity.hover, 0.08);
     }

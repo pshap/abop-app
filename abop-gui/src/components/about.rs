@@ -4,9 +4,9 @@ use iced::Element;
 use iced::Length;
 use iced::widget::{column, container, text};
 
-use crate::styling::material::MaterialTokens;
 use crate::messages::Message;
 use crate::styling::container::LayoutContainerStyles;
+use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
 
 /// About dialog and application information display component
