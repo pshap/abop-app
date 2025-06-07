@@ -287,8 +287,8 @@ impl MaterialDataTable {
         let _shapes = tokens.shapes.clone();
         move |_| {
             let background_color = if is_sorted {
-                // Use secondary container for sorted columns
-                colors.secondary_container
+                // Use primary_container for sorted columns (MD3 spec)
+                colors.primary_container
             } else {
                 // Use Material Design 3 surface_variant for header cells per MD3 spec
                 colors.surface_variant

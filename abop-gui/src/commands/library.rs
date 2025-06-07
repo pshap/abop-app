@@ -40,6 +40,7 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
             use std::fs;
             use std::path::PathBuf;
 
+            log::info!("ScanLibrary: Scanning path {}", library_path.display());
             state.scanning = true;
             state.scan_progress = Some(0.0);
             log::info!(
@@ -78,7 +79,32 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                     })
                     .await
                     {
-                        Ok(Ok(Some(lib))) => lib,
+                        Ok(Ok(Some(mut lib))) => {
+                            // Check if the path has changed and update if necessary
+                            if lib.path != library_path {
+                                log::warn!("📝 LIBRARY PATH UPDATE: {} -> {}", lib.path.display(), library_path.display());
+                                
+                                match tokio::task::spawn_blocking({
+                                    let db = db.clone();
+                                    let lib_id = lib.id.clone();
+                                    let path = library_path.clone();
+                                    move || db.libraries().update(&lib_id, "Default Library", &path)
+                                })
+                                .await
+                                {
+                                    Ok(Ok(true)) => {
+                                        lib.path = library_path.clone();
+                                        log::warn!("✅ LIBRARY PATH UPDATED SUCCESSFULLY");
+                                        lib
+                                    }
+                                    Ok(Ok(false)) => return Err("Failed to update library path".to_string()),
+                                    Ok(Err(e)) => return Err(format!("Database error updating library: {e}")),
+                                    Err(e) => return Err(format!("Task error updating library: {e}")),
+                                }
+                            } else {
+                                lib
+                            }
+                        }
                         Ok(Ok(None)) => {
                             match tokio::task::spawn_blocking({
                                 let db = db.clone();

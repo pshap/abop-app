@@ -143,7 +143,10 @@ impl LibraryScanner {
         if let Some(cover_art) = metadata.cover_art {
             audiobook.cover_art = Some(cover_art);
         }
-
+        // Set file size for MD3 data clarity
+        if let Ok(meta) = std::fs::metadata(path) {
+            audiobook.size_bytes = Some(meta.len());
+        }
         Ok(audiobook)
     }
 
@@ -349,14 +352,14 @@ impl LibraryScanner {
 
     /// Finds all audio files in a given directory path
     pub fn find_audio_files_in_path(path: &Path, extensions: &[String]) -> Vec<PathBuf> {
-        println!("DEBUG: Scanning path: {}", path.display());
-        println!("DEBUG: Looking for extensions: {extensions:?}");
-
+        log::warn!("🔍 SCANNER DEBUG: Starting scan of path: {}", path.display());
+        
         let results: Vec<PathBuf> = WalkDir::new(path)
             .into_iter()
             .filter_map(|entry| match entry {
                 Ok(entry) => {
-                    println!("DEBUG: Processing entry: {}", entry.path().display());
+                    let entry_path = entry.path();
+                    log::debug!("🔍 SCANNER DEBUG: Examining entry: {}", entry_path.display());
                     Some(entry)
                 }
                 Err(e) => {
@@ -364,13 +367,7 @@ impl LibraryScanner {
                     None
                 }
             })
-            .filter(|e| {
-                let is_file = e.file_type().is_file();
-                if is_file {
-                    println!("DEBUG: Found file: {}", e.path().display());
-                }
-                is_file
-            })
+            .filter(|e| e.file_type().is_file())
             .filter_map(|entry| {
                 let path = entry.path();
                 if let Some(ext) = path
@@ -378,22 +375,19 @@ impl LibraryScanner {
                     .and_then(OsStr::to_str)
                     .map(str::to_lowercase)
                 {
-                    println!("DEBUG: Extension: '{ext}', checking against {extensions:?}");
                     if extensions.contains(&ext) {
-                        println!("DEBUG: MATCH! Adding file: {}", path.display());
+                        log::warn!("🎵 SCANNER DEBUG: Found audio file: {}", path.display());
                         Some(entry.into_path())
                     } else {
-                        println!("DEBUG: No match for extension '{ext}'");
                         None
                     }
                 } else {
-                    println!("DEBUG: No extension or not valid UTF-8");
                     None
                 }
             })
             .collect();
 
-        println!("DEBUG: Scan complete. Found {} files", results.len());
+        log::warn!("🔍 SCANNER DEBUG: Completed scan, found {} files", results.len());
         results
     }
 

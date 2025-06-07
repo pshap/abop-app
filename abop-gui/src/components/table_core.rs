@@ -31,8 +31,8 @@ impl AudiobookTable {
             max_visible_rows: None,
             row_actions: false,
             resizable_columns: false,
-            min_column_width: 80.0,
-            density: data::TableDensity::Standard,
+            min_column_width: 120.0,
+            density: data::TableDensity::Compact,
         }
     }
 
@@ -41,11 +41,11 @@ impl AudiobookTable {
     pub fn define_columns() -> Vec<data::TableColumn> {
         vec![
             data::TableColumn::new("title", "Title")
-                .width(data::ColumnWidth::Fill(4))
+                .width(data::ColumnWidth::Fill(6))
                 .align(data::TextAlignment::Start)
                 .sortable(true),
             data::TableColumn::new("author", "Author")
-                .width(data::ColumnWidth::Fill(3))
+                .width(data::ColumnWidth::Fill(4))
                 .align(data::TextAlignment::Start)
                 .sortable(true),
             data::TableColumn::new("duration", "Duration")
@@ -53,7 +53,7 @@ impl AudiobookTable {
                 .align(data::TextAlignment::End)
                 .sortable(true),
             data::TableColumn::new("size", "Size")
-                .width(data::ColumnWidth::Fill(1))
+                .width(data::ColumnWidth::Fill(2))
                 .align(data::TextAlignment::End)
                 .sortable(true),
         ]
@@ -87,7 +87,7 @@ impl AudiobookTable {
 
         // Create table body
         if audiobooks.is_empty() {
-            println!("=== EMPTY STATE: No audiobooks found ===");
+            log::debug!("EMPTY STATE: No audiobooks found");
             // Empty state with Material Design styling
             let empty_state = container(
                 text("No audiobooks found. Select a directory and scan to find audiobooks.")
@@ -103,13 +103,11 @@ impl AudiobookTable {
 
             table = table.push(empty_state);
         } else {
-            println!("=== CREATING ROWS: {} audiobooks ===", audiobooks.len());
+            log::debug!("CREATING ROWS: {} audiobooks", audiobooks.len());
             // Create rows for all audiobooks at once
-            log::debug!("Creating rows for {} audiobooks", audiobooks.len());
             let rows =
                 TableRow::create_rows(audiobooks, &columns, selected, material_tokens, &config);
-            println!("=== ROWS CREATED: {} rows ===", rows.len());
-            log::debug!("Created {} rows", rows.len());
+            log::debug!("ROWS CREATED: {} rows", rows.len());
 
             // Add all rows at once instead of one by one to improve performance
             table = table.extend(rows);

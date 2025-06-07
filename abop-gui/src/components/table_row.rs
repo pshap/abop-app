@@ -113,17 +113,15 @@ impl TableRow {
             data::ColumnWidth::Fill(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Shrink | data::ColumnWidth::FitContent => Length::Shrink, // FitContent behaves like Shrink in Iced
         }; // Use consistent color with material tokens
-        let text_color = tokens.colors.on_surface;
+        let text_color = iced::Color::WHITE; // Force white for visibility
+        log::debug!("Table cell text: {} (column: {})", cell_text, column.id);
         container(
             text(cell_text)
-                .size(tokens.typography().body_medium.size)
+                .size(tokens.typography().body_medium.size) // Restore original size
                 .color(text_color),
         )
         .width(width)
-        .padding(Padding::from([
-            tokens.spacing().sm.round() as u16,
-            tokens.spacing().md.round() as u16, // Better horizontal padding for readability
-        ]))
+        .padding(Padding::from([4, 8])) // MD3 compact: 4px vertical, 8px horizontal
         .into()
     }
 
