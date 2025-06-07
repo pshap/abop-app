@@ -4,12 +4,16 @@
 //! manipulating audio buffers, including resampling, normalization,
 //! silence detection, and channel mixing.
 
+/// Batch processor for handling multiple audio files.
+pub mod batch_processor;
 pub mod casting_utils;
 /// Channel mixer configuration and implementation.
 pub mod channel_mixer;
 /// Audio processing configuration module.
 pub mod config;
 pub mod error;
+/// File I/O operations for audio processing.
+pub mod file_io;
 /// Normalizer configuration and implementation.
 pub mod normalizer;
 /// Audio processing pipeline implementation.
@@ -24,19 +28,15 @@ pub mod traits;
 pub mod utils;
 /// Validation functionality for processing configuration.
 pub mod validation;
-/// File I/O operations for audio processing.
-pub mod file_io;
-/// Batch processor for handling multiple audio files.
-pub mod batch_processor;
 
 // Re-export main types
-pub use self::pipeline::AudioProcessingPipeline;
 pub use self::config::silence_detector::SilenceRemovalMode;
+pub use self::pipeline::AudioProcessingPipeline;
 
 // Re-export config types
 pub use self::config::{
-    ProcessingConfig, ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, 
-    OutputConfig, ResamplerConfig, SilenceDetectorConfig
+    ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, OutputConfig, ProcessingConfig,
+    ResamplerConfig, SilenceDetectorConfig,
 };
 
 // Re-export processor types
@@ -50,10 +50,10 @@ pub use self::validation::ConfigValidator;
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::audio::create_test_buffer;
     use crate::AudioBuffer;
-    use crate::audio::processing::traits::{AudioProcessor, LatencyReporting, Validatable};
     use crate::audio::processing::error::Result;
+    use crate::audio::processing::traits::{AudioProcessor, LatencyReporting, Validatable};
+    use crate::test_utils::audio::create_test_buffer;
 
     /// A dummy processor for testing audio processing traits
     #[derive(Default)]

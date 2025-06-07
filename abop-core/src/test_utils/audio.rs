@@ -7,8 +7,7 @@
 use crate::audio::AudioBuffer;
 use crate::audio::SampleFormat;
 use crate::audio::processing::casting_utils::sample_calculations::{
-    safe_duration_to_samples,
-    safe_samples_to_duration,
+    safe_duration_to_samples, safe_samples_to_duration,
 };
 
 /// Creates a test audio buffer with a sine wave
@@ -109,12 +108,13 @@ pub fn create_test_buffer_with_silence(
 /// An `AudioBuffer` containing stereo test signals
 pub fn create_stereo_test_buffer(sample_rate: u32, duration_secs: f32) -> AudioBuffer<f32> {
     let num_samples = safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
-    let mut data = Vec::with_capacity(num_samples * 2);    // Generate a simple sine wave test signal
+    let mut data = Vec::with_capacity(num_samples * 2); // Generate a simple sine wave test signal
     for i in 0..num_samples {
         let t = safe_samples_to_duration(i, sample_rate).unwrap_or(0.0);
         // Add phase offset to right channel to ensure it's never identical to left
         let left_sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5;
-        let right_sample = (t * 880.0 * 2.0 * std::f32::consts::PI + std::f32::consts::PI / 4.0).sin() * 0.3;
+        let right_sample =
+            (t * 880.0 * 2.0 * std::f32::consts::PI + std::f32::consts::PI / 4.0).sin() * 0.3;
         data.push(left_sample);
         data.push(right_sample);
     }
@@ -144,7 +144,7 @@ mod tests {
         let buffer = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
         assert_eq!(buffer.sample_rate, 44100);
         assert_eq!(buffer.channels, 1);
-        
+
         // Check that silence segment exists
         let silence_start = (0.3 * 44100.0) as usize;
         let silence_end = ((0.3 + 0.2) * 44100.0) as usize;
@@ -159,9 +159,10 @@ mod tests {
         assert_eq!(buffer.sample_rate, 44100);
         assert_eq!(buffer.channels, 2);
         assert_eq!(buffer.data.len() % 2, 0);
-        
+
         // Check that left and right channels are different
         for i in (0..buffer.data.len()).step_by(2) {
             assert_ne!(buffer.data[i], buffer.data[i + 1]);
-        }    }
+        }
+    }
 }
