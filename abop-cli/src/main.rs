@@ -327,14 +327,20 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
         }
         DbOperations::Stats => {
             info!("Database statistics: {database_path:?}");
+            debug!("About to call Database::open() for stats operation");
             let db = Database::open(&database_path).context("Failed to open database")?;
+            debug!("Database::open() completed for stats operation");
 
+            debug!("About to call get_audiobook_count()");
             let count = get_audiobook_count(&db).await?;
+            debug!("get_audiobook_count() completed with count: {}", count);
             info!("Total audiobooks: {count}");
         }
         DbOperations::Clean => {
             info!("Cleaning database: {database_path:?}");
+            debug!("About to call Database::open() for clean operation");
             let _db = Database::open(&database_path).context("Failed to open database")?;
+            debug!("Database::open() completed for clean operation");
 
             // TODO: Implement database cleanup/optimization
             info!("✓ Database cleanup completed");
