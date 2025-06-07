@@ -371,18 +371,8 @@ mod tests {
 
         // Apply all migrations first
         manager.migrate_up(&mut conn).unwrap();
-        let _initial_version = manager.current_version(&conn).unwrap();
-
-        // Rollback to version 1
-        let rollback_results = manager.migrate_down(&mut conn, 1).unwrap();
-        assert!(
-            !rollback_results.is_empty(),
-            "Should have rolled back migrations"
-        );
-
-        // Check version is now 1
-        let current_version = manager.current_version(&conn).unwrap();
-        assert_eq!(current_version, 1, "Version should be 1 after rollback");
+        let initial_version = manager.current_version(&conn).unwrap();
+        assert_eq!(initial_version, 1, "Should be at version 1 after migration");
 
         // Rollback to version 0 (empty database)
         let rollback_results = manager.migrate_down(&mut conn, 0).unwrap();
@@ -396,5 +386,17 @@ mod tests {
             current_version, 0,
             "Version should be 0 after complete rollback"
         );
+
+        // Test invalid rollback (trying to rollback to same or higher version)
+        manager.migrate_up(&mut conn).unwrap(); // Go back to version 1
+        let current_version = manager.current_version(&conn).unwrap();
+        
+        // Try to rollback to same version (should fail)
+        let result = manager.migrate_down(&mut conn, current_version);
+        assert!(result.is_err(), "Should fail when trying to rollback to same version");
+        
+        // Try to rollback to higher version (should fail)
+        let result = manager.migrate_down(&mut conn, current_version + 1);
+        assert!(result.is_err(), "Should fail when trying to rollback to higher version");
     }
 }
