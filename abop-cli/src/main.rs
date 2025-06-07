@@ -100,6 +100,7 @@ async fn main() -> Result<()> {
         .init();
 
     info!("Starting ABOP CLI");
+    debug!("Command line arguments: {:?}", args);
 
     match args.command {
         Commands::Scan {
@@ -110,6 +111,7 @@ async fn main() -> Result<()> {
             max_concurrent_db_operations,
             progress,
         } => {
+            debug!("Executing scan command");
             scan_library(
                 library,
                 database,
@@ -123,7 +125,10 @@ async fn main() -> Result<()> {
         Commands::Db {
             database,
             operation,
-        } => handle_db_operation(database, operation).await,
+        } => {
+            debug!("Executing database command: {:?} on {:?}", operation, database);
+            handle_db_operation(database, operation).await
+        },
     }
 }
 

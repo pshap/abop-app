@@ -90,40 +90,47 @@ impl Database {
 
         // For initialization, we need to temporarily use the basic connection
         // since migrations require mutable access
-        let conn = self.repositories.connection().lock().map_err(|_| {
-            DatabaseError::ConnectionFailed(
-                "Failed to acquire connection lock during initialization".into(),
+        {
+            // Scope the first connection lock to ensure it's released
+            let conn = self.repositories.connection().lock().map_err(|_| {
+                DatabaseError::ConnectionFailed(
+                    "Failed to acquire connection lock during initialization".into(),
+                )
+            })?;
+
+            conn.execute_batch(
+                "PRAGMA foreign_keys = ON;\n\
+                 PRAGMA journal_mode = WAL;\n\
+                 PRAGMA synchronous = NORMAL;",
             )
-        })?;
+            .map_err(|e| DatabaseError::ExecutionFailed {
+                message: format!("Failed to configure database pragmas: {e}"),
+            })?;
 
-        conn.execute_batch(
-            "PRAGMA foreign_keys = ON;\n\
-             PRAGMA journal_mode = WAL;\n\
-             PRAGMA synchronous = NORMAL;",
-        )
-        .map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to configure database pragmas: {e}"),
-        })?;
-
-        log::debug!("Database settings configured");
+            log::debug!("Database settings configured");
+        } // Lock is released here
 
         // Run migrations in a transaction
         log::debug!("Running migrations...");
-        let mut conn = self.repositories.connection().lock().map_err(|_| {
-            DatabaseError::ConnectionFailed(
-                "Failed to acquire connection lock for migrations".into(),
-            )
-        })?;
+        {
+            // Scope the second connection lock separately
+            let mut conn = self.repositories.connection().lock().map_err(|_| {
+                DatabaseError::ConnectionFailed(
+                    "Failed to acquire connection lock for migrations".into(),
+                )
+            })?;
 
-        migrations::run_migrations(&mut conn).map_err(|e| {
-            log::error!("Failed to run migrations: {e}");
-            DatabaseError::MigrationFailed {
-                version: 0, // We don't know which version failed at this point
-                message: format!("Migration failed: {e}"),
-            }
-        })?;
+            migrations::run_migrations(&mut conn).map_err(|e| {
+                log::error!("Failed to run migrations: {e}");
+                DatabaseError::MigrationFailed {
+                    version: 0, // We don't know which version failed at this point
+                    message: format!("Migration failed: {e}"),
+                }
+            })?;
 
-        log::debug!("Migrations completed successfully");
+            log::debug!("Migrations completed successfully");
+        } // Lock is released here
+        
         log::debug!("Database initialization complete");
 
         Ok(())
