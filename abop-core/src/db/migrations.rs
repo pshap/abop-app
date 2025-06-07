@@ -268,12 +268,6 @@ fn get_migrations() -> Vec<Migration> {
             down_sql: include_str!("migrations/001_initial_schema_down.sql"),
             description: "Initial database schema with libraries, audiobooks, and progress tracking",
         },
-        Migration {
-            version: 2,
-            up_sql: include_str!("migrations/002_add_bookmarks.sql"),
-            down_sql: include_str!("migrations/002_add_bookmarks_down.sql"),
-            description: "Add bookmarks table for user bookmarks",
-        },
     ]
 }
 
