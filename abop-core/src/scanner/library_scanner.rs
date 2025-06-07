@@ -787,9 +787,8 @@ impl LibraryScanner {
     /// Enhanced async scan operation with modern async patterns
     /// Implements the specifications from the thread pool refactoring roadmap
     pub async fn scan_async_enhanced(
-        &self,
-        progress_tx: mpsc::Sender<ScanProgress>,
-    ) -> ScanResultType<LibraryScanResult> {
+        &self,        progress_tx: mpsc::Sender<ScanProgress>,
+    ) -> ScanResult<LibraryScanResult> {
         let start_time = std::time::Instant::now();
         let mut scan_result = LibraryScanResult::new();
         
@@ -800,10 +799,10 @@ impl LibraryScanner {
         // Send initial progress
         progress_tx.send(ScanProgress::Started { total_files }).await
             .map_err(|_| ScanError::Cancelled)?;
-        
-        // Process files in parallel with backpressure
+          // Process files in parallel with backpressure
         let (result_tx, mut result_rx) = mpsc::channel(100);
         let semaphore = Arc::new(Semaphore::new(self.config.max_concurrent_tasks));
+        let max_concurrent_tasks = self.config.max_concurrent_tasks;
         
         let process_task = tokio::spawn({
             let files = files.clone();
@@ -815,7 +814,7 @@ impl LibraryScanner {
             
             async move {
                 stream::iter(files.into_iter().enumerate())
-                    .for_each_concurrent(Some(self.config.max_concurrent_tasks), |(index, path)| {
+                    .for_each_concurrent(Some(max_concurrent_tasks), |(index, path)| {
                         let semaphore = semaphore.clone();
                         let result_tx = result_tx.clone();
                         let progress_tx = progress_tx.clone();
@@ -859,10 +858,10 @@ impl LibraryScanner {
                     .await;
             }
         });
-        
-        // Process results with batch processing
+          // Process results with batch processing
+        let batch_size = self.config.batch_size;
         let process_results = async {
-            let mut batch = Vec::with_capacity(self.config.batch_size);
+            let mut batch = Vec::with_capacity(batch_size);
             let mut processed_count = 0;
             let mut error_count = 0;
             let progress_tx = progress_tx.clone();
@@ -874,7 +873,7 @@ impl LibraryScanner {
                         processed_count += 1;
                         
                         // Process batch if full
-                        if batch.len() >= self.config.batch_size {
+                        if batch.len() >= batch_size {
                             if let Err(e) = self.process_batch(&batch).await {
                                 tracing::error!("Failed to add batch: {}", e);
                                 error_count += batch.len();
@@ -950,9 +949,8 @@ impl LibraryScanner {
         
         Ok(scan_result)
     }
-    
-    /// Process a batch of audiobooks asynchronously
-    async fn process_batch(&self, batch: &[Audiobook]) -> ScanResultType<()> {
+      /// Process a batch of audiobooks asynchronously
+    async fn process_batch(&self, batch: &[Audiobook]) -> ScanResult<()> {
         // For now, process items individually but this could be optimized
         // with a batch database insert method in the future
         for audiobook in batch {
@@ -972,7 +970,7 @@ impl LibraryScanner {
     pub fn scan_async_task(
         &self,
         progress_tx: mpsc::Sender<ScanProgress>,
-    ) -> Task<ScanResultType<LibraryScanResult>> {
+    ) -> Task<ScanResult<LibraryScanResult>> {
         let scanner = self.clone();
         
         Task::perform(
