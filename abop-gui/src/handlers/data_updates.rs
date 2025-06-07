@@ -3,7 +3,6 @@
 //! Handles messages that require async operations to update application data
 
 use crate::commands::library::scan_directory_async;
-use crate::library;
 use crate::messages::Message;
 use crate::state::UiState;
 use abop_core::scanner::ScannerState;
