@@ -6,10 +6,10 @@ use rusqlite::{Connection, OptionalExtension};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::super::error::{DbResult, DatabaseError};
+use super::super::error::{DatabaseError, DbResult};
 use super::{EnhancedRepository, Repository};
-use crate::models::Audiobook;
 use crate::db::EnhancedConnection;
+use crate::models::Audiobook;
 
 /// Repository for audiobook-related database operations
 pub struct AudiobookRepository {
@@ -19,7 +19,9 @@ pub struct AudiobookRepository {
 impl AudiobookRepository {
     /// Create a new audiobook repository
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
-        Self { enhanced_connection }
+        Self {
+            enhanced_connection,
+        }
     }
     /// Add or update an audiobook in the database
     ///

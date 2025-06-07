@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
         .init();
 
     info!("Starting ABOP CLI");
-    debug!("Command line arguments: {:?}", args);
+    debug!("Command line arguments: {args:?}");
 
     match args.command {
         Commands::Scan {
@@ -127,8 +127,7 @@ async fn main() -> Result<()> {
             operation,
         } => {
             debug!(
-                "Executing database command: {:?} on {:?}",
-                operation, database
+                "Executing database command: {operation:?} on {database:?}"
             );
             handle_db_operation(database, operation).await
         }
@@ -311,7 +310,7 @@ async fn show_scan_results(db: &Database) -> Result<()> {
 }
 
 async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
-    debug!("Starting database operation: {:?}", operation);
+    debug!("Starting database operation: {operation:?}");
     match operation {
         DbOperations::Init => {
             info!("Initializing database: {database_path:?}");
@@ -338,8 +337,7 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
             let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
 
             debug!(
-                "About to call get_audiobooks_in_library() with library_id: {}",
-                library_id
+                "About to call get_audiobooks_in_library() with library_id: {library_id}"
             );
             let audiobooks = db
                 .get_audiobooks_in_library(library_id)
@@ -372,7 +370,7 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
 
             debug!("About to call get_audiobook_count()");
             let count = get_audiobook_count(&db).await?;
-            debug!("get_audiobook_count() completed with count: {}", count);
+            debug!("get_audiobook_count() completed with count: {count}");
             info!("Total audiobooks: {count}");
         }
         DbOperations::Clean => {

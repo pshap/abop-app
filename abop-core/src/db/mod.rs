@@ -204,7 +204,11 @@ impl Database {
     /// - The database operation fails
     /// - A library with the same name already exists
     /// - The path is invalid or inaccessible
-    pub fn add_library<P: AsRef<Path> + Send + 'static>(&self, name: &str, path: P) -> Result<Library> {
+    pub fn add_library<P: AsRef<Path> + Send + 'static>(
+        &self,
+        name: &str,
+        path: P,
+    ) -> Result<Library> {
         self.libraries()
             .create(name, path)
             .map_err(std::convert::Into::into)
@@ -433,8 +437,7 @@ impl Database {
         let manager = migrations::MigrationManager::new();
         self.enhanced_conn
             .with_connection_mut(move |conn| {
-                manager.migrate_up(conn).map_err(std::convert::Into::into)
-            })
+                manager.migrate_up(conn)})
             .map_err(std::convert::Into::into)
     }
 
@@ -449,12 +452,11 @@ impl Database {
     /// - Connection lock acquisition fails
     pub fn migrate_down(&self, target_version: u32) -> Result<Vec<migrations::MigrationResult>> {
         let manager = migrations::MigrationManager::new();
-        self.enhanced_conn.with_connection_mut(move |conn| {
-            manager
-                .migrate_down(conn, target_version)
-                .map_err(std::convert::Into::into)
-        })
-        .map_err(std::convert::Into::into)
+        self.enhanced_conn
+            .with_connection_mut(move |conn| {
+                manager
+                    .migrate_down(conn, target_version)})
+            .map_err(std::convert::Into::into)
     }
 
     /// Get list of pending migrations
@@ -495,18 +497,11 @@ mod tests {
 
         // Verify pragmas are set on actual file
         let file_conn = rusqlite::Connection::open(temp_file.path())?;
-        let journal_mode: String = file_conn.query_row(
-            "PRAGMA journal_mode",
-            [],
-            |row| row.get(0),
-        )?;
+        let journal_mode: String =
+            file_conn.query_row("PRAGMA journal_mode", [], |row| row.get(0))?;
         assert_eq!(journal_mode, "wal");
 
-        let foreign_keys: i64 = file_conn.query_row(
-            "PRAGMA foreign_keys",
-            [],
-            |row| row.get(0),
-        )?;
+        let foreign_keys: i64 = file_conn.query_row("PRAGMA foreign_keys", [], |row| row.get(0))?;
         assert_eq!(foreign_keys, 1);
 
         Ok(())

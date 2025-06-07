@@ -101,7 +101,8 @@ impl RepositoryManager {
         F: Fn(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
     {
-        self.enhanced_connection.with_connection(move |conn| f(conn).map_err(DatabaseError::from))
+        self.enhanced_connection
+            .with_connection(move |conn| f(conn).map_err(DatabaseError::from))
     }
 
     /// Execute a transaction with enhanced connection features

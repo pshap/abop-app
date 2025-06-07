@@ -86,7 +86,7 @@ impl MigrationManager {
     pub fn pending_migrations(&self, conn: &Connection) -> DbResult<Vec<&Migration>> {
         log::debug!("Getting current database version");
         let current_version = self.current_version(conn)?;
-        log::debug!("Current database version: {}", current_version);
+        log::debug!("Current database version: {current_version}");
 
         let mut pending: Vec<&Migration> = self
             .migrations
