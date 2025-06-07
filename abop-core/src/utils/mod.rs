@@ -13,19 +13,6 @@ pub use size::*;
 pub use time::*;
 pub use timer::*;
 
-// Legacy re-exports for backward compatibility
-pub mod time_utils {
-    //! Time formatting utilities (legacy module)
-    //!
-    //! This module is kept for backward compatibility. Prefer using the top-level time module.
-    //!
-    //! # Examples
-    //! ```
-    //! use abop_core::utils::time::*;
-    //! ```
-    pub use super::time::*;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -3,8 +3,16 @@
 //! This module provides functionality to load themes from external files,
 //! enabling runtime theme customization and plugin-based extensions.
 
-use crate::design_tokens::{
-    ComponentTokens, DesignTokens, SemanticColors, SpacingTokens, TypographyTokens,
+use crate::styling::material::{
+    spacing::SpacingTokens,
+    typography::{MaterialTypography, TypeStyle, font_mapping::{MaterialFont, MaterialWeight}},
+    sizing::SizingTokens,
+    tokens::{semantic::SemanticColors, core::MaterialTokens},
+    colors::MaterialColors,
+    elevation::MaterialElevation,
+    shapes::MaterialShapes,
+    tokens::states::MaterialStates,
+    visual::VisualTokens,
 };
 use iced::Color;
 use serde::{Deserialize, Serialize};
@@ -114,19 +122,13 @@ impl SerializableSemanticColors {
     }
 }
 
-/// Serializable design tokens for file loading
+/// Simplified design tokens for file loading - now directly compatible with Material Design
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableDesignTokens {
     /// Spacing values
     pub spacing: SerializableSpacing,
-    /// Typography values
+    /// Typography values  
     pub typography: SerializableTypography,
-    /// Border radius values
-    pub radius: HashMap<String, f32>,
-    /// Elevation/shadow values
-    pub elevation: HashMap<String, f32>,
-    /// Component sizing values
-    pub sizing: HashMap<String, f32>,
 }
 
 /// Serializable spacing tokens
@@ -149,20 +151,36 @@ pub struct SerializableSpacing {
 /// Serializable typography tokens
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableTypography {
-    /// Caption font size
-    pub caption: u16,
-    /// Body font size
-    pub body: u16,
-    /// Large body font size
+    /// Label small font size
+    pub label_small: u16,
+    /// Label medium font size
+    pub label_medium: u16,
+    /// Label large font size
+    pub label_large: u16,
+    /// Body small font size
+    pub body_small: u16,
+    /// Body medium font size
+    pub body_medium: u16,
+    /// Body large font size
     pub body_large: u16,
-    /// Heading 3 font size
-    pub heading_3: u16,
-    /// Heading 2 font size
-    pub heading_2: u16,
-    /// Heading 1 font size
-    pub heading_1: u16,
-    /// Display font size
-    pub display: u16,
+    /// Title small font size
+    pub title_small: u16,
+    /// Title medium font size
+    pub title_medium: u16,
+    /// Title large font size
+    pub title_large: u16,
+    /// Headline small font size
+    pub headline_small: u16,
+    /// Headline medium font size
+    pub headline_medium: u16,
+    /// Headline large font size
+    pub headline_large: u16,
+    /// Display small font size
+    pub display_small: u16,
+    /// Display medium font size
+    pub display_medium: u16,
+    /// Display large font size
+    pub display_large: u16,
 }
 
 /// Component style override configuration
@@ -324,12 +342,15 @@ impl ThemeLoader {
         config.semantic_colors.to_semantic_colors()?;
 
         Ok(())
-    }
-    /// Convert serializable design tokens to runtime tokens
+    }    /// Convert serializable design tokens to runtime tokens
     fn convert_design_tokens(
         tokens: &SerializableDesignTokens,
-    ) -> Result<DesignTokens, ThemeLoadError> {
-        let spacing = SpacingTokens {
+    ) -> Result<MaterialTokens, ThemeLoadError> {
+        // Create Material tokens with simplified conversion
+        let mut material_tokens = MaterialTokens::default();
+        
+        // Update spacing tokens
+        material_tokens.spacing = SpacingTokens {
             xs: tokens.spacing.xs,
             sm: tokens.spacing.sm,
             md: tokens.spacing.md,
@@ -338,26 +359,117 @@ impl ThemeLoader {
             xxl: tokens.spacing.xxl,
         };
 
-        let typography = TypographyTokens {
-            caption: tokens.typography.caption,
-            body: tokens.typography.body,
-            body_large: tokens.typography.body_large,
-            heading_3: tokens.typography.heading_3,
-            heading_2: tokens.typography.heading_2,
-            heading_1: tokens.typography.heading_1,
-            display: tokens.typography.display,
+        // Update typography tokens with Material Design scale
+        material_tokens.typography = MaterialTypography {
+            display_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_large as f32,
+                64.0,
+                0.0,
+            ),
+            display_medium: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_medium as f32,
+                52.0,
+                0.0,
+            ),
+            display_small: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_small as f32,
+                44.0,
+                0.0,
+            ),
+            headline_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_large as f32,
+                40.0,
+                0.0,
+            ),
+            headline_medium: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_medium as f32,
+                36.0,
+                0.0,
+            ),
+            headline_small: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_small as f32,
+                32.0,
+                0.0,
+            ),
+            title_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Medium,
+                tokens.typography.title_large as f32,
+                28.0,
+                0.0,
+            ),
+            title_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.title_medium as f32,
+                24.0,
+                0.15,
+            ),
+            title_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.title_small as f32,
+                22.0,
+                0.1,
+            ),
+            label_large: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_large as f32,
+                20.0,
+                0.1,
+            ),
+            label_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_medium as f32,
+                16.0,
+                0.5,
+            ),
+            label_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_small as f32,
+                14.0,
+                0.1,
+            ),
+            body_large: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_large as f32,
+                24.0,
+                0.15,
+            ),
+            body_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_medium as f32,
+                20.0,
+                0.25,
+            ),
+            body_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_small as f32,
+                16.0,
+                0.4,
+            ),
         };
 
-        Ok(DesignTokens {
-            spacing,
-            typography,
-            radius: Default::default(),
-            elevation: Default::default(),
-            sizing: Default::default(),
-            semantic_colors: SemanticColors::dark(), // Will be overridden
-            components: ComponentTokens::new(),
-            ui: Default::default(), // Ensure ui is included
-        })
+        // Keep other Material Design defaults
+        Ok(material_tokens)
     }
 }
 
@@ -375,7 +487,7 @@ pub struct CustomThemeMode {
     /// Semantic colors
     pub semantic_colors: SemanticColors,
     /// Design tokens
-    pub design_tokens: DesignTokens,
+    pub design_tokens: MaterialTokens,
 }
 
 impl CustomThemeMode {
@@ -399,8 +511,200 @@ impl CustomThemeMode {
 
     /// Get design tokens
     #[must_use]
-    pub const fn design_tokens(&self) -> &DesignTokens {
+    pub const fn design_tokens(&self) -> &MaterialTokens {
         &self.design_tokens
+    }
+}
+
+/// Serializable theme configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializableTheme {
+    /// Theme name
+    pub name: String,
+    /// Theme description
+    pub description: String,
+    /// Material Design tokens
+    pub material_tokens: SerializableMaterialTokens,
+    /// Component style overrides
+    pub component_overrides: Vec<ComponentOverride>,
+}
+
+/// Serializable Material Design tokens
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializableMaterialTokens {
+    /// Spacing values
+    pub spacing: SerializableSpacing,
+    /// Typography values
+    pub typography: SerializableTypography,
+    /// Border radius values
+    pub radius: HashMap<String, f32>,
+    /// Elevation/shadow values
+    pub elevation: HashMap<String, f32>,
+    /// Component sizing values
+    pub sizing: HashMap<String, f32>,
+}
+
+impl SerializableTheme {
+    /// Convert serializable theme to runtime theme
+    pub fn to_theme(&self) -> Result<Theme, ThemeLoadError> {
+        Ok(Theme {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            material_tokens: Self::convert_material_tokens(&self.material_tokens)?,
+            component_overrides: self.component_overrides.clone(),
+        })
+    }
+
+    /// Convert serializable tokens to runtime tokens
+    fn convert_material_tokens(
+        tokens: &SerializableMaterialTokens,
+    ) -> Result<MaterialTokens, ThemeLoadError> {
+        let mut material_tokens = MaterialTokens::default();
+
+        // Update spacing tokens
+        material_tokens.spacing = SpacingTokens {
+            xs: tokens.spacing.xs,
+            sm: tokens.spacing.sm,
+            md: tokens.spacing.md,
+            lg: tokens.spacing.lg,
+            xl: tokens.spacing.xl,
+            xxl: tokens.spacing.xxl,
+        };
+
+        // Update typography tokens
+        material_tokens.typography = MaterialTypography {
+            display_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_large as f32,
+                64.0, // line height
+                0.0,  // letter spacing
+            ),
+            display_medium: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_medium as f32,
+                52.0,
+                0.0,
+            ),
+            display_small: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.display_small as f32,
+                44.0,
+                0.0,
+            ),
+            headline_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_large as f32,
+                40.0,
+                0.0,
+            ),
+            headline_medium: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_medium as f32,
+                36.0,
+                0.0,
+            ),
+            headline_small: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Regular,
+                tokens.typography.headline_small as f32,
+                32.0,
+                0.0,
+            ),
+            title_large: TypeStyle::new(
+                MaterialFont::Brand,
+                MaterialWeight::Medium,
+                tokens.typography.title_large as f32,
+                28.0,
+                0.0,
+            ),
+            title_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.title_medium as f32,
+                24.0,
+                0.15,
+            ),
+            title_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.title_small as f32,
+                22.0,
+                0.1,
+            ),
+            label_large: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_large as f32,
+                20.0,
+                0.1,
+            ),
+            label_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_medium as f32,
+                16.0,
+                0.5,
+            ),
+            label_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Medium,
+                tokens.typography.label_small as f32,
+                14.0,
+                0.1,
+            ),
+            body_large: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_large as f32,
+                24.0,
+                0.15,
+            ),
+            body_medium: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_medium as f32,
+                20.0,
+                0.25,
+            ),
+            body_small: TypeStyle::new(
+                MaterialFont::Plain,
+                MaterialWeight::Regular,
+                tokens.typography.body_small as f32,
+                16.0,
+                0.4,
+            ),
+        };
+
+        // Update other tokens as needed
+        // TODO: Add conversion for radius, elevation, sizing
+
+        Ok(material_tokens)
+    }
+}
+
+/// Runtime theme configuration
+#[derive(Debug, Clone)]
+pub struct Theme {
+    /// Theme name
+    pub name: String,
+    /// Theme description
+    pub description: String,
+    /// Material Design tokens
+    pub material_tokens: MaterialTokens,
+    /// Component style overrides
+    pub component_overrides: Vec<ComponentOverride>,
+}
+
+impl Theme {
+    /// Get the Material Design tokens
+    #[must_use]
+    pub const fn material_tokens(&self) -> &MaterialTokens {
+        &self.material_tokens
     }
 }
 
@@ -452,13 +756,21 @@ mod tests {
                     xxl: 48.0,
                 },
                 typography: SerializableTypography {
-                    caption: 12,
-                    body: 14,
-                    body_large: 16,
-                    heading_3: 18,
-                    heading_2: 20,
-                    heading_1: 24,
-                    display: 32,
+                    label_small: 12,
+                    label_medium: 14,
+                    label_large: 16,
+                    body_small: 14,
+                    body_medium: 16,
+                    body_large: 18,
+                    title_small: 18,
+                    title_medium: 20,
+                    title_large: 24,
+                    headline_small: 20,
+                    headline_medium: 22,
+                    headline_large: 26,
+                    display_small: 24,
+                    display_medium: 26,
+                    display_large: 32,
                 },
                 radius: HashMap::new(),
                 elevation: HashMap::new(),
@@ -468,5 +780,50 @@ mod tests {
         };
 
         assert!(ThemeLoader::validate_theme(&config).is_ok());
+    }
+
+    #[test]
+    fn test_theme_serialization() {
+        let theme = SerializableTheme {
+            name: "Test Theme".to_string(),
+            description: "A test theme".to_string(),
+            material_tokens: SerializableMaterialTokens {
+                spacing: SerializableSpacing {
+                    xs: 4.0,
+                    sm: 8.0,
+                    md: 16.0,
+                    lg: 24.0,
+                    xl: 32.0,
+                    xxl: 48.0,
+                },
+                typography: SerializableTypography {
+                    label_small: 12,
+                    label_medium: 14,
+                    label_large: 16,
+                    body_small: 14,
+                    body_medium: 16,
+                    body_large: 18,
+                    title_small: 18,
+                    title_medium: 20,
+                    title_large: 24,
+                    headline_small: 20,
+                    headline_medium: 22,
+                    headline_large: 26,
+                    display_small: 24,
+                    display_medium: 26,
+                    display_large: 32,
+                },
+                radius: HashMap::new(),
+                elevation: HashMap::new(),
+                sizing: HashMap::new(),
+            },
+            component_overrides: Vec::new(),
+        };
+
+        let runtime_theme = theme.to_theme().unwrap();
+        assert_eq!(runtime_theme.name, "Test Theme");
+        assert_eq!(runtime_theme.description, "A test theme");
+        assert_eq!(runtime_theme.material_tokens.spacing.xs, 4.0);
+        assert_eq!(runtime_theme.material_tokens.spacing.xxl, 48.0);
     }
 }
