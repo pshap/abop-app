@@ -15,7 +15,10 @@ use super::{
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
-use crate::audio::AudioBuffer;
+use crate::audio::{AudioBuffer, SampleFormat};
+
+#[cfg(test)]
+use super::casting_utils::sample_calculations::safe_duration_to_samples;
 use log::trace;
 
 /// Audio resampling error type
