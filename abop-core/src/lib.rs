@@ -21,6 +21,7 @@ pub mod scanner;
 pub mod services;
 pub mod utils;
 pub mod validation;
+pub mod test_utils;
 
 // Test constants module (only available in test builds)
 #[cfg(test)]
