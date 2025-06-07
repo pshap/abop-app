@@ -57,9 +57,6 @@ pub mod utils;
 /// - `toolbar` - Toolbar components with action buttons
 pub mod components;
 
-// Design token system
-pub mod design_tokens;
-
 // Professional theme system
 pub mod theme;
 

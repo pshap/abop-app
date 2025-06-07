@@ -17,7 +17,7 @@ use iced::widget::text::LineHeight;
 use iced::widget::{Container, container, text};
 use iced::{Background, Border, Color, Element, Length, Padding};
 
-use crate::design_tokens::spacing;
+use crate::styling::material::spacing;
 
 /// Material Design 3 Data Table Configuration
 #[derive(Debug, Clone)]
@@ -485,7 +485,7 @@ impl MaterialList {
     ) -> Container<'a, T> {
         container(content)
             .width(Length::Fill)
-            .padding(spacing::MD)
+            .padding(tokens.spacing.md)
             .style(Self::list_item(tokens, is_selected, false))
     }
 }

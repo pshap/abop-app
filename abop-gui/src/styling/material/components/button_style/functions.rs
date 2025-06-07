@@ -3,12 +3,24 @@
 //! This module provides the main API functions that other components use
 //! to create button styles, handle sizing, and generate icons.
 
-use iced::{Background, Border, Color, Length, Padding, Shadow, Theme, widget::button};
+use iced::{
+    widget::{button, container, text},
+    Background, Border, Color, Element, Length, Padding, Shadow, Theme,
+};
 use iced_font_awesome::fa_icon_solid;
 
 use super::strategy::ButtonState;
+use crate::styling::material::{
+    MaterialTokens,
+    components::button_style::{
+        constants::{
+            sizing::{self, SMALL_HEIGHT, MEDIUM_HEIGHT, LARGE_HEIGHT, ICON_SMALL, ICON_MEDIUM, ICON_LARGE, FAB_SMALL, FAB_MEDIUM, FAB_LARGE},
+            padding,
+        },
+    },
+};
+
 use super::variants::{ButtonSizeVariant, ButtonStyleVariant};
-use crate::styling::material::MaterialTokens;
 
 /// Internal styling structure for button state management
 #[derive(Debug, Clone)]
@@ -158,14 +170,11 @@ pub fn get_button_styling(variant: ButtonStyleVariant, tokens: &MaterialTokens) 
     }
 }
 
-/// Gets size-specific properties for button variants
-///
-/// Centralizes the size logic that was previously in `MaterialButton`'s
-/// `get_size_properties` method.
+/// Get button size properties based on variant and size
 ///
 /// # Arguments
-/// * `variant` - The button variant
-/// * `size` - The button size
+/// * `variant` - Button style variant
+/// * `size` - Button size variant
 /// * `tokens` - Material Design tokens for sizing
 ///
 /// # Returns
@@ -176,9 +185,6 @@ pub fn get_button_size_properties(
     size: ButtonSizeVariant,
     tokens: &MaterialTokens,
 ) -> (Length, Length, Padding) {
-    use crate::design_tokens::constants::sizing;
-    use crate::design_tokens::constants::spacing;
-
     match (variant, size) {
         // Standard buttons with minimum width to avoid circular appearance
         (
@@ -190,8 +196,8 @@ pub fn get_button_size_properties(
             ButtonSizeVariant::Small,
         ) => (
             Length::Fixed(88.0), // Minimum width for proper button appearance
-            Length::Fixed(sizing::BUTTON_HEIGHT_SM),
-            Padding::from([tokens.spacing().md, tokens.spacing().xs]),
+            Length::Fixed(SMALL_HEIGHT),
+            Padding::from([tokens.spacing.md, tokens.spacing.xs]),
         ),
         (
             ButtonStyleVariant::Filled
@@ -202,8 +208,8 @@ pub fn get_button_size_properties(
             ButtonSizeVariant::Medium,
         ) => (
             Length::Fixed(100.0), // Slightly larger for medium size
-            Length::Fixed(sizing::BUTTON_HEIGHT),
-            Padding::from([tokens.spacing().lg, tokens.spacing().md]),
+            Length::Fixed(MEDIUM_HEIGHT),
+            Padding::from([tokens.spacing.lg, tokens.spacing.md]),
         ),
         (
             ButtonStyleVariant::Filled
@@ -214,31 +220,39 @@ pub fn get_button_size_properties(
             ButtonSizeVariant::Large,
         ) => (
             Length::Fixed(120.0), // Larger minimum width for large buttons
-            Length::Fixed(sizing::BUTTON_HEIGHT_LG),
-            Padding::from([tokens.spacing().xl, tokens.spacing().md]),
+            Length::Fixed(LARGE_HEIGHT),
+            Padding::from([tokens.spacing.xl, tokens.spacing.md]),
         ),
         // Icon buttons and FAB buttons
-        (ButtonStyleVariant::Icon | ButtonStyleVariant::Fab, ButtonSizeVariant::Small) => (
-            Length::Fixed(sizing::ICON_BUTTON_SM),
-            Length::Fixed(sizing::ICON_BUTTON_SM),
-            Padding::new(spacing::SM),
+        (ButtonStyleVariant::Icon, ButtonSizeVariant::Small) => (
+            Length::Fixed(ICON_SMALL),
+            Length::Fixed(ICON_SMALL),
+            Padding::from([padding::ICON, padding::ICON]),
         ),
         (ButtonStyleVariant::Icon, ButtonSizeVariant::Medium) => (
-            Length::Fixed(sizing::ICON_BUTTON_MD),
-            Length::Fixed(sizing::ICON_BUTTON_MD),
-            Padding::new(spacing::SM + 4.0),
+            Length::Fixed(ICON_MEDIUM),
+            Length::Fixed(ICON_MEDIUM),
+            Padding::from([padding::ICON, padding::ICON]),
         ),
-        (ButtonStyleVariant::Icon, ButtonSizeVariant::Large)
-        | (ButtonStyleVariant::Fab, ButtonSizeVariant::Medium) => (
-            Length::Fixed(sizing::ICON_BUTTON_LG),
-            Length::Fixed(sizing::ICON_BUTTON_LG),
-            Padding::new(spacing::MD),
+        (ButtonStyleVariant::Icon, ButtonSizeVariant::Large) => (
+            Length::Fixed(ICON_LARGE),
+            Length::Fixed(ICON_LARGE),
+            Padding::from([padding::ICON, padding::ICON]),
         ),
-        // FAB Large size (unique)
+        (ButtonStyleVariant::Fab, ButtonSizeVariant::Small) => (
+            Length::Fixed(FAB_SMALL),
+            Length::Fixed(FAB_SMALL),
+            Padding::from([padding::FAB, padding::FAB]),
+        ),
+        (ButtonStyleVariant::Fab, ButtonSizeVariant::Medium) => (
+            Length::Fixed(FAB_MEDIUM),
+            Length::Fixed(FAB_MEDIUM),
+            Padding::from([padding::FAB, padding::FAB]),
+        ),
         (ButtonStyleVariant::Fab, ButtonSizeVariant::Large) => (
-            Length::Fixed(96.0),
-            Length::Fixed(96.0),
-            Padding::new(spacing::XL - 2.0),
+            Length::Fixed(FAB_LARGE),
+            Length::Fixed(FAB_LARGE),
+            Padding::from([padding::FAB, padding::FAB]),
         ),
     }
 }
@@ -256,14 +270,12 @@ pub fn get_button_size_properties(
 /// The appropriate icon size in pixels as f32
 #[must_use]
 pub const fn get_icon_size_for_button(variant: ButtonStyleVariant, size: ButtonSizeVariant) -> f32 {
-    use crate::design_tokens::constants::sizing;
-
     match variant {
         // Icon buttons and FABs use larger icons as they are icon-only
         ButtonStyleVariant::Icon | ButtonStyleVariant::Fab => match size {
-            ButtonSizeVariant::Small => sizing::ICON_MD, // 20px for 40px container
-            ButtonSizeVariant::Medium => sizing::ICON_LG, // 24px for 48px/56px container
-            ButtonSizeVariant::Large => 28.0,            // 28px for 96px FAB large
+            ButtonSizeVariant::Small => ICON_MEDIUM, // 20px for 40px container
+            ButtonSizeVariant::Medium => ICON_LARGE, // 24px for 48px/56px container
+            ButtonSizeVariant::Large => 28.0,        // 28px for 96px FAB large
         },
         // Regular buttons with icons use smaller icons to balance with text
         ButtonStyleVariant::Filled
@@ -271,9 +283,9 @@ pub const fn get_icon_size_for_button(variant: ButtonStyleVariant, size: ButtonS
         | ButtonStyleVariant::Outlined
         | ButtonStyleVariant::Text
         | ButtonStyleVariant::Elevated => match size {
-            ButtonSizeVariant::Small => sizing::ICON_SM, // 16px for 32px height
-            ButtonSizeVariant::Medium => 18.0,           // 18px for 40px height (MD3 standard)
-            ButtonSizeVariant::Large => sizing::ICON_MD, // 20px for 48px height
+            ButtonSizeVariant::Small => ICON_SMALL, // 16px for 32px height
+            ButtonSizeVariant::Medium => 18.0,      // 18px for 40px height (MD3 standard)
+            ButtonSizeVariant::Large => ICON_MEDIUM, // 20px for 48px height
         },
     }
 }
