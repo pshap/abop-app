@@ -289,19 +289,26 @@ async fn show_scan_results(db: &Database) -> Result<()> {
 }
 
 async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
+    debug!("Starting database operation: {:?}", operation);
     match operation {
         DbOperations::Init => {
             info!("Initializing database: {database_path:?}");
+            debug!("About to call Database::open()");
             let _db = Database::open(&database_path).context("Failed to initialize database")?;
+            debug!("Database::open() completed successfully");
             info!("✓ Database initialized successfully");
         }
         DbOperations::List => {
             info!("Listing audiobooks in: {database_path:?}");
+            debug!("About to call Database::open() for list operation");
             let db = Database::open(&database_path).context("Failed to open database")?;
+            debug!("Database::open() completed for list operation");
 
+            debug!("About to call get_audiobooks_in_library()");
             let audiobooks = db
                 .get_audiobooks_in_library("1")
                 .context("Failed to get audiobooks")?;
+            debug!("get_audiobooks_in_library() completed, found {} audiobooks", audiobooks.len());
 
             if audiobooks.is_empty() {
                 info!("No audiobooks found in database");
