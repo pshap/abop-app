@@ -186,24 +186,35 @@ impl SilenceDetector {
             safe_duration_to_samples(self.config.min_duration.as_secs_f32(), buffer.sample_rate)?;
         let mut segments = Vec::new();
         let mut in_silence = false;
-        let mut silence_start = 0;
+        let mut silence_start_frame = 0;
 
-        for (i, &sample) in buffer.data.iter().enumerate() {
-            let is_silent = sample.abs() <= threshold;
+        let channels = buffer.channels as usize;
+        let num_frames = buffer.data.len() / channels;
 
-            if is_silent && !in_silence {
+        for frame in 0..num_frames {
+            // Check if all channels in this frame are silent
+            let mut frame_is_silent = true;
+            for channel in 0..channels {
+                let sample_index = frame * channels + channel;
+                if sample_index < buffer.data.len() && buffer.data[sample_index].abs() > threshold {
+                    frame_is_silent = false;
+                    break;
+                }
+            }
+
+            if frame_is_silent && !in_silence {
                 // Start of silence
                 in_silence = true;
-                silence_start = i;
-            } else if !is_silent && in_silence {
+                silence_start_frame = frame;
+            } else if !frame_is_silent && in_silence {
                 // End of silence
-                let silence_length = i - silence_start;
-                if silence_length >= min_samples {
+                let silence_length_frames = frame - silence_start_frame;
+                if silence_length_frames >= min_samples {
                     let duration_secs =
-                        safe_samples_to_duration(silence_length, buffer.sample_rate)?;
+                        safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
                     segments.push(SilenceSegment {
-                        start: silence_start,
-                        end: i,
+                        start: silence_start_frame * channels,
+                        end: frame * channels,
                         duration_secs,
                     });
                 }
@@ -213,11 +224,11 @@ impl SilenceDetector {
 
         // Handle silence at the end of the buffer
         if in_silence {
-            let silence_length = buffer.data.len() - silence_start;
-            if silence_length >= min_samples {
-                let duration_secs = safe_samples_to_duration(silence_length, buffer.sample_rate)?;
+            let silence_length_frames = num_frames - silence_start_frame;
+            if silence_length_frames >= min_samples {
+                let duration_secs = safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
                 segments.push(SilenceSegment {
-                    start: silence_start,
+                    start: silence_start_frame * channels,
                     end: buffer.data.len(),
                     duration_secs,
                 });
@@ -493,17 +504,18 @@ mod tests {
             "Should detect silence segment in stereo buffer"
         );
 
-        // Check that we found the silence segment (relaxed timing constraints for stereo)
+        // Check that we found the silence segment
         let silence_segment = segments.first().unwrap();
         let start_secs =
-            safe_samples_to_duration(silence_segment.start, buffer.sample_rate).unwrap_or(0.0);
+            safe_samples_to_duration(silence_segment.start / buffer.channels as usize, buffer.sample_rate).unwrap_or(0.0);
+        
         assert!(
             (start_secs - 0.3).abs() < 0.02,
-            "Silence start time should be approximately 0.3s"
+            "Silence start time should be approximately 0.3s, but was {:.3}s", start_secs
         );
         assert!(
             (silence_segment.duration_secs - 0.2).abs() < 0.02,
-            "Silence duration should be approximately 0.2s"
+            "Silence duration should be approximately 0.2s, but was {:.3}s", silence_segment.duration_secs
         );
     }
 
