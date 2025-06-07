@@ -10,7 +10,8 @@ use super::{
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
-use crate::audio::AudioBuffer;
+use crate::audio::{AudioBuffer, SampleFormat};
+use crate::test_utils::audio::{create_test_buffer, create_test_buffer_with_silence};
 
 /// Normalization error type
 #[derive(Debug, thiserror::Error)]
@@ -283,41 +284,8 @@ impl Default for AudioNormalizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio::SampleFormat;
+    use crate::test_utils::audio::{create_test_buffer, create_test_buffer_with_silence};
 
-    fn create_test_buffer(
-        sample_rate: u32,
-        channels: u16,
-        duration_secs: f32,
-        amplitude: f32,
-    ) -> AudioBuffer<f32> {
-        let num_samples = (f64::from(sample_rate) * f64::from(duration_secs))
-            .round()
-            .clamp(0.0, usize::MAX as f64) as usize;
-        let mut data = Vec::with_capacity(num_samples * usize::from(channels));
-
-        // Generate a simple sine wave test signal with specified amplitude
-        for i in 0..num_samples {
-            let t = if sample_rate > 0 {
-                i as f64 / f64::from(sample_rate)
-            } else {
-                0.0
-            } as f32;
-            let sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * amplitude;
-
-            // Duplicate for each channel
-            for _ in 0..channels {
-                data.push(sample);
-            }
-        }
-
-        AudioBuffer {
-            data,
-            format: SampleFormat::F32,
-            sample_rate,
-            channels,
-        }
-    }
     #[test]
     fn test_normalizer_creation() {
         let config = NormalizerConfig {
@@ -330,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_peak_normalization() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1, 0.1); // Quiet signal
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.1)); // Quiet signal
         let config = NormalizerConfig {
             algorithm: super::super::config::NormalizationAlgorithm::Peak,
             target_loudness: -6.0, // Target -6dB
@@ -353,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_rms_normalization() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1, 0.1); // Quiet signal
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.1)); // Quiet signal
         let config = NormalizerConfig {
             algorithm: super::super::config::NormalizationAlgorithm::Rms,
             target_loudness: -12.0,
@@ -370,6 +338,7 @@ mod tests {
         let max_sample = buffer.data.iter().fold(0.0f32, |max, &s| max.max(s.abs()));
         assert!(max_sample > 0.1); // Should be louder than original
     }
+
     #[test]
     fn test_empty_buffer_unchanged() {
         let mut buffer = AudioBuffer {
@@ -391,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_calculate_peak_db() {
-        let buffer = create_test_buffer(44100, 1, 0.1, 0.5);
+        let buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
         let normalizer = AudioNormalizer::default();
 
         let peak_db = normalizer.calculate_peak_db(&buffer);
@@ -402,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_calculate_rms_db() {
-        let buffer = create_test_buffer(44100, 1, 0.1, 0.5);
+        let buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
         let normalizer = AudioNormalizer::default();
 
         let rms_db = normalizer.calculate_rms_db(&buffer);
@@ -416,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_limiter() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1, 1.5); // Clipped signal
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(1.5)); // Clipped signal
         let normalizer = AudioNormalizer::default();
 
         let result = normalizer.apply_limiter(&mut buffer, 0.9);

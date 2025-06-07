@@ -191,5 +191,5 @@ mod channel_mixer;
 mod normalizer;
 mod output;
 mod resampler;
-mod silence_detector;
+pub mod silence_detector;
 pub mod validation;

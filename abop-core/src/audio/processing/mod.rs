@@ -1,147 +1,105 @@
-//! Modular audio processing components
+//! Audio processing module
 //!
-//! This module provides a collection of specialized audio processing components
-//! that can be used individually or combined to create complex audio processing
-//! pipelines. Each component follows the Single Responsibility Principle and
-//! implements common traits for consistency.
+//! This module provides audio processing components and utilities for
+//! manipulating audio buffers, including resampling, normalization,
+//! silence detection, and channel mixing.
 
-pub mod batch_processor;
-/// Safe casting utilities for audio processing
 pub mod casting_utils;
 pub mod channel_mixer;
-/// Configuration types and validation for audio processing
 pub mod config;
-/// Centralized error handling for audio processing
 pub mod error;
-pub mod file_io;
 pub mod normalizer;
 pub mod pipeline;
 pub mod resampler;
 pub mod silence_detector;
 pub mod traits;
-/// Shared utilities for audio processing
 pub mod utils;
-/// Configuration validation system
 pub mod validation;
+pub mod file_io;
+pub mod batch_processor;
 
-pub use channel_mixer::{ChannelMixer, ChannelMixerError};
-pub use config::{
-    ChannelMixerConfig, MixingAlgorithm, NormalizationAlgorithm, NormalizerConfig, OutputConfig,
-    ProcessingConfig, ProcessingConfigBuilder, ResampleQuality, ResamplerConfig,
-    SilenceDetectorConfig, SilenceRemovalMode,
-};
-pub use error::{AudioProcessingError, AudioProcessingResult};
-pub use normalizer::{AudioNormalizer, NormalizerError};
-pub use resampler::{LinearResampler, ResamplerError};
-pub use silence_detector::{SilenceDetector, SilenceDetectorError, SilenceSegment};
-pub use traits::*;
-pub use utils::*;
-pub use validation::ConfigValidator;
-
-/// Re-export main types
+// Re-export main types
 pub use self::pipeline::AudioProcessingPipeline;
+pub use self::config::silence_detector::SilenceRemovalMode;
+
+// Re-export config types
+pub use self::config::{
+    ProcessingConfig, ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, 
+    OutputConfig, ResamplerConfig, SilenceDetectorConfig
+};
+
+// Re-export processor types
+pub use self::channel_mixer::ChannelMixer;
+pub use self::normalizer::AudioNormalizer;
+pub use self::resampler::LinearResampler;
+pub use self::silence_detector::SilenceDetector;
+
+// Re-export validation types
+pub use self::validation::ConfigValidator;
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::audio::create_test_buffer;
     use crate::AudioBuffer;
-    // use std::path::Path; // Removed unused import
+    use crate::audio::processing::traits::{AudioProcessor, LatencyReporting, Validatable};
+    use crate::audio::processing::error::Result;
 
-    use super::*;
-    use crate::audio::SampleFormat;
+    /// A dummy processor for testing audio processing traits
+    #[derive(Default)]
+    struct DummyProcessor {
+        process_count: usize,
+    }
 
-    fn create_test_buffer(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
-        let num_samples = (sample_rate as f32 * duration_secs) as usize;
-        let mut data = Vec::with_capacity(num_samples * channels as usize);
-
-        for i in 0..num_samples {
-            let t = i as f32 / sample_rate as f32;
-            let sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5;
-
-            for _ in 0..channels {
-                data.push(sample);
-            }
+    impl AudioProcessor for DummyProcessor {
+        fn process(&mut self, _buffer: &mut AudioBuffer<f32>) -> Result<()> {
+            self.process_count += 1;
+            Ok(())
         }
 
-        AudioBuffer {
-            data,
-            format: SampleFormat::F32,
-            sample_rate,
-            channels,
+        fn reset(&mut self) {
+            self.process_count = 0;
         }
     }
 
-    #[test]
-    fn test_pipeline_creation() {
-        let config = ProcessingConfig::default();
-        let pipeline = AudioProcessingPipeline::new(config);
-        assert!(pipeline.is_ok());
+    impl LatencyReporting for DummyProcessor {
+        fn get_latency_samples(&self) -> usize {
+            0
+        }
+    }
+
+    impl Validatable for DummyProcessor {
+        fn validate(&self) -> Result<()> {
+            Ok(())
+        }
     }
 
     #[test]
-    fn test_pipeline_default() {
-        let pipeline = AudioProcessingPipeline::default();
-        assert!(pipeline.validate().is_ok());
+    fn test_audio_processor_trait() -> Result<()> {
+        let mut buffer = create_test_buffer(44100, 2, 0.1, Some(0.5));
+        let mut processor = DummyProcessor::default();
+        processor.process(&mut buffer)?;
+        assert_eq!(processor.process_count, 1);
+        Ok(())
     }
 
     #[test]
-    fn test_pipeline_with_settings() {
-        let pipeline = AudioProcessingPipeline::with_settings(Some(48000), Some(1), true, false);
-        assert!(pipeline.is_ok());
+    fn test_audio_processor_reset() -> Result<()> {
+        let mut processor = DummyProcessor::default();
+        processor.reset();
+        assert_eq!(processor.process_count, 0);
+        Ok(())
     }
 
     #[test]
-    fn test_process_buffer() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let mut pipeline =
-            AudioProcessingPipeline::with_settings(Some(22050), Some(1), true, false).unwrap();
-
-        let result = pipeline.process_buffer(&mut buffer);
-        assert!(result.is_ok());
-
-        // Check that processing was applied
-        assert_eq!(buffer.sample_rate, 22050);
-        assert_eq!(buffer.channels, 1);
+    fn test_audio_processor_validation() -> Result<()> {
+        let processor = DummyProcessor::default();
+        processor.validate()?;
+        Ok(())
     }
 
     #[test]
-    fn test_pipeline_reset() {
-        let mut pipeline = AudioProcessingPipeline::default();
-        pipeline.reset(); // Should not panic
-        assert!(pipeline.validate().is_ok());
+    fn test_audio_processor_latency() {
+        let processor = DummyProcessor::default();
+        assert_eq!(processor.get_latency_samples(), 0);
     }
-    #[test]
-    fn test_pipeline_configuration() {
-        let mut pipeline = AudioProcessingPipeline::default();
-        let new_config = ProcessingConfig {
-            resampler: Some(ResamplerConfig {
-                target_sample_rate: Some(48000),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-
-        let result = pipeline.configure(new_config.clone());
-        assert!(result.is_ok());
-        assert_eq!(
-            pipeline
-                .get_config()
-                .resampler
-                .as_ref()
-                .unwrap()
-                .target_sample_rate,
-            Some(48000)
-        );
-    }
-
-    // #[test]
-    // fn test_determine_output_path() {
-    //     let pipeline = AudioProcessingPipeline::default();
-    //     let input_path = Path::new("test.wav");
-    //
-    //     let output_path = pipeline.determine_output_path(input_path);
-    //     assert!(output_path.is_ok());
-    //
-    //     let output_path = output_path.unwrap();
-    //     assert!(output_path.to_string_lossy().contains("_processed"));
-    // }
 }

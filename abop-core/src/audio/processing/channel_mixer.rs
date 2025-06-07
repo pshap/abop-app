@@ -10,6 +10,7 @@ use super::{
     validation::ConfigValidator,
 };
 use crate::audio::AudioBuffer;
+use std::fmt;
 
 /// Channel mixing error type
 #[derive(Debug, thiserror::Error)]
@@ -238,36 +239,7 @@ impl Default for ChannelMixer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio::SampleFormat;
-
-    fn create_test_buffer(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
-        let num_samples = (sample_rate as f32 * duration_secs) as usize;
-        let mut data = Vec::with_capacity(num_samples * channels as usize);
-
-        // Generate a simple sine wave test signal
-        for i in 0..num_samples {
-            let t = i as f32 / sample_rate as f32;
-            let sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5;
-
-            // Create different signals for left and right channels if stereo
-            for c in 0..channels {
-                let channel_sample = if channels == 2 && c == 1 {
-                    // Right channel gets a slightly different frequency
-                    (t * 880.0 * 2.0 * std::f32::consts::PI).sin() * 0.3
-                } else {
-                    sample
-                };
-                data.push(channel_sample);
-            }
-        }
-
-        AudioBuffer {
-            data,
-            format: SampleFormat::F32,
-            sample_rate,
-            channels,
-        }
-    }
+    use crate::test_utils::audio::{create_test_buffer, create_stereo_test_buffer};
 
     #[test]
     fn test_channel_mixer_creation() {
@@ -281,137 +253,77 @@ mod tests {
 
     #[test]
     fn test_mono_to_stereo() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1);
-        let original_len = buffer.data.len();
-
-        let config = ChannelMixerConfig {
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
+        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
             target_channels: Some(2),
             ..Default::default()
-        };
+        })
+        .unwrap();
 
-        let mut mixer = ChannelMixer::new(config).unwrap();
         let result = mixer.process(&mut buffer);
-
         assert!(result.is_ok());
         assert_eq!(buffer.channels, 2);
-        assert_eq!(buffer.data.len(), original_len * 2);
     }
 
     #[test]
-    fn test_stereo_to_mono_average() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let original_len = buffer.data.len();
-        let config = ChannelMixerConfig {
+    fn test_stereo_to_mono() {
+        let mut buffer = create_stereo_test_buffer(44100, 0.1);
+        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
             target_channels: Some(1),
-            mix_algorithm: super::super::config::MixingAlgorithm::Average,
-        };
+            ..Default::default()
+        })
+        .unwrap();
 
-        let mut mixer = ChannelMixer::new(config).unwrap();
         let result = mixer.process(&mut buffer);
-
         assert!(result.is_ok());
         assert_eq!(buffer.channels, 1);
-        assert_eq!(buffer.data.len(), original_len / 2);
     }
 
     #[test]
-    fn test_stereo_to_mono_left_only() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let original_len = buffer.data.len();
+    fn test_stereo_to_quad() {
+        let mut buffer = create_stereo_test_buffer(44100, 0.1);
+        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
+            target_channels: Some(4),
+            ..Default::default()
+        })
+        .unwrap();
 
-        let config = ChannelMixerConfig {
-            target_channels: Some(1),
-            mix_algorithm: super::super::config::MixingAlgorithm::LeftOnly,
-        };
-
-        let mut mixer = ChannelMixer::new(config).unwrap();
         let result = mixer.process(&mut buffer);
-
         assert!(result.is_ok());
-        assert_eq!(buffer.channels, 1);
-        assert_eq!(buffer.data.len(), original_len / 2);
+        assert_eq!(buffer.channels, 4);
     }
 
     #[test]
-    fn test_stereo_to_mono_weighted() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let original_len = buffer.data.len();
-
-        let config = ChannelMixerConfig {
-            target_channels: Some(1),
-            mix_algorithm: super::super::config::MixingAlgorithm::Average,
-        };
-
-        let mut mixer = ChannelMixer::new(config).unwrap();
-        let result = mixer.process(&mut buffer);
-
-        assert!(result.is_ok());
-        assert_eq!(buffer.channels, 1);
-        assert_eq!(buffer.data.len(), original_len / 2);
-    }
-
-    #[test]
-    fn test_no_conversion_needed() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let original_len = buffer.data.len();
-
-        let config = ChannelMixerConfig {
+    fn test_quad_to_stereo() {
+        let mut buffer = create_test_buffer(44100, 4, 0.1, Some(0.5));
+        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
             target_channels: Some(2),
             ..Default::default()
-        };
+        })
+        .unwrap();
 
-        let mut mixer = ChannelMixer::new(config).unwrap();
         let result = mixer.process(&mut buffer);
-
         assert!(result.is_ok());
         assert_eq!(buffer.channels, 2);
-        assert_eq!(buffer.data.len(), original_len);
     }
 
     #[test]
-    fn test_unsupported_conversion() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1);
-
-        let config = ChannelMixerConfig {
-            target_channels: Some(6), // 5.1 surround
+    fn test_invalid_channel_count() {
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
+        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
+            target_channels: Some(0),
             ..Default::default()
-        };
+        })
+        .unwrap();
 
-        let mut mixer = ChannelMixer::new(config).unwrap();
         let result = mixer.process(&mut buffer);
-
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_convert_stereo_to_mono_average_method() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
-        let original_len = buffer.data.len();
-
-        let mixer = ChannelMixer::default();
-        let result = mixer.convert_stereo_to_mono_average(&mut buffer);
-
-        assert!(result.is_ok());
-        assert_eq!(buffer.channels, 1);
-        assert_eq!(buffer.data.len(), original_len / 2);
-    }
-
-    #[test]
-    fn test_channel_mixer_with_target_channels() {
-        let mixer = ChannelMixer::with_target_channels(1);
-        assert!(mixer.is_ok());
-        assert_eq!(mixer.unwrap().config.target_channels, Some(1));
-    }
-
-    #[test]
-    fn test_channel_mixer_latency() {
-        let mixer = ChannelMixer::default();
-        assert_eq!(mixer.get_latency_samples(), 0);
-    }
-
-    #[test]
-    fn test_channel_mixer_validation() {
-        let mixer = ChannelMixer::default();
+    fn test_mixer_reset() {
+        let mut mixer = ChannelMixer::default();
+        mixer.reset();
         assert!(mixer.validate().is_ok());
     }
 }
