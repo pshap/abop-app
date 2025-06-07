@@ -4,6 +4,7 @@
 //! audiobook metadata and library information.
 
 pub mod connection;
+pub mod connection_adapter;
 pub mod error;
 pub mod health;
 mod migrations;
@@ -12,11 +13,12 @@ pub mod repositories;
 pub mod retry;
 pub mod statistics;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
+pub use self::connection_adapter::ConnectionAdapter;
 pub use self::error::{DatabaseError, DbResult};
 pub use self::health::ConnectionHealth;
 pub use self::migrations::{Migration, MigrationManager, MigrationResult};
@@ -58,11 +60,11 @@ impl Database {
             .connect()
             .map_err(|e| crate::error::AppError::Other(e.to_string()))?;
 
-        // Create a basic connection for the repositories with enhanced connection support
-        let conn = Connection::open(path)?;
-        let conn_arc = Arc::new(Mutex::new(conn));
-        let repositories =
-            RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
+        // Create repositories using a shared dummy connection
+        // The repositories will be configured to use the enhanced connection through the manager
+        let dummy_conn = Connection::open_in_memory()?;
+        let conn_arc = Arc::new(Mutex::new(dummy_conn));
+        let repositories = RepositoryManager::with_enhanced_connection(conn_arc, enhanced_conn.clone());
 
         let db = Self {
             enhanced_conn,
@@ -252,8 +254,33 @@ impl Database {
     /// - The audiobook data is invalid
     /// - The associated library does not exist
     pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
-        self.audiobooks()
-            .upsert(audiobook)
+        let audiobook_clone = audiobook.clone();
+        // Use enhanced repository wrapper to leverage enhanced connection
+        self.repositories.audiobooks_enhanced()
+            .execute_query(move |conn| {
+                conn.execute(
+                    "INSERT OR REPLACE INTO audiobooks (
+                        id, library_id, path, title, author, narrator, 
+                        description, duration_seconds, size_bytes, cover_art,
+                        created_at, updated_at
+                    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    (
+                        &audiobook_clone.id,
+                        &audiobook_clone.library_id,
+                        &audiobook_clone.path.to_string_lossy(),
+                        &audiobook_clone.title,
+                        &audiobook_clone.author,
+                        &audiobook_clone.narrator,
+                        &audiobook_clone.description,
+                        audiobook_clone.duration_seconds,
+                        audiobook_clone.size_bytes,
+                        &audiobook_clone.cover_art,
+                        &audiobook_clone.created_at,
+                        &audiobook_clone.updated_at,
+                    ),
+                )?;
+                Ok(())
+            })
             .map_err(std::convert::Into::into)
     }
 
@@ -265,8 +292,37 @@ impl Database {
     /// - The database query fails
     /// - The database connection is unavailable
     pub fn get_audiobook(&self, id: &str) -> Result<Option<Audiobook>> {
-        self.audiobooks()
-            .find_by_id(id)
+        use std::path::PathBuf;
+        let id_clone = id.to_string();
+        
+        // Use enhanced repository wrapper to leverage enhanced connection
+        self.repositories.audiobooks_enhanced()
+            .execute_query(move |conn| {
+                conn.query_row(
+                    "SELECT id, library_id, path, title, author, narrator, description, 
+                            duration_seconds, size_bytes, cover_art, created_at, updated_at 
+                     FROM audiobooks WHERE id = ?1",
+                    [&id_clone],
+                    |row| {
+                        Ok(Audiobook {
+                            id: row.get(0)?,
+                            library_id: row.get(1)?,
+                            path: PathBuf::from(row.get::<_, String>(2)?),
+                            title: row.get(3)?,
+                            author: row.get(4)?,
+                            narrator: row.get(5)?,
+                            description: row.get(6)?,
+                            duration_seconds: row.get(7)?,
+                            size_bytes: row.get(8)?,
+                            cover_art: row.get(9)?,
+                            created_at: row.get(10)?,
+                            updated_at: row.get(11)?,
+                            selected: false,
+                        })
+                    },
+                )
+                .optional()
+            })
             .map_err(std::convert::Into::into)
     }
 
@@ -279,8 +335,40 @@ impl Database {
     /// - The database connection is unavailable
     /// - The library ID does not exist
     pub fn get_audiobooks_in_library(&self, library_id: &str) -> Result<Vec<Audiobook>> {
-        self.audiobooks()
-            .find_by_library(library_id)
+        use std::path::PathBuf;
+        let library_id_clone = library_id.to_string();
+        
+        // Use enhanced repository wrapper to leverage enhanced connection
+        self.repositories.audiobooks_enhanced()
+            .execute_query(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, library_id, path, title, author, narrator, description, 
+                            duration_seconds, size_bytes, cover_art, created_at, updated_at 
+                     FROM audiobooks WHERE library_id = ?1 ORDER BY title",
+                )?;
+
+                let rows = stmt.query_map([&library_id_clone], |row| {
+                    Ok(Audiobook {
+                        id: row.get(0)?,
+                        library_id: row.get(1)?,
+                        path: PathBuf::from(row.get::<_, String>(2)?),
+                        title: row.get(3)?,
+                        author: row.get(4)?,
+                        narrator: row.get(5)?,
+                        description: row.get(6)?,
+                        duration_seconds: row.get(7)?,
+                        size_bytes: row.get(8)?,
+                        cover_art: row.get(9)?,
+                        created_at: row.get(10)?,
+                        updated_at: row.get(11)?,
+                        selected: false,
+                    })
+                })?;
+
+                let audiobooks: Vec<Audiobook> = rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
+
+                Ok(audiobooks)
+            })
             .map_err(std::convert::Into::into)
     }
 

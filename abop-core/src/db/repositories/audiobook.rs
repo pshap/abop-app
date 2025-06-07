@@ -19,9 +19,7 @@ impl AudiobookRepository {
     /// Create a new audiobook repository
     pub const fn new(connection: Arc<Mutex<Connection>>) -> Self {
         Self { connection }
-    }
-
-    /// Add or update an audiobook in the database
+    }    /// Add or update an audiobook in the database
     ///
     /// # Errors
     ///
