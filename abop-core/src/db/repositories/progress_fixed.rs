@@ -335,18 +335,7 @@ impl Repository for ProgressRepository {
         F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
     {
-        // We need to work around the fact that with_connection expects Fn but we have FnOnce
-        // We'll use a thread-safe approach by wrapping the operation
-        let operation = std::sync::Arc::new(std::sync::Mutex::new(Some(f)));
-        self.enhanced_connection.with_connection(move |conn| {
-            let mut op_guard = operation.lock().map_err(|_| {
-                DatabaseError::ConnectionFailed("Failed to acquire operation lock".to_string())
-            })?;
-            let op = op_guard.take().ok_or_else(|| {
-                DatabaseError::ConnectionFailed("Operation already consumed".to_string())
-            })?;
-            op(conn).map_err(DatabaseError::from)
-        })
+        self.enhanced_connection.with_connection(move |conn| f(conn).map_err(DatabaseError::from))
     }
 }
 

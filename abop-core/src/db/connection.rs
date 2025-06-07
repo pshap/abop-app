@@ -254,6 +254,67 @@ impl EnhancedConnection {
         result
     }
 
+    /// Execute a closure with mutable database connection, with retry logic
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if:
+    /// - Failed to establish database connection
+    /// - The operation closure returns an error
+    /// - Connection retry attempts are exhausted
+    /// - Database is in an unrecoverable state
+    /// - Failed to record operation statistics
+    pub fn with_connection_mut<F, R>(&self, operation: F) -> DbResult<R>
+    where
+        F: Fn(&mut Connection) -> DbResult<R> + Send + 'static,
+        R: Send + 'static,
+    {
+        let start_time = Instant::now();
+
+        let result = self.retry_executor.execute(|| {
+            let mut conn_guard = self.connection.lock().map_err(|_| {
+                DatabaseError::ConnectionFailed("Failed to acquire connection lock".to_string())
+            })?;
+
+            if let Some(conn) = conn_guard.as_mut() {
+                operation(conn)
+            } else {
+                drop(conn_guard);
+                self.connect()?;
+                let mut new_guard = self.connection.lock().map_err(|_| {
+                    DatabaseError::ConnectionFailed(
+                        "Failed to acquire connection lock after establishment".to_string(),
+                    )
+                })?;
+                new_guard.as_mut().map_or_else(
+                    || {
+                        Err(DatabaseError::ConnectionFailed(
+                            "Connection not available after establishment".to_string(),
+                        ))
+                    },
+                    &operation,
+                )
+            }
+        });
+
+        match &result {
+            Ok(_) => self
+                .stats_collector
+                .record_success(start_time.elapsed())
+                .map_err(|e| {
+                    DatabaseError::ConnectionFailed(format!("Failed to record success: {e}"))
+                })?,
+            Err(_) => self
+                .stats_collector
+                .record_failure(start_time.elapsed())
+                .map_err(|e| {
+                    DatabaseError::ConnectionFailed(format!("Failed to record failure: {e}"))
+                })?,
+        }
+
+        result
+    }
+
     /// Get connection statistics
     ///
     /// # Errors

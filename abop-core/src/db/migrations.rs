@@ -87,19 +87,27 @@ impl MigrationManager {
         log::debug!("Getting current database version");
         let current_version = self.current_version(conn)?;
         log::debug!("Current database version: {}", current_version);
-        
+
         let mut pending: Vec<&Migration> = self
             .migrations
             .values()
             .filter(|m| m.version > current_version)
             .collect();
         pending.sort_by_key(|m| m.version);
-        
-        log::debug!("Found {} pending migrations after version {}", pending.len(), current_version);
+
+        log::debug!(
+            "Found {} pending migrations after version {}",
+            pending.len(),
+            current_version
+        );
         for migration in &pending {
-            log::debug!("  - Migration {}: {}", migration.version, migration.description);
+            log::debug!(
+                "  - Migration {}: {}",
+                migration.version,
+                migration.description
+            );
         }
-        
+
         Ok(pending)
     }
 
@@ -119,7 +127,7 @@ impl MigrationManager {
         log::debug!("Getting pending migrations");
         let pending = self.pending_migrations(conn)?;
         log::debug!("Found {} pending migrations", pending.len());
-        
+
         if pending.is_empty() {
             log::debug!("No pending migrations, returning empty results");
             return Ok(vec![]);
@@ -128,7 +136,12 @@ impl MigrationManager {
         let mut results = Vec::new();
 
         for (i, migration) in pending.iter().enumerate() {
-            log::debug!("Applying migration {}/{}: version {}", i + 1, pending.len(), migration.version);
+            log::debug!(
+                "Applying migration {}/{}: version {}",
+                i + 1,
+                pending.len(),
+                migration.version
+            );
             let result = Self::apply_migration(conn, migration, false)?;
             log::debug!("Migration {} applied successfully", migration.version);
             results.push(result);
@@ -261,14 +274,12 @@ impl MigrationManager {
 
 /// Gets all migrations in order with rollback SQL
 fn get_migrations() -> Vec<Migration> {
-    vec![
-        Migration {
-            version: 1,
-            up_sql: include_str!("migrations/001_initial_schema.sql"),
-            down_sql: include_str!("migrations/001_initial_schema_down.sql"),
-            description: "Initial database schema with libraries, audiobooks, and progress tracking",
-        },
-    ]
+    vec![Migration {
+        version: 1,
+        up_sql: include_str!("migrations/001_initial_schema.sql"),
+        down_sql: include_str!("migrations/001_initial_schema_down.sql"),
+        description: "Initial database schema with libraries, audiobooks, and progress tracking",
+    }]
 }
 
 /// Simplified migration runner that uses the enhanced migration manager
@@ -276,11 +287,14 @@ pub fn run_migrations(conn: &mut Connection) -> SqliteResult<()> {
     log::debug!("Starting run_migrations function");
     let manager = MigrationManager::new();
     log::debug!("MigrationManager created successfully");
-    
+
     log::debug!("About to call manager.migrate_up()");
     match manager.migrate_up(conn) {
         Ok(results) => {
-            log::debug!("migrate_up completed successfully with {} results", results.len());
+            log::debug!(
+                "migrate_up completed successfully with {} results",
+                results.len()
+            );
             for result in results {
                 log::info!(
                     "Applied migration {} - {}",

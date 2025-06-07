@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use super::super::error::{DbResult, DatabaseError};
+use super::super::error::{DatabaseError, DbResult};
 use super::{EnhancedRepository, Repository};
 use crate::models::Library;
 use crate::db::EnhancedConnection;
@@ -31,14 +31,14 @@ impl LibraryRepository {
     /// Returns [`DatabaseError::ValidationFailed`] if the library data fails validation.
     pub fn create<P: AsRef<Path> + Send + 'static>(&self, name: &str, path: P) -> DbResult<Library> {
         let id = Uuid::new_v4().to_string();
-        let name_owned = name.to_string();
+        let name = name.to_string();
         let path_str = path.as_ref().to_string_lossy().to_string();
         let path_buf = path.as_ref().to_path_buf();
 
-        let result = self.execute_query(move |conn| {
+        self.execute_query(move |conn| {
             // Check if library with same name already exists
             let existing_check = conn
-                .query_row("SELECT id FROM libraries WHERE name = ?1", [&name_owned], |row| {
+                .query_row("SELECT id FROM libraries WHERE name = ?1", [&name], |row| {
                     row.get::<_, String>(0)
                 })
                 .optional();
@@ -46,37 +46,34 @@ impl LibraryRepository {
             if let Ok(Some(_)) = existing_check {
                 return Err(rusqlite::Error::SqliteFailure(
                     rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
-                    Some(format!("Library with name '{}' already exists", name_owned)),
+                    Some(format!("Library with name '{}' already exists", name)),
                 ));
             }
 
             // Insert the new library
             conn.execute(
                 "INSERT INTO libraries (id, name, path) VALUES (?1, ?2, ?3)",
-                (&id, &name_owned, &path_str),
+                (&id, &name, &path_str),
             )?;
 
             Ok(Library {
                 id,
-                name: name_owned,
+                name,
                 path: path_buf,
             })
-        });
-
-        result.map_err(|e| {
+        })
+        .map_err(|e| {
             // Convert constraint violations to our specific error type
             match &e {
                 DatabaseError::Sqlite(rusqlite::Error::SqliteFailure(err, Some(_msg)))
                     if err.code == rusqlite::ErrorCode::ConstraintViolation =>
                 {
-                    DatabaseError::duplicate_entry("Library", "name", name)
+                    DatabaseError::duplicate_entry("Library", "name", &name)
                 }
                 _ => e,
             }
         })
-    }
-
-    /// Find a library by its ID
+    }    /// Find a library by its ID
     ///
     /// # Errors
     ///
@@ -98,9 +95,7 @@ impl LibraryRepository {
             )
             .optional()
         })
-    }
-
-    /// Find a library by its name
+    }    /// Find a library by its name
     ///
     /// # Errors
     ///
@@ -129,8 +124,7 @@ impl LibraryRepository {
     /// # Errors
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
-    pub fn find_all(&self) -> DbResult<Vec<Library>> {
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.    pub fn find_all(&self) -> DbResult<Vec<Library>> {
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare("SELECT id, name, path FROM libraries ORDER BY name")?;
             let libraries = stmt
@@ -154,14 +148,11 @@ impl LibraryRepository {
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails due to constraint violations or invalid data.
     /// Returns [`DatabaseError::ValidationFailed`] if the library data fails validation.
     pub fn update(&self, id: &str, name: &str, path: &Path) -> DbResult<bool> {
-        let id = id.to_string();
-        let name = name.to_string();
-        let path_str = path.to_string_lossy().to_string();
-        
-        self.execute_query(move |conn| {
+        let path_str = path.to_string_lossy();
+        self.execute_query(|conn| {
             let rows_affected = conn.execute(
                 "UPDATE libraries SET name = ?1, path = ?2 WHERE id = ?3",
-                (&name, &path_str, &id),
+                (name, path_str.as_ref(), id),
             )?;
             Ok(rows_affected > 0)
         })
@@ -175,12 +166,11 @@ impl LibraryRepository {
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
     /// Returns [`DatabaseError::ConstraintViolation`] if the library cannot be deleted due to dependent audiobooks.
     pub fn delete(&self, id: &str) -> DbResult<bool> {
-        let id = id.to_string();
-        self.execute_query(move |conn| {
+        self.execute_query(|conn| {
             // Check if library has audiobooks
             let audiobook_count: i64 = conn.query_row(
                 "SELECT COUNT(*) FROM audiobooks WHERE library_id = ?1",
-                [&id],
+                [id],
                 |row| row.get(0),
             )?;
 
@@ -188,12 +178,12 @@ impl LibraryRepository {
                 return Err(rusqlite::Error::SqliteFailure(
                     rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
                     Some(format!(
-                        "Cannot delete library: {} audiobooks depend on it", audiobook_count
+                        "Cannot delete library: {audiobook_count} audiobooks depend on it"
                     )),
                 ));
             }
 
-            let rows_affected = conn.execute("DELETE FROM libraries WHERE id = ?1", [&id])?;
+            let rows_affected = conn.execute("DELETE FROM libraries WHERE id = ?1", [id])?;
             Ok(rows_affected > 0)
         })
         .map_err(|e| match &e {
@@ -215,8 +205,7 @@ impl LibraryRepository {
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn exists(&self, id: &str) -> DbResult<bool> {
-        let id = id.to_string();
-        self.execute_query(move |conn| {
+        self.execute_query(|conn| {
             let count: i64 = conn.query_row(
                 "SELECT COUNT(*) FROM libraries WHERE id = ?1",
                 [id],
@@ -227,7 +216,8 @@ impl LibraryRepository {
     }
 }
 
-impl Repository for LibraryRepository {    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
+impl Repository for LibraryRepository {
+    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
     where
         F: FnOnce(&Connection) -> Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
@@ -242,6 +232,7 @@ impl Repository for LibraryRepository {    fn execute_query_enhanced<F, R>(&self
             let op = op_guard.take().ok_or_else(|| {
                 DatabaseError::ConnectionFailed("Operation already consumed".to_string())
             })?;
+            drop(op_guard); // Release the lock before calling the operation
             op(conn).map_err(DatabaseError::from)
         })
     }
