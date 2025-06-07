@@ -132,7 +132,7 @@ impl TableRow {
         .into()
     }
 
-    /// Style for selectable row buttons
+    /// Style for selectable row buttons with Material Design 3 hover effects
     fn row_button_style(
         _theme: &iced::Theme,
         status: button::Status,
@@ -141,61 +141,65 @@ impl TableRow {
         is_striped: bool,
         row_index: usize,
     ) -> button::Style {
-        // Get the base style from MaterialDataTable
-        let container_style =
-            data::MaterialDataTable::table_row(tokens, row_index, is_selected, is_striped)(
-                &iced::Theme::Dark,
-            );
-
-        // Convert container style to button style, adding hover effects
-        let base_background = container_style.background;
+        let colors = &tokens.colors;
+        
+        // Get the base background color using Material Design patterns
+        let base_background = if is_selected {
+            colors.secondary_container
+        } else if is_striped && row_index % 2 == 1 {
+            colors.surface_container
+        } else {
+            colors.surface_container_lowest
+        };
 
         let background_color = match status {
             button::Status::Hovered => {
-                // Add a subtle hover effect over the base color
-                if let Some(Background::Color(base_color)) = base_background {
-                    Some(Background::Color(Color {
-                        a: (base_color.a + tokens.ui().hover_opacity_adjustment).min(1.0),
-                        r: base_color.r,
-                        g: base_color.g,
-                        b: base_color.b,
-                    }))
-                } else {
-                    Some(Background::Color(Color::from_rgba(
-                        0.0,
-                        0.0,
-                        0.0,
-                        tokens.ui().hover_opacity_adjustment,
-                    )))
-                }
+                // Create a visible hover effect using Material Design overlay technique
+                // This creates a subtle but noticeable visual feedback on hover
+                let hover_overlay = Color {
+                    r: colors.on_surface_variant.r,
+                    g: colors.on_surface_variant.g,
+                    b: colors.on_surface_variant.b,
+                    a: 0.08, // Material Design 3 hover overlay opacity
+                };
+                
+                // Blend the hover overlay with the base background
+                Some(Background::Color(Color {
+                    r: (base_background.r * (1.0 - hover_overlay.a) + hover_overlay.r * hover_overlay.a),
+                    g: (base_background.g * (1.0 - hover_overlay.a) + hover_overlay.g * hover_overlay.a),
+                    b: (base_background.b * (1.0 - hover_overlay.a) + hover_overlay.b * hover_overlay.a),
+                    a: base_background.a.max(hover_overlay.a),
+                }))
             }
             button::Status::Pressed => {
-                // Add a stronger press effect over the base color
-                if let Some(Background::Color(base_color)) = base_background {
-                    Some(Background::Color(Color {
-                        a: (base_color.a + tokens.ui().pressed_opacity_adjustment).min(1.0),
-                        r: base_color.r,
-                        g: base_color.g,
-                        b: base_color.b,
-                    }))
-                } else {
-                    Some(Background::Color(Color::from_rgba(
-                        0.0,
-                        0.0,
-                        0.0,
-                        tokens.ui().pressed_opacity_adjustment,
-                    )))
-                }
+                // Create a more visible pressed effect
+                let pressed_overlay = Color {
+                    r: colors.on_surface_variant.r,
+                    g: colors.on_surface_variant.g,
+                    b: colors.on_surface_variant.b,
+                    a: 0.12, // Material Design 3 pressed overlay opacity
+                };
+                
+                // Blend the pressed overlay with the base background
+                Some(Background::Color(Color {
+                    r: (base_background.r * (1.0 - pressed_overlay.a) + pressed_overlay.r * pressed_overlay.a),
+                    g: (base_background.g * (1.0 - pressed_overlay.a) + pressed_overlay.g * pressed_overlay.a),
+                    b: (base_background.b * (1.0 - pressed_overlay.a) + pressed_overlay.b * pressed_overlay.a),
+                    a: base_background.a.max(pressed_overlay.a),
+                }))
             }
-            _ => base_background,
-        }; // Use the consistent text color from material tokens
-        let text_color = tokens.colors.on_surface;
+            _ => Some(Background::Color(base_background)),
+        };
 
         button::Style {
             background: background_color,
-            text_color,
-            border: container_style.border,
-            shadow: container_style.shadow,
+            text_color: colors.on_surface,
+            border: iced::Border {
+                color: colors.outline_variant,
+                width: 0.5,
+                radius: iced::border::Radius::new(0.0),
+            },
+            shadow: iced::Shadow::default(),
         }
     }
 
