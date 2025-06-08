@@ -23,14 +23,21 @@ use tracing::{debug, info, warn};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppState {
     // Core UI state
+    /// Current active view in the application
     pub current_view: ViewType,
+    /// ID of the currently selected audiobook, if any
     pub selected_audiobook_id: Option<String>,
+    /// User-specific preferences and settings
     pub user_preferences: UserPreferences,
+    /// Window size, position, and display configuration
     pub window_config: WindowConfig,
+    /// Theme and color scheme configuration
     pub theme_config: ThemeConfig,
+    /// Audio playback settings and configuration
     pub playback_config: PlaybackConfig,
     
     // Application data (managed by DataRepository)
+    /// Core application data including libraries, audiobooks, and progress
     #[serde(flatten)]
     pub app_data: AppData,
     
@@ -128,8 +135,8 @@ impl AppState {
         debug!("Updating playback configuration");
         self.playback_config = config;
     }
-    
-    // === Data Operations (delegated to DataRepository) ===    /// Refresh all data from the repository
+      // === Data Operations (delegated to DataRepository) ===
+    /// Refresh all data from the repository
     pub fn refresh_data(&mut self) -> Result<()> {
         self.ensure_initialized();
         if let Some(ref repo) = self.data_repository {
@@ -215,8 +222,8 @@ impl AppState {
         }
         Ok(())
     }
-    
-    // === Validation Operations ===    /// Validate current state
+      // === Validation Operations ===
+    /// Validate current state
     pub fn validate(&self) -> Result<()> {
         if let Some(ref validator) = self.validator {
             let validation_result = validator.validate(self);
