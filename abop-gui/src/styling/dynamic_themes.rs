@@ -17,17 +17,89 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-/// Serializable theme configuration for loading from files
+/// Material Design 3 typography specifications
+/// Line heights and letter spacing values according to MD3 specification
+/// Values based on official Google Material Design 3 typescale v0.192
+const MD3_TYPOGRAPHY_SPECS: [(MaterialFont, MaterialWeight, f32, f32); 15] = [
+    // Display styles - Brand font, Regular weight (sizes: 57px, 45px, 36px)
+    (MaterialFont::Brand, MaterialWeight::Regular, 64.0, -0.25),  // display_large (4rem line, -0.015625rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 52.0, 0.0),    // display_medium (3.25rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 44.0, 0.0),    // display_small (2.75rem line, 0rem tracking)
+    // Headline styles - Brand font, Regular weight (sizes: 32px, 28px, 24px)
+    (MaterialFont::Brand, MaterialWeight::Regular, 40.0, 0.0),    // headline_large (2.5rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 36.0, 0.0),    // headline_medium (2.25rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 32.0, 0.0),    // headline_small (2rem line, 0rem tracking)
+    // Title styles - Mixed fonts (sizes: 22px, 16px, 14px)
+    (MaterialFont::Brand, MaterialWeight::Regular, 28.0, 0.0),    // title_large (1.75rem line, 0rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 24.0, 0.15),    // title_medium (1.5rem line, 0.009375rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1),     // title_small (1.25rem line, 0.00625rem tracking)
+    // Label styles - Plain font, Medium weight (sizes: 14px, 12px, 11px)
+    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1),     // label_large (1.25rem line, 0.00625rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5),     // label_medium (1rem line, 0.03125rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5),     // label_small (1rem line, 0.03125rem tracking)
+    // Body styles - Plain font, Regular weight (sizes: 16px, 14px, 12px)
+    (MaterialFont::Plain, MaterialWeight::Regular, 24.0, 0.5),    // body_large (1.5rem line, 0.03125rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Regular, 20.0, 0.25),   // body_medium (1.25rem line, 0.015625rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Regular, 16.0, 0.4),    // body_small (1rem line, 0.025rem tracking)
+];
+
+/// Unified theme configuration for loading and runtime use
+/// 
+/// This unified structure eliminates redundancy between ThemeConfig and SerializableTheme
+/// while maintaining compatibility with both file loading and runtime theme management.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfig {
     /// Theme metadata
     pub metadata: ThemeMetadata,
     /// Semantic color definitions
     pub semantic_colors: SerializableSemanticColors,
-    /// Design token values
-    pub design_tokens: SerializableDesignTokens,
-    /// Custom component overrides
-    pub component_overrides: HashMap<String, ComponentOverride>,
+    /// Material Design tokens - unified structure
+    pub material_tokens: SerializableMaterialTokens,
+    /// Type-safe component overrides
+    pub component_overrides: Vec<ComponentOverride>,
+}
+
+impl ThemeConfig {
+    /// Convert theme configuration to runtime theme
+    /// 
+    /// This method provides direct conversion from the unified ThemeConfig
+    /// to the runtime Theme structure, eliminating intermediate conversions.
+    pub fn to_runtime_theme(&self) -> Result<Theme, ThemeLoadError> {
+        // Validate component overrides
+        for override_config in &self.component_overrides {
+            override_config.validate().map_err(|e| {
+                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+            })?;
+        }
+
+        Ok(Theme {
+            name: self.metadata.name.clone(),
+            description: self.metadata.description.clone().unwrap_or_default(),
+            material_tokens: Self::convert_to_material_tokens(&self.material_tokens)?,
+            component_overrides: self.component_overrides.clone(),
+        })
+    }
+
+    /// Convert serializable material tokens to runtime tokens
+    fn convert_to_material_tokens(
+        tokens: &SerializableMaterialTokens,
+    ) -> Result<MaterialTokens, ThemeLoadError> {
+        let material_tokens = MaterialTokens {
+            spacing: SpacingTokens {
+                xs: tokens.spacing.xs,
+                sm: tokens.spacing.sm,
+                md: tokens.spacing.md,
+                lg: tokens.spacing.lg,
+                xl: tokens.spacing.xl,
+                xxl: tokens.spacing.xxl,
+            },
+            typography: tokens.typography.to_material_typography(),
+            ..Default::default()
+        };
+
+        // TODO: Add conversion for radius, elevation, sizing in Phase 3
+        Ok(material_tokens)
+    }
 }
 
 /// Theme metadata information
@@ -119,13 +191,25 @@ impl SerializableSemanticColors {
     }
 }
 
-/// Simplified design tokens for file loading - now directly compatible with Material Design
+/// Unified Material Design tokens structure
+/// 
+/// This structure now includes all token types and eliminates the need for
+/// separate SerializableDesignTokens. TODO tokens will be implemented in Phase 3.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SerializableDesignTokens {
+pub struct SerializableMaterialTokens {
     /// Spacing values
     pub spacing: SerializableSpacing,
-    /// Typography values  
+    /// Typography values
     pub typography: SerializableTypography,
+    /// Border radius values (TODO: implement in Phase 3)
+    #[serde(default)]
+    pub radius: HashMap<String, f32>,
+    /// Elevation/shadow values (TODO: implement in Phase 3)
+    #[serde(default)]
+    pub elevation: HashMap<String, f32>,
+    /// Component sizing values (TODO: implement in Phase 3)
+    #[serde(default)]
+    pub sizing: HashMap<String, f32>,
 }
 
 /// Serializable spacing tokens
@@ -180,17 +264,446 @@ pub struct SerializableTypography {
     pub display_large: u16,
 }
 
-/// Component style override configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ComponentOverride {
-    /// Component type (button, input, container, etc.)
-    pub component_type: String,
-    /// Style variant override
-    pub variant: Option<String>,
-    /// Custom properties
-    pub properties: HashMap<String, serde_json::Value>,
+impl SerializableTypography {
+    /// Convert to Material Design typography with proper MD3 specifications
+    ///
+    /// This method centralizes typography conversion logic and ensures consistency
+    /// with Material Design 3 specifications for line heights and letter spacing.
+    #[must_use]
+    pub fn to_material_typography(&self) -> MaterialTypography {
+        let font_sizes = [
+            self.display_large,
+            self.display_medium,
+            self.display_small,
+            self.headline_large,
+            self.headline_medium,
+            self.headline_small,
+            self.title_large,
+            self.title_medium,
+            self.title_small,
+            self.label_large,
+            self.label_medium,
+            self.label_small,
+            self.body_large,
+            self.body_medium,
+            self.body_small,
+        ];
+
+        MaterialTypography {
+            display_large: Self::create_type_style(font_sizes[0], 0),
+            display_medium: Self::create_type_style(font_sizes[1], 1),
+            display_small: Self::create_type_style(font_sizes[2], 2),
+            headline_large: Self::create_type_style(font_sizes[3], 3),
+            headline_medium: Self::create_type_style(font_sizes[4], 4),
+            headline_small: Self::create_type_style(font_sizes[5], 5),
+            title_large: Self::create_type_style(font_sizes[6], 6),
+            title_medium: Self::create_type_style(font_sizes[7], 7),
+            title_small: Self::create_type_style(font_sizes[8], 8),
+            label_large: Self::create_type_style(font_sizes[9], 9),
+            label_medium: Self::create_type_style(font_sizes[10], 10),
+            label_small: Self::create_type_style(font_sizes[11], 11),
+            body_large: Self::create_type_style(font_sizes[12], 12),
+            body_medium: Self::create_type_style(font_sizes[13], 13),
+            body_small: Self::create_type_style(font_sizes[14], 14),
+        }
+    }
+
+    /// Create a TypeStyle using Material Design 3 specifications
+    #[must_use]
+    fn create_type_style(font_size: u16, spec_index: usize) -> TypeStyle {
+        let spec = &MD3_TYPOGRAPHY_SPECS[spec_index];
+        let (font, weight, line_height, letter_spacing) = (spec.0.clone(), spec.1.clone(), spec.2, spec.3);
+        TypeStyle::new(font, weight, font_size as f32, line_height, letter_spacing)
+    }
 }
 
+/// Type-safe component style override system
+/// 
+/// This replaces the previous HashMap<String, serde_json::Value> approach with 
+/// strongly-typed overrides that correspond to actual component properties.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComponentOverride {
+    /// Component type identifier
+    pub component_type: ComponentType,
+    /// Style variant (optional)
+    pub variant: Option<String>,
+    /// Type-safe component overrides
+    pub overrides: ComponentOverrides,
+}
+
+/// Component type enumeration for type-safe overrides
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ComponentType {
+    /// Button components (all variants)
+    Button,
+    /// Text input components  
+    Input,
+    /// Container/card components
+    Container,
+    /// Modal/dialog components
+    Modal,
+    /// Menu components
+    Menu,
+    /// Navigation components
+    Navigation,
+    /// Progress/feedback components
+    Progress,
+    /// Selection components (chips, switches, etc.)
+    Selection,
+}
+
+/// Type-safe component override definitions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ComponentOverrides {
+    /// Button component overrides
+    Button(ButtonOverride),
+    /// Input component overrides
+    Input(InputOverride),
+    /// Container component overrides
+    Container(ContainerOverride),
+    /// Modal component overrides
+    Modal(ModalOverride),
+    /// Menu component overrides
+    Menu(MenuOverride),
+    /// Navigation component overrides
+    Navigation(NavigationOverride),
+    /// Progress component overrides
+    Progress(ProgressOverride),
+    /// Selection component overrides
+    Selection(SelectionOverride),
+}
+
+/// Button component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ButtonOverride {
+    /// Override minimum height
+    pub min_height: Option<f32>,
+    /// Override horizontal padding
+    pub padding_horizontal: Option<f32>,
+    /// Override vertical padding
+    pub padding_vertical: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override minimum width
+    pub min_width: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override text color
+    pub text_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override border width
+    pub border_width: Option<f32>,
+    /// Override elevation/shadow
+    pub elevation: Option<f32>,
+}
+
+/// Input component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InputOverride {
+    /// Override input field height
+    pub height: Option<f32>,
+    /// Override internal padding
+    pub padding: Option<f32>,
+    /// Override border width
+    pub border_width: Option<f32>,
+    /// Override border width when focused
+    pub focus_border_width: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override text color
+    pub text_color: Option<String>,
+    /// Override placeholder color
+    pub placeholder_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override focus border color
+    pub focus_border_color: Option<String>,
+}
+
+/// Container component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerOverride {
+    /// Override padding inside containers
+    pub padding: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override elevation/shadow
+    pub elevation: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override border width
+    pub border_width: Option<f32>,
+    /// Override margin
+    pub margin: Option<f32>,
+}
+
+/// Modal component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModalOverride {
+    /// Override maximum width
+    pub max_width: Option<f32>,
+    /// Override padding inside modals
+    pub padding: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override backdrop opacity
+    pub backdrop_opacity: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override elevation/shadow
+    pub elevation: Option<f32>,
+}
+
+/// Menu component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MenuOverride {
+    /// Override menu item height
+    pub item_height: Option<f32>,
+    /// Override menu padding
+    pub padding: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override maximum height
+    pub max_height: Option<f32>,
+    /// Override minimum width
+    pub min_width: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override item hover color
+    pub item_hover_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override elevation/shadow
+    pub elevation: Option<f32>,
+}
+
+/// Navigation component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NavigationOverride {
+    /// Override navigation bar height
+    pub bar_height: Option<f32>,
+    /// Override item padding
+    pub item_padding: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override active item color
+    pub active_item_color: Option<String>,
+    /// Override inactive item color
+    pub inactive_item_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override elevation/shadow
+    pub elevation: Option<f32>,
+}
+
+/// Progress component style overrides
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressOverride {
+    /// Override progress bar height
+    pub bar_height: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override progress color
+    pub progress_color: Option<String>,
+    /// Override track color
+    pub track_color: Option<String>,
+    /// Override animation duration
+    pub animation_duration: Option<f32>,
+}
+
+/// Selection component style overrides (chips, switches, checkboxes, etc.)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectionOverride {
+    /// Override item height
+    pub height: Option<f32>,
+    /// Override padding
+    pub padding: Option<f32>,
+    /// Override border radius
+    pub border_radius: Option<f32>,
+    /// Override minimum width
+    pub min_width: Option<f32>,
+    /// Override background color
+    pub background_color: Option<String>,
+    /// Override selected background color
+    pub selected_background_color: Option<String>,
+    /// Override text color
+    pub text_color: Option<String>,
+    /// Override selected text color
+    pub selected_text_color: Option<String>,
+    /// Override border color
+    pub border_color: Option<String>,
+    /// Override selected border color
+    pub selected_border_color: Option<String>,
+    /// Override border width
+    pub border_width: Option<f32>,
+}
+
+impl ComponentOverride {
+    /// Create a new button override
+    pub fn button() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Button)
+    }
+
+    /// Create a new input override
+    pub fn input() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Input)
+    }
+
+    /// Create a new container override
+    pub fn container() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Container)
+    }
+
+    /// Create a new modal override
+    pub fn modal() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Modal)
+    }
+
+    /// Create a new menu override
+    pub fn menu() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Menu)
+    }
+
+    /// Create a new navigation override
+    pub fn navigation() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Navigation)
+    }
+
+    /// Create a new progress override
+    pub fn progress() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Progress)
+    }
+
+    /// Create a new selection override
+    pub fn selection() -> ComponentOverrideBuilder {
+        ComponentOverrideBuilder::new(ComponentType::Selection)
+    }
+
+    /// Validate the component override configuration
+    pub fn validate(&self) -> Result<(), String> {
+        // Validate that the component type matches the override type
+        match (&self.component_type, &self.overrides) {
+            (ComponentType::Button, ComponentOverrides::Button(_)) => Ok(()),
+            (ComponentType::Input, ComponentOverrides::Input(_)) => Ok(()),
+            (ComponentType::Container, ComponentOverrides::Container(_)) => Ok(()),
+            (ComponentType::Modal, ComponentOverrides::Modal(_)) => Ok(()),
+            (ComponentType::Menu, ComponentOverrides::Menu(_)) => Ok(()),
+            (ComponentType::Navigation, ComponentOverrides::Navigation(_)) => Ok(()),
+            (ComponentType::Progress, ComponentOverrides::Progress(_)) => Ok(()),
+            (ComponentType::Selection, ComponentOverrides::Selection(_)) => Ok(()),
+            _ => Err(format!(
+                "Component type {:?} does not match override type", 
+                self.component_type
+            )),
+        }
+    }
+}
+
+/// Builder for creating component overrides with fluent API
+pub struct ComponentOverrideBuilder {
+    component_type: ComponentType,
+    variant: Option<String>,
+}
+
+impl ComponentOverrideBuilder {
+    /// Create a new builder for the specified component type
+    pub fn new(component_type: ComponentType) -> Self {
+        Self {
+            component_type,
+            variant: None,
+        }
+    }
+
+    /// Set the component variant
+    pub fn variant<S: Into<String>>(mut self, variant: S) -> Self {
+        self.variant = Some(variant.into());
+        self
+    }
+
+    /// Build a button override
+    pub fn button_override(self, override_def: ButtonOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Button(override_def),
+        }
+    }
+
+    /// Build an input override
+    pub fn input_override(self, override_def: InputOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Input(override_def),
+        }
+    }
+
+    /// Build a container override
+    pub fn container_override(self, override_def: ContainerOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Container(override_def),
+        }
+    }
+
+    /// Build a modal override
+    pub fn modal_override(self, override_def: ModalOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Modal(override_def),
+        }
+    }
+
+    /// Build a menu override
+    pub fn menu_override(self, override_def: MenuOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Menu(override_def),
+        }
+    }
+
+    /// Build a navigation override
+    pub fn navigation_override(self, override_def: NavigationOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Navigation(override_def),
+        }
+    }
+
+    /// Build a progress override
+    pub fn progress_override(self, override_def: ProgressOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Progress(override_def),
+        }
+    }
+
+    /// Build a selection override
+    pub fn selection_override(self, override_def: SelectionOverride) -> ComponentOverride {
+        ComponentOverride {
+            component_type: self.component_type,
+            variant: self.variant,
+            overrides: ComponentOverrides::Selection(override_def),
+        }
+    }
+}
 /// Theme loading errors
 #[derive(Debug, Clone)]
 pub enum ThemeLoadError {
@@ -315,18 +828,27 @@ impl ThemeLoader {
     ///
     /// Returns an error if:
     /// - Semantic color conversion fails
-    /// - Design token conversion fails
+    /// - Material token conversion fails
     /// - Theme configuration is invalid
+    /// - Component override validation fails
     pub fn create_theme_mode(
         &self,
         config: &ThemeConfig,
     ) -> Result<CustomThemeMode, ThemeLoadError> {
         let semantic_colors = config.semantic_colors.to_semantic_colors()?;
 
+        // Validate component overrides
+        for override_config in &config.component_overrides {
+            override_config.validate().map_err(|e| {
+                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+            })?;
+        }
+
         Ok(CustomThemeMode {
             metadata: config.metadata.clone(),
             semantic_colors,
-            design_tokens: Self::convert_design_tokens(&config.design_tokens)?,
+            material_tokens: Self::convert_material_tokens(&config.material_tokens)?,
+            component_overrides: config.component_overrides.clone(),
         })
     }
     /// Validate a loaded theme configuration
@@ -338,11 +860,22 @@ impl ThemeLoader {
         // Try to parse colors to validate them
         config.semantic_colors.to_semantic_colors()?;
 
+        // Validate component overrides
+        for override_config in &config.component_overrides {
+            override_config.validate().map_err(|e| {
+                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+            })?;
+        }
+
         Ok(())
     }
-    /// Convert serializable design tokens to runtime tokens
-    fn convert_design_tokens(
-        tokens: &SerializableDesignTokens,
+
+    /// Convert serializable material tokens to runtime tokens
+    /// 
+    /// This unified method replaces the old convert_design_tokens method
+    /// and handles the complete material token conversion process.
+    fn convert_material_tokens(
+        tokens: &SerializableMaterialTokens,
     ) -> Result<MaterialTokens, ThemeLoadError> {
         // Create Material tokens with proper initialization
         let material_tokens = MaterialTokens {
@@ -354,117 +887,13 @@ impl ThemeLoader {
                 xl: tokens.spacing.xl,
                 xxl: tokens.spacing.xxl,
             },
-            typography: MaterialTypography {
-                display_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_large as f32,
-                    64.0,
-                    0.0,
-                ),
-                display_medium: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_medium as f32,
-                    52.0,
-                    0.0,
-                ),
-                display_small: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_small as f32,
-                    44.0,
-                    0.0,
-                ),
-                headline_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_large as f32,
-                    40.0,
-                    0.0,
-                ),
-                headline_medium: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_medium as f32,
-                    36.0,
-                    0.0,
-                ),
-                headline_small: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_small as f32,
-                    32.0,
-                    0.0,
-                ),
-                title_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_large as f32,
-                    28.0,
-                    0.0,
-                ),
-                title_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_medium as f32,
-                    24.0,
-                    0.15,
-                ),
-                title_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_small as f32,
-                    22.0,
-                    0.1,
-                ),
-                label_large: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_large as f32,
-                    20.0,
-                    0.1,
-                ),
-                label_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_medium as f32,
-                    16.0,
-                    0.5,
-                ),
-                label_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_small as f32,
-                    14.0,
-                    0.1,
-                ),
-                body_large: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_large as f32,
-                    24.0,
-                    0.15,
-                ),
-                body_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_medium as f32,
-                    20.0,
-                    0.25,
-                ),
-                body_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_small as f32,
-                    16.0,
-                    0.4,
-                ),
-            },
+            typography: tokens.typography.to_material_typography(),
             ..Default::default()
         };
 
-        // Keep other Material Design defaults
+        // TODO: Add conversion for radius, elevation, sizing in Phase 3
+        // For now, these remain as default values
+
         Ok(material_tokens)
     }
 }
@@ -476,14 +905,19 @@ impl Default for ThemeLoader {
 }
 
 /// Custom theme mode created from loaded configuration
+/// 
+/// This structure represents a fully processed theme with runtime-ready tokens
+/// and eliminates redundancy with the base ThemeConfig structure.
 #[derive(Debug, Clone)]
 pub struct CustomThemeMode {
     /// Theme metadata
     pub metadata: ThemeMetadata,
     /// Semantic colors
     pub semantic_colors: SemanticColors,
-    /// Design tokens
-    pub design_tokens: MaterialTokens,
+    /// Material Design tokens (runtime-ready)
+    pub material_tokens: MaterialTokens,
+    /// Type-safe component overrides
+    pub component_overrides: Vec<ComponentOverride>,
 }
 
 impl CustomThemeMode {
@@ -505,181 +939,28 @@ impl CustomThemeMode {
         &self.semantic_colors
     }
 
-    /// Get design tokens
+    /// Get material tokens
     #[must_use]
-    pub const fn design_tokens(&self) -> &MaterialTokens {
-        &self.design_tokens
+    pub const fn material_tokens(&self) -> &MaterialTokens {
+        &self.material_tokens
     }
-}
 
-/// Serializable theme configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SerializableTheme {
-    /// Theme name
-    pub name: String,
-    /// Theme description
-    pub description: String,
-    /// Material Design tokens
-    pub material_tokens: SerializableMaterialTokens,
-    /// Component style overrides
-    pub component_overrides: Vec<ComponentOverride>,
-}
+    /// Get component overrides
+    #[must_use]
+    pub fn component_overrides(&self) -> &[ComponentOverride] {
+        &self.component_overrides
+    }
 
-/// Serializable Material Design tokens
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SerializableMaterialTokens {
-    /// Spacing values
-    pub spacing: SerializableSpacing,
-    /// Typography values
-    pub typography: SerializableTypography,
-    /// Border radius values
-    pub radius: HashMap<String, f32>,
-    /// Elevation/shadow values
-    pub elevation: HashMap<String, f32>,
-    /// Component sizing values
-    pub sizing: HashMap<String, f32>,
-}
-
-impl SerializableTheme {
-    /// Convert serializable theme to runtime theme
-    pub fn to_theme(&self) -> Result<Theme, ThemeLoadError> {
-        Ok(Theme {
-            name: self.name.clone(),
-            description: self.description.clone(),
-            material_tokens: Self::convert_material_tokens(&self.material_tokens)?,
-            component_overrides: self.component_overrides.clone(),
+    /// Find component override by type and optional variant
+    #[must_use]
+    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+        self.component_overrides.iter().find(|override_config| {
+            override_config.component_type == component_type 
+                && override_config.variant.as_deref() == variant
         })
     }
-
-    /// Convert serializable tokens to runtime tokens
-    fn convert_material_tokens(
-        tokens: &SerializableMaterialTokens,
-    ) -> Result<MaterialTokens, ThemeLoadError> {
-        let material_tokens = MaterialTokens {
-            spacing: SpacingTokens {
-                xs: tokens.spacing.xs,
-                sm: tokens.spacing.sm,
-                md: tokens.spacing.md,
-                lg: tokens.spacing.lg,
-                xl: tokens.spacing.xl,
-                xxl: tokens.spacing.xxl,
-            },
-            typography: MaterialTypography {
-                display_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_large as f32,
-                    64.0, // line height
-                    0.0,  // letter spacing
-                ),
-                display_medium: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_medium as f32,
-                    52.0,
-                    0.0,
-                ),
-                display_small: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.display_small as f32,
-                    44.0,
-                    0.0,
-                ),
-                headline_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_large as f32,
-                    40.0,
-                    0.0,
-                ),
-                headline_medium: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_medium as f32,
-                    36.0,
-                    0.0,
-                ),
-                headline_small: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Regular,
-                    tokens.typography.headline_small as f32,
-                    32.0,
-                    0.0,
-                ),
-                title_large: TypeStyle::new(
-                    MaterialFont::Brand,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_large as f32,
-                    28.0,
-                    0.0,
-                ),
-                title_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_medium as f32,
-                    24.0,
-                    0.15,
-                ),
-                title_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.title_small as f32,
-                    22.0,
-                    0.1,
-                ),
-                label_large: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_large as f32,
-                    20.0,
-                    0.1,
-                ),
-                label_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_medium as f32,
-                    16.0,
-                    0.5,
-                ),
-                label_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Medium,
-                    tokens.typography.label_small as f32,
-                    14.0,
-                    0.1,
-                ),
-                body_large: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_large as f32,
-                    24.0,
-                    0.15,
-                ),
-                body_medium: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_medium as f32,
-                    20.0,
-                    0.25,
-                ),
-                body_small: TypeStyle::new(
-                    MaterialFont::Plain,
-                    MaterialWeight::Regular,
-                    tokens.typography.body_small as f32,
-                    16.0,
-                    0.4,
-                ),
-            },
-            ..Default::default()
-        };
-
-        // Update other tokens as needed
-        // TODO: Add conversion for radius, elevation, sizing
-
-        Ok(material_tokens)
-    }
 }
+
 
 /// Runtime theme configuration
 #[derive(Debug, Clone)]
@@ -700,11 +981,39 @@ impl Theme {
     pub const fn material_tokens(&self) -> &MaterialTokens {
         &self.material_tokens
     }
+
+    /// Get component overrides
+    #[must_use]
+    pub fn component_overrides(&self) -> &[ComponentOverride] {
+        &self.component_overrides
+    }
+
+    /// Find component override by type and optional variant
+    #[must_use]
+    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+        self.component_overrides.iter().find(|override_config| {
+            override_config.component_type == component_type 
+                && override_config.variant.as_deref() == variant
+        })
+    }
+
+    /// Get theme name
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Get theme description
+    #[must_use]
+    pub fn description(&self) -> &str {
+        &self.description
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iced::Pixels;
 
     #[test]
     fn test_color_parsing() {
@@ -740,44 +1049,6 @@ mod tests {
                 surface: "#333333".to_string(),
                 on_surface: "#FFFFFF".to_string(),
             },
-            design_tokens: SerializableDesignTokens {
-                spacing: SerializableSpacing {
-                    xs: 4.0,
-                    sm: 8.0,
-                    md: 16.0,
-                    lg: 24.0,
-                    xl: 32.0,
-                    xxl: 48.0,
-                },
-                typography: SerializableTypography {
-                    label_small: 12,
-                    label_medium: 14,
-                    label_large: 16,
-                    body_small: 14,
-                    body_medium: 16,
-                    body_large: 18,
-                    title_small: 18,
-                    title_medium: 20,
-                    title_large: 24,
-                    headline_small: 20,
-                    headline_medium: 22,
-                    headline_large: 26,
-                    display_small: 24,
-                    display_medium: 26,
-                    display_large: 32,
-                },
-            },
-            component_overrides: HashMap::new(),
-        };
-
-        assert!(ThemeLoader::validate_theme(&config).is_ok());
-    }
-
-    #[test]
-    fn test_theme_serialization() {
-        let theme = SerializableTheme {
-            name: "Test Theme".to_string(),
-            description: "A test theme".to_string(),
             material_tokens: SerializableMaterialTokens {
                 spacing: SerializableSpacing {
                     xs: 4.0,
@@ -811,10 +1082,225 @@ mod tests {
             component_overrides: Vec::new(),
         };
 
-        let runtime_theme = theme.to_theme().unwrap();
+        assert!(ThemeLoader::validate_theme(&config).is_ok());
+    }
+
+    #[test]
+    fn test_theme_serialization() {
+        let theme_config = ThemeConfig {
+            metadata: ThemeMetadata {
+                name: "Test Theme".to_string(),
+                version: "1.0.0".to_string(),
+                author: None,
+                description: Some("A test theme".to_string()),
+                is_dark: false,
+                extends: None,
+            },
+            semantic_colors: SerializableSemanticColors {
+                primary: "#FF0000".to_string(),
+                secondary: "#00FF00".to_string(),
+                success: "#00AA00".to_string(),
+                warning: "#FFAA00".to_string(),
+                error: "#AA0000".to_string(),
+                info: "#0000FF".to_string(),
+                surface: "#FFFFFF".to_string(),
+                on_surface: "#000000".to_string(),
+            },
+            material_tokens: SerializableMaterialTokens {
+                spacing: SerializableSpacing {
+                    xs: 4.0,
+                    sm: 8.0,
+                    md: 16.0,
+                    lg: 24.0,
+                    xl: 32.0,
+                    xxl: 48.0,
+                },
+                typography: SerializableTypography {
+                    label_small: 12,
+                    label_medium: 14,
+                    label_large: 16,
+                    body_small: 14,
+                    body_medium: 16,
+                    body_large: 18,
+                    title_small: 18,
+                    title_medium: 20,
+                    title_large: 24,
+                    headline_small: 20,
+                    headline_medium: 22,
+                    headline_large: 26,
+                    display_small: 24,
+                    display_medium: 26,
+                    display_large: 32,
+                },
+                radius: HashMap::new(),
+                elevation: HashMap::new(),
+                sizing: HashMap::new(),
+            },
+            component_overrides: Vec::new(),
+        };
+
+        let runtime_theme = theme_config.to_runtime_theme().unwrap();
         assert_eq!(runtime_theme.name, "Test Theme");
         assert_eq!(runtime_theme.description, "A test theme");
         assert_eq!(runtime_theme.material_tokens.spacing.xs, 4.0);
         assert_eq!(runtime_theme.material_tokens.spacing.xxl, 48.0);
+    }
+
+    #[test]
+    fn test_typography_conversion_consistency() {
+        let typography = SerializableTypography {
+            label_small: 12,
+            label_medium: 14,
+            label_large: 16,
+            body_small: 14,
+            body_medium: 16,
+            body_large: 18,
+            title_small: 18,
+            title_medium: 20,
+            title_large: 24,
+            headline_small: 20,
+            headline_medium: 22,
+            headline_large: 26,
+            display_small: 24,
+            display_medium: 26,
+            display_large: 32,
+        };
+
+        let material_typography = typography.to_material_typography();
+        
+        // Test that font sizes are correctly converted
+        assert_eq!(material_typography.display_large.size, Pixels(32.0));
+        assert_eq!(material_typography.body_medium.size, Pixels(16.0));
+        assert_eq!(material_typography.label_small.size, Pixels(12.0));
+        
+        // Test that Material Design 3 specifications are applied
+        assert_eq!(material_typography.display_large.line_height, Pixels(64.0));
+        assert_eq!(material_typography.title_medium.letter_spacing, 0.15);
+        assert_eq!(material_typography.body_large.letter_spacing, 0.5);
+    }
+
+    #[test]
+    fn test_component_override_system() {
+        // Test type-safe component override creation
+        let button_override = ComponentOverrideBuilder::new(ComponentType::Button)
+            .variant("primary")
+            .button_override(ButtonOverride {
+                min_height: Some(40.0),
+                padding_horizontal: Some(12.0),
+                padding_vertical: Some(8.0),
+                border_radius: Some(8.0),
+                min_width: Some(80.0),
+                background_color: Some("#FF0000".to_string()),
+                text_color: Some("#FFFFFF".to_string()),
+                border_color: Some("#FF0000".to_string()),
+                border_width: Some(1.0),
+                elevation: Some(1.0),
+            });
+
+        // Test validation
+        assert!(button_override.validate().is_ok());
+
+        // Test that component type matches override type
+        assert_eq!(button_override.component_type, ComponentType::Button);
+        assert_eq!(button_override.variant, Some("primary".to_string()));
+
+        if let ComponentOverrides::Button(ref button_props) = button_override.overrides {
+            assert_eq!(button_props.background_color, Some("#FF0000".to_string()));
+            assert_eq!(button_props.text_color, Some("#FFFFFF".to_string()));
+            assert_eq!(button_props.border_radius, Some(8.0));
+        } else {
+            panic!("Expected Button override, got different type");
+        }
+
+        // Test theme config with component overrides
+        let theme_config = ThemeConfig {
+            metadata: ThemeMetadata {
+                name: "Test Theme".to_string(),
+                version: "1.0.0".to_string(),
+                author: None,
+                description: None,
+                is_dark: false,
+                extends: None,
+            },
+            semantic_colors: SerializableSemanticColors {
+                primary: "#FF0000".to_string(),
+                secondary: "#00FF00".to_string(),
+                success: "#00AA00".to_string(),
+                warning: "#FFAA00".to_string(),
+                error: "#AA0000".to_string(),
+                info: "#0000FF".to_string(),
+                surface: "#FFFFFF".to_string(),
+                on_surface: "#000000".to_string(),
+            },
+            material_tokens: SerializableMaterialTokens {
+                spacing: SerializableSpacing {
+                    xs: 4.0,
+                    sm: 8.0,
+                    md: 16.0,
+                    lg: 24.0,
+                    xl: 32.0,
+                    xxl: 48.0,
+                },
+                typography: SerializableTypography {
+                    label_small: 12,
+                    label_medium: 14,
+                    label_large: 16,
+                    body_small: 14,
+                    body_medium: 16,
+                    body_large: 18,
+                    title_small: 18,
+                    title_medium: 20,
+                    title_large: 24,
+                    headline_small: 20,
+                    headline_medium: 22,
+                    headline_large: 26,
+                    display_small: 24,
+                    display_medium: 26,
+                    display_large: 32,
+                },
+                radius: HashMap::new(),
+                elevation: HashMap::new(),
+                sizing: HashMap::new(),
+            },
+            component_overrides: vec![button_override],
+        };
+
+        // Test validation with component overrides
+        assert!(ThemeLoader::validate_theme(&theme_config).is_ok());
+
+        // Test runtime theme creation
+        let runtime_theme = theme_config.to_runtime_theme().unwrap();
+        assert_eq!(runtime_theme.component_overrides().len(), 1);
+        
+        // Test finding component override
+        let found_override = runtime_theme.find_component_override(ComponentType::Button, Some("primary"));
+        assert!(found_override.is_some());
+        
+        let not_found = runtime_theme.find_component_override(ComponentType::Input, Some("text"));
+        assert!(not_found.is_none());
+    }
+
+    #[test]
+    fn test_component_override_validation() {
+        // Test mismatched component type and override type
+        let invalid_override = ComponentOverride {
+            component_type: ComponentType::Button,
+            variant: None,
+            overrides: ComponentOverrides::Input(InputOverride {
+                height: Some(40.0),
+                padding: Some(8.0),
+                border_width: Some(1.0),
+                focus_border_width: Some(2.0),
+                border_radius: Some(4.0),
+                background_color: Some("#FFFFFF".to_string()),
+                text_color: Some("#000000".to_string()),
+                placeholder_color: Some("#999999".to_string()),
+                border_color: Some("#CCCCCC".to_string()),
+                focus_border_color: Some("#0088FF".to_string()),
+            }),
+        };
+
+        // This should fail validation because component_type is Button but overrides is Input
+        assert!(invalid_override.validate().is_err());
     }
 }
