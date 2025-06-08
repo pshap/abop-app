@@ -31,14 +31,15 @@ use std::path::Path;
 /// Validates file paths and file system related validations
 pub struct FileValidator {
     /// Configuration for file validation
-    _config: ValidationConfig,
+    config: ValidationConfig,
 }
 
 impl FileValidator {
-    /// Create a new FileValidator with the given configuration
+    /// Create a new `FileValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
-            _config: config.clone(),
+            config: config.clone(),
         }
     }
 
@@ -120,14 +121,14 @@ impl FileValidator {
             }
 
             // Validate audio file extension
-            if self._config.check_audio_formats {
-                self.validate_audio_file_extension(path, result);
+            if self.config.check_audio_formats {
+                Self::validate_audio_file_extension(path, result);
             }
         }
     }
 
     /// Validate that a file has a supported audio extension
-    fn validate_audio_file_extension(&self, path: &Path, result: &mut ValidationResult) {
+    fn validate_audio_file_extension(path: &Path, result: &mut ValidationResult) {
         let supported_extensions = &["mp3", "m4a", "m4b", "flac", "ogg", "wav", "aac"];
 
         if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
@@ -161,7 +162,8 @@ pub struct MetadataValidator {
 }
 
 impl MetadataValidator {
-    /// Create a new MetadataValidator with the given configuration
+    /// Create a new `MetadataValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -175,12 +177,10 @@ impl MetadataValidator {
         result: &mut ValidationResult,
     ) {
         // Check for missing critical metadata
-        if audiobook.title.is_none()
-            || audiobook
-                .title
-                .as_ref()
-                .map(|t| t.trim().is_empty())
-                .unwrap_or(true)
+        if audiobook
+            .title
+            .as_ref()
+            .is_none_or(|t| t.trim().is_empty())
         {
             result.add_issue(
                 ValidationError::info("metadata", "Audiobook is missing title")
@@ -250,7 +250,8 @@ pub struct IntegrityValidator {
 }
 
 impl IntegrityValidator {
-    /// Create a new IntegrityValidator with the given configuration
+    /// Create a new `IntegrityValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -259,13 +260,12 @@ impl IntegrityValidator {
 
     /// Validate cross-references between all state entities
     pub fn validate_cross_references(&self, state: &AppState, result: &mut ValidationResult) {
-        self.validate_library_audiobook_references(state, result);
-        self.validate_duplicate_ids(state, result);
+        Self::validate_library_audiobook_references(state, result);
+        Self::validate_duplicate_ids(state, result);
     }
 
     /// Validate that audiobooks reference existing libraries
     fn validate_library_audiobook_references(
-        &self,
         state: &AppState,
         result: &mut ValidationResult,
     ) {
@@ -287,7 +287,7 @@ impl IntegrityValidator {
     }
 
     /// Check for duplicate IDs across all entities
-    fn validate_duplicate_ids(&self, state: &AppState, result: &mut ValidationResult) {
+    fn validate_duplicate_ids(state: &AppState, result: &mut ValidationResult) {
         // Check library ID duplicates
         let mut library_ids = HashSet::new();
         for library in &state.data.libraries {
@@ -336,7 +336,8 @@ pub struct SchemaValidator {
 }
 
 impl SchemaValidator {
-    /// Create a new SchemaValidator with the given configuration
+    /// Create a new `SchemaValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -367,7 +368,7 @@ impl SchemaValidator {
     }
     /// Check if a schema version is compatible (placeholder)
     #[allow(dead_code)]
-    const fn is_compatible_version(&self, _version: &str) -> bool {
+    const fn is_compatible_version(_version: &str) -> bool {
         // Placeholder for version compatibility logic
         true
     }
