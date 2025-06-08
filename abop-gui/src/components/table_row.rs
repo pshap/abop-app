@@ -165,12 +165,15 @@ impl TableRow {
 
                 // Blend the hover overlay with the base background
                 Some(Background::Color(Color {
-                    r: (base_background.r * (1.0 - hover_overlay.a)
-                        + hover_overlay.r * hover_overlay.a),
-                    g: (base_background.g * (1.0 - hover_overlay.a)
-                        + hover_overlay.g * hover_overlay.a),
-                    b: (base_background.b * (1.0 - hover_overlay.a)
-                        + hover_overlay.b * hover_overlay.a),
+                    r: base_background
+                        .r
+                        .mul_add(1.0 - hover_overlay.a, hover_overlay.r * hover_overlay.a),
+                    g: base_background
+                        .g
+                        .mul_add(1.0 - hover_overlay.a, hover_overlay.g * hover_overlay.a),
+                    b: base_background
+                        .b
+                        .mul_add(1.0 - hover_overlay.a, hover_overlay.b * hover_overlay.a),
                     a: base_background.a.max(hover_overlay.a),
                 }))
             }
@@ -185,12 +188,18 @@ impl TableRow {
 
                 // Blend the pressed overlay with the base background
                 Some(Background::Color(Color {
-                    r: (base_background.r * (1.0 - pressed_overlay.a)
-                        + pressed_overlay.r * pressed_overlay.a),
-                    g: (base_background.g * (1.0 - pressed_overlay.a)
-                        + pressed_overlay.g * pressed_overlay.a),
-                    b: (base_background.b * (1.0 - pressed_overlay.a)
-                        + pressed_overlay.b * pressed_overlay.a),
+                    r: base_background.r.mul_add(
+                        1.0 - pressed_overlay.a,
+                        pressed_overlay.r * pressed_overlay.a,
+                    ),
+                    g: base_background.g.mul_add(
+                        1.0 - pressed_overlay.a,
+                        pressed_overlay.g * pressed_overlay.a,
+                    ),
+                    b: base_background.b.mul_add(
+                        1.0 - pressed_overlay.a,
+                        pressed_overlay.b * pressed_overlay.a,
+                    ),
                     a: base_background.a.max(pressed_overlay.a),
                 }))
             }

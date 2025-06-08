@@ -183,15 +183,9 @@ impl ElevationContext {
         if let Ok(mut cache) = self.cache.lock() {
             cache.clear();
         }
-    }
-
-    /// Get cache statistics
+    }    /// Get cache statistics
     #[must_use]
     pub fn cache_stats(&self) -> (usize, usize) {
-        if let Ok(cache) = self.cache.lock() {
-            (cache.len(), cache.capacity())
-        } else {
-            (0, 0)
-        }
+        self.cache.lock().map_or((0, 0), |cache| (cache.len(), cache.capacity()))
     }
 }

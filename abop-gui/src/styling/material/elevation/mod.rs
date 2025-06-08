@@ -595,8 +595,9 @@ impl ElevationStyle {
             }
         };
 
-        let shadow = if let Some(params) = custom_shadow_params {
-            Shadow {
+        let shadow = custom_shadow_params.map_or_else(
+            || shadow_calculations::calculate_custom_shadow(dp, shadow_color),
+            |params| Shadow {
                 color: Color {
                     a: params.opacity,
                     ..shadow_color
@@ -604,9 +605,7 @@ impl ElevationStyle {
                 offset: Vector::new(0.0, params.offset_y),
                 blur_radius: params.blur_radius,
             }
-        } else {
-            shadow_calculations::calculate_custom_shadow(dp, shadow_color)
-        };
+        );
 
         let tint_opacity = shadow_calculations::calculate_custom_tint_opacity(dp);
 
