@@ -136,10 +136,10 @@ impl LibraryScanner {
         let mut orchestrator =
             ScanOrchestrator::new(self.db.clone(), self.library.clone(), self.config.clone());
 
-        if options.enable_monitoring {
-            if let Some(monitor) = &self.performance_monitor {
-                orchestrator = orchestrator.with_performance_monitor(monitor.clone());
-            }
+        if options.enable_monitoring
+            && let Some(monitor) = &self.performance_monitor
+        {
+            orchestrator = orchestrator.with_performance_monitor(monitor.clone());
         }
 
         orchestrator = orchestrator.with_cancellation_token(self.cancel_token.clone());

@@ -10,7 +10,7 @@ use std::collections::HashSet;
 fn create_error_id(error: &ValidationError) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     error.severity.hash(&mut hasher);
     error.category.hash(&mut hasher);
@@ -21,7 +21,7 @@ fn create_error_id(error: &ValidationError) -> String {
     if let Some(ref field) = error.field {
         field.hash(&mut hasher);
     }
-    
+
     format!("{:x}", hasher.finish())
 }
 
@@ -216,7 +216,7 @@ impl StateRepairStrategy {
 
         // Get all available repair handlers
         let handlers = get_all_handlers();
-        
+
         // Track processed errors to avoid duplicates
         let mut processed_errors = HashSet::new();
 
@@ -224,7 +224,7 @@ impl StateRepairStrategy {
         for issue in context.auto_repairable_issues() {
             // Create unique identifier for this error
             let error_id = create_error_id(issue);
-            
+
             // Skip if we've already processed this error
             if processed_errors.contains(&error_id) {
                 continue;
@@ -319,17 +319,20 @@ mod tests {
     #[test]
     fn test_repair_with_new_handler_system() {
         let mut state = create_test_state();
-        
+
         // Create a validation result with various issues
         let mut result = ValidationResult::new();
         result.add_issue(ValidationError::error("library", "Library has empty name"));
-        result.add_issue(ValidationError::error("progress", "Progress entry for non-existent audiobook"));
-        
+        result.add_issue(ValidationError::error(
+            "progress",
+            "Progress entry for non-existent audiobook",
+        ));
+
         let context = RepairContext::new(&result);
         let strategy = StateRepairStrategy::default();
-        
+
         let actions = strategy.repair(&mut state, &context);
-        
+
         // Should have at least a backup action
         assert!(!actions.is_empty());
         assert_eq!(actions[0].action_type, RepairActionType::Backup);
@@ -344,7 +347,7 @@ mod tests {
 
         let context = RepairContext::with_settings(&result, true, false, 5);
         let auto_repairable = context.auto_repairable_issues();
-        
+
         // Only critical/error issues should be auto-repairable with these settings
         assert_eq!(auto_repairable.len(), 1);
         assert_eq!(auto_repairable[0].severity, ValidationSeverity::Error);

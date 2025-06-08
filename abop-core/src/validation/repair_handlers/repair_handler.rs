@@ -1,9 +1,9 @@
 //! Base repair handler trait and helper functions
 
+use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_patterns::IssuePattern;
-use crate::models::AppState;
 
 /// Trait for handling specific types of validation issues
 pub trait RepairHandler {

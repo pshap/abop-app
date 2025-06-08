@@ -58,10 +58,9 @@ impl CoreScanner {
             .await
             .map_err(|e| {
                 warn!("Failed to discover audio files: {}", e);
-                crate::scanner::error::ScanError::Io(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("File discovery failed: {}", e),
-                ))
+                crate::scanner::error::ScanError::Io(std::io::Error::other(format!(
+                    "File discovery failed: {e}"
+                )))
             })
     }
 
@@ -119,7 +118,7 @@ impl CoreScanner {
                     Some(entry)
                 }
                 Err(e) => {
-                    log::warn!("Error reading directory entry: {}", e);
+                    log::warn!("Error reading directory entry: {e}");
                     None
                 }
             })

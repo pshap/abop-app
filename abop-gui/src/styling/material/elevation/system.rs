@@ -5,9 +5,7 @@
 
 use crate::styling::material::{
     colors::MaterialColors,
-    elevation::{
-        constants, level::ElevationLevel, style::ElevationStyle
-    }
+    elevation::{constants, level::ElevationLevel, style::ElevationStyle},
 };
 use iced::{Color, Shadow, Vector};
 
@@ -107,10 +105,13 @@ impl MaterialElevation {
             .iter()
             .map(|&level| ElevationStyle::new(level, shadow_color, tint_color))
             .collect();
-        
+
         // Convert to array - safe because we know ElevationLevel::all() returns exactly 6 items
         styles.try_into().unwrap_or_else(|_| {
-            panic!("ElevationLevel::all() must return exactly {} items", constants::ELEVATION_LEVEL_COUNT)
+            panic!(
+                "ElevationLevel::all() must return exactly {} items",
+                constants::ELEVATION_LEVEL_COUNT
+            )
         })
     }
 
@@ -133,7 +134,8 @@ impl MaterialElevation {
         let scale = scale.max(constants::MIN_SCALE_FACTOR);
 
         // Use iterator to eliminate repetition
-        let scaled_styles: Vec<ElevationStyle> = self.iter()
+        let scaled_styles: Vec<ElevationStyle> = self
+            .iter()
             .map(|(_, style)| Self::scale_elevation_style(style, scale))
             .collect();
 

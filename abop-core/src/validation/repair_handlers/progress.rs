@@ -1,11 +1,11 @@
 //! Progress-specific repair operations
 
-use std::collections::HashMap;
+use super::repair_handler::{RepairHandler, create_repair_action_success};
 use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_patterns::IssuePattern;
-use super::repair_handler::{RepairHandler, create_repair_action_success};
+use std::collections::HashMap;
 
 /// Handles repair operations for progress-related issues
 #[derive(Debug, Default)]
@@ -13,19 +13,19 @@ pub struct ProgressRepairHandler;
 
 impl RepairHandler for ProgressRepairHandler {
     fn can_handle(&self, pattern: &IssuePattern) -> bool {
-        matches!(pattern,
-            IssuePattern::Orphaned |
-            IssuePattern::InvalidDuration
+        matches!(
+            pattern,
+            IssuePattern::Orphaned | IssuePattern::InvalidDuration
         )
     }
-    
+
     fn name(&self) -> &'static str {
         "Progress Repair Handler"
     }
-    
+
     fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
         let mut actions = Vec::new();
-        
+
         // Convert error to pattern for processing
         if let Some(pattern) = IssuePattern::from_validation_error(issue) {
             match pattern {
@@ -34,16 +34,17 @@ impl RepairHandler for ProgressRepairHandler {
                     if removed_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Remove,
-                            format!("Removed {} orphaned progress entries", removed_count),
+                            format!("Removed {removed_count} orphaned progress entries"),
                             "progress".to_string(),
                         ));
-                    }                }
+                    }
+                }
                 IssuePattern::InvalidDuration => {
                     let capped_count = Self::cap_progress_at_duration(state);
                     if capped_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Update,
-                            format!("Capped {} progress entries at audiobook duration", capped_count),
+                            format!("Capped {capped_count} progress entries at audiobook duration"),
                             "progress.position_seconds".to_string(),
                         ));
                     }
@@ -59,7 +60,7 @@ impl RepairHandler for ProgressRepairHandler {
                 }
             }
         }
-        
+
         actions
     }
 }
@@ -70,10 +71,11 @@ impl ProgressRepairHandler {
             state.app_data.audiobooks.iter().map(|ab| &ab.id).collect();
 
         let initial_count = state.app_data.progress.len();
-        state.app_data.progress.retain(|progress| {
-            valid_audiobook_ids.contains(&progress.audiobook_id)
-        });
-        
+        state
+            .app_data
+            .progress
+            .retain(|progress| valid_audiobook_ids.contains(&progress.audiobook_id));
+
         initial_count - state.app_data.progress.len()
     }
 

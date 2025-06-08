@@ -7,8 +7,8 @@
 mod error;
 mod recovery;
 mod repair_constants;
-mod repair_patterns;
 mod repair_handlers;
+mod repair_patterns;
 mod state_validator;
 pub mod validators;
 

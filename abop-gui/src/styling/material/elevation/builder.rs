@@ -77,7 +77,7 @@ impl ElevationStyleBuilder {
     /// Set custom tint opacity with validation
     #[must_use]
     pub fn with_custom_tint_opacity(mut self, opacity: f32) -> Self {
-        if self.validation_enabled && (opacity < 0.0 || opacity > 1.0) {
+        if self.validation_enabled && !(0.0..=1.0).contains(&opacity) {
             eprintln!("Warning: Tint opacity should be between 0.0 and 1.0, got {opacity}");
         }
         self.custom_tint_opacity = Some(opacity.clamp(0.0, 1.0));
@@ -96,18 +96,22 @@ impl ElevationStyleBuilder {
                 return ValidationResult::Error("Blur radius cannot be negative".to_string());
             }
             if shadow.opacity < 0.0 || shadow.opacity > 1.0 {
-                return ValidationResult::Error("Shadow opacity must be between 0.0 and 1.0".to_string());
+                return ValidationResult::Error(
+                    "Shadow opacity must be between 0.0 and 1.0".to_string(),
+                );
             }
             if shadow.blur_radius > 50.0 {
-                return ValidationResult::Warning("Very large blur radius may impact performance".to_string());
+                return ValidationResult::Warning(
+                    "Very large blur radius may impact performance".to_string(),
+                );
             }
         }
 
         // Check custom tint opacity
-        if let Some(opacity) = self.custom_tint_opacity {
-            if opacity < 0.0 || opacity > 1.0 {
-                return ValidationResult::Error("Tint opacity must be between 0.0 and 1.0".to_string());
-            }
+        if let Some(opacity) = self.custom_tint_opacity
+            && (!(0.0..=1.0).contains(&opacity))
+        {
+            return ValidationResult::Error("Tint opacity must be between 0.0 and 1.0".to_string());
         }
 
         ValidationResult::Valid
@@ -205,7 +209,9 @@ mod tests {
 
     #[test]
     fn test_builder_basic() {
-        let style = ElevationStyleBuilder::new(ElevationLevel::Level2).build().unwrap();
+        let style = ElevationStyleBuilder::new(ElevationLevel::Level2)
+            .build()
+            .unwrap();
         assert_eq!(style.level(), ElevationLevel::Level2);
         assert_eq!(style.dp, 3.0);
     }

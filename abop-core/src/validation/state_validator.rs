@@ -1,7 +1,10 @@
 //! Main state validator implementation
 
-use crate::validation::{error::{ValidationError, ValidationResult}, FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator};
 use crate::models::{AppState, Audiobook, Library, Progress};
+use crate::validation::{
+    FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator,
+    error::{ValidationError, ValidationResult},
+};
 
 /// Configuration options for state validation
 #[derive(Debug, Clone)]

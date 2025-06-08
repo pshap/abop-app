@@ -108,10 +108,10 @@ impl ScanOrchestrator {
         let total_files = files.len();
 
         // Report scan start
-        if options.enable_progress {
-            if let Some(reporter) = &self.progress_reporter {
-                reporter.report_started(total_files).await;
-            }
+        if options.enable_progress
+            && let Some(reporter) = &self.progress_reporter
+        {
+            reporter.report_started(total_files).await;
         }
 
         let mut processed_audiobooks = Vec::new();
@@ -180,18 +180,18 @@ impl ScanOrchestrator {
                         batch_audiobooks.push(audiobook);
 
                         // Report individual file progress
-                        if options.enable_progress {
-                            if let Some(reporter) = &self.progress_reporter {
-                                let file_name = path
-                                    .file_name()
-                                    .and_then(|n| n.to_str())
-                                    .unwrap_or("Unknown")
-                                    .to_string();
+                        if options.enable_progress
+                            && let Some(reporter) = &self.progress_reporter
+                        {
+                            let file_name = path
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown")
+                                .to_string();
 
-                                reporter
-                                    .report_file_processed(file_index + 1, total_files, file_name)
-                                    .await;
-                            }
+                            reporter
+                                .report_file_processed(file_index + 1, total_files, file_name)
+                                .await;
                         }
                     }
                     Err(e) => {
@@ -213,12 +213,12 @@ impl ScanOrchestrator {
                     processed_audiobooks.extend(batch_audiobooks);
 
                     // Report progress update instead of batch_committed
-                    if options.enable_progress {
-                        if let Some(reporter) = &self.progress_reporter {
-                            let progress =
-                                (processed_audiobooks.len() as f32 / total_files as f32) * 100.0;
-                            reporter.report_progress(progress).await;
-                        }
+                    if options.enable_progress
+                        && let Some(reporter) = &self.progress_reporter
+                    {
+                        let progress =
+                            (processed_audiobooks.len() as f32 / total_files as f32) * 100.0;
+                        reporter.report_progress(progress).await;
                     }
                 }
             }
@@ -228,19 +228,19 @@ impl ScanOrchestrator {
         let processed_count = processed_audiobooks.len();
 
         // Report completion
-        if options.enable_progress {
-            if let Some(reporter) = &self.progress_reporter {
-                reporter
-                    .report_complete(processed_count, error_count, duration)
-                    .await;
-            }
+        if options.enable_progress
+            && let Some(reporter) = &self.progress_reporter
+        {
+            reporter
+                .report_complete(processed_count, error_count, duration)
+                .await;
         }
 
         // Log performance summary
-        if options.enable_monitoring {
-            if let Some(monitor) = &self.performance_monitor {
-                monitor.log_summary();
-            }
+        if options.enable_monitoring
+            && let Some(monitor) = &self.performance_monitor
+        {
+            monitor.log_summary();
         }
 
         Ok(ScanSummary {
@@ -256,7 +256,7 @@ impl ScanOrchestrator {
         let db = self.database.clone();
         let max_concurrent_db = self.config.max_concurrent_db_operations;
         // Process database operations with controlled concurrency
-        let audiobooks_owned: Vec<Audiobook> = audiobooks.iter().cloned().collect();
+        let audiobooks_owned: Vec<Audiobook> = audiobooks.to_vec();
         let results: Vec<_> = stream::iter(audiobooks_owned.into_iter())
             .map(|audiobook| {
                 let db = db.clone();

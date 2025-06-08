@@ -1,37 +1,36 @@
 //! Integrity-specific repair operations
 
+use super::repair_handler::{RepairHandler, create_repair_action_success};
 use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_patterns::IssuePattern;
-use super::repair_handler::{RepairHandler, create_repair_action_success};
 
 /// Handles repair operations for integrity-related issues
 #[derive(Debug, Default)]
 pub struct IntegrityRepairHandler;
 
-impl RepairHandler for IntegrityRepairHandler {    fn can_handle(&self, pattern: &IssuePattern) -> bool {
-        matches!(pattern,
-            IssuePattern::Duplicate |
-            IssuePattern::Orphaned
-        )
+impl RepairHandler for IntegrityRepairHandler {
+    fn can_handle(&self, pattern: &IssuePattern) -> bool {
+        matches!(pattern, IssuePattern::Duplicate | IssuePattern::Orphaned)
     }
-    
+
     fn name(&self) -> &'static str {
         "Integrity Repair Handler"
     }
-    
+
     fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
         let mut actions = Vec::new();
-        
+
         // Convert error to pattern for processing
         if let Some(pattern) = IssuePattern::from_validation_error(issue) {
-            match pattern {                IssuePattern::Duplicate => {
+            match pattern {
+                IssuePattern::Duplicate => {
                     let removed_count = Self::remove_duplicates(state);
                     if removed_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Remove,
-                            format!("Removed {} duplicate entries", removed_count),
+                            format!("Removed {removed_count} duplicate entries"),
                             "duplicates".to_string(),
                         ));
                     }
@@ -47,7 +46,7 @@ impl RepairHandler for IntegrityRepairHandler {    fn can_handle(&self, pattern:
                 }
             }
         }
-        
+
         actions
     }
 }

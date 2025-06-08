@@ -64,9 +64,9 @@ pub struct StatePersistence {
 
 impl StatePersistence {
     /// Creates a new state persistence handler
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the state file path cannot be determined
     pub fn new() -> Result<Self> {
         let state_path = Self::get_state_path()?;
@@ -86,9 +86,9 @@ impl StatePersistence {
     }
 
     /// Loads application state from the file system
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The state file cannot be read
     /// - The state file contains invalid TOML
@@ -106,7 +106,8 @@ impl StatePersistence {
         let mut state: AppState = toml::from_str(&contents)?;
 
         // Validate and repair the loaded state
-        let (validation_result, repair_actions) = crate::validation::validate_and_repair_app_state(&mut state);
+        let (validation_result, repair_actions) =
+            crate::validation::validate_and_repair_app_state(&mut state);
 
         if !repair_actions.is_empty() {
             log::info!(
@@ -157,9 +158,9 @@ impl StatePersistence {
     }
 
     /// Saves application state with the given options
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The parent directory cannot be created
     /// - The state cannot be serialized to TOML
@@ -170,17 +171,19 @@ impl StatePersistence {
         } else {
             self.save_immediate(state, options)
         }
-    }    /// Saves state immediately (non-blocking)
+    }
+    /// Saves state immediately (non-blocking)
     fn save_immediate(&self, state: &AppState, _options: &SaveOptions) -> Result<String> {
         self.ensure_parent_directory()?;
-        
+
         let contents = toml::to_string_pretty(state)?;
-        std::fs::write(&self.state_path, contents)?;        let message = format!(
+        std::fs::write(&self.state_path, contents)?;
+        let message = format!(
             "State saved successfully with {} audiobooks",
             state.app_data.audiobooks.len()
         );
-        
-        log::info!("{}", message);
+
+        log::info!("{message}");
         Ok(message)
     }
 
@@ -193,7 +196,10 @@ impl StatePersistence {
             }
         };
 
-        log::info!("save_blocking: Saving to path: {}", self.state_path.display());
+        log::info!(
+            "save_blocking: Saving to path: {}",
+            self.state_path.display()
+        );
         send_progress(0.1); // 10% - Started
 
         self.ensure_parent_directory()?;
@@ -203,8 +209,7 @@ impl StatePersistence {
         let is_large_dataset = audiobook_count > LARGE_DATASET_THRESHOLD;
 
         log::info!(
-            "save_blocking: About to serialize AppState ({} audiobooks) to TOML.",
-            audiobook_count
+            "save_blocking: About to serialize AppState ({audiobook_count} audiobooks) to TOML."
         );
         send_progress(0.3); // 30% - Starting serialization
 
@@ -239,7 +244,7 @@ impl StatePersistence {
             "save_blocking: About to write file at {}",
             self.state_path.display()
         );
-        
+
         if let Err(e) = std::fs::write(&self.state_path, &contents) {
             log::error!(
                 "save_blocking: File write FAILED for {}: {}",
@@ -250,13 +255,13 @@ impl StatePersistence {
         }
 
         send_progress(1.0); // 100% - Complete
-        
-        let message = format!(
-            "State saved successfully with {} audiobooks",
-            audiobook_count
+
+        let message = format!("State saved successfully with {audiobook_count} audiobooks");
+
+        log::info!(
+            "save_blocking: File write successful to {}",
+            self.state_path.display()
         );
-        
-        log::info!("save_blocking: File write successful to {}", self.state_path.display());
         Ok(message)
     }
 
@@ -278,13 +283,15 @@ impl StatePersistence {
     }
 
     /// Creates a backup of the current state file
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the backup cannot be created
     pub fn create_backup(&self, backup_dir: Option<&PathBuf>) -> Result<PathBuf> {
         if !self.state_path.exists() {
-            return Err(AppError::Config("No state file exists to backup".to_string()));
+            return Err(AppError::Config(
+                "No state file exists to backup".to_string(),
+            ));
         }
 
         let backup_dir = backup_dir
@@ -292,7 +299,7 @@ impl StatePersistence {
             .unwrap_or_else(|| self.state_path.parent().unwrap().to_path_buf());
 
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-        let backup_filename = format!("app_state_backup_{}.toml", timestamp);
+        let backup_filename = format!("app_state_backup_{timestamp}.toml");
         let backup_path = backup_dir.join(backup_filename);
 
         std::fs::copy(&self.state_path, &backup_path)?;
@@ -302,9 +309,9 @@ impl StatePersistence {
     }
 
     /// Restores state from a backup file
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the backup cannot be restored
     pub fn restore_from_backup(&self, backup_path: &PathBuf) -> Result<AppState> {
         if !backup_path.exists() {

@@ -44,7 +44,7 @@ impl DataRepository {
     }
 
     // Library management methods
-    
+
     /// Adds a library to the repository
     pub fn add_library(&mut self, library: Library) {
         self.data.libraries.push(library);
@@ -65,7 +65,10 @@ impl DataRepository {
 
     /// Gets a mutable reference to a library by ID
     pub fn get_library_mut(&mut self, library_id: &str) -> Option<&mut Library> {
-        self.data.libraries.iter_mut().find(|lib| lib.id == library_id)
+        self.data
+            .libraries
+            .iter_mut()
+            .find(|lib| lib.id == library_id)
     }
 
     /// Gets all libraries
@@ -96,12 +99,18 @@ impl DataRepository {
     /// Gets an audiobook by ID
     #[must_use]
     pub fn get_audiobook(&self, audiobook_id: &str) -> Option<&Audiobook> {
-        self.data.audiobooks.iter().find(|book| book.id == audiobook_id)
+        self.data
+            .audiobooks
+            .iter()
+            .find(|book| book.id == audiobook_id)
     }
 
     /// Gets a mutable reference to an audiobook by ID
     pub fn get_audiobook_mut(&mut self, audiobook_id: &str) -> Option<&mut Audiobook> {
-        self.data.audiobooks.iter_mut().find(|book| book.id == audiobook_id)
+        self.data
+            .audiobooks
+            .iter_mut()
+            .find(|book| book.id == audiobook_id)
     }
 
     /// Gets audiobooks for a specific library
@@ -146,7 +155,9 @@ impl DataRepository {
     /// Removes progress for an audiobook
     pub fn remove_progress(&mut self, audiobook_id: &str) -> bool {
         let initial_len = self.data.progress.len();
-        self.data.progress.retain(|p| p.audiobook_id != audiobook_id);
+        self.data
+            .progress
+            .retain(|p| p.audiobook_id != audiobook_id);
         self.data.progress.len() != initial_len
     }
 
@@ -218,8 +229,8 @@ impl DataRepository {
     /// Checks if the repository is empty
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.data.libraries.is_empty() 
-            && self.data.audiobooks.is_empty() 
+        self.data.libraries.is_empty()
+            && self.data.audiobooks.is_empty()
             && self.data.progress.is_empty()
     }
 }

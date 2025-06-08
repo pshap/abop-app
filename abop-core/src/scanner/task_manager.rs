@@ -128,9 +128,7 @@ impl Default for TaskManager {
 mod tests {
     use super::*;
     use crate::scanner::Library;
-    use crate::scanner::{
-        file_discovery::{DefaultFileDiscoverer, FileDiscoverer},
-    };
+    use crate::scanner::file_discovery::{DefaultFileDiscoverer, FileDiscoverer};
 
     #[tokio::test]
     async fn test_task_manager_cancellation() {
@@ -177,7 +175,7 @@ mod tests {
             for (index, path) in audio_files.into_iter().enumerate() {
                 // Simulate some work
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-                
+
                 // Create a dummy audiobook for testing
                 let audiobook = crate::models::Audiobook::new(&library.name, path);
                 audiobooks.push(audiobook);
@@ -193,9 +191,7 @@ mod tests {
 
             let duration = start_time.elapsed();
             let processed_count = audiobooks.len();
-            reporter
-                .report_complete(processed_count, 0, duration)
-                .await;
+            reporter.report_complete(processed_count, 0, duration).await;
             Ok(ScanSummary {
                 new_files: audiobooks,
                 scan_duration: duration,

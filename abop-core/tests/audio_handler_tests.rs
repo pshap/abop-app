@@ -12,7 +12,8 @@ fn handle_audio_message(state: &mut AppState, message: AudioMessage) -> Option<(
     match message {
         AudioMessage::ProcessAudio => {
             // Add notification to state
-            if state.app_data.audiobooks.is_empty() || !state.app_data.audiobooks.iter().any(|a| a.selected)
+            if state.app_data.audiobooks.is_empty()
+                || !state.app_data.audiobooks.iter().any(|a| a.selected)
             {
                 // No audiobooks selected
                 add_notification(state, "No audiobooks selected for processing");

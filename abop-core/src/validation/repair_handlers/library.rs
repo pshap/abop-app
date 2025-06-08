@@ -1,29 +1,29 @@
 //! Library-specific repair operations
 
+use super::repair_handler::{RepairHandler, create_repair_action_success};
 use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_patterns::IssuePattern;
-use super::repair_handler::{RepairHandler, create_repair_action_success};
 
 /// Handles repair operations for library-related issues
 #[derive(Debug, Default)]
 pub struct LibraryRepairHandler;
 
-impl RepairHandler for LibraryRepairHandler {    fn can_handle(&self, pattern: &IssuePattern) -> bool {
-        matches!(pattern,
-            IssuePattern::EmptyName |
-            IssuePattern::FileNotExists |
-            IssuePattern::Duplicate
+impl RepairHandler for LibraryRepairHandler {
+    fn can_handle(&self, pattern: &IssuePattern) -> bool {
+        matches!(
+            pattern,
+            IssuePattern::EmptyName | IssuePattern::FileNotExists | IssuePattern::Duplicate
         )
     }
-    
+
     fn name(&self) -> &'static str {
         "Library Repair Handler"
     }
-      fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
+    fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
         let mut actions = Vec::new();
-        
+
         // Convert error to pattern for processing
         if let Some(pattern) = IssuePattern::from_validation_error(issue) {
             match pattern {
@@ -32,7 +32,7 @@ impl RepairHandler for LibraryRepairHandler {    fn can_handle(&self, pattern: &
                     if repaired_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Update,
-                            format!("Fixed {} libraries with empty names", repaired_count),
+                            format!("Fixed {repaired_count} libraries with empty names"),
                             "library.name".to_string(),
                         ));
                     }
@@ -42,7 +42,7 @@ impl RepairHandler for LibraryRepairHandler {    fn can_handle(&self, pattern: &
                     if removed_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Remove,
-                            format!("Removed {} libraries with invalid paths", removed_count),
+                            format!("Removed {removed_count} libraries with invalid paths"),
                             "library.path".to_string(),
                         ));
                     }
@@ -58,7 +58,7 @@ impl RepairHandler for LibraryRepairHandler {    fn can_handle(&self, pattern: &
                 }
             }
         }
-        
+
         actions
     }
 }
@@ -77,7 +77,10 @@ impl LibraryRepairHandler {
 
     fn remove_invalid_libraries(state: &mut AppState) -> usize {
         let initial_count = state.app_data.libraries.len();
-        state.app_data.libraries.retain(|library| library.path.exists());
+        state
+            .app_data
+            .libraries
+            .retain(|library| library.path.exists());
         initial_count - state.app_data.libraries.len()
     }
 }

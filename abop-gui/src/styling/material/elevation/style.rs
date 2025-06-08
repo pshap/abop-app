@@ -4,7 +4,7 @@
 //! for a specific elevation level including shadow and surface tint.
 
 use crate::styling::material::elevation::{
-    color_blending, shadow_calculations, constants, level::ElevationLevel
+    color_blending, constants, level::ElevationLevel, shadow_calculations,
 };
 use iced::{Color, Shadow, Vector};
 // Serde traits will be used when serialization is needed
@@ -74,7 +74,8 @@ impl ElevationStyle {
             offset: Vector::new(0.0, params.offset_y),
             blur_radius: params.blur_radius,
         }
-    }    /// Calculate tint opacity for custom elevation value
+    }
+    /// Calculate tint opacity for custom elevation value
     #[cfg(test)]
     pub const fn calculate_tint_opacity(level: ElevationLevel) -> f32 {
         // Material Design 3 uses surface tint to indicate elevation
