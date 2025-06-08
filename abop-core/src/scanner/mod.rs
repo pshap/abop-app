@@ -8,10 +8,12 @@
 
 mod config;
 mod constants;
+mod core_scanner;
 pub mod error;
 mod file_discovery;
 mod file_processor;
 mod library_scanner;
+mod orchestrator;
 mod performance;
 pub mod progress;
 mod result;
@@ -20,12 +22,14 @@ mod task_manager;
 
 pub use config::*;
 pub use constants::*;
+pub use core_scanner::CoreScanner;
 pub use error::{ScanError, ScanResult};
 pub use file_discovery::FileDiscoverer;
 pub use file_processor::FileProcessor;
 pub use library_scanner::{
     LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanProgressUpdate,
 };
+pub use orchestrator::{ScanOptions, ScanOrchestrator};
 pub use performance::{OperationType, PerformanceMetrics, PerformanceMonitor, SlowOperation};
 pub use progress::{ChannelReporter, ProgressReporter, ScanProgress};
 pub use result::*;
