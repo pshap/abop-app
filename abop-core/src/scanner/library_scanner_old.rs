@@ -7,16 +7,17 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
+use tracing::{error, warn};
 
 use crate::{
     db::Database,
-    models::{Audiobook, Library},
+    models::Library,
     scanner::{
         config::ScannerConfig,
-        error::ScanResult,
+        error::{ScanError, ScanResult},
         orchestrator::{ScanOptions, ScanOrchestrator},
         performance::PerformanceMonitor,
-        progress::{ChannelReporter, ScanProgress},
+        progress::{ChannelReporter, ProgressReporter, ScanProgress},
         result::ScanSummary,
     },
 };
@@ -117,8 +118,8 @@ impl LibraryScanner {
 
     /// Primary scan method - unified interface for all scanning operations
     pub async fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
-        let orchestrator = self.create_orchestrator(&options);
-        orchestrator.scan(options).await
+        let orchestrator = self.create_orchestrator(options);
+        orchestrator.scan(ScanOptions::default()).await
     }
 
     /// Scan with progress reporting
@@ -133,10 +134,10 @@ impl LibraryScanner {
             ..Default::default()
         };
         
-        let orchestrator = self.create_orchestrator(&options)
+        let orchestrator = self.create_orchestrator(options)
             .with_progress_reporter(progress_reporter);
         
-        orchestrator.scan(options).await
+        orchestrator.scan(ScanOptions::default()).await
     }
 
     /// Creates a task for scanning the library (Iced integration)
@@ -161,7 +162,7 @@ impl LibraryScanner {
     }
 
     /// Creates an orchestrator with the current scanner configuration
-    fn create_orchestrator(&self, options: &ScanOptions) -> ScanOrchestrator {
+    fn create_orchestrator(&self, options: ScanOptions) -> ScanOrchestrator {
         let mut orchestrator = ScanOrchestrator::new(
             self.db.clone(),
             self.library.clone(),
@@ -216,7 +217,9 @@ impl LibraryScanner {
         progress_tx: mpsc::Sender<ScanProgress>,
     ) -> Task<ScanResult<ScanSummary>> {
         self.scan_task_with_progress(progress_tx)
-    }    /// Legacy task creation method - use scan_task_with_progress() instead
+    }
+
+    /// Legacy task creation method - use scan_task_with_progress() instead
     #[deprecated(note = "Use scan_task_with_progress() method instead")]
     pub fn scan_async_task(
         &self,
@@ -224,18 +227,14 @@ impl LibraryScanner {
     ) -> Task<ScanResult<LibraryScanResult>> {
         let scanner = self.clone();
         Task::perform(
-            async move { scanner.scan_with_progress(progress_tx).await.map(|summary| LibraryScanResult {
-                processed_count: summary.processed,
-                error_count: summary.errors,
-                audiobooks: summary.new_files,
-                scan_duration: summary.scan_duration,
-            }) },
+            async move { scanner.scan_async_enhanced(progress_tx).await },
             |result| result,
         )
     }
 }
+}
 
-/// Represents the result of a library scan (legacy compatibility)
+/// Represents the result of a library scan
 #[derive(Debug, Clone)]
 pub struct LibraryScanResult {
     /// Number of files successfully processed
@@ -273,19 +272,7 @@ mod tests {
     use crate::test_constants::*;
     use std::fs::File;
     use std::io::Write;
-    use tempfile::tempdir;    #[tokio::test]
-    async fn test_scanner_creation() {
-        let temp_dir = tempdir().unwrap();
-        let _library = Library {
-            id: "test".to_string(),
-            name: "Test Library".to_string(),
-            path: temp_dir.path().to_path_buf(),
-        };
-        
-        // This would need a proper database for full testing
-        // let scanner = LibraryScanner::new(db, library);
-        // assert!(scanner.get_performance_monitor().is_some());
-    }
+    use tempfile::tempdir;
 
     #[test]
     fn test_find_audio_files() {
@@ -307,5 +294,49 @@ mod tests {
             let mut f = File::create(&path).unwrap();
             write!(f, "{}", file::TEST_CONTENT).unwrap();
         }
+
+        // Create a test library
+        let db = Database::open(file::MEMORY_DB).unwrap();
+        let library = Library::new(library::TEST_NAME, temp_dir.path());
+
+        // Create a scanner and find audio files
+        let scanner = LibraryScanner::new(db, library);
+        let audio_files = scanner.find_audio_files();
+
+        // Should find 3 audio files (excluding the .txt file)
+        assert_eq!(audio_files.len(), 3);
+        assert!(audio_files.iter().any(|p| p.ends_with(file::TEST_MP3)));
+        assert!(audio_files.iter().any(|p| p.ends_with(file::TEST_M4B)));
+        assert!(audio_files.iter().any(|p| p.ends_with(file::TEST_FLAC)));
+        assert!(!audio_files.iter().any(|p| p.ends_with(file::TEST_TXT)));
+    }
+
+    #[tokio::test]
+    async fn test_scan_async() {
+        let db = Database::in_memory().unwrap();
+        let library = Library {
+            id: "test".to_string(),
+            name: "Test Library".to_string(),
+            path: PathBuf::from("test_data"),
+        };
+        let scanner = LibraryScanner::new(db, library);
+        let (tx, _rx) = mpsc::channel(100);
+        let result = scanner.scan_async(Some(tx)).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_cancellation() {
+        let db = Database::in_memory().unwrap();
+        let library = Library {
+            id: "test".to_string(),
+            name: "Test Library".to_string(),
+            path: PathBuf::from("test_data"),
+        };
+        let scanner = LibraryScanner::new(db, library);
+        scanner.cancel_scan();
+        let (tx, _rx) = mpsc::channel(100);
+        let result = scanner.scan_async(Some(tx)).await;
+        assert!(matches!(result, Err(ScanError::Cancelled)));
     }
 }
