@@ -38,7 +38,7 @@ pub mod safe_conversions {
     use super::{AudioProcessingError, Result};
 
     /// Safe conversion from usize to f64 for audio calculations
-    pub fn safe_usize_to_f64_audio(value: usize) -> Result<f64> {
+    pub const fn safe_usize_to_f64_audio(value: usize) -> Result<f64> {
         // Direct conversion since it's just a type cast
         Ok(value as f64)
     }
@@ -65,7 +65,7 @@ pub mod safe_conversions {
     }
 
     /// Safe database count conversion
-    pub fn safe_db_count_to_usize(count: i64) -> usize {
+    pub const fn safe_db_count_to_usize(count: i64) -> usize {
         if count < 0 { 0 } else { count as usize }
     }
 
@@ -80,7 +80,7 @@ pub mod safe_conversions {
     }
 
     /// Safe u64 to f64 conversion for file sizes
-    pub fn safe_u64_to_f64_size(bytes: u64) -> f64 {
+    pub const fn safe_u64_to_f64_size(bytes: u64) -> f64 {
         bytes as f64
     }
 
