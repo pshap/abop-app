@@ -163,7 +163,7 @@ impl ScannerProgress {
     }
 
     /// Updates the progress state with a new progress value
-    pub fn update_progress(&mut self, progress: f32) {
+    pub const fn update_progress(&mut self, progress: f32) {
         self.progress = Some(progress);
     }
 
@@ -173,28 +173,28 @@ impl ScannerProgress {
     }
 
     /// Updates the total number of files to process
-    pub fn update_total_count(&mut self, total: usize) {
+    pub const fn update_total_count(&mut self, total: usize) {
         self.total_count = total;
     }
 
     /// Increments the current file count
-    pub fn increment_count(&mut self) {
+    pub const fn increment_count(&mut self) {
         self.current_count += 1;
     }
 
     /// Increments the error count
-    pub fn increment_error_count(&mut self) {
+    pub const fn increment_error_count(&mut self) {
         self.error_count += 1;
     }
 
     /// Updates the scanner state
-    pub fn update_state(&mut self, state: abop_core::scanner::ScannerState) {
+    pub const fn update_state(&mut self, state: abop_core::scanner::ScannerState) {
         self.state = state;
     }
 
     /// Gets the current progress percentage
     #[must_use]
-    pub fn get_progress(&self) -> Option<f32> {
+    pub const fn get_progress(&self) -> Option<f32> {
         self.progress
     }
 
@@ -206,13 +206,13 @@ impl ScannerProgress {
 
     /// Gets the current file count
     #[must_use]
-    pub fn get_current_count(&self) -> usize {
+    pub const fn get_current_count(&self) -> usize {
         self.current_count
     }
 
     /// Gets the total file count
     #[must_use]
-    pub fn get_total_count(&self) -> usize {
+    pub const fn get_total_count(&self) -> usize {
         self.total_count
     }
 
@@ -224,7 +224,7 @@ impl ScannerProgress {
 
     /// Gets the error count
     #[must_use]
-    pub fn get_error_count(&self) -> usize {
+    pub const fn get_error_count(&self) -> usize {
         self.error_count
     }
 
