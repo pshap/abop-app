@@ -1,12 +1,9 @@
 //! Main state validator implementation
 
-use super::error::{ValidationError, ValidationResult};
-use super::validators::{FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator};
+use crate::validation::{error::{ValidationError, ValidationResult}, FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator};
 use crate::models::{AppState, Audiobook, Library, Progress};
 
-/// Configuration for state validation behavior
 #[derive(Debug, Clone)]
-#[allow(clippy::struct_excessive_bools)]
 pub struct ValidationConfig {
     /// Whether to validate file existence for referenced paths
     pub check_file_existence: bool,
@@ -69,6 +66,7 @@ impl ValidationConfig {
 }
 
 /// Main state validator that orchestrates all validation checks
+#[derive(Debug, Clone)]
 pub struct StateValidator {
     config: ValidationConfig,
     file_validator: FileValidator,
@@ -102,18 +100,18 @@ impl StateValidator {
         }
 
         // Validate libraries
-        for library in &state.data.libraries {
+        for library in &state.app_data.libraries {
             self.validate_library(library, &mut result);
         }
 
         // Validate audiobooks
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             self.validate_audiobook(audiobook, &mut result);
         }
 
         // Validate progress entries
-        for progress in &state.data.progress {
-            self.validate_progress(progress, &state.data.audiobooks, &mut result);
+        for progress in &state.app_data.progress {
+            self.validate_progress(progress, &state.app_data.audiobooks, &mut result);
         }
 
         // Cross-referential integrity checks
@@ -322,7 +320,7 @@ mod tests {
     fn test_library_name_validation() {
         let mut state = AppState::default();
         let library = Library::new("", "/non/existent/path");
-        state.data.libraries.push(library);
+        state.app_data.libraries.push(library);
 
         let validator = StateValidator::new(ValidationConfig::fast());
         let result = validator.validate(&state);
@@ -342,7 +340,7 @@ mod tests {
 
         // Add progress for non-existent audiobook
         let progress = Progress::new("non-existent-id", 100);
-        state.data.progress.push(progress);
+        state.app_data.progress.push(progress);
 
         let validator = StateValidator::new(ValidationConfig::fast());
         let result = validator.validate(&state);

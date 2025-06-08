@@ -162,7 +162,7 @@ impl UiState {
                     scan_duration: Duration::from_secs(0),
                 })
                 .collect(),
-            audiobooks: core_state.data.audiobooks,
+            audiobooks: core_state.app_data.audiobooks,
             needs_redraw: false,
             active_task: None,
             recent_tasks: Vec::new(),

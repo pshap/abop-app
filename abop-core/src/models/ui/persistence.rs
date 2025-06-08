@@ -57,7 +57,7 @@ impl SaveOptions {
 }
 
 /// Handles state persistence operations with configurable options
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StatePersistence {
     state_path: PathBuf,
 }
@@ -170,18 +170,14 @@ impl StatePersistence {
         } else {
             self.save_immediate(state, options)
         }
-    }
-
-    /// Saves state immediately (non-blocking)
-    fn save_immediate(&self, state: &AppState, options: &SaveOptions) -> Result<String> {
+    }    /// Saves state immediately (non-blocking)
+    fn save_immediate(&self, state: &AppState, _options: &SaveOptions) -> Result<String> {
         self.ensure_parent_directory()?;
         
         let contents = toml::to_string_pretty(state)?;
-        std::fs::write(&self.state_path, contents)?;
-
-        let message = format!(
+        std::fs::write(&self.state_path, contents)?;        let message = format!(
             "State saved successfully with {} audiobooks",
-            state.data_repository().data().audiobooks.len()
+            state.app_data.audiobooks.len()
         );
         
         log::info!("{}", message);
@@ -203,7 +199,7 @@ impl StatePersistence {
         self.ensure_parent_directory()?;
         send_progress(0.2); // 20% - Directory created
 
-        let audiobook_count = state.data_repository().data().audiobooks.len();
+        let audiobook_count = state.app_data.audiobooks.len();
         let is_large_dataset = audiobook_count > LARGE_DATASET_THRESHOLD;
 
         log::info!(

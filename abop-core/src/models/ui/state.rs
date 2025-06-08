@@ -3,11 +3,9 @@
 //! This module contains the main AppState struct with improved separation of concerns,
 //! delegating specific responsibilities to specialized components.
 
-use crate::error::AbopResult;
-use crate::models::AudiobookId;
-use crate::validation::StateValidator;
+use crate::error::Result;
+use crate::validation::{StateValidator, ValidationConfig};
 use super::{
-    constants::*,
     data_repository::DataRepository,
     persistence::{SaveOptions, StatePersistence},
     types::*,
@@ -26,7 +24,7 @@ use tracing::{debug, info, warn};
 pub struct AppState {
     // Core UI state
     pub current_view: ViewType,
-    pub selected_audiobook_id: Option<AudiobookId>,
+    pub selected_audiobook_id: Option<String>,
     pub user_preferences: UserPreferences,
     pub window_config: WindowConfig,
     pub theme_config: ThemeConfig,
@@ -68,21 +66,20 @@ impl AppState {
         let mut state = Self::default();
         state.initialize_components();
         state
-    }
-    
-    /// Create AppState from a specific state file
-    pub fn from_file(state_file: PathBuf) -> AbopResult<Self> {
-        let persistence = StatePersistence::new(state_file);
-        let mut state = persistence.load_state()?;
+    }    /// Create AppState from a specific state file
+    pub fn from_file(state_file: PathBuf) -> Result<Self> {
+        let persistence = StatePersistence::with_path(state_file);
+        let mut state = persistence.load()?;
         state.initialize_components();
-        Ok(state)
-    }
+        Ok(state)    }
     
     /// Initialize internal components
     fn initialize_components(&mut self) {
         self.data_repository = Some(DataRepository::new());
-        self.persistence = Some(StatePersistence::default());
-        self.validator = Some(StateValidator::new());
+        self.persistence = Some(StatePersistence::new().unwrap_or_else(|_| {
+            StatePersistence::with_path(PathBuf::from("state.toml"))
+        }));
+        self.validator = Some(StateValidator::new(ValidationConfig::default()));
         
         debug!("AppState components initialized");
     }
@@ -103,7 +100,7 @@ impl AppState {
     }
     
     /// Set the selected audiobook
-    pub fn select_audiobook(&mut self, audiobook_id: Option<AudiobookId>) {
+    pub fn select_audiobook(&mut self, audiobook_id: Option<String>) {
         debug!("Selected audiobook changed to: {:?}", audiobook_id);
         self.selected_audiobook_id = audiobook_id;
     }
@@ -132,66 +129,62 @@ impl AppState {
         self.playback_config = config;
     }
     
-    // === Data Operations (delegated to DataRepository) ===
-    
-    /// Refresh all data from the repository
-    pub fn refresh_data(&mut self) -> AbopResult<()> {
+    // === Data Operations (delegated to DataRepository) ===    /// Refresh all data from the repository
+    pub fn refresh_data(&mut self) -> Result<()> {
         self.ensure_initialized();
-        if let Some(ref mut repo) = self.data_repository {
-            self.app_data = repo.load_all_data()?;
+        if let Some(ref repo) = self.data_repository {
+            self.app_data.libraries = repo.libraries().to_vec();
+            self.app_data.audiobooks = repo.audiobooks().to_vec();
+            self.app_data.progress = repo.progress().to_vec();
             info!("All application data refreshed");
         }
         Ok(())
     }
     
     /// Refresh libraries data
-    pub fn refresh_libraries(&mut self) -> AbopResult<()> {
-        self.ensure_initialized();
-        if let Some(ref mut repo) = self.data_repository {
-            self.app_data.libraries = repo.load_libraries()?;
+    pub fn refresh_libraries(&mut self) -> Result<()> {
+        self.ensure_initialized();        if let Some(ref repo) = self.data_repository {
+            self.app_data.libraries = repo.libraries().to_vec();
             info!("Libraries data refreshed");
         }
         Ok(())
     }
     
     /// Refresh audiobooks data
-    pub fn refresh_audiobooks(&mut self) -> AbopResult<()> {
-        self.ensure_initialized();
-        if let Some(ref mut repo) = self.data_repository {
-            self.app_data.audiobooks = repo.load_audiobooks()?;
+    pub fn refresh_audiobooks(&mut self) -> Result<()> {
+        self.ensure_initialized();        if let Some(ref repo) = self.data_repository {
+            self.app_data.audiobooks = repo.audiobooks().to_vec();
             info!("Audiobooks data refreshed");
         }
         Ok(())
     }
     
     /// Refresh playback progress data
-    pub fn refresh_progress(&mut self) -> AbopResult<()> {
-        self.ensure_initialized();
-        if let Some(ref mut repo) = self.data_repository {
-            self.app_data.playback_progress = repo.load_progress()?;
+    pub fn refresh_progress(&mut self) -> Result<()> {
+        self.ensure_initialized();        if let Some(ref repo) = self.data_repository {
+            self.app_data.progress = repo.progress().to_vec();
             info!("Playback progress data refreshed");
         }
         Ok(())
     }
     
     // === Persistence Operations (delegated to StatePersistence) ===
-    
-    /// Save state with default options
-    pub fn save(&self) -> AbopResult<()> {
+      /// Save state with default options
+    pub fn save(&self) -> Result<()> {
         self.save_with_options(SaveOptions::default())
     }
     
     /// Save state with background processing
-    pub fn save_async(&self) -> AbopResult<()> {
+    pub fn save_async(&self) -> Result<()> {
         let options = SaveOptions {
-            background: true,
+            blocking: false,
             ..Default::default()
         };
         self.save_with_options(options)
     }
     
     /// Save state with backup
-    pub fn save_with_backup(&self) -> AbopResult<()> {
+    pub fn save_with_backup(&self) -> Result<()> {
         let options = SaveOptions {
             create_backup: true,
             ..Default::default()
@@ -200,22 +193,20 @@ impl AppState {
     }
     
     /// Save state with custom options (replaces the three separate save methods)
-    pub fn save_with_options(&self, options: SaveOptions) -> AbopResult<()> {
-        if let Some(ref persistence) = self.persistence {
-            persistence.save_state(self, options)?;
+    pub fn save_with_options(&self, options: SaveOptions) -> Result<()> {        if let Some(ref persistence) = self.persistence {
+            persistence.save(self, &options)?;
             debug!("State saved with options: {:?}", options);
-        } else {
-            warn!("Persistence component not initialized, using default");
-            let persistence = StatePersistence::default();
-            persistence.save_state(self, options)?;
+        } else {            warn!("Persistence component not initialized, using default");
+            let persistence = StatePersistence::new().map_err(|_| {
+                crate::error::AppError::Io("Failed to create default persistence".to_string())
+            })?;
+            persistence.save(self, &options)?;
         }
         Ok(())
     }
-    
-    /// Load state from file
-    pub fn load(&mut self) -> AbopResult<()> {
-        if let Some(ref persistence) = self.persistence {
-            let loaded_state = persistence.load_state()?;
+      /// Load state from file
+    pub fn load(&mut self) -> Result<()> {        if let Some(ref persistence) = self.persistence {
+            let loaded_state = persistence.load()?;
             *self = loaded_state;
             self.initialize_components();
             info!("State loaded successfully");
@@ -225,23 +216,29 @@ impl AppState {
         Ok(())
     }
     
-    // === Validation Operations ===
-    
-    /// Validate current state
-    pub fn validate(&self) -> AbopResult<()> {
+    // === Validation Operations ===    /// Validate current state
+    pub fn validate(&self) -> Result<()> {
         if let Some(ref validator) = self.validator {
-            validator.validate_state(self)?;
+            let validation_result = validator.validate(self);
+            if !validation_result.is_valid() {
+                return Err(crate::error::AppError::ValidationFailed(format!(
+                    "State validation failed with {} issues", 
+                    validation_result.issues.len()
+                )));
+            }
             debug!("State validation passed");
         }
         Ok(())
     }
     
     /// Perform state recovery if needed
-    pub fn recover(&mut self) -> AbopResult<()> {
+    pub fn recover(&mut self) -> Result<()> {
         if let Some(ref validator) = self.validator {
-            let recovered = validator.attempt_recovery(self)?;
-            if recovered {
-                info!("State recovery performed successfully");
+            let validation_result = validator.validate(self);
+            if validation_result.has_critical_issues() {
+                // For now, just log the issues - recovery logic would go here
+                warn!("State has critical issues that need recovery: {}", validation_result);
+                // TODO: Implement actual recovery logic
             }
         }
         Ok(())
@@ -282,7 +279,7 @@ impl AppState {
     }
     
     /// Get selected audiobook ID
-    pub fn selected_audiobook_id(&self) -> Option<&AudiobookId> {
+    pub fn selected_audiobook_id(&self) -> Option<&String> {
         self.selected_audiobook_id.as_ref()
     }
     

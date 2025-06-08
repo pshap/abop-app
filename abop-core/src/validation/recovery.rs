@@ -237,8 +237,8 @@ impl StateRepairStrategy {
         )
         .with_details(format!(
             "Backed up {} libraries, {} audiobooks",
-            state.data.libraries.len(),
-            state.data.audiobooks.len()
+            state.app_data.libraries.len(),
+            state.app_data.audiobooks.len()
         ))
     }
 
@@ -325,10 +325,10 @@ impl StateRepairStrategy {
             if issue.message.contains("non-existent") || issue.message.contains("orphaned") {
                 // Get valid audiobook IDs for reference checking
                 let valid_audiobook_ids: std::collections::HashSet<_> =
-                    state.data.audiobooks.iter().map(|ab| &ab.id).collect();
+                    state.app_data.audiobooks.iter().map(|ab| &ab.id).collect();
 
                 // Remove orphaned progress entries
-                state.data.progress.retain(|progress| {
+                state.app_data.progress.retain(|progress| {
                     let is_valid = valid_audiobook_ids.contains(&progress.audiobook_id);
                     if !is_valid {
                         removed_count += 1;
@@ -444,7 +444,7 @@ impl StateRepairStrategy {
 
     fn repair_empty_library_names(state: &mut AppState) -> usize {
         let mut count = 0;
-        for library in &mut state.data.libraries {
+        for library in &mut state.app_data.libraries {
             if library.name.trim().is_empty() {
                 library.name = format!("Library {}", library.id);
                 count += 1;
@@ -454,23 +454,23 @@ impl StateRepairStrategy {
     }
 
     fn remove_invalid_libraries(state: &mut AppState) -> usize {
-        let initial_count = state.data.libraries.len();
-        state.data.libraries.retain(|library| library.path.exists());
-        initial_count - state.data.libraries.len()
+        let initial_count = state.app_data.libraries.len();
+        state.app_data.libraries.retain(|library| library.path.exists());
+        initial_count - state.app_data.libraries.len()
     }
 
     fn remove_invalid_audiobooks(state: &mut AppState) -> usize {
-        let initial_count = state.data.audiobooks.len();
+        let initial_count = state.app_data.audiobooks.len();
         state
-            .data
+            .app_data
             .audiobooks
             .retain(|audiobook| audiobook.path.exists());
-        initial_count - state.data.audiobooks.len()
+        initial_count - state.app_data.audiobooks.len()
     }
 
     fn repair_invalid_durations(state: &mut AppState) -> usize {
         let mut count = 0;
-        for audiobook in &mut state.data.audiobooks {
+        for audiobook in &mut state.app_data.audiobooks {
             if let Some(duration) = audiobook.duration_seconds
                 && duration == 0
             {
@@ -484,13 +484,13 @@ impl StateRepairStrategy {
     fn cap_progress_at_duration(state: &mut AppState) -> usize {
         let mut count = 0;
         let audiobook_durations: HashMap<_, _> = state
-            .data
+            .app_data
             .audiobooks
             .iter()
             .filter_map(|ab| ab.duration_seconds.map(|d| (&ab.id, d)))
             .collect();
 
-        for progress in &mut state.data.progress {
+        for progress in &mut state.app_data.progress {
             if let Some(&duration) = audiobook_durations.get(&progress.audiobook_id)
                 && progress.position_seconds > duration
             {
@@ -515,7 +515,7 @@ impl StateRepairStrategy {
 
         // Remove duplicate libraries (by path)
         let mut seen_library_paths = std::collections::HashSet::new();
-        state.data.libraries.retain(|library| {
+        state.app_data.libraries.retain(|library| {
             if seen_library_paths.contains(&library.path) {
                 removed_count += 1;
                 false
@@ -527,7 +527,7 @@ impl StateRepairStrategy {
 
         // Remove duplicate audiobooks (by path)
         let mut seen_audiobook_paths = std::collections::HashSet::new();
-        state.data.audiobooks.retain(|audiobook| {
+        state.app_data.audiobooks.retain(|audiobook| {
             if seen_audiobook_paths.contains(&audiobook.path) {
                 removed_count += 1;
                 false
@@ -544,15 +544,11 @@ impl StateRepairStrategy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{AppData, AppState, Library, Progress, UserPreferences};
+    use crate::models::{AppState, Library, Progress};
     use crate::validation::error::ValidationError;
 
     fn create_test_state() -> AppState {
-        AppState {
-            current_view: crate::models::ui::ViewType::Library,
-            user_preferences: UserPreferences::default(),
-            data: AppData::default(),
-        }
+        AppState::default()
     }
 
     #[test]
@@ -592,13 +588,13 @@ mod tests {
     fn test_repair_empty_library_names() {
         let mut state = create_test_state();
         let library = Library::new("", "/test/path");
-        state.data.libraries.push(library);
+        state.app_data.libraries.push(library);
 
         let count = StateRepairStrategy::repair_empty_library_names(&mut state);
 
         assert_eq!(count, 1);
-        assert!(!state.data.libraries[0].name.is_empty());
-        assert!(state.data.libraries[0].name.starts_with("Library"));
+        assert!(!state.app_data.libraries[0].name.is_empty());
+        assert!(state.app_data.libraries[0].name.starts_with("Library"));
     }
 
     #[test]
@@ -607,7 +603,7 @@ mod tests {
 
         // Add progress for non-existent audiobook
         let progress = Progress::new("non-existent-id", 100);
-        state.data.progress.push(progress);
+        state.app_data.progress.push(progress);
 
         let mut result = ValidationResult::new();
         result.add_issue(ValidationError::error(
@@ -618,7 +614,7 @@ mod tests {
         let strategy = StateRepairStrategy::default();
         let actions = strategy.repair_progress_issues(&mut state, &[&result.issues[0]]);
 
-        assert!(state.data.progress.is_empty());
+        assert!(state.app_data.progress.is_empty());
         assert_eq!(actions.len(), 1);
         assert_eq!(actions[0].action_type, RepairActionType::Remove);
     }
