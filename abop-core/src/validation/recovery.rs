@@ -173,6 +173,7 @@ impl StateRepairStrategy {
     }
 
     /// Create an aggressive repair strategy that prioritizes fixing issues
+    #[must_use]
     pub const fn aggressive() -> Self {
         Self {
             create_backups: true,
@@ -186,9 +187,8 @@ impl StateRepairStrategy {
         let mut actions = Vec::new();
 
         // Create backup if requested
-        if self.create_backups
-            && let Some(backup_action) = self.create_backup(state)
-        {
+        if self.create_backups {
+            let backup_action = Self::create_backup(state);
             actions.push(backup_action);
         }
 
@@ -208,7 +208,7 @@ impl StateRepairStrategy {
                 "audiobook" => actions.extend(self.repair_audiobook_issues(state, &issues)),
                 "progress" => actions.extend(self.repair_progress_issues(state, &issues)),
                 "preferences" => actions.extend(self.repair_preferences_issues(state, &issues)),
-                "file" => actions.extend(self.repair_file_issues(state, &issues)),
+                "file" => actions.extend(Self::repair_file_issues(state, &issues)),
                 "integrity" => actions.extend(self.repair_integrity_issues(state, &issues)),
                 _ => {
                     // Unknown category - log but don't repair
@@ -226,21 +226,19 @@ impl StateRepairStrategy {
     }
 
     /// Create a backup of the current state
-    fn create_backup(&self, state: &AppState) -> Option<RepairAction> {
+    fn create_backup(state: &AppState) -> RepairAction {
         // In a real implementation, this would save the state to a backup file
         // For now, we'll just log the action
-        Some(
-            RepairAction::success(
-                RepairActionType::Backup,
-                "Created state backup before repair".to_string(),
-                "app_state".to_string(),
-            )
-            .with_details(format!(
-                "Backed up {} libraries, {} audiobooks",
-                state.data.libraries.len(),
-                state.data.audiobooks.len()
-            )),
+        RepairAction::success(
+            RepairActionType::Backup,
+            "Created state backup before repair".to_string(),
+            "app_state".to_string(),
         )
+        .with_details(format!(
+            "Backed up {} libraries, {} audiobooks",
+            state.data.libraries.len(),
+            state.data.audiobooks.len()
+        ))
     }
 
     /// Repair library-related issues
@@ -254,7 +252,7 @@ impl StateRepairStrategy {
         for issue in issues {
             if issue.message.contains("empty name") {
                 // Find and repair libraries with empty names
-                let repaired_count = self.repair_empty_library_names(state);
+                let repaired_count = Self::repair_empty_library_names(state);
                 if repaired_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Update,
@@ -264,7 +262,7 @@ impl StateRepairStrategy {
                 }
             } else if issue.message.contains("does not exist") {
                 // Remove libraries with non-existent paths
-                let removed_count = self.remove_invalid_libraries(state);
+                let removed_count = Self::remove_invalid_libraries(state);
                 if removed_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Remove,
@@ -289,7 +287,7 @@ impl StateRepairStrategy {
         for issue in issues {
             if issue.message.contains("does not exist") {
                 // Remove audiobooks with non-existent files
-                let removed_count = self.remove_invalid_audiobooks(state);
+                let removed_count = Self::remove_invalid_audiobooks(state);
                 if removed_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Remove,
@@ -299,7 +297,7 @@ impl StateRepairStrategy {
                 }
             } else if issue.message.contains("invalid duration") {
                 // Reset invalid durations
-                let repaired_count = self.repair_invalid_durations(state);
+                let repaired_count = Self::repair_invalid_durations(state);
                 if repaired_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Reset,
@@ -338,7 +336,7 @@ impl StateRepairStrategy {
                 });
             } else if issue.message.contains("exceeds duration") {
                 // Cap progress at audiobook duration
-                let capped_count = self.cap_progress_at_duration(state);
+                let capped_count = Self::cap_progress_at_duration(state);
                 if capped_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Update,
@@ -371,7 +369,7 @@ impl StateRepairStrategy {
         for issue in issues {
             if issue.message.contains("no longer exists") {
                 // Remove non-existent recent directories
-                let removed_count = self.clean_recent_directories(state);
+                let removed_count = Self::clean_recent_directories(state);
                 if removed_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Remove,
@@ -399,7 +397,6 @@ impl StateRepairStrategy {
 
     /// Repair file-related issues
     fn repair_file_issues(
-        &self,
         _state: &mut AppState,
         _issues: &[&ValidationError],
     ) -> Vec<RepairAction> {
@@ -428,7 +425,7 @@ impl StateRepairStrategy {
         for issue in issues {
             if issue.message.contains("duplicate") {
                 // Remove duplicate entries
-                let removed_count = self.remove_duplicates(state);
+                let removed_count = Self::remove_duplicates(state);
                 if removed_count > 0 {
                     actions.push(RepairAction::success(
                         RepairActionType::Remove,
@@ -444,7 +441,7 @@ impl StateRepairStrategy {
 
     // Helper methods for specific repair operations
 
-    fn repair_empty_library_names(&self, state: &mut AppState) -> usize {
+    fn repair_empty_library_names(state: &mut AppState) -> usize {
         let mut count = 0;
         for library in &mut state.data.libraries {
             if library.name.trim().is_empty() {
@@ -455,13 +452,13 @@ impl StateRepairStrategy {
         count
     }
 
-    fn remove_invalid_libraries(&self, state: &mut AppState) -> usize {
+    fn remove_invalid_libraries(state: &mut AppState) -> usize {
         let initial_count = state.data.libraries.len();
         state.data.libraries.retain(|library| library.path.exists());
         initial_count - state.data.libraries.len()
     }
 
-    fn remove_invalid_audiobooks(&self, state: &mut AppState) -> usize {
+    fn remove_invalid_audiobooks(state: &mut AppState) -> usize {
         let initial_count = state.data.audiobooks.len();
         state
             .data
@@ -470,7 +467,7 @@ impl StateRepairStrategy {
         initial_count - state.data.audiobooks.len()
     }
 
-    fn repair_invalid_durations(&self, state: &mut AppState) -> usize {
+    fn repair_invalid_durations(state: &mut AppState) -> usize {
         let mut count = 0;
         for audiobook in &mut state.data.audiobooks {
             if let Some(duration) = audiobook.duration_seconds
@@ -483,7 +480,7 @@ impl StateRepairStrategy {
         count
     }
 
-    fn cap_progress_at_duration(&self, state: &mut AppState) -> usize {
+    fn cap_progress_at_duration(state: &mut AppState) -> usize {
         let mut count = 0;
         let audiobook_durations: HashMap<_, _> = state
             .data
@@ -503,7 +500,7 @@ impl StateRepairStrategy {
         count
     }
 
-    fn clean_recent_directories(&self, state: &mut AppState) -> usize {
+    fn clean_recent_directories(state: &mut AppState) -> usize {
         let initial_count = state.user_preferences.recent_directories.len();
         state
             .user_preferences
@@ -512,7 +509,7 @@ impl StateRepairStrategy {
         initial_count - state.user_preferences.recent_directories.len()
     }
 
-    fn remove_duplicates(&self, state: &mut AppState) -> usize {
+    fn remove_duplicates(state: &mut AppState) -> usize {
         let mut removed_count = 0;
 
         // Remove duplicate libraries (by path)

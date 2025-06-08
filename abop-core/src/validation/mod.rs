@@ -15,11 +15,13 @@ pub use state_validator::{StateValidator, ValidationConfig};
 pub use validators::*;
 
 /// Default validation configuration for typical use cases
+#[must_use]
 pub fn default_validation_config() -> ValidationConfig {
     ValidationConfig::default()
 }
 
 /// Validate an application state with default configuration
+#[must_use]
 pub fn validate_app_state(state: &crate::models::AppState) -> ValidationResult {
     let validator = StateValidator::new(default_validation_config());
     validator.validate(state)

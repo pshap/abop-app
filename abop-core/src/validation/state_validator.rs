@@ -6,6 +6,7 @@ use crate::models::{AppState, Audiobook, Library, Progress};
 
 /// Configuration for state validation behavior
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ValidationConfig {
     /// Whether to validate file existence for referenced paths
     pub check_file_existence: bool,
@@ -39,6 +40,7 @@ impl Default for ValidationConfig {
 
 impl ValidationConfig {
     /// Create a fast validation configuration (minimal checks)
+    #[must_use]
     pub const fn fast() -> Self {
         Self {
             check_file_existence: false,
@@ -52,6 +54,7 @@ impl ValidationConfig {
     }
 
     /// Create a thorough validation configuration (all checks enabled)
+    #[must_use]
     pub const fn thorough() -> Self {
         Self {
             check_file_existence: true,
@@ -76,6 +79,7 @@ pub struct StateValidator {
 
 impl StateValidator {
     /// Create a new state validator with the given configuration
+    #[must_use]
     pub fn new(config: ValidationConfig) -> Self {
         Self {
             file_validator: FileValidator::new(&config),
@@ -87,6 +91,7 @@ impl StateValidator {
     }
 
     /// Validate an entire application state
+    #[must_use]
     pub fn validate(&self, state: &AppState) -> ValidationResult {
         let mut result = ValidationResult::new();
 
