@@ -164,6 +164,7 @@ impl Default for StateRepairStrategy {
 
 impl StateRepairStrategy {
     /// Create a conservative repair strategy that preserves data
+    #[must_use]
     pub const fn conservative() -> Self {
         Self {
             create_backups: true,
@@ -593,8 +594,7 @@ mod tests {
         let library = Library::new("", "/test/path");
         state.data.libraries.push(library);
 
-        let strategy = StateRepairStrategy::default();
-        let count = strategy.repair_empty_library_names(&mut state);
+        let count = StateRepairStrategy::repair_empty_library_names(&mut state);
 
         assert_eq!(count, 1);
         assert!(!state.data.libraries[0].name.is_empty());
