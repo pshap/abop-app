@@ -37,7 +37,8 @@ impl Default for ValidationConfig {
     }
 }
 
-impl ValidationConfig {    /// Create a fast validation configuration (minimal checks)
+impl ValidationConfig {
+    /// Create a fast validation configuration (minimal checks)
     pub const fn fast() -> Self {
         Self {
             check_file_existence: false,

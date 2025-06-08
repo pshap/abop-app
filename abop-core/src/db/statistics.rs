@@ -204,8 +204,7 @@ impl StatisticsCollector {
             .connected_at
             .read()
             .map_err(|e: PoisonError<_>| StatisticsError::TimestampReadLockFailed(e.to_string()))?;
-        if let Some(connected_at) = value
-        {
+        if let Some(connected_at) = value {
             result.connection_uptime = connected_at.elapsed();
         }
 

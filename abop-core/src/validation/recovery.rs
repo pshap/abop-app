@@ -105,7 +105,11 @@ impl std::fmt::Display for RepairActionType {
 
 impl RepairAction {
     /// Create a successful repair action
-    pub const fn success(action_type: RepairActionType, description: String, target: String) -> Self {
+    pub const fn success(
+        action_type: RepairActionType,
+        description: String,
+        target: String,
+    ) -> Self {
         Self {
             action_type,
             description,
