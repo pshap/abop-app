@@ -7,7 +7,7 @@ use abop_core::{
     db::Database,
     models::Library,
     scanner::{
-        LibraryScanner, ScanProgress, ScannerConfig,
+        LibraryScanner, ScanProgress, ScannerConfig, ScanOptions,
         error::ScanError,
         progress::{ChannelReporter, ProgressReporter},
     },
@@ -31,7 +31,7 @@ mod async_scanner_tests {
         let (tx, mut rx) = mpsc::channel(100);
 
         // Start scan with progress reporting
-        let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await }); // Collect progress updates
+        let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await }); // Collect progress updates
         let mut progress_updates = Vec::new();
         while let Some(progress) = rx.recv().await {
             let is_complete = matches!(progress, ScanProgress::Complete { .. });
@@ -62,7 +62,7 @@ mod async_scanner_tests {
         let scanner2 = LibraryScanner::new(db, library);
 
         // Start scan
-        let scan_task = tokio::spawn(async move { scanner1.scan_async(None).await });
+        let scan_task = tokio::spawn(async move { scanner1.scan(ScanOptions::default()).await });
 
         // Cancel immediately using a second scanner instance
         scanner2.cancel_scan();
@@ -94,7 +94,7 @@ mod async_scanner_tests {
         let test_file = temp_dir.path().join("test.mp3");
         std::fs::write(&test_file, b"fake audio data").unwrap();
 
-        let result = scanner.scan_async(None).await;
+        let result = scanner.scan(ScanOptions::default()).await;
 
         // Should either succeed (if file is processed quickly) or timeout
         match result {
@@ -124,7 +124,7 @@ mod async_scanner_tests {
         std::fs::write(&invalid_file1, b"not really audio").unwrap();
         std::fs::write(&invalid_file2, b"also not audio").unwrap();
 
-        let result = scanner.scan_async(None).await;
+        let result = scanner.scan(ScanOptions::default()).await;
 
         // Should complete successfully even with invalid files
         assert!(result.is_ok());
@@ -156,7 +156,7 @@ mod async_scanner_tests {
         let (tx, mut rx) = mpsc::channel(100);
 
         let start_time = std::time::Instant::now();
-        let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await });
+        let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await });
 
         // Monitor progress
         let mut file_processed_count = 0;
@@ -202,7 +202,7 @@ mod async_scanner_tests {
         let scanner = LibraryScanner::new(db, library).with_config(config);
         let (tx, mut rx) = mpsc::channel(100);
 
-        let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await }); // Monitor for batch commit events
+        let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await }); // Monitor for batch commit events
         let mut _batch_commits = 0;
         while let Some(progress) = rx.recv().await {
             if matches!(progress, ScanProgress::BatchCommitted { .. }) {
@@ -263,7 +263,7 @@ mod async_scanner_tests {
         let large_file = temp_dir.path().join("large.mp3");
         std::fs::write(&large_file, vec![0u8; 2048]).unwrap(); // 2KB file
 
-        let result = scanner.scan_async(None).await;
+        let result = scanner.scan(ScanOptions::default()).await;
 
         // Should complete successfully but skip the large file
         assert!(result.is_ok());
@@ -291,8 +291,8 @@ mod task_integration_tests {
         let scanner = LibraryScanner::new(db, library);
         let (tx, _rx) = mpsc::channel(100);
 
-        // Test scan_with_task method
-        let _task = scanner.scan_with_task(tx);
+        // Test scan_task_with_progress method
+        let _task = scanner.scan_task_with_progress(tx);
 
         // In a real application, this would be executed by Iced's runtime        // For testing, we can verify the task is created without error
         // Note: Actually executing the task requires Iced's runtime
@@ -309,8 +309,8 @@ mod task_integration_tests {
         let scanner = LibraryScanner::new(db, library);
         let (tx, _rx) = mpsc::channel(100);
 
-        // Test scan_with_task method - this is the only method available
-        let _task = scanner.scan_with_task(tx); // Verify task is created
+        // Test scan_task_with_progress method - this is the only method available
+        let _task = scanner.scan_task_with_progress(tx); // Verify task is created
         // Task creation successful if we reach this point without panic
     }
 }
