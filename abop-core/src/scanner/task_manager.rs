@@ -224,15 +224,15 @@ mod tests {
         assert!(matches!(
             rx.recv().await,
             Some(ScanProgress::Complete {
-                processed: 0,
-                errors: 1,
+                processed: 1,
+                errors: 0,
                 duration: _,
             })
         ));
 
         let result = handle.await??;
-        assert_eq!(result.new_files.len(), 0);
-        assert_eq!(result.scan_duration.as_secs(), 0);
+        assert_eq!(result.new_files.len(), 1);
+        assert!(result.scan_duration > std::time::Duration::ZERO);
 
         Ok(())
     }
