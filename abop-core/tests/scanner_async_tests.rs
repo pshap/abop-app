@@ -227,8 +227,12 @@ mod async_scanner_tests {
 
         // Test different types of events
         reporter.report_started(10).await;
-        reporter.report_file_processed(1, 10, "test.mp3".to_string()).await;
-        reporter.report_complete(10, 0, Duration::from_secs(1)).await;
+        reporter
+            .report_file_processed(1, 10, "test.mp3".to_string())
+            .await;
+        reporter
+            .report_complete(10, 0, Duration::from_secs(1))
+            .await;
 
         // Verify all events were received
         let mut received_events = Vec::new();
@@ -286,7 +290,7 @@ mod task_integration_tests {
 
         let scanner = LibraryScanner::new(db, library);
         let (tx, _rx) = mpsc::channel(100);
-        
+
         // Test scan_with_task method
         let _task = scanner.scan_with_task(tx);
 

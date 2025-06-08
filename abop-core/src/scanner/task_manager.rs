@@ -127,12 +127,12 @@ impl Default for TaskManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scanner::{
-        file_discovery::{DefaultFileDiscoverer, FileDiscoverer}, 
-        file_processor::{DefaultFileProcessor, FileProcessor},
-    };
     use crate::db::Database;
     use crate::scanner::Library;
+    use crate::scanner::{
+        file_discovery::{DefaultFileDiscoverer, FileDiscoverer},
+        file_processor::{DefaultFileProcessor, FileProcessor},
+    };
     use log::debug;
 
     #[tokio::test]

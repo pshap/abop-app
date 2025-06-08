@@ -1,5 +1,5 @@
 //! File discovery functional    /// Create a new file discoverer with specific extensions
-    //! File discovery for the scanner
+//! File discovery for the scanner
 //!
 //! This module provides the core file discovery functionality, abstracted behind
 //! a trait to allow for different discovery strategies.

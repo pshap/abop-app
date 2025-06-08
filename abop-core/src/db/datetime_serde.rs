@@ -86,7 +86,10 @@ pub fn datetime_to_sql_output(dt: &DateTime<Utc>) -> ToSqlOutput<'_> {
 
 /// Convert Option<DateTime<Utc>> to ToSqlOutput
 pub fn optional_datetime_to_sql_output(dt: &Option<DateTime<Utc>>) -> ToSqlOutput<'_> {
-    dt.as_ref().map_or_else(|| ToSqlOutput::from(rusqlite::types::Null), |dt| ToSqlOutput::from(dt.to_rfc3339()))
+    dt.as_ref().map_or_else(
+        || ToSqlOutput::from(rusqlite::types::Null),
+        |dt| ToSqlOutput::from(dt.to_rfc3339()),
+    )
 }
 
 #[cfg(test)]

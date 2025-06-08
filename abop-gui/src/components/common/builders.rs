@@ -228,7 +228,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 ///     .on_press(AppMessage::Export)
 ///     .build();
 /// ```
-pub fn button_builder<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a, M> {
+pub const fn button_builder<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a, M> {
     ButtonBuilder::new(tokens)
 }
 
