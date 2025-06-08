@@ -66,10 +66,10 @@ mod library_scanner_tests {
         assert_eq!(AudioFormat::from_path("test.txt"), None);
         assert_eq!(AudioFormat::from_path("test"), None);
     }
-    #[test]
-    fn test_library_scanner_creation() {
+    #[tokio::test]
+    async fn test_library_scanner_creation() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let _scanner = LibraryScanner::new(db, library);
@@ -79,7 +79,7 @@ mod library_scanner_tests {
     #[tokio::test]
     async fn test_scan_empty_directory() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
@@ -89,8 +89,8 @@ mod library_scanner_tests {
         assert_eq!(scan_summary.processed, 0);
         assert_eq!(scan_summary.errors, 0);
     }
-    #[test]
-    fn test_scan_with_mixed_files() {
+    #[tokio::test]
+    async fn test_scan_with_mixed_files() {
         use abop_core::models::Audiobook;
         use std::path::PathBuf;
 
@@ -159,7 +159,7 @@ mod library_scanner_tests {
             }
         }
 
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let temp_dir = tempdir().unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 

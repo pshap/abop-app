@@ -161,7 +161,7 @@ mod tests {
 
         let scan_fn = |reporter: Arc<dyn ProgressReporter>| async move {
             let discoverer = DefaultFileDiscoverer::with_default_extensions();
-            let db = Database::open(":memory:")?;
+            let db = Database::open(":memory:").await?;
             let processor = DefaultFileProcessor::new(db);
             let audio_files = discoverer.discover_files(&library.path).await?;
 

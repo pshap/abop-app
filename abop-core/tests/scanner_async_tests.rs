@@ -24,7 +24,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_async_scan_with_progress() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
@@ -55,7 +55,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_scan_cancellation() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner1 = LibraryScanner::new(db.clone(), library.clone());
@@ -79,7 +79,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_timeout_handling() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create scanner with very short timeout
@@ -113,7 +113,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_error_recovery() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
@@ -138,7 +138,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_concurrent_file_processing() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create multiple test files
@@ -185,7 +185,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_batch_processing() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create multiple test files
@@ -247,7 +247,7 @@ mod async_scanner_tests {
     #[tokio::test]
     async fn test_memory_pressure_handling() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create config with limited resources
@@ -279,7 +279,7 @@ mod task_integration_tests {
     #[tokio::test]
     async fn test_iced_task_integration() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create some test files
@@ -303,7 +303,7 @@ mod task_integration_tests {
     #[tokio::test]
     async fn test_task_with_progress_callbacks() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
