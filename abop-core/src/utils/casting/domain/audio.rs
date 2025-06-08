@@ -59,7 +59,7 @@ pub fn safe_f64_to_usize_samples(value: f64) -> Result<usize, CastError> {
 /// # Note
 /// f32 can exactly represent all integers up to 2^24. For larger values,
 /// precision loss occurs, which may not be acceptable for some calculations.
-pub fn safe_usize_to_f32_rms(sample_count: usize) -> Result<f32, CastError> {
+pub const fn safe_usize_to_f32_rms(sample_count: usize) -> Result<f32, CastError> {
     const MAX_EXACT: usize = 1 << 24; // 2^24
 
     if sample_count > MAX_EXACT {

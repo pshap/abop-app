@@ -115,7 +115,7 @@ impl PerformanceMonitor {
             let alpha = 0.1;
             let current_avg_ms = metrics.avg_time_per_file.as_millis() as f64;
             let new_duration_ms = duration.as_millis() as f64;
-            let new_avg_ms = current_avg_ms * (1.0 - alpha) + new_duration_ms * alpha;
+            let new_avg_ms = current_avg_ms.mul_add(1.0 - alpha, new_duration_ms * alpha);
             metrics.avg_time_per_file = Duration::from_millis(new_avg_ms as u64);
         }
 
@@ -132,10 +132,9 @@ impl PerformanceMonitor {
         metrics.total_duration = self.start_time.elapsed();
 
         // Collect slowest operations
-        let operation_times = self.operation_times.lock().unwrap();
         let mut all_operations = Vec::new();
 
-        for (file_path, operations) in operation_times.iter() {
+        for (file_path, operations) in self.operation_times.lock().unwrap().iter() {
             for (op_type, duration) in operations {
                 if *duration > self.slowest_threshold {
                     all_operations.push(SlowOperation {
@@ -286,7 +285,7 @@ impl OperationTimer {
 }
 
 impl PerformanceMetrics {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             total_duration: Duration::ZERO,
             io_duration: Duration::ZERO,

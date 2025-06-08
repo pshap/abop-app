@@ -318,75 +318,85 @@ async fn show_scan_results(db: &Database) -> Result<()> {
 async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
     debug!("Starting database operation: {operation:?}");
     match operation {
-        DbOperations::Init => {
-            info!("Initializing database: {database_path:?}");
-            debug!("About to call Database::open()");
-            let _db = Database::open(&database_path).context("Failed to initialize database")?;
-            debug!("Database::open() completed successfully");
-            info!("✓ Database initialized successfully");
-        }
-        DbOperations::List => {
-            info!("Listing audiobooks in: {database_path:?}");
-            debug!("About to call Database::open() for list operation");
-            let db = Database::open(&database_path).context("Failed to open database")?;
-            debug!("Database::open() completed for list operation");
+        DbOperations::Init => handle_db_init(database_path).await,
+        DbOperations::List => handle_db_list(database_path).await,
+        DbOperations::Stats => handle_db_stats(database_path).await,
+        DbOperations::Clean => handle_db_clean(database_path).await,
+    }
+}
 
-            // Get all libraries first
-            let libraries = db.get_libraries().context("Failed to get libraries")?;
+async fn handle_db_init(database_path: PathBuf) -> Result<()> {
+    info!("Initializing database: {database_path:?}");
+    debug!("About to call Database::open()");
+    let _db = Database::open(&database_path).context("Failed to initialize database")?;
+    debug!("Database::open() completed successfully");
+    info!("✓ Database initialized successfully");
+    Ok(())
+}
 
-            if libraries.is_empty() {
-                info!("No libraries found in database. You may need to scan a library first.");
-                return Ok(());
-            }
+async fn handle_db_list(database_path: PathBuf) -> Result<()> {
+    info!("Listing audiobooks in: {database_path:?}");
+    debug!("About to call Database::open() for list operation");
+    let db = Database::open(&database_path).context("Failed to open database")?;
+    debug!("Database::open() completed for list operation");
 
-            // Use the first available library, or default to "1"
-            let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+    // Get all libraries first
+    let libraries = db.get_libraries().context("Failed to get libraries")?;
 
-            debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
-            let audiobooks = db
-                .get_audiobooks_in_library(library_id)
-                .context("Failed to get audiobooks")?;
-            debug!(
-                "get_audiobooks_in_library() completed, found {} audiobooks",
-                audiobooks.len()
-            );
-
-            if audiobooks.is_empty() {
-                info!("No audiobooks found in database. Try scanning a library directory first.");
-            } else {
-                info!("Found {} audiobooks:", audiobooks.len());
-                for (i, book) in audiobooks.iter().enumerate() {
-                    println!(
-                        "{}. {} - {} ({})",
-                        i + 1,
-                        book.title.as_deref().unwrap_or("Unknown Title"),
-                        book.author.as_deref().unwrap_or("Unknown"),
-                        book.path.display()
-                    );
-                }
-            }
-        }
-        DbOperations::Stats => {
-            info!("Database statistics: {database_path:?}");
-            debug!("About to call Database::open() for stats operation");
-            let db = Database::open(&database_path).context("Failed to open database")?;
-            debug!("Database::open() completed for stats operation");
-
-            debug!("About to call get_audiobook_count()");
-            let count = get_audiobook_count(&db).await?;
-            debug!("get_audiobook_count() completed with count: {count}");
-            info!("Total audiobooks: {count}");
-        }
-        DbOperations::Clean => {
-            info!("Cleaning database: {database_path:?}");
-            debug!("About to call Database::open() for clean operation");
-            let _db = Database::open(&database_path).context("Failed to open database")?;
-            debug!("Database::open() completed for clean operation");
-
-            // TODO: Implement database cleanup/optimization
-            info!("✓ Database cleanup completed");
-        }
+    if libraries.is_empty() {
+        info!("No libraries found in database. You may need to scan a library first.");
+        return Ok(());
     }
 
+    // Use the first available library, or default to "1"
+    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+
+    debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
+    let audiobooks = db
+        .get_audiobooks_in_library(library_id)
+        .context("Failed to get audiobooks")?;
+    debug!(
+        "get_audiobooks_in_library() completed, found {} audiobooks",
+        audiobooks.len()
+    );
+
+    if audiobooks.is_empty() {
+        info!("No audiobooks found in database. Try scanning a library directory first.");
+    } else {
+        info!("Found {} audiobooks:", audiobooks.len());
+        for (i, book) in audiobooks.iter().enumerate() {
+            println!(
+                "{}. {} - {} ({})",
+                i + 1,
+                book.title.as_deref().unwrap_or("Unknown Title"),
+                book.author.as_deref().unwrap_or("Unknown"),
+                book.path.display()
+            );
+        }
+    }
+    Ok(())
+}
+
+async fn handle_db_stats(database_path: PathBuf) -> Result<()> {
+    info!("Database statistics: {database_path:?}");
+    debug!("About to call Database::open() for stats operation");
+    let db = Database::open(&database_path).context("Failed to open database")?;
+    debug!("Database::open() completed for stats operation");
+
+    debug!("About to call get_audiobook_count()");
+    let count = get_audiobook_count(&db).await?;
+    debug!("get_audiobook_count() completed with count: {count}");
+    info!("Total audiobooks: {count}");
+    Ok(())
+}
+
+async fn handle_db_clean(database_path: PathBuf) -> Result<()> {
+    info!("Cleaning database: {database_path:?}");
+    debug!("About to call Database::open() for clean operation");
+    let _db = Database::open(&database_path).context("Failed to open database")?;
+    debug!("Database::open() completed for clean operation");
+
+    // TODO: Implement database cleanup/optimization
+    info!("✓ Database cleanup completed");
     Ok(())
 }

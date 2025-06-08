@@ -74,7 +74,7 @@ pub struct ChannelReporter {
 impl ChannelReporter {
     /// Create a new channel-based reporter
     #[must_use]
-    pub fn new(tx: mpsc::Sender<ScanProgress>) -> Self {
+    pub const fn new(tx: mpsc::Sender<ScanProgress>) -> Self {
         Self { tx }
     }
 }

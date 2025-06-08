@@ -31,7 +31,7 @@ impl DefaultFileDiscoverer {
     /// Create a new file discoverer with the given extensions
     #[allow(dead_code)]
     #[must_use]
-    pub fn new(extensions: Vec<String>) -> Self {
+    pub const fn new(extensions: Vec<String>) -> Self {
         Self { extensions }
     }
 
@@ -66,6 +66,7 @@ impl DefaultFileDiscoverer {
             .filter(|e| e.file_type().is_file())
             .filter_map(|entry| {
                 let path = entry.path();
+                #[allow(clippy::option_if_let_else)]
                 if let Some(ext) = path
                     .extension()
                     .and_then(OsStr::to_str)

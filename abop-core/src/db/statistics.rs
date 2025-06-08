@@ -120,6 +120,7 @@ impl StatisticsCollector {
         stats.successful_operations += 1;
         stats.last_successful_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
+        drop(stats);
         Ok(())
     }
 
@@ -137,6 +138,7 @@ impl StatisticsCollector {
         stats.failed_operations += 1;
         stats.last_failed_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
+        drop(stats);
         Ok(())
     }
 
@@ -198,12 +200,12 @@ impl StatisticsCollector {
             .clone();
 
         // Calculate uptime if connected
-        let connected_at = self
+        let value = *self
             .connected_at
             .read()
             .map_err(|e: PoisonError<_>| StatisticsError::TimestampReadLockFailed(e.to_string()))?;
-
-        if let Some(connected_at) = *connected_at {
+        if let Some(connected_at) = value
+        {
             result.connection_uptime = connected_at.elapsed();
         }
 

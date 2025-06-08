@@ -484,7 +484,7 @@ impl CastingBuilder {
         let logical = f64::from(physical) / f64::from(scale_factor);
 
         // For UI, we typically allow some precision loss
-        if let PrecisionMode::Strict = self.precision_mode
+        if self.precision_mode == PrecisionMode::Strict
             && (logical > f64::from(f32::MAX) || logical < f64::from(f32::MIN))
         {
             return Err(CastError::ValueTooLarge(

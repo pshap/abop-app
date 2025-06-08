@@ -74,7 +74,7 @@ pub struct RepairAction {
 }
 
 /// Types of repair actions that can be performed
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RepairActionType {
     /// Remove invalid or orphaned entries
     Remove,
@@ -105,7 +105,7 @@ impl std::fmt::Display for RepairActionType {
 
 impl RepairAction {
     /// Create a successful repair action
-    pub fn success(action_type: RepairActionType, description: String, target: String) -> Self {
+    pub const fn success(action_type: RepairActionType, description: String, target: String) -> Self {
         Self {
             action_type,
             description,
@@ -116,7 +116,7 @@ impl RepairAction {
     }
 
     /// Create a failed repair action
-    pub fn failure(
+    pub const fn failure(
         action_type: RepairActionType,
         description: String,
         target: String,
@@ -160,7 +160,7 @@ impl Default for StateRepairStrategy {
 
 impl StateRepairStrategy {
     /// Create a conservative repair strategy that preserves data
-    pub fn conservative() -> Self {
+    pub const fn conservative() -> Self {
         Self {
             create_backups: true,
             max_removals_per_repair: 10,
@@ -169,7 +169,7 @@ impl StateRepairStrategy {
     }
 
     /// Create an aggressive repair strategy that prioritizes fixing issues
-    pub fn aggressive() -> Self {
+    pub const fn aggressive() -> Self {
         Self {
             create_backups: true,
             max_removals_per_repair: 1000,

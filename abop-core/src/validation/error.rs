@@ -101,7 +101,7 @@ impl ValidationError {
     }
 
     /// Check if this is an error (not just warning or info)
-    pub fn is_error(&self) -> bool {
+    pub const fn is_error(&self) -> bool {
         matches!(
             self.severity,
             ValidationSeverity::Error | ValidationSeverity::Critical
@@ -191,12 +191,12 @@ impl ValidationResult {
     }
 
     /// Check if there are any critical issues
-    pub fn has_critical_issues(&self) -> bool {
+    pub const fn has_critical_issues(&self) -> bool {
         self.has_critical_issues
     }
 
     /// Check if the state is considered valid for use
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.is_valid
     }
 

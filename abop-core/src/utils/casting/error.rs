@@ -60,7 +60,7 @@ pub enum DomainCastError {
 
 impl From<CastError> for DomainCastError {
     fn from(err: CastError) -> Self {
-        DomainCastError::Generic(err)
+        Self::Generic(err)
     }
 }
 

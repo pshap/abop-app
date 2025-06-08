@@ -37,9 +37,8 @@ impl Default for ValidationConfig {
     }
 }
 
-impl ValidationConfig {
-    /// Create a fast validation configuration (minimal checks)
-    pub fn fast() -> Self {
+impl ValidationConfig {    /// Create a fast validation configuration (minimal checks)
+    pub const fn fast() -> Self {
         Self {
             check_file_existence: false,
             check_metadata_consistency: true,
@@ -52,7 +51,7 @@ impl ValidationConfig {
     }
 
     /// Create a thorough validation configuration (all checks enabled)
-    pub fn thorough() -> Self {
+    pub const fn thorough() -> Self {
         Self {
             check_file_existence: true,
             check_metadata_consistency: true,

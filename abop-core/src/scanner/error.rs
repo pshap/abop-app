@@ -88,18 +88,18 @@ impl From<tokio::sync::mpsc::error::SendError<crate::scanner::progress::ScanProg
     fn from(
         _: tokio::sync::mpsc::error::SendError<crate::scanner::progress::ScanProgress>,
     ) -> Self {
-        ScanError::Channel("Failed to send progress update".into())
+        Self::Channel("Failed to send progress update".into())
     }
 }
 
 impl From<tokio::task::JoinError> for ScanError {
     fn from(err: tokio::task::JoinError) -> Self {
         if err.is_cancelled() {
-            ScanError::Cancelled
+            Self::Cancelled
         } else if err.is_panic() {
-            ScanError::Task("Task panicked".into())
+            Self::Task("Task panicked".into())
         } else {
-            ScanError::Task("Task failed to complete".into())
+            Self::Task("Task failed to complete".into())
         }
     }
 }
@@ -107,36 +107,36 @@ impl From<tokio::task::JoinError> for ScanError {
 impl From<AppError> for ScanError {
     fn from(err: AppError) -> Self {
         match err {
-            AppError::Io(e) => ScanError::Metadata(format!("I/O error: {e}")),
+            AppError::Io(e) => Self::Metadata(format!("I/O error: {e}")),
             AppError::Database(e) => match e {
-                DatabaseError::Sqlite(e) => ScanError::Database(e),
-                _ => ScanError::Metadata(e.to_string()),
+                DatabaseError::Sqlite(e) => Self::Database(e),
+                _ => Self::Metadata(e.to_string()),
             },
-            AppError::Scan(e) => ScanError::Metadata(e),
-            AppError::InvalidData(msg) => ScanError::Metadata(msg),
-            AppError::Cancelled => ScanError::Cancelled,
+            AppError::Scan(e) => Self::Metadata(e),
+            AppError::InvalidData(msg) => Self::Metadata(msg),
+            AppError::Cancelled => Self::Cancelled,
             AppError::Timeout {
                 operation: _,
                 timeout_ms: _,
                 elapsed_ms,
-            } => ScanError::Timeout(Duration::from_millis(elapsed_ms)),
-            AppError::Metadata(msg) => ScanError::Metadata(msg),
-            AppError::Library(msg) => ScanError::Metadata(format!("Library error: {msg}")),
-            AppError::Progress(msg) => ScanError::Channel(msg),
-            AppError::Task(msg) => ScanError::Task(msg),
-            _ => ScanError::Metadata(err.to_string()),
+            } => Self::Timeout(Duration::from_millis(elapsed_ms)),
+            AppError::Metadata(msg) => Self::Metadata(msg),
+            AppError::Library(msg) => Self::Metadata(format!("Library error: {msg}")),
+            AppError::Progress(msg) => Self::Channel(msg),
+            AppError::Task(msg) => Self::Task(msg),
+            _ => Self::Metadata(err.to_string()),
         }
     }
 }
 
 impl From<tokio::sync::AcquireError> for ScanError {
     fn from(_: tokio::sync::AcquireError) -> Self {
-        ScanError::Cancelled
+        Self::Cancelled
     }
 }
 
 impl From<rusqlite::Error> for ScanError {
     fn from(err: rusqlite::Error) -> Self {
-        ScanError::Database(err.to_string())
+        Self::Database(err.to_string())
     }
 }
