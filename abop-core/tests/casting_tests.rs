@@ -4,6 +4,7 @@
 //! - Database count conversions
 //! - Audio sample rate and duration calculations
 //! - Domain-specific error conditions
+//!
 //! Note: File size formatting tests are in domain/file_size.rs
 
 use abop_core::utils::casting::{

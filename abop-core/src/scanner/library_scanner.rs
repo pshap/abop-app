@@ -677,7 +677,6 @@ mod tests {
             id: "test".to_string(),
             name: "Test Library".to_string(),
             path: PathBuf::from("test_data"),
-            ..Default::default()
         };
         let scanner = LibraryScanner::new(db, library);
         let (tx, _rx) = mpsc::channel(100);
@@ -692,7 +691,6 @@ mod tests {
             id: "test".to_string(),
             name: "Test Library".to_string(),
             path: PathBuf::from("test_data"),
-            ..Default::default()
         };
         let scanner = LibraryScanner::new(db, library);
         scanner.cancel_scan();
