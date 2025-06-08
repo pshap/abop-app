@@ -9,7 +9,7 @@ use abop_core::{
     scanner::{
         LibraryScanner, ScanProgress, ScannerConfig,
         error::ScanError,
-        progress::ChannelReporter,
+        progress::{ChannelReporter, ProgressReporter},
     },
 };
 use std::time::Duration;
@@ -153,7 +153,7 @@ mod async_scanner_tests {
         };
 
         let scanner = LibraryScanner::new(db, library).with_config(config);
-        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (tx, mut rx) = mpsc::channel(100);
 
         let start_time = std::time::Instant::now();
         let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await });
@@ -200,7 +200,7 @@ mod async_scanner_tests {
         };
 
         let scanner = LibraryScanner::new(db, library).with_config(config);
-        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (tx, mut rx) = mpsc::channel(100);
 
         let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await }); // Monitor for batch commit events
         let mut _batch_commits = 0;
@@ -225,32 +225,19 @@ mod async_scanner_tests {
         let (tx, mut rx) = mpsc::channel::<ScanProgress>(10);
         let reporter = ChannelReporter::new(tx);
 
-        // Test different progress events
-        let events = vec![
-            ScanProgress::Started { total_files: 10 },
-            ScanProgress::FileProcessed {
-                current: 1,
-                total: 10,
-                file_name: "test.mp3".to_string(),
-                progress_percentage: 0.1,
-            },
-            ScanProgress::Complete {
-                processed: 10,
-                errors: 0,
-                duration: Duration::from_secs(1),
-            },
-        ];
+        // Test different types of events
+        reporter.report_started(10).await;
+        reporter.report_file_processed(1, 10, "test.mp3".to_string()).await;
+        reporter.report_complete(10, 0, Duration::from_secs(1)).await;
 
-        for event in events.clone() {
-            reporter.report(event).await.unwrap();
-        } // Verify all events were received
+        // Verify all events were received
         let mut received_events = Vec::new();
         rx.close(); // Close the receiver to stop waiting
         while let Some(event) = rx.recv().await {
             received_events.push(event);
         }
 
-        assert_eq!(received_events.len(), events.len());
+        assert_eq!(received_events.len(), 3); // Started, FileProcessed, Complete
     }
 
     #[tokio::test]
@@ -298,8 +285,10 @@ mod task_integration_tests {
         }
 
         let scanner = LibraryScanner::new(db, library);
-        let audio_files = scanner.find_audio_files(); // Test scan_with_tasks method
-        let _task = scanner.scan_with_tasks(audio_files);
+        let (tx, _rx) = mpsc::channel(100);
+        
+        // Test scan_with_task method
+        let _task = scanner.scan_with_task(tx);
 
         // In a real application, this would be executed by Iced's runtime        // For testing, we can verify the task is created without error
         // Note: Actually executing the task requires Iced's runtime
@@ -314,14 +303,10 @@ mod task_integration_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let audio_files = scanner.find_audio_files();
+        let (tx, _rx) = mpsc::channel(100);
 
-        // Test progress callback version
-        let progress_called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let progress_called_clone = progress_called.clone();
-        let _task = scanner.scan_with_tasks_and_progress(audio_files, move |_progress| {
-            progress_called_clone.store(true, std::sync::atomic::Ordering::Relaxed);
-        }); // Verify task is created
+        // Test scan_with_task method - this is the only method available
+        let _task = scanner.scan_with_task(tx); // Verify task is created
         // Task creation successful if we reach this point without panic
     }
 }
