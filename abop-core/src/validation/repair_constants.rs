@@ -1,15 +1,5 @@
 //! Constants for repair operations
 
-/// Category constants for validation issues
-pub mod categories {
-    pub const LIBRARY: &str = "library";
-    pub const AUDIOBOOK: &str = "audiobook";
-    pub const PROGRESS: &str = "progress";
-    pub const PREFERENCES: &str = "preferences";
-    pub const FILE: &str = "file";
-    pub const INTEGRITY: &str = "integrity";
-}
-
 /// Error pattern constants for string matching
 pub mod error_patterns {
     pub const EMPTY_NAME: &str = "empty name";

@@ -5,14 +5,23 @@ use super::error::ValidationError;
 /// Strongly typed issue patterns for better type safety
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IssuePattern {
+    /// Issue where an entity has an empty or missing name
     EmptyName,
+    /// Issue where a referenced file does not exist on the filesystem
     FileNotExists,
+    /// Issue where duration values are invalid or malformed
     InvalidDuration,
+    /// Issue where an entity is orphaned (references missing parent)
     Orphaned,
+    /// Issue where a value exceeds the expected duration bounds
     ExceedsDuration,
+    /// Issue where a previously existing entity no longer exists
     NoLongerExists,
+    /// Issue where a file or entity is too small to be valid
     TooSmall,
+    /// Issue where duplicate entities are detected
     Duplicate,
+    /// Unknown issue pattern that doesn't match predefined categories
     Unknown(String),
 }
 
