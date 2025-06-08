@@ -243,7 +243,7 @@ impl UiState {
             // This allows the scanner to run independently without holding any locks
             let scan_result = tokio::spawn(async move {
                 let scanner_guard = scanner_arc.lock().await;
-                scanner_guard.scan_async(None).await
+                scanner_guard.scan(abop_core::scanner::ScanOptions::default()).await
             })
             .await;
 

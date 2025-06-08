@@ -214,7 +214,7 @@ async fn scan_library(
         scan_with_progress(scanner, &db, &library_path).await?;
     } else {
         info!("Starting scan...");
-        let result = scanner.scan_async(None).await.context("Scan failed")?;
+        let result = scanner.scan(abop_core::scanner::ScanOptions::default()).await.context("Scan failed")?;
         info!(
             "Scan result: processed={}, errors={}",
             result.processed, result.errors
@@ -236,7 +236,7 @@ async fn scan_with_progress(
     _library_path: &Path,
 ) -> Result<()> {
     use tokio::time::{Duration, interval}; // Start scan in background
-    let mut scan_handle = tokio::spawn(async move { scanner.scan_async(None).await });
+    let mut scan_handle = tokio::spawn(async move { scanner.scan(abop_core::scanner::ScanOptions::default()).await });
 
     // Monitor progress
     let mut progress_interval = interval(Duration::from_secs(2));
