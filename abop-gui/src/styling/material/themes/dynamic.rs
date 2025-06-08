@@ -44,8 +44,7 @@ impl DynamicTheme {
         let tokens = match mode {
             ThemeMode::Light => MaterialTokens::light(),
             ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto => MaterialTokens::default(),
-            ThemeMode::Custom => MaterialTokens::default(),
+            ThemeMode::Auto | ThemeMode::Custom => MaterialTokens::default(),
         };
 
         Self {
