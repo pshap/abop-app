@@ -283,14 +283,13 @@ impl ScanOrchestrator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::Library;
-    use std::path::PathBuf;
     use tempfile::tempdir;
+    use crate::models::Library;
 
     #[tokio::test]
     async fn test_scan_orchestrator() {
-        let temp_dir = tempdir().unwrap();        let library = Library::new("Test Library", temp_dir.path());
+        let temp_dir = tempdir().unwrap();
+        let _library = Library::new("Test Library", temp_dir.path());
         
         // This would need a mock database for full testing
         // let orchestrator = ScanOrchestrator::new(db, library, ScannerConfig::default());
