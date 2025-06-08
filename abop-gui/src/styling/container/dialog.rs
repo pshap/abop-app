@@ -4,6 +4,7 @@
 //! and other interactive overlay components. These styles ensure
 //! proper visual hierarchy and user interaction feedback.
 
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
 use iced::widget::container;

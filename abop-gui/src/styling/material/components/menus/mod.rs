@@ -26,9 +26,6 @@ pub use dropdown_menu::*;
 pub use menu_item::*;
 pub use select_menu::*;
 
-// Re-export helper type for backward compatibility
-pub use crate::styling::material::components::menu_constants::MenuStyleValues as StyleValues;
-
 // Helper functions for creating Material menu components
 use crate::styling::material::MaterialTokens;
 

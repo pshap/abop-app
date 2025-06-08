@@ -64,17 +64,6 @@ mod format_tests {
             "1:01:01"
         );
     }
-
-    // #[test]
-    // fn test_format_file_size() {
-    //     assert_eq!(format_file_size(0), "0 bytes");
-    //     assert_eq!(format_file_size(1023), "1023 bytes");
-    //     assert_eq!(format_file_size(1024), "1.00 KB");
-    //     assert_eq!(format_file_size(1024 * 1024 - 1), "1024.00 KB"); // Adjusted to match implementation
-    //     assert_eq!(format_file_size(1024 * 1024), "1.00 MB");
-    //     assert_eq!(format_file_size(1024 * 1024 * 1024 - 1), "1024.00 MB"); // Adjusted to match implementation
-    //     assert_eq!(format_file_size(1024 * 1024 * 1024), "1.00 GB");
-    // }
 }
 
 #[cfg(test)]
@@ -109,20 +98,5 @@ mod file_tests {
         assert_eq!(file_extension("path/to/file.txt"), "txt");
         assert_eq!(file_extension("file"), "");
         assert_eq!(file_extension("file.tar.gz"), "gz");
-    }
-}
-
-#[cfg(test)]
-mod utility_tests {
-    #[test]
-    fn test_path_normalization() {
-        // Placeholder test for path normalization utility
-        // Function not implemented yet
-    }
-
-    #[test]
-    fn test_directory_creation() {
-        // Placeholder test for directory creation utility
-        // Function not implemented yet
     }
 }

@@ -4,6 +4,7 @@
 //! content areas, and sidebars. These containers form the structural
 //! foundation of the application's visual hierarchy.
 
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
 use iced::border::Radius;

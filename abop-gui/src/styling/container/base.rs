@@ -5,6 +5,7 @@
 //! container styling system with common patterns and behaviors.
 
 use crate::styling::color_utils::ColorUtils;
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::styling::material::MaterialTokens;
 use crate::styling::traits::StyleVariant;
 use crate::theme::ThemeMode;

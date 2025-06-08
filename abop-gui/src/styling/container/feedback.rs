@@ -4,6 +4,7 @@
 //! warning, error, and info messages. These styles use semantic colors
 //! to provide clear visual communication about system state and user actions.
 
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
 use iced::widget::container;
