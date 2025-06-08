@@ -14,9 +14,9 @@ pub use config::{CustomThemeMode, Theme, ThemeConfig};
 pub use errors::ThemeLoadError;
 pub use loader::ThemeLoader;
 pub use overrides::{
-    ButtonOverride, ComponentOverride, ComponentOverrideBuilder, ComponentOverrides,
-    ComponentType, ContainerOverride, InputOverride, MenuOverride, ModalOverride,
-    NavigationOverride, ProgressOverride, SelectionOverride,
+    ButtonOverride, ComponentOverride, ComponentOverrideBuilder, ComponentOverrides, ComponentType,
+    ContainerOverride, InputOverride, MenuOverride, ModalOverride, NavigationOverride,
+    ProgressOverride, SelectionOverride,
 };
 pub use serialization::{
     SerializableMaterialTokens, SerializableSemanticColors, SerializableSpacing,
@@ -182,12 +182,12 @@ mod tests {
         };
 
         let material_typography = typography.to_material_typography();
-        
+
         // Test that font sizes are correctly converted
         assert_eq!(material_typography.display_large.size, Pixels(32.0));
         assert_eq!(material_typography.body_medium.size, Pixels(16.0));
         assert_eq!(material_typography.label_small.size, Pixels(12.0));
-        
+
         // Test that Material Design 3 specifications are applied
         assert_eq!(material_typography.display_large.line_height, Pixels(64.0));
         assert_eq!(material_typography.title_medium.letter_spacing, 0.15);
@@ -286,11 +286,12 @@ mod tests {
         // Test runtime theme creation
         let runtime_theme = theme_config.to_runtime_theme().unwrap();
         assert_eq!(runtime_theme.component_overrides().len(), 1);
-        
+
         // Test finding component override
-        let found_override = runtime_theme.find_component_override(ComponentType::Button, Some("primary"));
+        let found_override =
+            runtime_theme.find_component_override(ComponentType::Button, Some("primary"));
         assert!(found_override.is_some());
-        
+
         let not_found = runtime_theme.find_component_override(ComponentType::Input, Some("text"));
         assert!(not_found.is_none());
     }

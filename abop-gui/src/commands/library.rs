@@ -74,7 +74,10 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                         Ok(Some(lib)) => lib,
                         Ok(None) => {
                             // Create library and then fetch the actual Library struct
-                            let library_id = match db.add_library_with_path("Default Library", library_path.clone()).await {
+                            let library_id = match db
+                                .add_library_with_path("Default Library", library_path.clone())
+                                .await
+                            {
                                 Ok(lib_id) => lib_id,
                                 Err(e) => return Err(e.to_string()),
                             };

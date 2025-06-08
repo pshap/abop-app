@@ -222,8 +222,8 @@ pub struct SelectionOverride {
 }
 
 /// Type-safe component style override system
-/// 
-/// This replaces the previous HashMap<String, serde_json::Value> approach with 
+///
+/// This replaces the previous HashMap<String, serde_json::Value> approach with
 /// strongly-typed overrides that correspond to actual component properties.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComponentOverride {
@@ -289,7 +289,7 @@ impl ComponentOverride {
             (ComponentType::Progress, ComponentOverrides::Progress(_)) => Ok(()),
             (ComponentType::Selection, ComponentOverrides::Selection(_)) => Ok(()),
             _ => Err(format!(
-                "Component type {:?} does not match override type", 
+                "Component type {:?} does not match override type",
                 self.component_type
             )),
         }

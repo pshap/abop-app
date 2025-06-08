@@ -164,7 +164,9 @@ async fn scan_library(
     });
 
     info!("Using database: {db_path:?}");
-    let db = Database::open(&db_path).await.context("Failed to initialize database")?;
+    let db = Database::open(&db_path)
+        .await
+        .context("Failed to initialize database")?;
 
     // Create a library record first
     let library_id = db
@@ -214,7 +216,10 @@ async fn scan_library(
         scan_with_progress(scanner, &db, &library_path).await?;
     } else {
         info!("Starting scan...");
-        let result = scanner.scan(abop_core::scanner::ScanOptions::default()).await.context("Scan failed")?;
+        let result = scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .await
+            .context("Scan failed")?;
         info!(
             "Scan result: processed={}, errors={}",
             result.processed, result.errors
@@ -236,7 +241,11 @@ async fn scan_with_progress(
     _library_path: &Path,
 ) -> Result<()> {
     use tokio::time::{Duration, interval}; // Start scan in background
-    let mut scan_handle = tokio::spawn(async move { scanner.scan(abop_core::scanner::ScanOptions::default()).await });
+    let mut scan_handle = tokio::spawn(async move {
+        scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .await
+    });
 
     // Monitor progress
     let mut progress_interval = interval(Duration::from_secs(2));
@@ -328,7 +337,9 @@ async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) ->
 async fn handle_db_init(database_path: PathBuf) -> Result<()> {
     info!("Initializing database: {database_path:?}");
     debug!("About to call Database::open()");
-    let _db = Database::open(&database_path).await.context("Failed to initialize database")?;
+    let _db = Database::open(&database_path)
+        .await
+        .context("Failed to initialize database")?;
     debug!("Database::open() completed successfully");
     info!("✓ Database initialized successfully");
     Ok(())
@@ -337,7 +348,9 @@ async fn handle_db_init(database_path: PathBuf) -> Result<()> {
 async fn handle_db_list(database_path: PathBuf) -> Result<()> {
     info!("Listing audiobooks in: {database_path:?}");
     debug!("About to call Database::open() for list operation");
-    let db = Database::open(&database_path).await.context("Failed to open database")?;
+    let db = Database::open(&database_path)
+        .await
+        .context("Failed to open database")?;
     debug!("Database::open() completed for list operation");
 
     // Get all libraries first
@@ -380,7 +393,9 @@ async fn handle_db_list(database_path: PathBuf) -> Result<()> {
 async fn handle_db_stats(database_path: PathBuf) -> Result<()> {
     info!("Database statistics: {database_path:?}");
     debug!("About to call Database::open() for stats operation");
-    let db = Database::open(&database_path).await.context("Failed to open database")?;
+    let db = Database::open(&database_path)
+        .await
+        .context("Failed to open database")?;
     debug!("Database::open() completed for stats operation");
 
     debug!("About to call get_audiobook_count()");
@@ -393,7 +408,9 @@ async fn handle_db_stats(database_path: PathBuf) -> Result<()> {
 async fn handle_db_clean(database_path: PathBuf) -> Result<()> {
     info!("Cleaning database: {database_path:?}");
     debug!("About to call Database::open() for clean operation");
-    let _db = Database::open(&database_path).await.context("Failed to open database")?;
+    let _db = Database::open(&database_path)
+        .await
+        .context("Failed to open database")?;
     debug!("Database::open() completed for clean operation");
 
     // TODO: Implement database cleanup/optimization

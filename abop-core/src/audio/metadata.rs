@@ -273,7 +273,7 @@ fn process_metadata_tags(
                         if let Ok(year) = tag.value.to_string().parse::<i32>() {
                             meta.year = Some(year);
                         }
-                    }                    // Ignore composer and comment fields for now
+                    } // Ignore composer and comment fields for now
                     symphonia::core::meta::StandardTagKey::Composer
                     | symphonia::core::meta::StandardTagKey::Comment => {}
                     _ => {}

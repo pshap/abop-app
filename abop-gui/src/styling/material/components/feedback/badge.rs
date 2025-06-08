@@ -139,17 +139,24 @@ impl MaterialBadge {
                     }
                 })
                 .into(),
-            BadgeVariant::Number | BadgeVariant::Text => {                let display_text = self.content.as_ref().map_or_else(String::new, |content| {
+            BadgeVariant::Number | BadgeVariant::Text => {
+                let display_text = self.content.as_ref().map_or_else(String::new, |content| {
                     if self.variant == BadgeVariant::Number {
-                        content.parse::<u32>().map_or_else(|_| content.clone(), |num| {
-                            self.max_count.map_or_else(|| content.clone(), |max| {
-                                if num > max {
-                                    format!("{max}+")
-                                } else {
-                                    content.clone()
-                                }
-                            })
-                        })
+                        content.parse::<u32>().map_or_else(
+                            |_| content.clone(),
+                            |num| {
+                                self.max_count.map_or_else(
+                                    || content.clone(),
+                                    |max| {
+                                        if num > max {
+                                            format!("{max}+")
+                                        } else {
+                                            content.clone()
+                                        }
+                                    },
+                                )
+                            },
+                        )
                     } else {
                         content.clone()
                     }

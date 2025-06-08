@@ -179,15 +179,17 @@ impl StatusDisplay {
 
                 let progress_text = current_file.as_ref().map_or_else(
                     || format!("Scanning library... ({processed}/{total})",),
-                    |current_file| format!(
-                        "Scanning: {} ({}/{})",
-                        current_file
-                            .split(std::path::MAIN_SEPARATOR)
-                            .next_back()
-                            .unwrap_or(current_file),
-                        processed,
-                        total,
-                    )
+                    |current_file| {
+                        format!(
+                            "Scanning: {} ({}/{})",
+                            current_file
+                                .split(std::path::MAIN_SEPARATOR)
+                                .next_back()
+                                .unwrap_or(current_file),
+                            processed,
+                            total,
+                        )
+                    },
                 );
 
                 status_column = status_column.push(

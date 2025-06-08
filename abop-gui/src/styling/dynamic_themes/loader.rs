@@ -5,10 +5,7 @@ use super::{
     errors::ThemeLoadError,
     serialization::SerializableMaterialTokens,
 };
-use crate::styling::material::{
-    spacing::SpacingTokens,
-    tokens::core::MaterialTokens,
-};
+use crate::styling::material::{spacing::SpacingTokens, tokens::core::MaterialTokens};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -123,7 +120,10 @@ impl ThemeLoader {
         // Validate component overrides
         for override_config in &config.component_overrides {
             override_config.validate().map_err(|e| {
-                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+                ThemeLoadError::ValidationError(format!(
+                    "Component override validation failed: {}",
+                    e
+                ))
             })?;
         }
 
@@ -131,7 +131,8 @@ impl ThemeLoader {
             metadata: config.metadata.clone(),
             semantic_colors,
             material_tokens: Self::convert_material_tokens(&config.material_tokens)?,
-            component_overrides: config.component_overrides.clone(),        })
+            component_overrides: config.component_overrides.clone(),
+        })
     }
 
     /// Validate a loaded theme configuration
@@ -147,7 +148,10 @@ impl ThemeLoader {
         // Validate component overrides
         for override_config in &config.component_overrides {
             override_config.validate().map_err(|e| {
-                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+                ThemeLoadError::ValidationError(format!(
+                    "Component override validation failed: {}",
+                    e
+                ))
             })?;
         }
 
@@ -167,7 +171,10 @@ impl ThemeLoader {
         // Validate component overrides
         for override_config in &config.component_overrides {
             override_config.validate().map_err(|e| {
-                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+                ThemeLoadError::ValidationError(format!(
+                    "Component override validation failed: {}",
+                    e
+                ))
             })?;
         }
 
@@ -175,7 +182,7 @@ impl ThemeLoader {
     }
 
     /// Convert serializable material tokens to runtime tokens
-    /// 
+    ///
     /// This unified method replaces the old convert_design_tokens method
     /// and handles the complete material token conversion process.
     fn convert_material_tokens(

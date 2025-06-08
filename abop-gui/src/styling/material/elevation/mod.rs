@@ -604,7 +604,7 @@ impl ElevationStyle {
                 },
                 offset: Vector::new(0.0, params.offset_y),
                 blur_radius: params.blur_radius,
-            }
+            },
         );
 
         let tint_opacity = shadow_calculations::calculate_custom_tint_opacity(dp);

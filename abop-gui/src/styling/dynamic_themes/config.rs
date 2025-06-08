@@ -12,7 +12,7 @@ use crate::styling::material::{
 use serde::{Deserialize, Serialize};
 
 /// Unified theme configuration for loading and runtime use
-/// 
+///
 /// This unified structure eliminates redundancy between ThemeConfig and SerializableTheme
 /// while maintaining compatibility with both file loading and runtime theme management.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ pub struct ThemeConfig {
 
 impl ThemeConfig {
     /// Convert to runtime theme
-    /// 
+    ///
     /// This method converts the serializable theme configuration into a runtime-ready
     /// theme with proper Material Design tokens and validated color schemes.
     ///
@@ -42,7 +42,10 @@ impl ThemeConfig {
         // Validate component overrides
         for override_config in &self.component_overrides {
             override_config.validate().map_err(|e| {
-                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+                ThemeLoadError::ValidationError(format!(
+                    "Component override validation failed: {}",
+                    e
+                ))
             })?;
         }
 
@@ -80,7 +83,7 @@ impl ThemeConfig {
 }
 
 /// Custom theme mode created from loaded configuration
-/// 
+///
 /// This structure represents a fully processed theme with runtime-ready tokens
 /// and eliminates redundancy with the base ThemeConfig structure.
 #[derive(Debug, Clone)]
@@ -121,15 +124,20 @@ impl CustomThemeMode {
     }
 
     /// Get component overrides
-    #[must_use]    pub fn component_overrides(&self) -> &[ComponentOverride] {
+    #[must_use]
+    pub fn component_overrides(&self) -> &[ComponentOverride] {
         &self.component_overrides
     }
 
     /// Find component override by type and optional variant
     #[must_use]
-    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+    pub fn find_component_override(
+        &self,
+        component_type: ComponentType,
+        variant: Option<&str>,
+    ) -> Option<&ComponentOverride> {
         self.component_overrides.iter().find(|override_config| {
-            override_config.component_type == component_type 
+            override_config.component_type == component_type
                 && override_config.variant.as_deref() == variant
         })
     }
@@ -156,15 +164,20 @@ impl Theme {
     }
 
     /// Get component overrides
-    #[must_use]    pub fn component_overrides(&self) -> &[ComponentOverride] {
+    #[must_use]
+    pub fn component_overrides(&self) -> &[ComponentOverride] {
         &self.component_overrides
     }
 
     /// Find component override by type and optional variant
     #[must_use]
-    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+    pub fn find_component_override(
+        &self,
+        component_type: ComponentType,
+        variant: Option<&str>,
+    ) -> Option<&ComponentOverride> {
         self.component_overrides.iter().find(|override_config| {
-            override_config.component_type == component_type 
+            override_config.component_type == component_type
                 && override_config.variant.as_deref() == variant
         })
     }
