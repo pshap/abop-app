@@ -4,7 +4,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 /// Severity level of a validation issue
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ValidationSeverity {
     /// Informational - state is valid but could be optimized
     Info,

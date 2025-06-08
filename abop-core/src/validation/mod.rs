@@ -6,11 +6,16 @@
 
 mod error;
 mod recovery;
+mod repair_constants;
+mod repair_patterns;
+mod repair_handlers;
 mod state_validator;
 pub mod validators;
 
 pub use error::{ValidationError, ValidationResult, ValidationSeverity};
 pub use recovery::{RepairAction, RepairContext, StateRepairStrategy};
+pub use repair_handlers::{RepairHandler, get_all_handlers};
+pub use repair_patterns::IssuePattern;
 pub use state_validator::{StateValidator, ValidationConfig};
 pub use validators::*;
 
