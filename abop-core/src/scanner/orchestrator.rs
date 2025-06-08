@@ -279,16 +279,6 @@ impl ScanOrchestrator {
             // monitor.record_error(context, error.to_string());
         }
     }
-
-    /// Centralized warning handling
-    fn handle_scan_warning(&self, message: &str, context: &str) {
-        warn!("Scan warning in {}: {}", context, message);
-        
-        if let Some(_monitor) = &self.performance_monitor {
-            // Could extend PerformanceMonitor to track warnings
-            // monitor.record_warning(context, message.to_string());
-        }
-    }
 }
 
 #[cfg(test)]
