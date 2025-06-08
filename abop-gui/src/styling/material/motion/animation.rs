@@ -234,11 +234,9 @@ impl Animation {
     /// Check if animation is complete
     #[must_use]
     pub fn is_complete(&self) -> bool {
-        if let Some(start_time) = self.start_time {
+        self.start_time.is_some_and(|start_time| {
             start_time.elapsed() >= self.effective_duration()
-        } else {
-            false
-        }
+        })
     }
 
     /// Get remaining time in the animation
@@ -355,7 +353,7 @@ impl AnimationBuilder {
         let duration = self.duration.unwrap_or(Duration::from_millis(300));
         let easing = self
             .easing
-            .unwrap_or(MotionTokens::easing(EasingType::Standard));
+            .unwrap_or_else(|| MotionTokens::easing(EasingType::Standard));
 
         Animation {
             duration,

@@ -188,7 +188,7 @@ impl SelectionColors {
 
     /// Calculate the border color for the selection component
     #[must_use]
-    pub fn border_color(&self, state: SelectionState, variant: SelectionVariant) -> Color {
+    pub const fn border_color(&self, state: SelectionState, variant: SelectionVariant) -> Color {
         match (state, self.error_state) {
             // Error states
             (_, true) => self.colors.error.base, // Selected states - Material Design 3 spec: checkbox, radio, and switch share primary.base for selected states
@@ -280,7 +280,7 @@ impl SelectionColors {
 
     /// Calculate the text color for component labels
     #[must_use]
-    pub fn text_color(&self, state: SelectionState) -> Color {
+    pub const fn text_color(&self, state: SelectionState) -> Color {
         match state {
             SelectionState::DisabledSelected | SelectionState::DisabledUnselected => {
                 ColorUtils::with_alpha(self.colors.on_surface, 0.38)

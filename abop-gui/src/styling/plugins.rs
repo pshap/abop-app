@@ -121,13 +121,13 @@ pub enum StyleError {
 
 impl<T> From<PoisonError<RwLockReadGuard<'_, T>>> for StyleError {
     fn from(err: PoisonError<RwLockReadGuard<'_, T>>) -> Self {
-        StyleError::LockError(err.to_string())
+        Self::LockError(err.to_string())
     }
 }
 
 impl<T> From<PoisonError<RwLockWriteGuard<'_, T>>> for StyleError {
     fn from(err: PoisonError<RwLockWriteGuard<'_, T>>) -> Self {
-        StyleError::LockError(err.to_string())
+        Self::LockError(err.to_string())
     }
 }
 
@@ -172,13 +172,13 @@ impl StylePluginRegistry {
             .into());
         }
 
-        let mut plugins = self.plugins.write()?;
-        let theme = self.current_theme.read()?;
-
-        let mut plugin = plugin;
-        plugin.initialize(&theme)?;
-
-        plugins.insert(info.name, plugin);
+        self.plugins.write()?.insert(info.name, {
+            let theme = self.current_theme.read()?;
+            let mut plugin = plugin;
+            plugin.initialize(&theme)?;
+            plugin
+        });
+        
         Ok(())
     }
 
@@ -202,9 +202,7 @@ impl StylePluginRegistry {
     /// Panics if the internal plugin registry mutex is poisoned.
     #[must_use]
     pub fn get_plugin_style(&self, component: &str, variant: &str) -> Option<CustomComponentStyle> {
-        let plugins = self.plugins.read().unwrap();
-
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(style) = plugin.get_component_style(component, variant) {
                 return Some(style);
             }
@@ -219,10 +217,9 @@ impl StylePluginRegistry {
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
     pub fn get_all_custom_colors(&self) -> HashMap<String, Color> {
-        let plugins = self.plugins.read().unwrap();
         let mut colors = HashMap::new();
 
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(plugin_colors) = plugin.get_custom_colors() {
                 colors.extend(plugin_colors);
             }
@@ -237,10 +234,9 @@ impl StylePluginRegistry {
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
     pub fn get_all_custom_tokens(&self) -> HashMap<String, f32> {
-        let plugins = self.plugins.read().unwrap();
         let mut tokens = HashMap::new();
 
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(plugin_tokens) = plugin.get_custom_tokens() {
                 tokens.extend(plugin_tokens);
             }

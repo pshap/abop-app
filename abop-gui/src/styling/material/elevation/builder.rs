@@ -54,37 +54,39 @@ impl ElevationStyleBuilder {
     }
 
     /// Build the elevation style
-    #[must_use]
-    pub fn build(self) -> ElevationStyle {
+    #[must_use]    pub fn build(self) -> ElevationStyle {
         let shadow_color = self.shadow_color.unwrap_or(Color::BLACK);
         let tint_color = self.tint_color.unwrap_or(Color::WHITE);
 
-        if let Some(shadow_params) = self.custom_shadow {
-            // Create custom style with custom shadow parameters
-            let mut style = ElevationStyle::custom(
-                self.level.dp(),
-                shadow_color,
-                tint_color,
-                Some(shadow_params),
-            );
+        self.custom_shadow.map_or_else(
+            || {
+                // Create standard style
+                let mut style = ElevationStyle::new(self.level, shadow_color, tint_color);
 
-            // Override tint opacity if provided
-            if let Some(tint_opacity) = self.custom_tint_opacity {
-                style.tint_opacity = tint_opacity;
+                // Override tint opacity if provided
+                if let Some(tint_opacity) = self.custom_tint_opacity {
+                    style.tint_opacity = tint_opacity;
+                }
+
+                style
+            },
+            |shadow_params| {
+                // Create custom style with custom shadow parameters
+                let mut style = ElevationStyle::custom(
+                    self.level.dp(),
+                    shadow_color,
+                    tint_color,
+                    Some(shadow_params),
+                );
+
+                // Override tint opacity if provided
+                if let Some(tint_opacity) = self.custom_tint_opacity {
+                    style.tint_opacity = tint_opacity;
+                }
+
+                style
             }
-
-            style
-        } else {
-            // Create standard style
-            let mut style = ElevationStyle::new(self.level, shadow_color, tint_color);
-
-            // Override tint opacity if provided
-            if let Some(tint_opacity) = self.custom_tint_opacity {
-                style.tint_opacity = tint_opacity;
-            }
-
-            style
-        }
+        )
     }
 }
 
