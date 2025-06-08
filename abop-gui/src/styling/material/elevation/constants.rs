@@ -20,6 +20,12 @@ pub const MAX_ELEVATION_LEVEL: u8 = 5;
 /// Minimum scale factor for elevation
 pub const MIN_SCALE_FACTOR: f32 = 0.0;
 
+/// Level calculation multiplier for custom elevation dp values
+pub const LEVEL_CALCULATION_DIVISOR: f32 = 2.0;
+
+/// Number of elevation levels in the system
+pub const ELEVATION_LEVEL_COUNT: usize = 6;
+
 /// Surface tint opacity values for each elevation level
 pub const TINT_OPACITIES: [f32; 6] = [0.0, 0.05, 0.08, 0.11, 0.12, 0.14];
 
