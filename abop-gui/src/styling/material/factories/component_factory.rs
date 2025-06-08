@@ -26,56 +26,28 @@ impl<'a> MaterialComponentFactory<'a> {
     #[must_use]
     pub const fn tokens(&self) -> &MaterialTokens {
         self.tokens
-    }
-
-    /// Create a Material Design card
-    ///
-    /// Phase 3 will implement full component creation with token integration.
+    }    /// Create a Material Design card
     #[must_use]
     pub fn create_card(&self) -> crate::styling::material::components::containers::MaterialCard {
-        // Phase 3 will implement proper token integration
+        // Component creation with token integration will be implemented as needed
         crate::styling::material::components::containers::MaterialCard::default()
     }
 
-    /// Create a Material Design button
-    ///
-    /// Phase 3 will implement full button creation with token integration.
-    #[must_use]
-    pub fn create_button(&self) -> String {
-        // Placeholder for Phase 3 implementation
-        // Will return proper Material Button component
-        "MaterialButton".to_string()
-    }
-
-    /// Create a Material Design text field
-    ///
-    /// Phase 3 will implement full text field creation with token integration.
-    #[must_use]
-    pub fn create_text_field(&self) -> String {
-        // Placeholder for Phase 3 implementation
-        // Will return proper Material TextField component
-        "MaterialTextField".to_string()
-    }
-
     /// Create a Material Design progress indicator
-    ///
-    /// Phase 3 will implement full progress indicator creation with token integration.
     #[must_use]
     pub fn create_progress_indicator(
         &self,
     ) -> crate::styling::material::components::feedback::MaterialProgressIndicator {
-        // Phase 3 will implement proper token integration
+        // Component creation with token integration will be implemented as needed
         crate::styling::material::components::feedback::MaterialProgressIndicator::default()
     }
 
     /// Create a Material Design notification
-    ///
-    /// Phase 3 will implement full notification creation with token integration.
     pub fn create_notification(
         &self,
         message: impl Into<String>,
     ) -> crate::styling::material::components::feedback::MaterialNotification {
-        // Phase 3 will implement proper token integration
+        // Component creation with token integration will be implemented as needed
         crate::styling::material::components::feedback::MaterialNotification::toast(message)
     }
 }
