@@ -310,7 +310,7 @@ mod tests {
     #[tokio::test]
     async fn test_batch_processing() {
         let dir = tempdir().unwrap();
-        let db = Database::in_memory().unwrap();
+        let db = Database::in_memory().await.unwrap();
         let processor = DefaultFileProcessor::new(db);
 
         // Create test files

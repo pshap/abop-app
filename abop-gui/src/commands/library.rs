@@ -64,56 +64,31 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
             Some(Task::perform(
                 async move {
                     // Open DB asynchronously
-                    let db =
-                        match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
-                            Ok(Ok(db)) => db,
-                            Ok(Err(e)) => return Err(e.to_string()),
-                            Err(e) => return Err(format!("Failed to open database: {e}")),
-                        };
+                    let db = match Database::open(&db_path).await {
+                        Ok(db) => db,
+                        Err(e) => return Err(e.to_string()),
+                    };
 
-                    // Look up or create library asynchronously
-                    let library = match tokio::task::spawn_blocking({
-                        let db = db.clone();
-                        move || db.libraries().find_by_name("Default Library")
-                    })
-                    .await
-                    {
-                        Ok(Ok(Some(lib))) => lib,
-                        Ok(Ok(None)) => {
+                    // Look up or create library
+                    let library = match db.libraries().find_by_name("Default Library") {
+                        Ok(Some(lib)) => lib,
+                        Ok(None) => {
                             // Create library and then fetch the actual Library struct
-                            let library_id = match tokio::task::spawn_blocking({
-                                let db = db.clone();
-                                let path = library_path.clone();
-                                move || {
-                                    tokio::runtime::Handle::current().block_on(async {
-                                        db.add_library_with_path("Default Library", path).await
-                                    })
-                                }
-                            })
-                            .await
-                            {
-                                Ok(Ok(lib_id)) => lib_id,
-                                Ok(Err(e)) => return Err(e.to_string()),
-                                Err(e) => return Err(format!("Failed to create library: {e}")),
+                            let library_id = match db.add_library_with_path("Default Library", library_path.clone()).await {
+                                Ok(lib_id) => lib_id,
+                                Err(e) => return Err(e.to_string()),
                             };
 
                             // Now get the actual Library struct
-                            match tokio::task::spawn_blocking({
-                                let db = db.clone();
-                                move || db.libraries().find_by_id(&library_id)
-                            })
-                            .await
-                            {
-                                Ok(Ok(Some(lib))) => lib,
-                                Ok(Ok(None)) => {
+                            match db.libraries().find_by_id(&library_id) {
+                                Ok(Some(lib)) => lib,
+                                Ok(None) => {
                                     return Err("Library not found after creation".to_string());
                                 }
-                                Ok(Err(e)) => return Err(e.to_string()),
-                                Err(e) => return Err(format!("Failed to get library: {e}")),
+                                Err(e) => return Err(e.to_string()),
                             }
                         }
-                        Ok(Err(e)) => return Err(e.to_string()),
-                        Err(e) => return Err(format!("Failed to find library: {e}")),
+                        Err(e) => return Err(e.to_string()),
                     };
 
                     // Use our new unified scanning interface

@@ -48,8 +48,8 @@ pub fn create_temp_dir() -> TempDir {
 /// assert!(db.is_connected());
 /// ```
 #[allow(dead_code)]
-pub fn create_test_database() -> Database {
-    Database::open(":memory:").expect("Failed to create test database")
+pub async fn create_test_database() -> Database {
+    Database::open(":memory:").await.expect("Failed to create test database")
 }
 
 /// Creates a test library with the given name and path.
