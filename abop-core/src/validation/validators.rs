@@ -342,32 +342,9 @@ impl SchemaValidator {
     }
 
     /// Validate schema version compatibility
-    pub fn validate_schema_version(&self, _state: &AppState, result: &mut ValidationResult) {
-        // For now, we don't have explicit schema versioning in the AppState
-        // This is a placeholder for future schema evolution
-
-        // In the future, this would check something like:
-        // if let Some(version) = state.schema_version {
-        //     if !self.is_compatible_version(version) {
-        //         result.add_issue(
-        //             ValidationError::critical("schema", "Incompatible schema version")
-        //                 .with_field("schema_version")
-        //                 .with_suggestion("Migrate data to current schema version")
-        //         );
-        //     }
-        // }
-
-        // For now, we'll add an info message suggesting schema versioning
-        result.add_issue(
-            ValidationError::info("schema", "No explicit schema version found")
-                .with_suggestion("Consider adding schema versioning for future compatibility"),
-        );
-    }
-    /// Check if a schema version is compatible (placeholder)
-    #[allow(dead_code)]
-    const fn is_compatible_version(_version: &str) -> bool {
-        // Placeholder for version compatibility logic
-        true
+    pub fn validate_schema_version(&self, _state: &AppState, _result: &mut ValidationResult) {
+        // Schema validation will be implemented when versioning is added to AppState
+        // Currently not needed as the project doesn't require backward compatibility
     }
 }
 
