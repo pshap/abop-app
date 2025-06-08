@@ -15,8 +15,8 @@ mod error_handling_tests {
 
         // Verify the app state is initialized correctly
         assert_eq!(state.current_view, abop_core::models::ui::ViewType::Library);
-        assert!(state.data.libraries.is_empty());
-        assert!(state.data.audiobooks.is_empty());
+        assert!(state.app_data.libraries.is_empty());
+        assert!(state.app_data.audiobooks.is_empty());
 
         // In a real implementation, errors would be propagated through messages or channels
         // For this test, we just verify we can create errors properly

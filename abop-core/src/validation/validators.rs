@@ -29,6 +29,7 @@ use std::path::Path;
 
 /// Validates file and directory references
 /// Validates file paths and file system related validations
+#[derive(Debug, Clone)]
 pub struct FileValidator {
     /// Configuration for file validation
     config: ValidationConfig,
@@ -156,6 +157,7 @@ impl FileValidator {
 
 /// Validates audiobook metadata consistency and integrity
 /// Validates metadata consistency and integrity
+#[derive(Debug, Clone)]
 pub struct MetadataValidator {
     /// Configuration for metadata validation
     _config: ValidationConfig,
@@ -240,6 +242,7 @@ impl MetadataValidator {
 
 /// Validates referential integrity between different data entities
 /// Validates referential integrity between entities
+#[derive(Debug, Clone)]
 pub struct IntegrityValidator {
     /// Configuration for integrity validation
     _config: ValidationConfig,
@@ -262,9 +265,9 @@ impl IntegrityValidator {
 
     /// Validate that audiobooks reference existing libraries
     fn validate_library_audiobook_references(state: &AppState, result: &mut ValidationResult) {
-        let library_ids: HashSet<_> = state.data.libraries.iter().map(|lib| &lib.id).collect();
+        let library_ids: HashSet<_> = state.app_data.libraries.iter().map(|lib| &lib.id).collect();
 
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             if !library_ids.contains(&audiobook.library_id) {
                 result.add_issue(
                     ValidationError::error(
@@ -283,7 +286,7 @@ impl IntegrityValidator {
     fn validate_duplicate_ids(state: &AppState, result: &mut ValidationResult) {
         // Check library ID duplicates
         let mut library_ids = HashSet::new();
-        for library in &state.data.libraries {
+        for library in &state.app_data.libraries {
             if !library_ids.insert(&library.id) {
                 result.add_issue(
                     ValidationError::critical("integrity", "Duplicate library ID found")
@@ -295,7 +298,7 @@ impl IntegrityValidator {
 
         // Check audiobook ID duplicates
         let mut audiobook_ids = HashSet::new();
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             if !audiobook_ids.insert(&audiobook.id) {
                 result.add_issue(
                     ValidationError::critical("integrity", "Duplicate audiobook ID found")
@@ -308,7 +311,7 @@ impl IntegrityValidator {
 
         // Check progress ID duplicates
         let mut progress_ids = HashSet::new();
-        for progress in &state.data.progress {
+        for progress in &state.app_data.progress {
             let progress_key = &progress.audiobook_id; // Progress is unique per audiobook
             if !progress_ids.insert(progress_key) {
                 result.add_issue(
@@ -323,6 +326,7 @@ impl IntegrityValidator {
 
 /// Validates schema version compatibility
 /// Validates schema version compatibility
+#[derive(Debug, Clone)]
 pub struct SchemaValidator {
     /// Configuration for schema validation
     _config: ValidationConfig,
@@ -424,15 +428,15 @@ mod tests {
 
         // Add duplicate library IDs
         state
-            .data
+            .app_data
             .libraries
             .push(Library::new("Library 1", "/path1"));
         state
-            .data
+            .app_data
             .libraries
             .push(Library::new("Library 2", "/path2"));
         // Manually set duplicate ID
-        state.data.libraries[1].id = state.data.libraries[0].id.clone();
+        state.app_data.libraries[1].id = state.app_data.libraries[0].id.clone();
 
         validator.validate_cross_references(&state, &mut result);
 
