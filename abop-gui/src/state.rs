@@ -300,8 +300,7 @@ impl UiState {
     /// This will stop the scanner and update the state to Cancelled
     pub async fn cancel_scan(&mut self) {
         if let Some(scanner) = &self.scanner {
-            let scanner = scanner.lock().await;
-            scanner.cancel_scan();
+            scanner.lock().await.cancel_scan();
             self.scanner_state = ScannerState::Cancelled;
         }
     }
@@ -408,10 +407,10 @@ pub enum TaskType {
 impl std::fmt::Display for TaskType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TaskType::Scan => write!(f, "Scanning"),
-            TaskType::Process => write!(f, "Processing"),
-            TaskType::Import => write!(f, "Importing"),
-            TaskType::Export => write!(f, "Exporting"),
+            Self::Scan => write!(f, "Scanning"),
+            Self::Process => write!(f, "Processing"),
+            Self::Import => write!(f, "Importing"),
+            Self::Export => write!(f, "Exporting"),
         }
     }
 }

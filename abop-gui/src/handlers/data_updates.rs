@@ -38,7 +38,7 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
                     state.library_path = info.path.clone();
 
                     // Add to recent directories
-                    state.recent_directories.push(info.clone());
+                    state.recent_directories.push(info);
 
                     // Quick scan complete - just update UI state, don't auto-start full scan
                     // The user can manually click the scan button if they want a full scan
