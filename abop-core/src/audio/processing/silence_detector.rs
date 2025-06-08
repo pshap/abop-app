@@ -515,8 +515,7 @@ mod tests {
 
         assert!(
             (start_secs - 0.3).abs() < 0.02,
-            "Silence start time should be approximately 0.3s, but was {:.3}s",
-            start_secs
+            "Silence start time should be approximately 0.3s, but was {start_secs:.3}s"
         );
         assert!(
             (silence_segment.duration_secs - 0.2).abs() < 0.02,

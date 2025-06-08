@@ -184,7 +184,7 @@ mod tests {
                 match processor.process_file(path).await {
                     Ok(audiobook) => audiobooks.push(audiobook),
                     Err(e) => {
-                        debug!("Error processing file: {}", e);
+                        debug!("Error processing file: {e}");
                         error_count += 1;
                     }
                 }
