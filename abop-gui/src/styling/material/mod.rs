@@ -32,7 +32,7 @@ pub mod helpers;
 pub mod themes;
 pub mod tokens;
 
-// Re-export core Material Design types for backward compatibility
+// Re-export core Material Design types
 pub use colors::{MaterialColors, MaterialPalette, TonalPalette};
 pub use components::*;
 pub use elevation::{ElevationLevel, MaterialElevation};
@@ -44,7 +44,7 @@ pub use spacing::SpacingTokens;
 pub use typography::{MaterialTypography, TypographyRole};
 pub use visual::VisualTokens;
 
-// Re-export Phase 2 structures for backward compatibility
+// Re-export Phase 2 structures
 pub use tokens::{core::MaterialTokens, semantic::SemanticColors, states::*};
 
 // Re-export helper traits for enhanced functionality

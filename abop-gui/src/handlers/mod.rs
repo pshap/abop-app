@@ -4,7 +4,6 @@
 //! specialized handlers based on message type and category.
 
 pub mod data_updates;
-pub mod placeholders;
 pub mod ui_state;
 
 use iced::Task;

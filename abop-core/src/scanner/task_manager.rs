@@ -127,13 +127,10 @@ impl Default for TaskManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::Database;
     use crate::scanner::Library;
     use crate::scanner::{
         file_discovery::{DefaultFileDiscoverer, FileDiscoverer},
-        file_processor::{DefaultFileProcessor, FileProcessor},
     };
-    use log::debug;
 
     #[tokio::test]
     async fn test_task_manager_cancellation() {
@@ -161,8 +158,6 @@ mod tests {
 
         let scan_fn = |reporter: Arc<dyn ProgressReporter>| async move {
             let discoverer = DefaultFileDiscoverer::with_default_extensions();
-            let db = Database::open(":memory:").await?;
-            let processor = DefaultFileProcessor::new(db);
             let audio_files = discoverer.discover_files(&library.path).await?;
 
             if audio_files.is_empty() {
@@ -175,25 +170,23 @@ mod tests {
             let total_files = audio_files.len();
             reporter.report_started(total_files).await;
 
+            // Simulate processing files for task manager testing
             let mut audiobooks = Vec::new();
-            let mut error_count = 0;
             let start_time = std::time::Instant::now();
 
             for (index, path) in audio_files.into_iter().enumerate() {
-                let path_clone = path.clone();
-                match processor.process_file(path).await {
-                    Ok(audiobook) => audiobooks.push(audiobook),
-                    Err(e) => {
-                        debug!("Error processing file: {e}");
-                        error_count += 1;
-                    }
-                }
+                // Simulate some work
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                
+                // Create a dummy audiobook for testing
+                let audiobook = crate::models::Audiobook::new(&library.name, path);
+                audiobooks.push(audiobook);
 
                 reporter
                     .report_file_processed(
                         index + 1,
                         total_files,
-                        path_clone.to_string_lossy().into_owned(),
+                        format!("test_file_{}.mp3", index),
                     )
                     .await;
             }
@@ -201,13 +194,13 @@ mod tests {
             let duration = start_time.elapsed();
             let processed_count = audiobooks.len();
             reporter
-                .report_complete(processed_count, error_count, duration)
+                .report_complete(processed_count, 0, duration)
                 .await;
             Ok(ScanSummary {
                 new_files: audiobooks,
                 scan_duration: duration,
                 processed: processed_count,
-                errors: error_count,
+                errors: 0,
             })
         };
 

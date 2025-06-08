@@ -12,13 +12,7 @@ use crate::utils::casting::CastError;
 /// The `T` type parameter represents the successful result type.
 pub type CastResult<T> = std::result::Result<T, CastError>;
 
-// Import domain modules
-use crate::utils::casting::domain::ui;
-
 use crate::audio::processing::error::{AudioProcessingError, Result};
-
-// Re-export UI module functions for backward compatibility
-pub use ui::*;
 
 /// Constants for audio processing bounds checking
 pub mod conversion_constants {
