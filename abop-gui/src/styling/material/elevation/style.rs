@@ -74,9 +74,16 @@ impl ElevationStyle {
             offset: Vector::new(0.0, params.offset_y),
             blur_radius: params.blur_radius,
         }
+    }    /// Calculate tint opacity for custom elevation value
+    #[cfg(test)]
+    pub const fn calculate_tint_opacity(level: ElevationLevel) -> f32 {
+        // Material Design 3 uses surface tint to indicate elevation
+        // Higher elevation = more tint opacity
+        constants::TINT_OPACITIES[level.as_u8() as usize]
     }
 
-    /// Calculate tint opacity for custom elevation value
+    /// Calculate tint opacity for custom elevation value (private)
+    #[cfg(not(test))]
     const fn calculate_tint_opacity(level: ElevationLevel) -> f32 {
         // Material Design 3 uses surface tint to indicate elevation
         // Higher elevation = more tint opacity
