@@ -7,7 +7,7 @@ use abop_core::{
     audio::AudioFormat,
     db::Database,
     models::{Audiobook, Library},
-    scanner::{LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS},
+    scanner::{LibraryScanner, ScanSummary, SUPPORTED_AUDIO_EXTENSIONS},
 };
 // chrono::Utc is not currently used
 use std::fs::File;
@@ -83,7 +83,7 @@ mod library_scanner_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let scan_summary = scanner.scan_async(None).await.unwrap();
+        let scan_summary = scanner.scan(abop_core::scanner::ScanOptions::default()).await.unwrap();
 
         assert_eq!(scan_summary.new_files.len(), 0);
         assert_eq!(scan_summary.processed, 0);
@@ -106,7 +106,7 @@ mod library_scanner_tests {
                 Self { db, library }
             }
 
-            fn scan(&self) -> Result<LibraryScanResult, Box<dyn std::error::Error>> {
+            fn scan(&self) -> Result<ScanSummary, Box<dyn std::error::Error>> {
                 // Simulate finding files with different extensions
                 let mut audiobooks = Vec::new();
 
@@ -147,11 +147,11 @@ mod library_scanner_tests {
                 };
                 audiobooks.push(flac_book);
 
-                // Create a proper LibraryScanResult
-                let result = LibraryScanResult {
-                    audiobooks,
-                    processed_count: 2, // Successfully processed MP3 and FLAC
-                    error_count: 2,     // Unsupported formats
+                // Create a proper ScanSummary
+                let result = ScanSummary {
+                    new_files: audiobooks,
+                    processed: 2, // Successfully processed MP3 and FLAC
+                    errors: 2,     // Unsupported formats
                     scan_duration: std::time::Duration::from_millis(100),
                 };
 
@@ -168,11 +168,11 @@ mod library_scanner_tests {
         let scan_result = mock_scanner.scan().unwrap();
 
         // Verify we have the expected number of audiobooks
-        assert_eq!(scan_result.audiobooks.len(), 2);
+        assert_eq!(scan_result.new_files.len(), 2);
 
         // Verify the expected file formats were processed
         let formats: Vec<&str> = scan_result
-            .audiobooks
+            .new_files
             .iter()
             .filter_map(|book| book.path.extension())
             .filter_map(|ext| ext.to_str())
@@ -182,8 +182,8 @@ mod library_scanner_tests {
         assert!(formats.contains(&"flac"));
 
         // Verify we processed some files and had some errors
-        assert!(scan_result.processed_count > 0);
-        assert!(scan_result.error_count > 0);
+        assert!(scan_result.processed > 0);
+        assert!(scan_result.errors > 0);
     }
 }
 
