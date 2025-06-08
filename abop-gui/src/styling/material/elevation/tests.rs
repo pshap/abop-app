@@ -293,14 +293,13 @@ mod elevation_tests {
             offset_y: 4.0,
             blur_radius: 8.0,
             opacity: 0.25,
-        };
-
-        let style = ElevationStyleBuilder::new(ElevationLevel::Level3)
+        };        let style = ElevationStyleBuilder::new(ElevationLevel::Level3)
             .with_shadow_color(Color::from_rgb(0.2, 0.2, 0.2))
             .with_tint_color(Color::from_rgb(0.8, 0.8, 0.8))
             .with_custom_shadow(custom_shadow)
             .with_custom_tint_opacity(0.15)
-            .build();
+            .build()
+            .unwrap();
 
         assert_eq!(style.level(), ElevationLevel::Level3);
         assert_eq!(style.tint_opacity, 0.15);
