@@ -128,8 +128,7 @@ impl SerializableSemanticColors {
             Ok(Color::from_rgba8(r, g, b, a as f32 / 255.0))
         } else {
             Err(ThemeLoadError::InvalidColor(format!(
-                "Color string must be 6 or 8 characters (RGB or RGBA): {}",
-                color_str
+                "Color string must be 6 or 8 characters (RGB or RGBA): {color_str}"
             )))
         }
     }

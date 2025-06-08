@@ -1,6 +1,6 @@
 //! Performance optimizations for the elevation system
 
-use super::{constants, ElevationLevel, ElevationStyle, MaterialElevation, ShadowParams};
+use super::{ElevationLevel, ElevationStyle, MaterialElevation, ShadowParams, constants};
 use crate::styling::material::colors::MaterialColors;
 use iced::Color;
 use std::sync::LazyLock;
@@ -74,13 +74,24 @@ impl FastElevation {
         ShadowParams {
             offset_y: compute_shadow_offset(level),
             blur_radius: compute_blur_radius(level),
-            opacity: if level == 0 { 0.0 } else { constants::DEFAULT_SHADOW_OPACITY },
+            opacity: if level == 0 {
+                0.0
+            } else {
+                constants::DEFAULT_SHADOW_OPACITY
+            },
         }
-    }    /// Batch create elevation styles for all levels with custom colors
+    }
+    /// Batch create elevation styles for all levels with custom colors
     /// More efficient than creating them individually
     #[must_use]
     pub fn create_all_styles_fast(shadow_color: Color, tint_color: Color) -> [ElevationStyle; 6] {
-        ElevationLevel::all().iter().copied().map(|level| ElevationStyle::new(level, shadow_color, tint_color)).collect::<Vec<_>>().try_into().unwrap()
+        ElevationLevel::all()
+            .iter()
+            .copied()
+            .map(|level| ElevationStyle::new(level, shadow_color, tint_color))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
     }
 
     /// Fast interpolation between two elevation levels
@@ -92,7 +103,8 @@ impl FastElevation {
 
         ShadowParams {
             offset_y: from_params.offset_y + (to_params.offset_y - from_params.offset_y) * factor,
-            blur_radius: from_params.blur_radius + (to_params.blur_radius - from_params.blur_radius) * factor,
+            blur_radius: from_params.blur_radius
+                + (to_params.blur_radius - from_params.blur_radius) * factor,
             opacity: from_params.opacity + (to_params.opacity - from_params.opacity) * factor,
         }
     }
@@ -110,19 +122,17 @@ impl ElevationCache {
         Self {
             cache: std::collections::HashMap::new(),
         }
-    }    /// Get or create a material elevation system for the given colors
+    }
+    /// Get or create a material elevation system for the given colors
     pub fn get_or_create(&mut self, shadow_color: Color, tint_color: Color) -> &MaterialElevation {
         // Use color components as hash key
         let shadow_key = (shadow_color.r.to_bits(), shadow_color.g.to_bits());
         let tint_key = (tint_color.r.to_bits(), tint_color.g.to_bits());
-        let key = (
-            shadow_key.0 ^ shadow_key.1,
-            tint_key.0 ^ tint_key.1,
-        );
+        let key = (shadow_key.0 ^ shadow_key.1, tint_key.0 ^ tint_key.1);
 
-        self.cache.entry(key).or_insert_with(|| {
-            MaterialElevation::with_colors(shadow_color, tint_color)
-        })
+        self.cache
+            .entry(key)
+            .or_insert_with(|| MaterialElevation::with_colors(shadow_color, tint_color))
     }
 
     /// Clear the cache
@@ -164,16 +174,14 @@ mod tests {
 
     #[test]
     fn test_fast_interpolation() {
-        let params = FastElevation::interpolate_fast(
-            ElevationLevel::Level1,
-            ElevationLevel::Level3,
-            0.5,
-        );
-        
+        let params =
+            FastElevation::interpolate_fast(ElevationLevel::Level1, ElevationLevel::Level3, 0.5);
+
         // Should be halfway between Level1 (1.0, 2.0) and Level3 (3.0, 6.0)
         assert_eq!(params.offset_y, 2.0);
         assert_eq!(params.blur_radius, 4.0);
-    }    #[test]
+    }
+    #[test]
     fn test_elevation_cache() {
         let mut cache = ElevationCache::new();
         let shadow_color = Color::from_rgb(0.1, 0.1, 0.1);
@@ -183,12 +191,12 @@ mod tests {
         {
             let _elevation1 = cache.get_or_create(shadow_color, tint_color);
         }
-        
+
         // Second call should use the cached entry
         {
             let _elevation2 = cache.get_or_create(shadow_color, tint_color);
         }
-        
+
         let (count, _) = cache.stats();
         assert_eq!(count, 1);
     }
@@ -197,13 +205,13 @@ mod tests {
     fn test_create_all_styles_fast() {
         let shadow_color = Color::from_rgb(0.2, 0.2, 0.2);
         let tint_color = Color::from_rgb(0.8, 0.8, 0.8);
-        
+
         let styles = FastElevation::create_all_styles_fast(shadow_color, tint_color);
-        
+
         assert_eq!(styles.len(), 6);
         assert_eq!(styles[0].level(), ElevationLevel::Level0);
         assert_eq!(styles[5].level(), ElevationLevel::Level5);
-        
+
         // Check that colors are applied
         assert_eq!(styles[1].shadow.color.r, shadow_color.r);
     }
@@ -212,7 +220,7 @@ mod tests {
     fn test_default_system_caching() {
         let system1 = FastElevation::get_default_system();
         let system2 = FastElevation::get_default_system();
-        
+
         // Should return the same cached instance
         assert!(std::ptr::eq(system1, system2));
     }

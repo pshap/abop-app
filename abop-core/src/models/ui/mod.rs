@@ -14,11 +14,9 @@ mod types;
 
 // Re-export main types for backward compatibility
 pub use state::AppState;
-pub use types::{
-    AppData, PlaybackConfig, ThemeConfig, UserPreferences, ViewType, WindowConfig,
-};
+pub use types::{AppData, PlaybackConfig, ThemeConfig, UserPreferences, ViewType, WindowConfig};
 
 // Re-export new interfaces
+pub use constants::*;
 pub use data_repository::DataRepository;
 pub use persistence::{SaveOptions, StatePersistence};
-pub use constants::*;

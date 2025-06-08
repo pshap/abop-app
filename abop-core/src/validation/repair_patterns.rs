@@ -29,7 +29,7 @@ impl IssuePattern {
     /// Extract pattern from validation error message
     pub fn from_message(message: &str) -> Self {
         use super::repair_constants::error_patterns as patterns;
-        
+
         if message.contains(patterns::EMPTY_NAME) {
             Self::EmptyName
         } else if message.contains(patterns::DOES_NOT_EXIST) {

@@ -1,30 +1,31 @@
 //! Preferences-specific repair operations
 
+use super::repair_handler::{RepairHandler, create_repair_action_success};
 use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_constants::defaults;
 use crate::validation::repair_patterns::IssuePattern;
-use super::repair_handler::{RepairHandler, create_repair_action_success};
 
 /// Handles repair operations for preferences-related issues
 #[derive(Debug, Default)]
 pub struct PreferencesRepairHandler;
 
-impl RepairHandler for PreferencesRepairHandler {    fn can_handle(&self, pattern: &IssuePattern) -> bool {
-        matches!(pattern,
-            IssuePattern::NoLongerExists |
-            IssuePattern::TooSmall
+impl RepairHandler for PreferencesRepairHandler {
+    fn can_handle(&self, pattern: &IssuePattern) -> bool {
+        matches!(
+            pattern,
+            IssuePattern::NoLongerExists | IssuePattern::TooSmall
         )
     }
-    
+
     fn name(&self) -> &'static str {
         "Preferences Repair Handler"
     }
-    
+
     fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
         let mut actions = Vec::new();
-        
+
         // Convert error to pattern for processing
         if let Some(pattern) = IssuePattern::from_validation_error(issue) {
             match pattern {
@@ -33,10 +34,11 @@ impl RepairHandler for PreferencesRepairHandler {    fn can_handle(&self, patter
                     if removed_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Remove,
-                            format!("Removed {} non-existent recent directories", removed_count),
+                            format!("Removed {removed_count} non-existent recent directories"),
                             "preferences.recent_directories".to_string(),
                         ));
-                    }                }
+                    }
+                }
                 IssuePattern::TooSmall => {
                     if Self::reset_window_size(state) {
                         actions.push(create_repair_action_success(
@@ -57,7 +59,7 @@ impl RepairHandler for PreferencesRepairHandler {    fn can_handle(&self, patter
                 }
             }
         }
-        
+
         actions
     }
 }
@@ -74,7 +76,9 @@ impl PreferencesRepairHandler {
 
     fn reset_window_size(state: &mut AppState) -> bool {
         let window_config = &mut state.user_preferences.window_config;
-        if window_config.width < defaults::MIN_WINDOW_SIZE || window_config.height < defaults::MIN_WINDOW_SIZE {
+        if window_config.width < defaults::MIN_WINDOW_SIZE
+            || window_config.height < defaults::MIN_WINDOW_SIZE
+        {
             window_config.width = defaults::DEFAULT_WINDOW_WIDTH;
             window_config.height = defaults::DEFAULT_WINDOW_HEIGHT;
             true

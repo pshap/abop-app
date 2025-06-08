@@ -33,7 +33,7 @@ pub fn parse_datetime_from_row(
     let datetime_str: String =
         row.get(column_name)
             .map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get {} column: {e}", column_name),
+                message: format!("Failed to get {column_name} column: {e}"),
             })?;
 
     // Try parsing as RFC3339 first (ISO 8601)
@@ -56,7 +56,7 @@ pub fn parse_datetime_from_row(
     }
 
     Err(DatabaseError::ExecutionFailed {
-        message: format!("Failed to parse datetime: {}", datetime_str),
+        message: format!("Failed to parse datetime: {datetime_str}"),
     })
 }
 
@@ -69,7 +69,7 @@ pub fn parse_optional_datetime_from_row(
         Ok(Some(datetime_str)) => parse_datetime_string(&datetime_str).map(Some),
         Ok(None) => Ok(None),
         Err(e) => Err(DatabaseError::ExecutionFailed {
-            message: format!("Failed to get optional {} column: {e}", column_name),
+            message: format!("Failed to get optional {column_name} column: {e}"),
         }),
     }
 }
@@ -146,7 +146,7 @@ impl DatabaseHelpers {
     /// Set the database version using user_version pragma
     pub async fn set_db_version(ops: &DatabaseOperations, version: i32) -> DbResult<()> {
         ops.execute_async(move |conn| {
-            conn.execute(&format!("PRAGMA user_version = {}", version), [])
+            conn.execute(&format!("PRAGMA user_version = {version}"), [])
                 .map_err(|e| DatabaseError::ExecutionFailed {
                     message: format!("Failed to set version: {e}"),
                 })?;
@@ -178,7 +178,7 @@ pub fn parse_datetime_string(datetime_str: &str) -> DbResult<chrono::DateTime<ch
     }
 
     Err(DatabaseError::ExecutionFailed {
-        message: format!("Failed to parse datetime: {}", datetime_str),
+        message: format!("Failed to parse datetime: {datetime_str}"),
     })
 }
 

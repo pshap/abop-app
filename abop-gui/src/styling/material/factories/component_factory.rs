@@ -26,7 +26,8 @@ impl<'a> MaterialComponentFactory<'a> {
     #[must_use]
     pub const fn tokens(&self) -> &MaterialTokens {
         self.tokens
-    }    /// Create a Material Design card
+    }
+    /// Create a Material Design card
     #[must_use]
     pub fn create_card(&self) -> crate::styling::material::components::containers::MaterialCard {
         // Component creation with token integration will be implemented as needed

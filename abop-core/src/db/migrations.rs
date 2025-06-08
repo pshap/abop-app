@@ -150,10 +150,7 @@ impl MigrationManager {
     // Note: Rollback functionality removed as backward compatibility is not needed
 
     /// Apply a single migration
-    fn apply_migration(
-        conn: &mut Connection,
-        migration: &Migration,
-    ) -> DbResult<MigrationResult> {
+    fn apply_migration(conn: &mut Connection, migration: &Migration) -> DbResult<MigrationResult> {
         let tx = conn.transaction().map_err(DatabaseError::from)?;
 
         log::info!(
@@ -165,11 +162,7 @@ impl MigrationManager {
 
         // Execute the migration SQL
         if let Err(e) = tx.execute_batch(migration.up_sql) {
-            log::error!(
-                "Failed to apply migration {}: {}",
-                migration.version,
-                e
-            );
+            log::error!("Failed to apply migration {}: {}", migration.version, e);
             return Err(DatabaseError::MigrationFailed {
                 version: migration.version,
                 message: format!("Failed to apply: {e}"),

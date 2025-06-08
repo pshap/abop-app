@@ -1,29 +1,30 @@
 //! Audiobook-specific repair operations
 
+use super::repair_handler::{RepairHandler, create_repair_action_success};
 use crate::models::AppState;
 use crate::validation::error::ValidationError;
 use crate::validation::recovery::{RepairAction, RepairActionType};
 use crate::validation::repair_patterns::IssuePattern;
-use super::repair_handler::{RepairHandler, create_repair_action_success};
 
 /// Handles repair operations for audiobook-related issues
 #[derive(Debug, Default)]
 pub struct AudiobookRepairHandler;
 
-impl RepairHandler for AudiobookRepairHandler {    fn can_handle(&self, pattern: &IssuePattern) -> bool {
-        matches!(pattern, 
-            IssuePattern::FileNotExists | 
-            IssuePattern::InvalidDuration
+impl RepairHandler for AudiobookRepairHandler {
+    fn can_handle(&self, pattern: &IssuePattern) -> bool {
+        matches!(
+            pattern,
+            IssuePattern::FileNotExists | IssuePattern::InvalidDuration
         )
     }
-    
+
     fn name(&self) -> &'static str {
         "Audiobook Repair Handler"
     }
-    
+
     fn repair(&self, state: &mut AppState, issue: &ValidationError) -> Vec<RepairAction> {
         let mut actions = Vec::new();
-        
+
         // Convert error to pattern for processing
         if let Some(pattern) = IssuePattern::from_validation_error(issue) {
             match pattern {
@@ -32,7 +33,7 @@ impl RepairHandler for AudiobookRepairHandler {    fn can_handle(&self, pattern:
                     if removed_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Remove,
-                            format!("Removed {} audiobooks with missing files", removed_count),
+                            format!("Removed {removed_count} audiobooks with missing files"),
                             "audiobook.path".to_string(),
                         ));
                     }
@@ -42,7 +43,7 @@ impl RepairHandler for AudiobookRepairHandler {    fn can_handle(&self, pattern:
                     if repaired_count > 0 {
                         actions.push(create_repair_action_success(
                             RepairActionType::Reset,
-                            format!("Reset {} invalid audiobook durations", repaired_count),
+                            format!("Reset {repaired_count} invalid audiobook durations"),
                             "audiobook.duration_seconds".to_string(),
                         ));
                     }
@@ -58,7 +59,7 @@ impl RepairHandler for AudiobookRepairHandler {    fn can_handle(&self, pattern:
                 }
             }
         }
-        
+
         actions
     }
 }

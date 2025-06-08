@@ -11,12 +11,12 @@
 
 // Re-export core types from the new modules
 pub use self::{
-    builder::ElevationStyleBuilder, 
-    constants::*, 
+    builder::ElevationStyleBuilder,
+    constants::*,
     context::ElevationContext,
     level::ElevationLevel,
     performance::{ElevationCache, FastElevation},
-    registry::ElevationRegistry, 
+    registry::ElevationRegistry,
     style::{ElevationStyle, ShadowParams},
     system::MaterialElevation,
     types::*,
@@ -31,8 +31,8 @@ pub mod context;
 pub mod level;
 pub mod performance;
 pub mod registry;
-pub mod shadow_calculations;
 pub mod serde_impl;
+pub mod shadow_calculations;
 pub mod style;
 pub mod system;
 pub mod types;
@@ -81,9 +81,3 @@ impl Elevatable for ExampleComponent {
         ElevationLevel::Level2
     }
 }
-
-
-
-
-
-
