@@ -177,11 +177,7 @@ impl MetadataValidator {
         result: &mut ValidationResult,
     ) {
         // Check for missing critical metadata
-        if audiobook
-            .title
-            .as_ref()
-            .is_none_or(|t| t.trim().is_empty())
-        {
+        if audiobook.title.as_ref().is_none_or(|t| t.trim().is_empty()) {
             result.add_issue(
                 ValidationError::info("metadata", "Audiobook is missing title")
                     .with_file_path(audiobook.path.clone())
@@ -265,10 +261,7 @@ impl IntegrityValidator {
     }
 
     /// Validate that audiobooks reference existing libraries
-    fn validate_library_audiobook_references(
-        state: &AppState,
-        result: &mut ValidationResult,
-    ) {
+    fn validate_library_audiobook_references(state: &AppState, result: &mut ValidationResult) {
         let library_ids: HashSet<_> = state.data.libraries.iter().map(|lib| &lib.id).collect();
 
         for audiobook in &state.data.audiobooks {

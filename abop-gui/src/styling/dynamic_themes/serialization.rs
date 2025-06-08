@@ -1,5 +1,6 @@
 //! Serializable types and conversion logic for dynamic themes
 
+use super::errors::ThemeLoadError;
 use crate::styling::material::{
     tokens::semantic::SemanticColors,
     typography::{
@@ -7,7 +8,6 @@ use crate::styling::material::{
         font_mapping::{MaterialFont, MaterialWeight},
     },
 };
-use super::errors::ThemeLoadError;
 use iced::{Color, Pixels};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,25 +17,25 @@ use std::collections::HashMap;
 /// Values based on official Google Material Design 3 typescale v0.192
 const MD3_TYPOGRAPHY_SPECS: [(MaterialFont, MaterialWeight, f32, f32); 15] = [
     // Display styles - Brand font, Regular weight (sizes: 57px, 45px, 36px)
-    (MaterialFont::Brand, MaterialWeight::Regular, 64.0, -0.25),  // display_large (4rem line, -0.015625rem tracking)
-    (MaterialFont::Brand, MaterialWeight::Regular, 52.0, 0.0),    // display_medium (3.25rem line, 0rem tracking)
-    (MaterialFont::Brand, MaterialWeight::Regular, 44.0, 0.0),    // display_small (2.75rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 64.0, -0.25), // display_large (4rem line, -0.015625rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 52.0, 0.0), // display_medium (3.25rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 44.0, 0.0), // display_small (2.75rem line, 0rem tracking)
     // Headline styles - Brand font, Regular weight (sizes: 32px, 28px, 24px)
-    (MaterialFont::Brand, MaterialWeight::Regular, 40.0, 0.0),    // headline_large (2.5rem line, 0rem tracking)
-    (MaterialFont::Brand, MaterialWeight::Regular, 36.0, 0.0),    // headline_medium (2.25rem line, 0rem tracking)
-    (MaterialFont::Brand, MaterialWeight::Regular, 32.0, 0.0),    // headline_small (2rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 40.0, 0.0), // headline_large (2.5rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 36.0, 0.0), // headline_medium (2.25rem line, 0rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 32.0, 0.0), // headline_small (2rem line, 0rem tracking)
     // Title styles - Mixed fonts (sizes: 22px, 16px, 14px)
-    (MaterialFont::Brand, MaterialWeight::Regular, 28.0, 0.0),    // title_large (1.75rem line, 0rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Medium, 24.0, 0.15),    // title_medium (1.5rem line, 0.009375rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1),     // title_small (1.25rem line, 0.00625rem tracking)
+    (MaterialFont::Brand, MaterialWeight::Regular, 28.0, 0.0), // title_large (1.75rem line, 0rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 24.0, 0.15), // title_medium (1.5rem line, 0.009375rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1), // title_small (1.25rem line, 0.00625rem tracking)
     // Label styles - Plain font, Medium weight (sizes: 14px, 12px, 11px)
-    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1),     // label_large (1.25rem line, 0.00625rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5),     // label_medium (1rem line, 0.03125rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5),     // label_small (1rem line, 0.03125rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 20.0, 0.1), // label_large (1.25rem line, 0.00625rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5), // label_medium (1rem line, 0.03125rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Medium, 16.0, 0.5), // label_small (1rem line, 0.03125rem tracking)
     // Body styles - Plain font, Regular weight (sizes: 16px, 14px, 12px)
-    (MaterialFont::Plain, MaterialWeight::Regular, 24.0, 0.5),    // body_large (1.5rem line, 0.03125rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Regular, 20.0, 0.25),   // body_medium (1.25rem line, 0.015625rem tracking)
-    (MaterialFont::Plain, MaterialWeight::Regular, 16.0, 0.4),    // body_small (1rem line, 0.025rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Regular, 24.0, 0.5), // body_large (1.5rem line, 0.03125rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Regular, 20.0, 0.25), // body_medium (1.25rem line, 0.015625rem tracking)
+    (MaterialFont::Plain, MaterialWeight::Regular, 16.0, 0.4), // body_small (1rem line, 0.025rem tracking)
 ];
 
 /// Theme metadata
@@ -80,32 +80,57 @@ impl SerializableSemanticColors {
     /// Parse color string to iced::Color
     pub fn parse_color(color_str: &str) -> Result<Color, ThemeLoadError> {
         let color_str = color_str.trim_start_matches('#');
-        
+
         // Handle 6-character hex (RGB)
         if color_str.len() == 6 {
-            let r = u8::from_str_radix(&color_str[0..2], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid red component: {}", &color_str[0..2])))?;
-            let g = u8::from_str_radix(&color_str[2..4], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid green component: {}", &color_str[2..4])))?;
-            let b = u8::from_str_radix(&color_str[4..6], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid blue component: {}", &color_str[4..6])))?;
-            
+            let r = u8::from_str_radix(&color_str[0..2], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!("Invalid red component: {}", &color_str[0..2]))
+            })?;
+            let g = u8::from_str_radix(&color_str[2..4], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!(
+                    "Invalid green component: {}",
+                    &color_str[2..4]
+                ))
+            })?;
+            let b = u8::from_str_radix(&color_str[4..6], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!(
+                    "Invalid blue component: {}",
+                    &color_str[4..6]
+                ))
+            })?;
+
             Ok(Color::from_rgb8(r, g, b))
         }
         // Handle 8-character hex (RGBA)
         else if color_str.len() == 8 {
-            let r = u8::from_str_radix(&color_str[0..2], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid red component: {}", &color_str[0..2])))?;
-            let g = u8::from_str_radix(&color_str[2..4], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid green component: {}", &color_str[2..4])))?;
-            let b = u8::from_str_radix(&color_str[4..6], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid blue component: {}", &color_str[4..6])))?;            let a = u8::from_str_radix(&color_str[6..8], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid alpha component: {}", &color_str[6..8])))?;
-            
+            let r = u8::from_str_radix(&color_str[0..2], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!("Invalid red component: {}", &color_str[0..2]))
+            })?;
+            let g = u8::from_str_radix(&color_str[2..4], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!(
+                    "Invalid green component: {}",
+                    &color_str[2..4]
+                ))
+            })?;
+            let b = u8::from_str_radix(&color_str[4..6], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!(
+                    "Invalid blue component: {}",
+                    &color_str[4..6]
+                ))
+            })?;
+            let a = u8::from_str_radix(&color_str[6..8], 16).map_err(|_| {
+                ThemeLoadError::InvalidColor(format!(
+                    "Invalid alpha component: {}",
+                    &color_str[6..8]
+                ))
+            })?;
+
             Ok(Color::from_rgba8(r, g, b, a as f32 / 255.0))
-        }
-        else {
-            Err(ThemeLoadError::InvalidColor(format!("Color string must be 6 or 8 characters (RGB or RGBA): {}", color_str)))
+        } else {
+            Err(ThemeLoadError::InvalidColor(format!(
+                "Color string must be 6 or 8 characters (RGB or RGBA): {}",
+                color_str
+            )))
         }
     }
 
@@ -182,7 +207,7 @@ impl SerializableTypography {
     pub fn to_material_typography(&self) -> MaterialTypography {
         let sizes = [
             self.display_large,   // 0: display_large
-            self.display_medium,  // 1: display_medium  
+            self.display_medium,  // 1: display_medium
             self.display_small,   // 2: display_small
             self.headline_large,  // 3: headline_large
             self.headline_medium, // 4: headline_medium

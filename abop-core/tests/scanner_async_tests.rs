@@ -7,7 +7,7 @@ use abop_core::{
     db::Database,
     models::Library,
     scanner::{
-        LibraryScanner, ScanProgress, ScannerConfig, ScanOptions,
+        LibraryScanner, ScanOptions, ScanProgress, ScannerConfig,
         error::ScanError,
         progress::{ChannelReporter, ProgressReporter},
     },

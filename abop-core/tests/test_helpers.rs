@@ -49,7 +49,9 @@ pub fn create_temp_dir() -> TempDir {
 /// ```
 #[allow(dead_code)]
 pub async fn create_test_database() -> Database {
-    Database::open(":memory:").await.expect("Failed to create test database")
+    Database::open(":memory:")
+        .await
+        .expect("Failed to create test database")
 }
 
 /// Creates a test library with the given name and path.

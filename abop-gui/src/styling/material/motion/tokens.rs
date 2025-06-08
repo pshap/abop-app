@@ -137,10 +137,11 @@ impl MotionTokens {
         level: DurationLevel,
         scale: f32,
         reduced_motion: bool,
-    ) -> Duration {        let base_duration = Self::duration(category, level);
+    ) -> Duration {
+        let base_duration = Self::duration(category, level);
         let base_millis = base_duration.as_millis();
         let base_f64 = base_millis as f64;
-        
+
         if reduced_motion {
             // Safe conversion for reduced motion (10% of base)
             let scaled_ms = (base_f64 * 0.1).round().clamp(0.0, u64::MAX as f64);

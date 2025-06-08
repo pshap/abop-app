@@ -7,7 +7,7 @@ use abop_core::{
     audio::AudioFormat,
     db::Database,
     models::{Audiobook, Library},
-    scanner::{LibraryScanner, ScanSummary, SUPPORTED_AUDIO_EXTENSIONS},
+    scanner::{LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanSummary},
 };
 // chrono::Utc is not currently used
 use std::fs::File;
@@ -83,7 +83,10 @@ mod library_scanner_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let scan_summary = scanner.scan(abop_core::scanner::ScanOptions::default()).await.unwrap();
+        let scan_summary = scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .await
+            .unwrap();
 
         assert_eq!(scan_summary.new_files.len(), 0);
         assert_eq!(scan_summary.processed, 0);
@@ -151,7 +154,7 @@ mod library_scanner_tests {
                 let result = ScanSummary {
                     new_files: audiobooks,
                     processed: 2, // Successfully processed MP3 and FLAC
-                    errors: 2,     // Unsupported formats
+                    errors: 2,    // Unsupported formats
                     scan_duration: std::time::Duration::from_millis(100),
                 };
 

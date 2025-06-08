@@ -111,7 +111,8 @@ impl MaterialBreadcrumbs {
     {
         let on_surface = tokens.colors.on_surface;
         let on_surface_variant = tokens.colors.on_surface_variant;
-        let primary = tokens.colors.primary.base;        let items_to_show: Vec<&BreadcrumbItem> = self.max_items.map_or_else(
+        let primary = tokens.colors.primary.base;
+        let items_to_show: Vec<&BreadcrumbItem> = self.max_items.map_or_else(
             || self.items.iter().collect(),
             |max| {
                 if self.items.len() > max {
@@ -125,7 +126,7 @@ impl MaterialBreadcrumbs {
                 } else {
                     self.items.iter().collect()
                 }
-            }
+            },
         );
 
         let elements: Vec<Element<'a, Message>> = items_to_show

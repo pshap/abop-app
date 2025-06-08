@@ -32,7 +32,7 @@ impl DatabaseOperations {
         let conn = self.pool.get().map_err(|e| {
             DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
         })?;
-        
+
         operation(&conn)
     }
 
@@ -45,7 +45,7 @@ impl DatabaseOperations {
         let mut conn = self.pool.get().map_err(|e| {
             DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
         })?;
-        
+
         operation(&mut conn)
     }
 
@@ -61,14 +61,13 @@ impl DatabaseOperations {
                 .map_err(|e| DatabaseError::TransactionFailed {
                     message: format!("Failed to start transaction: {e}"),
                 })?;
-            
+
             let result = operation(&tx)?;
-            
-            tx.commit()
-                .map_err(|e| DatabaseError::TransactionFailed {
-                    message: format!("Failed to commit transaction: {e}"),
-                })?;
-            
+
+            tx.commit().map_err(|e| DatabaseError::TransactionFailed {
+                message: format!("Failed to commit transaction: {e}"),
+            })?;
+
             debug!("Transaction completed successfully");
             Ok(result)
         })
@@ -100,7 +99,8 @@ impl DatabaseOperations {
             }
             Ok(results)
         })
-    }    /// Get access to the connection pool for direct access if needed
+    }
+    /// Get access to the connection pool for direct access if needed
     pub fn pool(&self) -> &Arc<Pool<SqliteConnectionManager>> {
         &self.pool
     }
@@ -118,10 +118,10 @@ impl DatabaseOperations {
                 DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
             })?;
             operation(&conn)
-        }).await.map_err(|e| {
-            DatabaseError::ExecutionFailed {
-                message: format!("Task execution failed: {e}"),
-            }
+        })
+        .await
+        .map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Task execution failed: {e}"),
         })?
     }
 
@@ -137,26 +137,25 @@ impl DatabaseOperations {
             let mut conn = pool.get().map_err(|e| {
                 DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
             })?;
-            
+
             let tx = conn
                 .transaction()
                 .map_err(|e| DatabaseError::TransactionFailed {
                     message: format!("Failed to start transaction: {e}"),
                 })?;
-            
+
             let result = operation(&tx)?;
-            
-            tx.commit()
-                .map_err(|e| DatabaseError::TransactionFailed {
-                    message: format!("Failed to commit transaction: {e}"),
-                })?;
-            
+
+            tx.commit().map_err(|e| DatabaseError::TransactionFailed {
+                message: format!("Failed to commit transaction: {e}"),
+            })?;
+
             debug!("Transaction completed successfully");
             Ok(result)
-        }).await.map_err(|e| {
-            DatabaseError::ExecutionFailed {
-                message: format!("Task execution failed: {e}"),
-            }
+        })
+        .await
+        .map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Task execution failed: {e}"),
         })?
     }
 }
@@ -173,7 +172,7 @@ mod tests {
         let pool = Arc::new(Pool::builder().max_size(1).build(manager).unwrap());
 
         let ops = DatabaseOperations::new(pool);
-        
+
         // Test basic query execution
         let result = ops.execute_query(|conn| {
             conn.execute("CREATE TABLE test (id INTEGER)", [])

@@ -102,10 +102,11 @@ impl LibraryScanner {
             enable_monitoring: self.performance_monitor.is_some(),
             ..Default::default()
         };
-        
-        let orchestrator = self.create_orchestrator(&options)
+
+        let orchestrator = self
+            .create_orchestrator(&options)
             .with_progress_reporter(progress_reporter);
-        
+
         orchestrator.scan(options).await
     }
 
@@ -132,11 +133,8 @@ impl LibraryScanner {
 
     /// Creates an orchestrator with the current scanner configuration
     fn create_orchestrator(&self, options: &ScanOptions) -> ScanOrchestrator {
-        let mut orchestrator = ScanOrchestrator::new(
-            self.db.clone(),
-            self.library.clone(),
-            self.config.clone(),
-        );
+        let mut orchestrator =
+            ScanOrchestrator::new(self.db.clone(), self.library.clone(), self.config.clone());
 
         if options.enable_monitoring {
             if let Some(monitor) = &self.performance_monitor {
@@ -146,7 +144,8 @@ impl LibraryScanner {
 
         orchestrator = orchestrator.with_cancellation_token(self.cancel_token.clone());
         orchestrator
-    }}
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -154,7 +153,8 @@ mod tests {
     use crate::test_constants::*;
     use std::fs::File;
     use std::io::Write;
-    use tempfile::tempdir;    #[tokio::test]
+    use tempfile::tempdir;
+    #[tokio::test]
     async fn test_scanner_creation() {
         let temp_dir = tempdir().unwrap();
         let _library = Library {
@@ -162,7 +162,7 @@ mod tests {
             name: "Test Library".to_string(),
             path: temp_dir.path().to_path_buf(),
         };
-        
+
         // This would need a proper database for full testing
         // let scanner = LibraryScanner::new(db, library);
         // assert!(scanner.get_performance_monitor().is_some());

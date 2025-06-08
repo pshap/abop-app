@@ -37,22 +37,16 @@ impl CoreScanner {
     pub fn new() -> Self {
         let config = ScannerConfig::default();
         let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-        
-        Self {
-            config,
-            semaphore,
-        }
+
+        Self { config, semaphore }
     }
 
     /// Creates a new core scanner with custom configuration
     #[must_use]
     pub fn with_config(config: ScannerConfig) -> Self {
         let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-        
-        Self {
-            config,
-            semaphore,
-        }
+
+        Self { config, semaphore }
     }
 
     /// Discovers all audio files in a directory
@@ -60,27 +54,23 @@ impl CoreScanner {
         let path = path.to_path_buf();
         let extensions = self.config.extensions.clone();
 
-        tokio::task::spawn_blocking(move || {
-            Self::find_audio_files_in_path(&path, &extensions)
-        })
-        .await
-        .map_err(|e| {
-            warn!("Failed to discover audio files: {}", e);
-            crate::scanner::error::ScanError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("File discovery failed: {}", e),
-            ))
-        })
+        tokio::task::spawn_blocking(move || Self::find_audio_files_in_path(&path, &extensions))
+            .await
+            .map_err(|e| {
+                warn!("Failed to discover audio files: {}", e);
+                crate::scanner::error::ScanError::Io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("File discovery failed: {}", e),
+                ))
+            })
     }
 
     /// Extracts metadata from an audio file
-    pub async fn extract_metadata(
-        &self,
-        library_id: &str,
-        path: &Path,
-    ) -> Result<Audiobook> {        // Acquire semaphore permit to limit concurrent operations
-        let _permit = self.semaphore.acquire().await
-            .map_err(|_| crate::error::AppError::Threading("Semaphore acquisition failed".to_string()))?;
+    pub async fn extract_metadata(&self, library_id: &str, path: &Path) -> Result<Audiobook> {
+        // Acquire semaphore permit to limit concurrent operations
+        let _permit = self.semaphore.acquire().await.map_err(|_| {
+            crate::error::AppError::Threading("Semaphore acquisition failed".to_string())
+        })?;
 
         Self::extract_audiobook_metadata(library_id, path)
     }
@@ -90,10 +80,12 @@ impl CoreScanner {
         &self,
         library_id: &str,
         path: &Path,
-        monitor: Option<&PerformanceMonitor>,    ) -> Result<Audiobook> {
+        monitor: Option<&PerformanceMonitor>,
+    ) -> Result<Audiobook> {
         // Acquire semaphore permit to limit concurrent operations
-        let _permit = self.semaphore.acquire().await
-            .map_err(|_| crate::error::AppError::Threading("Semaphore acquisition failed".to_string()))?;
+        let _permit = self.semaphore.acquire().await.map_err(|_| {
+            crate::error::AppError::Threading("Semaphore acquisition failed".to_string())
+        })?;
 
         let start_time = std::time::Instant::now();
         let _timer = monitor.map(|m| {
@@ -151,7 +143,10 @@ impl CoreScanner {
             })
             .collect();
 
-        log::debug!("🔍 CORE SCANNER: Completed scan, found {} files", results.len());
+        log::debug!(
+            "🔍 CORE SCANNER: Completed scan, found {} files",
+            results.len()
+        );
         results
     }
 
@@ -181,16 +176,16 @@ impl CoreScanner {
                 duration
             }
         });
-        
+
         if let Some(cover_art) = metadata.cover_art {
             audiobook.cover_art = Some(cover_art);
         }
-        
+
         // Set file size for metadata completeness
         if let Ok(meta) = std::fs::metadata(path) {
             audiobook.size_bytes = Some(meta.len());
         }
-        
+
         Ok(audiobook)
     }
 }
@@ -222,7 +217,7 @@ mod tests {
 
         let scanner = CoreScanner::new();
         let files = scanner.discover_files(temp_dir.path()).await.unwrap();
-        
+
         // Should find audio files but not txt
         assert!(files.len() >= 3);
         assert!(files.iter().any(|p| p.file_name().unwrap() == "test.mp3"));

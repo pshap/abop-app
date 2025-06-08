@@ -54,7 +54,8 @@ impl ElevationStyleBuilder {
     }
 
     /// Build the elevation style
-    #[must_use]    pub fn build(self) -> ElevationStyle {
+    #[must_use]
+    pub fn build(self) -> ElevationStyle {
         let shadow_color = self.shadow_color.unwrap_or(Color::BLACK);
         let tint_color = self.tint_color.unwrap_or(Color::WHITE);
 
@@ -85,7 +86,7 @@ impl ElevationStyleBuilder {
                 }
 
                 style
-            }
+            },
         )
     }
 }

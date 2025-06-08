@@ -380,7 +380,10 @@ mod tests {
         // Apply all migrations first
         manager.migrate_up(&mut conn).unwrap();
         let initial_version = manager.current_version(&conn).unwrap();
-        assert_eq!(initial_version, 2, "Should be at version 2 after all migrations");
+        assert_eq!(
+            initial_version, 2,
+            "Should be at version 2 after all migrations"
+        );
 
         // Rollback to version 0 (empty database)
         let rollback_results = manager.migrate_down(&mut conn, 0).unwrap();

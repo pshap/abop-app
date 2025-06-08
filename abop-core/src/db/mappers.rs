@@ -52,7 +52,8 @@ impl RowMappers {
             updated_at: parse_datetime_from_row(row, "updated_at")?,
             selected: row.get(12).unwrap_or(false), // Default to false if not present
         })
-    }    /// Map a database row to a Library entity
+    }
+    /// Map a database row to a Library entity
     pub fn library_from_row(row: &Row) -> DbResult<Library> {
         Ok(Library {
             id: row.get(0).map_err(|e| DatabaseError::ExecutionFailed {
@@ -73,16 +74,19 @@ impl RowMappers {
     /// Map a database row to a Progress entity
     pub fn progress_from_row(row: &Row) -> DbResult<Progress> {
         use crate::db::datetime_serde::SqliteDateTime;
-        
-        let last_played: Option<SqliteDateTime> = row.get(4).map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to get last_played: {e}"),
-        })?;
-        let created_at: SqliteDateTime = row.get(5).map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to get created_at: {e}"),
-        })?;
-        let updated_at: SqliteDateTime = row.get(6).map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to get updated_at: {e}"),
-        })?;
+
+        let last_played: Option<SqliteDateTime> =
+            row.get(4).map_err(|e| DatabaseError::ExecutionFailed {
+                message: format!("Failed to get last_played: {e}"),
+            })?;
+        let created_at: SqliteDateTime =
+            row.get(5).map_err(|e| DatabaseError::ExecutionFailed {
+                message: format!("Failed to get created_at: {e}"),
+            })?;
+        let updated_at: SqliteDateTime =
+            row.get(6).map_err(|e| DatabaseError::ExecutionFailed {
+                message: format!("Failed to get updated_at: {e}"),
+            })?;
 
         Ok(Progress {
             id: row.get(0).map_err(|e| DatabaseError::ExecutionFailed {
@@ -104,51 +108,78 @@ impl RowMappers {
     }
 
     /// Map a database row to an Audiobook with specific column indices for optimized queries
-    pub fn audiobook_from_row_indexed(row: &Row, indices: &AudiobookColumnIndices) -> DbResult<Audiobook> {
+    pub fn audiobook_from_row_indexed(
+        row: &Row,
+        indices: &AudiobookColumnIndices,
+    ) -> DbResult<Audiobook> {
         Ok(Audiobook {
-            id: row.get(indices.id).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get audiobook id: {e}"),
-            })?,
-            library_id: row.get(indices.library_id).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get library_id: {e}"),
+            id: row
+                .get(indices.id)
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get audiobook id: {e}"),
+                })?,
+            library_id: row.get(indices.library_id).map_err(|e| {
+                DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get library_id: {e}"),
+                }
             })?,
             path: {
-                let path_str: String = row.get(indices.path).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get path: {e}"),
-                })?;
+                let path_str: String =
+                    row.get(indices.path)
+                        .map_err(|e| DatabaseError::ExecutionFailed {
+                            message: format!("Failed to get path: {e}"),
+                        })?;
                 PathBuf::from(path_str)
             },
-            title: row.get(indices.title).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get title: {e}"),
+            title: row
+                .get(indices.title)
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get title: {e}"),
+                })?,
+            author: row
+                .get(indices.author)
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get author: {e}"),
+                })?,
+            narrator: row
+                .get(indices.narrator)
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get narrator: {e}"),
+                })?,
+            description: row.get(indices.description).map_err(|e| {
+                DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get description: {e}"),
+                }
             })?,
-            author: row.get(indices.author).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get author: {e}"),
+            duration_seconds: row.get(indices.duration_seconds).map_err(|e| {
+                DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get duration_seconds: {e}"),
+                }
             })?,
-            narrator: row.get(indices.narrator).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get narrator: {e}"),
+            size_bytes: row.get(indices.size_bytes).map_err(|e| {
+                DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get size_bytes: {e}"),
+                }
             })?,
-            description: row.get(indices.description).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get description: {e}"),
-            })?,
-            duration_seconds: row.get(indices.duration_seconds).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get duration_seconds: {e}"),
-            })?,
-            size_bytes: row.get(indices.size_bytes).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get size_bytes: {e}"),
-            })?,
-            cover_art: row.get(indices.cover_art).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get cover_art: {e}"),
-            })?,
+            cover_art: row
+                .get(indices.cover_art)
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to get cover_art: {e}"),
+                })?,
             created_at: {
-                let datetime_str: String = row.get(indices.created_at).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get created_at: {e}"),
-                })?;
+                let datetime_str: String =
+                    row.get(indices.created_at)
+                        .map_err(|e| DatabaseError::ExecutionFailed {
+                            message: format!("Failed to get created_at: {e}"),
+                        })?;
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             updated_at: {
-                let datetime_str: String = row.get(indices.updated_at).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get updated_at: {e}"),
-                })?;
+                let datetime_str: String =
+                    row.get(indices.updated_at)
+                        .map_err(|e| DatabaseError::ExecutionFailed {
+                            message: format!("Failed to get updated_at: {e}"),
+                        })?;
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             selected: row.get(indices.selected).unwrap_or(false),
@@ -213,16 +244,15 @@ pub struct SqlQueries;
 
 impl SqlQueries {
     /// Standard audiobook SELECT columns
-    pub const AUDIOBOOK_COLUMNS: &'static str = 
+    pub const AUDIOBOOK_COLUMNS: &'static str =
         "id, library_id, path, title, author, narrator, description, 
          duration_seconds, size_bytes, cover_art, created_at, updated_at, selected";
 
     /// Standard library SELECT columns
-    pub const LIBRARY_COLUMNS: &'static str = 
-        "id, name, path, created_at";
+    pub const LIBRARY_COLUMNS: &'static str = "id, name, path, created_at";
 
     /// Standard progress SELECT columns
-    pub const PROGRESS_COLUMNS: &'static str = 
+    pub const PROGRESS_COLUMNS: &'static str =
         "id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at";
 
     /// Generate a standard audiobook SELECT query with optional WHERE clause

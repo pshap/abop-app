@@ -178,7 +178,7 @@ impl StylePluginRegistry {
             plugin.initialize(&theme)?;
             plugin
         });
-        
+
         Ok(())
     }
 

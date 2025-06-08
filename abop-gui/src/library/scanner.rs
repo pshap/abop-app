@@ -246,7 +246,9 @@ impl ScannerProgress {
 /// A Result indicating success or failure of the scan operation
 pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
-    let _result = scanner.scan(abop_core::scanner::ScanOptions::default()).await?;
+    let _result = scanner
+        .scan(abop_core::scanner::ScanOptions::default())
+        .await?;
     Ok(())
 }
 

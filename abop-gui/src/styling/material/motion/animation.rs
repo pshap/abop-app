@@ -234,9 +234,8 @@ impl Animation {
     /// Check if animation is complete
     #[must_use]
     pub fn is_complete(&self) -> bool {
-        self.start_time.is_some_and(|start_time| {
-            start_time.elapsed() >= self.effective_duration()
-        })
+        self.start_time
+            .is_some_and(|start_time| start_time.elapsed() >= self.effective_duration())
     }
 
     /// Get remaining time in the animation
