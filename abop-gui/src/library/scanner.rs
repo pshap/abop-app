@@ -48,7 +48,7 @@ pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> 
     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
 
     // Start scan with progress reporting
-    let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await });
+    let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await });
 
     // Collect progress updates
     let mut result = ScanResult {
@@ -246,7 +246,7 @@ impl ScannerProgress {
 /// A Result indicating success or failure of the scan operation
 pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
-    let _result = scanner.scan_async(None).await?;
+    let _result = scanner.scan(abop_core::scanner::ScanOptions::default()).await?;
     Ok(())
 }
 
