@@ -56,7 +56,7 @@ impl From<DateTimeError> for SqliteError {
         match err {
             DateTimeError::Sqlite(e) => e,
             DateTimeError::Parse(e) => {
-                SqliteError::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+                Self::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
             }
         }
     }
@@ -86,10 +86,7 @@ pub fn datetime_to_sql_output(dt: &DateTime<Utc>) -> ToSqlOutput<'_> {
 
 /// Convert Option<DateTime<Utc>> to ToSqlOutput
 pub fn optional_datetime_to_sql_output(dt: &Option<DateTime<Utc>>) -> ToSqlOutput<'_> {
-    match dt {
-        Some(dt) => ToSqlOutput::from(dt.to_rfc3339()),
-        None => ToSqlOutput::from(rusqlite::types::Null),
-    }
+    dt.as_ref().map_or_else(|| ToSqlOutput::from(rusqlite::types::Null), |dt| ToSqlOutput::from(dt.to_rfc3339()))
 }
 
 #[cfg(test)]

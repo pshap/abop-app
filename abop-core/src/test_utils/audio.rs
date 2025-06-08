@@ -114,7 +114,7 @@ pub fn create_stereo_test_buffer(sample_rate: u32, duration_secs: f32) -> AudioB
         // Add phase offset to right channel to ensure it's never identical to left
         let left_sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5;
         let right_sample =
-            (t * 880.0 * 2.0 * std::f32::consts::PI + std::f32::consts::PI / 4.0).sin() * 0.3;
+            (t * 880.0 * 2.0).mul_add(std::f32::consts::PI, std::f32::consts::PI / 4.0).sin() * 0.3;
         data.push(left_sample);
         data.push(right_sample);
     }

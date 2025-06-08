@@ -19,7 +19,7 @@ pub struct ConnectionAdapter {
 
 impl ConnectionAdapter {
     /// Create a new connection adapter
-    pub fn new(enhanced_conn: Arc<EnhancedConnection>) -> Self {
+    pub const fn new(enhanced_conn: Arc<EnhancedConnection>) -> Self {
         Self { enhanced_conn }
     }
 
@@ -48,7 +48,7 @@ impl ConnectionAdapter {
     }
 
     /// Get a reference to the enhanced connection
-    pub fn enhanced_connection(&self) -> &Arc<EnhancedConnection> {
+    pub const fn enhanced_connection(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_conn
     }
 }

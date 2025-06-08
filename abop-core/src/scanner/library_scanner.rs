@@ -354,6 +354,7 @@ impl LibraryScanner {
             .filter(|e| e.file_type().is_file())
             .filter_map(|entry| {
                 let path = entry.path();
+                #[allow(clippy::option_if_let_else)]
                 if let Some(ext) = path
                     .extension()
                     .and_then(OsStr::to_str)

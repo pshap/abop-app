@@ -364,11 +364,9 @@ impl SchemaValidator {
             ValidationError::info("schema", "No explicit schema version found")
                 .with_suggestion("Consider adding schema versioning for future compatibility"),
         );
-    }
-
-    /// Check if a schema version is compatible (placeholder)
+    }    /// Check if a schema version is compatible (placeholder)
     #[allow(dead_code)]
-    fn is_compatible_version(&self, _version: &str) -> bool {
+    const fn is_compatible_version(&self, _version: &str) -> bool {
         // Placeholder for version compatibility logic
         true
     }

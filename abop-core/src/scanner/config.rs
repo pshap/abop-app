@@ -57,7 +57,7 @@ fn default_concurrency() -> usize {
         .unwrap_or(DEFAULT_CONCURRENCY)
 }
 
-fn default_db_concurrency() -> usize {
+const fn default_db_concurrency() -> usize {
     // Limit database operations to prevent mutex contention
     // Use at most 2 concurrent database operations regardless of CPU count
     2
