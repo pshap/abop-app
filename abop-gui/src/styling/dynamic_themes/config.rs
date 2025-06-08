@@ -2,7 +2,7 @@
 
 use super::{
     errors::ThemeLoadError,
-    overrides::ComponentOverride,
+    overrides::{ComponentOverride, ComponentType},
     serialization::{SerializableMaterialTokens, SerializableSemanticColors, ThemeMetadata},
 };
 use crate::styling::material::{
@@ -121,14 +121,13 @@ impl CustomThemeMode {
     }
 
     /// Get component overrides
-    #[must_use]
-    pub fn component_overrides(&self) -> &[ComponentOverride] {
+    #[must_use]    pub fn component_overrides(&self) -> &[ComponentOverride] {
         &self.component_overrides
     }
 
     /// Find component override by type and optional variant
     #[must_use]
-    pub fn find_component_override(&self, component_type: crate::styling::dynamic_themes::overrides::ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
         self.component_overrides.iter().find(|override_config| {
             override_config.component_type == component_type 
                 && override_config.variant.as_deref() == variant
@@ -157,14 +156,13 @@ impl Theme {
     }
 
     /// Get component overrides
-    #[must_use]
-    pub fn component_overrides(&self) -> &[ComponentOverride] {
+    #[must_use]    pub fn component_overrides(&self) -> &[ComponentOverride] {
         &self.component_overrides
     }
 
     /// Find component override by type and optional variant
     #[must_use]
-    pub fn find_component_override(&self, component_type: crate::styling::dynamic_themes::overrides::ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
+    pub fn find_component_override(&self, component_type: ComponentType, variant: Option<&str>) -> Option<&ComponentOverride> {
         self.component_overrides.iter().find(|override_config| {
             override_config.component_type == component_type 
                 && override_config.variant.as_deref() == variant

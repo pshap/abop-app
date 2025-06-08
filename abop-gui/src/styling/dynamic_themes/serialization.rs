@@ -1,8 +1,7 @@
 //! Serializable types and conversion logic for dynamic themes
 
 use crate::styling::material::{
-    spacing::SpacingTokens,
-    tokens::{core::MaterialTokens, semantic::SemanticColors},
+    tokens::semantic::SemanticColors,
     typography::{
         MaterialTypography, TypeStyle,
         font_mapping::{MaterialFont, MaterialWeight},
@@ -100,11 +99,10 @@ impl SerializableSemanticColors {
             let g = u8::from_str_radix(&color_str[2..4], 16)
                 .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid green component: {}", &color_str[2..4])))?;
             let b = u8::from_str_radix(&color_str[4..6], 16)
-                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid blue component: {}", &color_str[4..6])))?;
-            let a = u8::from_str_radix(&color_str[6..8], 16)
+                .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid blue component: {}", &color_str[4..6])))?;            let a = u8::from_str_radix(&color_str[6..8], 16)
                 .map_err(|_| ThemeLoadError::InvalidColor(format!("Invalid alpha component: {}", &color_str[6..8])))?;
             
-            Ok(Color::from_rgba8(r, g, b, a))
+            Ok(Color::from_rgba8(r, g, b, a as f32 / 255.0))
         }
         else {
             Err(ThemeLoadError::InvalidColor(format!("Color string must be 6 or 8 characters (RGB or RGBA): {}", color_str)))
@@ -202,106 +200,106 @@ impl SerializableTypography {
 
         MaterialTypography {
             display_large: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[0].0,
-                weight: MD3_TYPOGRAPHY_SPECS[0].1,
+                family: MD3_TYPOGRAPHY_SPECS[0].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[0].1.clone().into(),
                 size: Pixels(f32::from(sizes[0])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[0].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[0].3,
             },
             display_medium: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[1].0,
-                weight: MD3_TYPOGRAPHY_SPECS[1].1,
+                family: MD3_TYPOGRAPHY_SPECS[1].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[1].1.clone().into(),
                 size: Pixels(f32::from(sizes[1])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[1].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[1].3,
             },
             display_small: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[2].0,
-                weight: MD3_TYPOGRAPHY_SPECS[2].1,
+                family: MD3_TYPOGRAPHY_SPECS[2].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[2].1.clone().into(),
                 size: Pixels(f32::from(sizes[2])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[2].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[2].3,
             },
             headline_large: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[3].0,
-                weight: MD3_TYPOGRAPHY_SPECS[3].1,
+                family: MD3_TYPOGRAPHY_SPECS[3].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[3].1.clone().into(),
                 size: Pixels(f32::from(sizes[3])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[3].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[3].3,
             },
             headline_medium: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[4].0,
-                weight: MD3_TYPOGRAPHY_SPECS[4].1,
+                family: MD3_TYPOGRAPHY_SPECS[4].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[4].1.clone().into(),
                 size: Pixels(f32::from(sizes[4])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[4].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[4].3,
             },
             headline_small: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[5].0,
-                weight: MD3_TYPOGRAPHY_SPECS[5].1,
+                family: MD3_TYPOGRAPHY_SPECS[5].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[5].1.clone().into(),
                 size: Pixels(f32::from(sizes[5])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[5].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[5].3,
             },
             title_large: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[6].0,
-                weight: MD3_TYPOGRAPHY_SPECS[6].1,
+                family: MD3_TYPOGRAPHY_SPECS[6].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[6].1.clone().into(),
                 size: Pixels(f32::from(sizes[6])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[6].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[6].3,
             },
             title_medium: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[7].0,
-                weight: MD3_TYPOGRAPHY_SPECS[7].1,
+                family: MD3_TYPOGRAPHY_SPECS[7].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[7].1.clone().into(),
                 size: Pixels(f32::from(sizes[7])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[7].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[7].3,
             },
             title_small: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[8].0,
-                weight: MD3_TYPOGRAPHY_SPECS[8].1,
+                family: MD3_TYPOGRAPHY_SPECS[8].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[8].1.clone().into(),
                 size: Pixels(f32::from(sizes[8])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[8].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[8].3,
             },
             label_large: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[9].0,
-                weight: MD3_TYPOGRAPHY_SPECS[9].1,
+                family: MD3_TYPOGRAPHY_SPECS[9].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[9].1.clone().into(),
                 size: Pixels(f32::from(sizes[9])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[9].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[9].3,
             },
             label_medium: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[10].0,
-                weight: MD3_TYPOGRAPHY_SPECS[10].1,
+                family: MD3_TYPOGRAPHY_SPECS[10].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[10].1.clone().into(),
                 size: Pixels(f32::from(sizes[10])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[10].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[10].3,
             },
             label_small: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[11].0,
-                weight: MD3_TYPOGRAPHY_SPECS[11].1,
+                family: MD3_TYPOGRAPHY_SPECS[11].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[11].1.clone().into(),
                 size: Pixels(f32::from(sizes[11])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[11].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[11].3,
             },
             body_large: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[12].0,
-                weight: MD3_TYPOGRAPHY_SPECS[12].1,
+                family: MD3_TYPOGRAPHY_SPECS[12].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[12].1.clone().into(),
                 size: Pixels(f32::from(sizes[12])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[12].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[12].3,
             },
             body_medium: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[13].0,
-                weight: MD3_TYPOGRAPHY_SPECS[13].1,
+                family: MD3_TYPOGRAPHY_SPECS[13].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[13].1.clone().into(),
                 size: Pixels(f32::from(sizes[13])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[13].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[13].3,
             },
             body_small: TypeStyle {
-                font: MD3_TYPOGRAPHY_SPECS[14].0,
-                weight: MD3_TYPOGRAPHY_SPECS[14].1,
+                family: MD3_TYPOGRAPHY_SPECS[14].0.clone().into(),
+                weight: MD3_TYPOGRAPHY_SPECS[14].1.clone().into(),
                 size: Pixels(f32::from(sizes[14])),
                 line_height: Pixels(MD3_TYPOGRAPHY_SPECS[14].2),
                 letter_spacing: MD3_TYPOGRAPHY_SPECS[14].3,

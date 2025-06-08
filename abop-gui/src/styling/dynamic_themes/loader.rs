@@ -16,6 +16,9 @@ use std::path::Path;
 /// Dynamic theme loader for loading themes from files
 pub struct ThemeLoader {
     /// Cache of loaded themes
+    #[cfg(test)]
+    pub theme_cache: HashMap<String, ThemeConfig>,
+    #[cfg(not(test))]
     theme_cache: HashMap<String, ThemeConfig>,
 }
 
@@ -128,11 +131,31 @@ impl ThemeLoader {
             metadata: config.metadata.clone(),
             semantic_colors,
             material_tokens: Self::convert_material_tokens(&config.material_tokens)?,
-            component_overrides: config.component_overrides.clone(),
-        })
+            component_overrides: config.component_overrides.clone(),        })
     }
 
     /// Validate a loaded theme configuration
+    #[cfg(test)]
+    pub fn validate_theme(config: &ThemeConfig) -> Result<(), ThemeLoadError> {
+        if config.metadata.name.is_empty() {
+            return Err(ThemeLoadError::MissingField("metadata.name".to_string()));
+        }
+
+        // Try to parse colors to validate them
+        config.semantic_colors.to_semantic_colors()?;
+
+        // Validate component overrides
+        for override_config in &config.component_overrides {
+            override_config.validate().map_err(|e| {
+                ThemeLoadError::ValidationError(format!("Component override validation failed: {}", e))
+            })?;
+        }
+
+        Ok(())
+    }
+
+    /// Validate a loaded theme configuration
+    #[cfg(not(test))]
     fn validate_theme(config: &ThemeConfig) -> Result<(), ThemeLoadError> {
         if config.metadata.name.is_empty() {
             return Err(ThemeLoadError::MissingField("metadata.name".to_string()));
