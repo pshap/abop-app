@@ -10,7 +10,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     db::Database,
-    models::{Audiobook, Library},
+    models::Library,
     scanner::{
         config::ScannerConfig,
         error::ScanResult,
@@ -24,36 +24,6 @@ use iced::Task;
 
 /// Supported audio file extensions for scanning
 pub const SUPPORTED_AUDIO_EXTENSIONS: &[&str] = &["mp3", "m4a", "m4b", "flac", "ogg", "wav", "aac"];
-
-/// Progress updates for scanning operations (legacy compatibility)
-#[derive(Debug, Clone)]
-pub enum ScanProgressUpdate {
-    /// Scanning started with total file count
-    Started {
-        /// Total number of files that will be processed in this scan
-        total_files: usize,
-    },
-    /// Individual file processed
-    FileProcessed {
-        /// Current file number being processed (1-based index)
-        current: usize,
-        /// Total number of files to process
-        total: usize,
-        /// Name of the file currently being processed
-        file_name: String,
-        /// Overall progress percentage (0.0 to 100.0)
-        progress_percentage: f32,
-    },
-    /// Scanning completed
-    Complete {
-        /// Number of files successfully processed
-        processed: usize,
-        /// Number of files that encountered errors during processing
-        errors: usize,
-        /// Total duration of the scan operation
-        duration: std::time::Duration,
-    },
-}
 
 /// Simplified, high-level interface for library scanning operations
 #[derive(Clone)]
@@ -176,96 +146,7 @@ impl LibraryScanner {
 
         orchestrator = orchestrator.with_cancellation_token(self.cancel_token.clone());
         orchestrator
-    }
-
-    // Legacy compatibility methods - deprecated but maintained for backwards compatibility
-    
-    /// Legacy async scan method - use scan() instead
-    #[deprecated(note = "Use scan() method instead")]
-    pub async fn scan_async(
-        &self,
-        progress_tx: Option<mpsc::Sender<ScanProgress>>,
-    ) -> ScanResult<ScanSummary> {
-        match progress_tx {
-            Some(tx) => self.scan_with_progress(tx).await,
-            None => self.scan(ScanOptions::default()).await,
-        }
-    }
-
-    /// Legacy enhanced scan method - use scan_with_progress() instead
-    #[deprecated(note = "Use scan_with_progress() method instead")]
-    pub async fn scan_async_enhanced(
-        &self,
-        progress_tx: mpsc::Sender<ScanProgress>,
-    ) -> ScanResult<LibraryScanResult> {
-        let summary = self.scan_with_progress(progress_tx).await?;
-        
-        // Convert ScanSummary to LibraryScanResult for compatibility
-        Ok(LibraryScanResult {
-            processed_count: summary.processed,
-            error_count: summary.errors,
-            audiobooks: summary.new_files,
-            scan_duration: summary.scan_duration,
-        })
-    }
-
-    /// Legacy task creation method - use scan_task() instead
-    #[deprecated(note = "Use scan_task_with_progress() method instead")]
-    pub fn scan_with_task(
-        &self,
-        progress_tx: mpsc::Sender<ScanProgress>,
-    ) -> Task<ScanResult<ScanSummary>> {
-        self.scan_task_with_progress(progress_tx)
-    }    /// Legacy task creation method - use scan_task_with_progress() instead
-    #[deprecated(note = "Use scan_task_with_progress() method instead")]
-    pub fn scan_async_task(
-        &self,
-        progress_tx: mpsc::Sender<ScanProgress>,
-    ) -> Task<ScanResult<LibraryScanResult>> {
-        let scanner = self.clone();
-        Task::perform(
-            async move { scanner.scan_with_progress(progress_tx).await.map(|summary| LibraryScanResult {
-                processed_count: summary.processed,
-                error_count: summary.errors,
-                audiobooks: summary.new_files,
-                scan_duration: summary.scan_duration,
-            }) },
-            |result| result,
-        )
-    }
-}
-
-/// Represents the result of a library scan (legacy compatibility)
-#[derive(Debug, Clone)]
-pub struct LibraryScanResult {
-    /// Number of files successfully processed
-    pub processed_count: usize,
-    /// Number of files that had errors
-    pub error_count: usize,
-    /// List of processed audiobooks
-    pub audiobooks: Vec<Audiobook>,
-    /// Duration of the scan
-    pub scan_duration: std::time::Duration,
-}
-
-impl LibraryScanResult {
-    /// Creates a new empty scan result
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            processed_count: 0,
-            error_count: 0,
-            audiobooks: Vec::new(),
-            scan_duration: std::time::Duration::new(0, 0),
-        }
-    }
-}
-
-impl Default for LibraryScanResult {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+    }}
 
 #[cfg(test)]
 mod tests {

@@ -27,7 +27,7 @@ pub use error::{ScanError, ScanResult};
 pub use file_discovery::FileDiscoverer;
 pub use file_processor::FileProcessor;
 pub use library_scanner::{
-    LibraryScanResult, LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanProgressUpdate,
+    LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS,
 };
 pub use orchestrator::{ScanOptions, ScanOrchestrator};
 pub use performance::{OperationType, PerformanceMetrics, PerformanceMonitor, SlowOperation};
