@@ -141,10 +141,21 @@ mod async_scanner_tests {
         let db = Database::open(":memory:").await.unwrap();
         let library = Library::new("Test Library", temp_dir.path());
 
-        // Create multiple test files
+        // Create multiple valid test WAV files
         for i in 0..10 {
-            let file_path = temp_dir.path().join(format!("test_{i}.mp3"));
-            std::fs::write(&file_path, b"fake audio data").unwrap();
+            let file_path = temp_dir.path().join(format!("test_{i}.wav"));
+            let spec = hound::WavSpec {
+                channels: 1,
+                sample_rate: 8000,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            };
+            let mut writer = hound::WavWriter::create(&file_path, spec).unwrap();
+            // Write a short audio sample (100ms)
+            for _ in 0..800 {
+                writer.write_sample(0i16).unwrap();
+            }
+            writer.finalize().unwrap();
         }
 
         let config = ScannerConfig {
