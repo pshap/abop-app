@@ -9,7 +9,7 @@ use abop_core::{
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use log::{debug, error, info, warn};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 /// Command line arguments for ABOP CLI
@@ -233,7 +233,7 @@ async fn scan_library(
 async fn scan_with_progress(
     scanner: LibraryScanner,
     _db: &Database,
-    _library_path: &PathBuf,
+    _library_path: &Path,
 ) -> Result<()> {
     use tokio::time::{Duration, interval}; // Start scan in background
     let mut scan_handle = tokio::spawn(async move { scanner.scan_async(None).await });

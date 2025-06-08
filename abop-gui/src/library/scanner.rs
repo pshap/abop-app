@@ -268,7 +268,7 @@ pub async fn cancel_scan(db: Database, library: Library) -> Result<()> {
 
 /// Creates a progress bar widget for the scanner
 #[must_use]
-pub fn create_progress_bar(progress: &ScannerProgress) -> Element<Message> {
+pub fn create_progress_bar(progress: &ScannerProgress) -> Element<'_, Message> {
     let progress_value = progress.get_progress().unwrap_or(0.0);
     let current_file = progress.get_current_file().unwrap_or("Scanning...");
     let current_count = progress.get_current_count();

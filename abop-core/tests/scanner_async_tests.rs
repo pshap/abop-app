@@ -9,7 +9,7 @@ use abop_core::{
     scanner::{
         LibraryScanner, ScanProgress, ScannerConfig,
         error::ScanError,
-        progress::{ChannelReporter, ProgressReporter},
+        progress::ChannelReporter,
     },
 };
 use std::time::Duration;
@@ -28,7 +28,7 @@ mod async_scanner_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (tx, mut rx) = mpsc::channel(100);
 
         // Start scan with progress reporting
         let scan_task = tokio::spawn(async move { scanner.scan_async(Some(tx)).await }); // Collect progress updates
