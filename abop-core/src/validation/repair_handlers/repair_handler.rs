@@ -31,34 +31,3 @@ pub fn create_repair_action_success(
         details: None,
     }
 }
-
-/// Helper function to create a failed repair action
-pub fn create_repair_action_failure(
-    action_type: RepairActionType,
-    description: String,
-    target: String,
-    error: String,
-) -> RepairAction {
-    RepairAction {
-        action_type,
-        description,
-        target,
-        success: false,
-        details: Some(error),
-    }
-}
-
-/// Helper function to create a simple successful repair action
-pub fn create_single_repair_action(
-    action_type: RepairActionType,
-    description: &str,
-    target: &str,
-) -> RepairAction {
-    RepairAction {
-        action_type,
-        description: description.to_string(),
-        target: target.to_string(),
-        success: true,
-        details: None,
-    }
-}
