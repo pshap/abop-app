@@ -15,6 +15,7 @@ pub use self::{
     constants::*, 
     context::ElevationContext,
     level::ElevationLevel,
+    performance::{ElevationCache, FastElevation},
     registry::ElevationRegistry, 
     style::{ElevationStyle, ShadowParams},
     system::MaterialElevation,
@@ -28,6 +29,7 @@ pub mod color_blending;
 pub mod constants;
 pub mod context;
 pub mod level;
+pub mod performance;
 pub mod registry;
 pub mod shadow_calculations;
 pub mod serde_impl;
