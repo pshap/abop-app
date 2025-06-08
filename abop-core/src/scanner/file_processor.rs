@@ -28,6 +28,7 @@ pub struct MetadataCache {
 
 impl MetadataCache {
     /// Creates a new metadata cache with the specified capacity
+    #[allow(dead_code)]
     #[must_use]
     pub fn new(capacity: usize) -> Self {
         Self {
@@ -51,6 +52,7 @@ impl MetadataCache {
     }
 
     /// Clears the cache
+    #[allow(dead_code)]
     pub async fn clear(&mut self) {
         let _guard = self.mutex.lock().await;
         self.cache.clear();
@@ -110,6 +112,7 @@ pub struct DefaultFileProcessor {
 
 impl DefaultFileProcessor {
     /// Creates a new file processor
+    #[allow(dead_code)]
     #[must_use]
     pub fn new(db: Database) -> Self {
         Self {
@@ -120,6 +123,7 @@ impl DefaultFileProcessor {
     }
 
     /// Creates a new file processor with custom batch configuration
+    #[allow(dead_code)]
     #[must_use]
     pub fn with_config(db: Database, config: BatchConfig) -> Self {
         Self {
@@ -312,7 +316,7 @@ mod tests {
         // Create test files
         let paths: Vec<PathBuf> = (0..5)
             .map(|i| {
-                let path = dir.path().join(format!("test{}.mp3", i));
+                let path = dir.path().join(format!("test{i}.mp3"));
                 let mut file = File::create(&path).unwrap();
                 file.write_all(b"dummy mp3 content").unwrap();
                 path
