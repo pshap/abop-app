@@ -30,8 +30,7 @@ impl From<MaterialFont> for Family {
         match font {
             // Use system default font instead of custom font names to avoid wingdings
             // This ensures compatibility across different systems
-            MaterialFont::Brand => Self::default(),
-            MaterialFont::Plain => Self::default(),
+            MaterialFont::Brand | MaterialFont::Plain => Self::default(),
         }
     }
 }
