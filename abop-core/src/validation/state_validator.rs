@@ -3,6 +3,7 @@
 use crate::validation::{error::{ValidationError, ValidationResult}, FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator};
 use crate::models::{AppState, Audiobook, Library, Progress};
 
+/// Configuration options for state validation
 #[derive(Debug, Clone)]
 pub struct ValidationConfig {
     /// Whether to validate file existence for referenced paths
