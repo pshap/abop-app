@@ -43,6 +43,7 @@ impl CoreScanner {
 
     /// Discovers all audio files in a directory (synchronous)
     pub fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
+        log::warn!("🔍 CORE SCANNER: discover_files called with path: '{}'", path.display());
         let extensions = &self.config.extensions;
 
         // Verify the path exists before scanning
