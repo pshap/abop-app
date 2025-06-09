@@ -214,8 +214,6 @@ pub mod channels {
         // Log warnings for unusual conversions
         if input_channels > output_channels && output_channels == 1 {
             log::debug!("Downmixing {input_channels} channels to mono");
-        } else if input_channels == 1 && output_channels > 1 {
-            log::debug!("Upmixing mono to {output_channels} channels");
         }
 
         Ok(())
