@@ -51,5 +51,4 @@ BEGIN
     UPDATE audiobooks SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- Seed a default library for CLI operations
-INSERT INTO libraries (id, name, path) VALUES ('1', 'Default Library', '/default');
+-- Note: No default library is seeded - libraries should be created by users with valid paths

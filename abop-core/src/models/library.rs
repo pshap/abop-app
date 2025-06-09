@@ -18,10 +18,21 @@ impl Library {
     /// Creates a new library with the given name and path
     #[must_use]
     pub fn new<P: AsRef<Path>>(name: &str, path: P) -> Self {
+        // Ensure the path is canonicalized to handle platform-specific path issues
+        let path_buf = if path.as_ref().is_absolute() {
+            path.as_ref().to_path_buf()
+        } else {
+            // For relative paths, convert to absolute using current directory
+            match std::env::current_dir() {
+                Ok(current_dir) => current_dir.join(path.as_ref()),
+                Err(_) => path.as_ref().to_path_buf(), // Fallback to original path if current_dir fails
+            }
+        };
+
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),
-            path: path.as_ref().to_path_buf(),
+            path: path_buf,
         }
     }
 
