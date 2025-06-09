@@ -46,9 +46,20 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
 pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> {
     let scanner = LibraryScanner::new(db, library);
     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+    let (std_tx, std_rx) = std::sync::mpsc::channel();
+
+    // Forward messages from std channel to tokio channel
+    let tx_clone = tx.clone();
+    tokio::spawn(async move {
+        while let Ok(progress) = std_rx.recv() {
+            if tx_clone.send(progress).await.is_err() {
+                break;
+            }
+        }
+    });
 
     // Start scan with progress reporting
-    let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await });
+    let scan_task = tokio::task::spawn_blocking(move || scanner.scan_with_progress(std_tx));
 
     // Collect progress updates
     let mut result = ScanResult {
@@ -246,9 +257,10 @@ impl ScannerProgress {
 /// A Result indicating success or failure of the scan operation
 pub async fn start_scan(db: Database, library: Library) -> Result<()> {
     let scanner = LibraryScanner::new(db, library);
-    let _result = scanner
-        .scan(abop_core::scanner::ScanOptions::default())
-        .await?;
+    let _result = tokio::task::spawn_blocking(move || {
+        scanner.scan(abop_core::scanner::ScanOptions::default())
+    })
+    .await??;
     Ok(())
 }
 

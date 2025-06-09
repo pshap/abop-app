@@ -36,6 +36,26 @@ impl DatabaseOperations {
         operation(&conn)
     }
 
+    /// Execute a synchronous operation with the connection pool
+    #[instrument(skip(self, operation))]
+    pub fn execute<T, F>(&self, operation: F) -> DbResult<T>
+    where
+        F: FnOnce(&Connection) -> DbResult<T> + Send + 'static,
+        T: Send + 'static,
+    {
+        let pool = self.pool.clone();
+        let result = std::thread::spawn(move || {
+            let conn = pool.get().map_err(|e| {
+                DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
+            })?;
+            operation(&conn)
+        })
+        .join()
+        .map_err(|_| DatabaseError::execution_failed("Thread panicked during operation"))??;
+
+        Ok(result)
+    }
+
     /// Execute a query with a mutable connection
     #[instrument(skip(self, operation))]
     pub fn execute_query_mut<T, F>(&self, operation: F) -> DbResult<T>
@@ -103,60 +123,6 @@ impl DatabaseOperations {
     /// Get access to the connection pool for direct access if needed
     pub fn pool(&self) -> &Arc<Pool<SqliteConnectionManager>> {
         &self.pool
-    }
-
-    /// Execute a simple async operation with connection pool
-    #[instrument(skip(self, operation))]
-    pub async fn execute_async<T, F>(&self, operation: F) -> DbResult<T>
-    where
-        F: FnOnce(&Connection) -> DbResult<T> + Send + 'static,
-        T: Send + 'static,
-    {
-        let pool = self.pool.clone();
-        tokio::task::spawn_blocking(move || {
-            let conn = pool.get().map_err(|e| {
-                DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
-            })?;
-            operation(&conn)
-        })
-        .await
-        .map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Task execution failed: {e}"),
-        })?
-    }
-
-    /// Execute a transaction asynchronously
-    #[instrument(skip(self, operation))]
-    pub async fn execute_transaction_async<T, F>(&self, operation: F) -> DbResult<T>
-    where
-        F: FnOnce(&Transaction) -> DbResult<T> + Send + 'static,
-        T: Send + 'static,
-    {
-        let pool = self.pool.clone();
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                DatabaseError::ConnectionFailed(format!("Failed to get connection from pool: {e}"))
-            })?;
-
-            let tx = conn
-                .transaction()
-                .map_err(|e| DatabaseError::TransactionFailed {
-                    message: format!("Failed to start transaction: {e}"),
-                })?;
-
-            let result = operation(&tx)?;
-
-            tx.commit().map_err(|e| DatabaseError::TransactionFailed {
-                message: format!("Failed to commit transaction: {e}"),
-            })?;
-
-            debug!("Transaction completed successfully");
-            Ok(result)
-        })
-        .await
-        .map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Task execution failed: {e}"),
-        })?
     }
 }
 

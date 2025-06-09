@@ -42,6 +42,7 @@ dependencies = [
  "cfg_aliases 0.1.1",
  "chrono",
  "criterion",
+ "crossbeam-channel",
  "dirs 5.0.1",
  "fontdb 0.16.2",
  "futures",
@@ -90,6 +91,7 @@ dependencies = [
  "bytemuck",
  "chrono",
  "dirs 5.0.1",
+ "futures",
  "hound",
  "iced",
  "iced_font_awesome",
@@ -1167,6 +1169,15 @@ checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
  "itertools 0.10.5",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
+dependencies = [
+ "crossbeam-utils",
 ]
 
 [[package]]

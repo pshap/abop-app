@@ -241,11 +241,10 @@ impl UiState {
 
             // Spawn the scan operation in a separate task to avoid blocking the UI
             // This allows the scanner to run independently without holding any locks
-            let scan_result = tokio::spawn(async move {
-                let scanner_guard = scanner_arc.lock().await;
-                scanner_guard
-                    .scan(abop_core::scanner::ScanOptions::default())
-                    .await
+            let scan_result = tokio::task::spawn_blocking(move || {
+                // Use futures::executor::block_on to wait for the async lock in the blocking context
+                let scanner_guard = futures::executor::block_on(scanner_arc.lock());
+                scanner_guard.scan(abop_core::scanner::ScanOptions::default())
             })
             .await;
 

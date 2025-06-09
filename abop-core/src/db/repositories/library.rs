@@ -138,6 +138,31 @@ impl LibraryRepository {
         })
     }
 
+    /// Find a library by its path
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn find_by_path<P: AsRef<Path>>(&self, path: P) -> DbResult<Option<Library>> {
+        let path_str = path.as_ref().to_string_lossy().to_string();
+        self.execute_query(move |conn| {
+            let path_str = path_str.clone();
+            conn.query_row(
+                "SELECT id, name, path FROM libraries WHERE path = ?1",
+                [path_str],
+                |row| {
+                    Ok(Library {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        path: PathBuf::from(row.get::<_, String>(2)?),
+                    })
+                },
+            )
+            .optional()
+        })
+    }
+
     /// Get all libraries
     ///
     /// # Errors

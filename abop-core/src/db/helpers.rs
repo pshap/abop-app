@@ -30,11 +30,9 @@ pub fn parse_datetime_from_row(
     row: &Row,
     column_name: &str,
 ) -> DbResult<chrono::DateTime<chrono::Utc>> {
-    let datetime_str: String =
-        row.get(column_name)
-            .map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get {column_name} column: {e}"),
-            })?;
+    let datetime_str: String = row.get(column_name).map_err(|e| {
+        DatabaseError::execution_failed(&format!("Failed to get {column_name} column: {e}"))
+    })?;
 
     // Try parsing as RFC3339 first (ISO 8601)
     if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&datetime_str) {
@@ -68,9 +66,9 @@ pub fn parse_optional_datetime_from_row(
     match row.get::<_, Option<String>>(column_name) {
         Ok(Some(datetime_str)) => parse_datetime_string(&datetime_str).map(Some),
         Ok(None) => Ok(None),
-        Err(e) => Err(DatabaseError::ExecutionFailed {
-            message: format!("Failed to get optional {column_name} column: {e}"),
-        }),
+        Err(e) => Err(DatabaseError::execution_failed(&format!(
+            "Failed to get optional {column_name} column: {e}"
+        ))),
     }
 }
 
@@ -83,7 +81,7 @@ impl DatabaseHelpers {
         DatabaseOperations::new(pool)
     }
     /// Execute a simple query and return the count of affected rows
-    pub async fn execute_simple_query(
+    pub fn execute_simple_query(
         ops: &DatabaseOperations,
         sql: &str,
         params: &[&dyn rusqlite::ToSql],
@@ -94,65 +92,53 @@ impl DatabaseHelpers {
             .map(|p| format!("{:?}", p.to_sql().unwrap()))
             .collect();
 
-        ops.execute_async(move |conn| {
-            let row_count = conn
-                .execute(&sql, rusqlite::params_from_iter(params.iter()))
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to execute SQL: {e}"),
-                })?;
-            Ok(row_count)
+        ops.execute(move |conn| {
+            conn.execute(&sql, rusqlite::params_from_iter(params.iter()))
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!("Failed to execute SQL: {e}"))
+                })
         })
-        .await
     }
     /// Check if a table exists in the database
-    pub async fn table_exists(ops: &DatabaseOperations, table_name: &str) -> DbResult<bool> {
+    pub fn table_exists(ops: &DatabaseOperations, table_name: &str) -> DbResult<bool> {
         let table_name = table_name.to_string();
-        ops.execute_async(move |conn| {
+        ops.execute(move |conn| {
             let mut stmt = conn
                 .prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?")
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to prepare statement: {e}"),
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}"))
                 })?;
 
             let count: i64 = stmt
                 .query_row([&table_name], |row| row.get(0))
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to execute query: {e}"),
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!("Failed to execute query: {e}"))
                 })?;
 
             Ok(count > 0)
         })
-        .await
     }
     /// Get the database version from user_version pragma
-    pub async fn get_db_version(ops: &DatabaseOperations) -> DbResult<i32> {
-        ops.execute_async(|conn| {
-            let mut stmt = conn.prepare("PRAGMA user_version").map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to prepare statement: {e}"),
-                }
-            })?;
-
-            let version: i32 = stmt.query_row([], |row| row.get(0)).map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get version: {e}"),
-                }
-            })?;
+    pub fn get_db_version(ops: &DatabaseOperations) -> DbResult<i32> {
+        ops.execute(|conn| {
+            let version: i32 = conn
+                .query_row("PRAGMA user_version", [], |row| row.get(0))
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!("Failed to get version: {e}"))
+                })?;
 
             Ok(version)
         })
-        .await
     }
     /// Set the database version using user_version pragma
-    pub async fn set_db_version(ops: &DatabaseOperations, version: i32) -> DbResult<()> {
-        ops.execute_async(move |conn| {
+    pub fn set_db_version(ops: &DatabaseOperations, version: i32) -> DbResult<()> {
+        ops.execute(move |conn| {
             conn.execute(&format!("PRAGMA user_version = {version}"), [])
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to set version: {e}"),
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!("Failed to set version: {e}"))
                 })?;
             Ok(())
         })
-        .await
     }
 }
 
@@ -187,16 +173,14 @@ pub fn execute_bulk_insert<F>(conn: &mut Connection, operation: F) -> DbResult<(
 where
     F: FnOnce(&rusqlite::Transaction) -> DbResult<()>,
 {
-    let tx = conn
-        .transaction()
-        .map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to start transaction: {e}"),
-        })?;
+    let tx = conn.transaction().map_err(|e| {
+        DatabaseError::execution_failed(&format!("Failed to start transaction: {e}"))
+    })?;
 
     operation(&tx)?;
 
-    tx.commit().map_err(|e| DatabaseError::ExecutionFailed {
-        message: format!("Failed to commit transaction: {e}"),
+    tx.commit().map_err(|e| {
+        DatabaseError::execution_failed(&format!("Failed to commit transaction: {e}"))
     })?;
 
     debug!("Bulk insert operation completed successfully");

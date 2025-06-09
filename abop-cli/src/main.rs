@@ -80,8 +80,7 @@ enum DbOperations {
     Clean,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     // Parse command line arguments
     let args = Args::parse();
 
@@ -120,19 +119,18 @@ async fn main() -> Result<()> {
                 max_concurrent_db_operations,
                 progress,
             )
-            .await
         }
         Commands::Db {
             database,
             operation,
         } => {
             debug!("Executing database command: {operation:?} on {database:?}");
-            handle_db_operation(database, operation).await
+            handle_db_operation(database, operation)
         }
     }
 }
 
-async fn scan_library(
+fn scan_library(
     library_path: PathBuf,
     database_path: Option<PathBuf>,
     config_preset: String,
@@ -164,22 +162,29 @@ async fn scan_library(
     });
 
     info!("Using database: {db_path:?}");
-    let db = Database::open(&db_path)
-        .await
-        .context("Failed to initialize database")?;
+    let db = Database::open(&db_path).context("Failed to initialize database")?;
 
-    // Create a library record first
-    let library_id = db
-        .add_library_with_path("CLI Library", library_path.clone())
-        .await
-        .context("Failed to create library record")?;
+    // Check if a library with this path already exists
+    let library = match db.libraries().find_by_path(&library_path)? {
+        Some(lib) => {
+            info!("Using existing library: {} (ID: {})", lib.name, lib.id);
+            lib
+        }
+        None => {
+            info!("Creating new library for path: {}", library_path.display());
+            let library_id = db
+                .add_library_with_path("CLI Library", library_path.clone())
+                .context("Failed to create library record")?;
 
-    // Get the actual library struct
-    let library = db
-        .libraries()
-        .find_by_id(&library_id)
-        .context("Failed to get library record")?
-        .context("Library not found after creation")?;
+            // Get the newly created library
+            db.libraries()
+                .find_by_id(&library_id)
+                .context("Failed to get library record after creation")?
+                .context("Library not found after creation")?
+        }
+    };
+
+    info!("Using library: {} (ID: {})", library.name, library.id);
 
     // Configure scanner
     let mut scanner_config = match config_preset.as_str() {
@@ -211,73 +216,25 @@ async fn scan_library(
 
     let start_time = Instant::now();
 
-    if show_progress {
-        info!("Starting scan with progress monitoring...");
-        scan_with_progress(scanner, &db, &library_path).await?;
-    } else {
-        info!("Starting scan...");
-        let result = scanner
-            .scan(abop_core::scanner::ScanOptions::default())
-            .await
-            .context("Scan failed")?;
-        info!(
-            "Scan result: processed={}, errors={}",
-            result.processed, result.errors
-        );
-    }
+    info!("Starting scan...");
+    let result = scanner
+        .scan(abop_core::scanner::ScanOptions::default())
+        .context("Scan failed")?;
+    info!(
+        "Scan result: processed={}, errors={}",
+        result.processed, result.errors
+    );
 
     let elapsed = start_time.elapsed();
     info!("Scan completed in {:.2}s", elapsed.as_secs_f64());
 
     // Show results
-    show_scan_results(&db).await?;
+    show_scan_results(&db)?;
 
     Ok(())
 }
 
-async fn scan_with_progress(
-    scanner: LibraryScanner,
-    _db: &Database,
-    _library_path: &Path,
-) -> Result<()> {
-    use tokio::time::{Duration, interval}; // Start scan in background
-    let mut scan_handle = tokio::spawn(async move {
-        scanner
-            .scan(abop_core::scanner::ScanOptions::default())
-            .await
-    });
-
-    // Monitor progress
-    let mut progress_interval = interval(Duration::from_secs(2));
-    loop {
-        tokio::select! {
-            result = &mut scan_handle => {
-                match result {
-                    Ok(Ok(summary)) => {
-                        info!("✓ Scan completed successfully");
-                        info!("Summary: {} audiobooks processed, {} errors", summary.processed, summary.errors);
-                        break;
-                    }
-                    Ok(Err(e)) => {
-                        error!("✗ Scan failed: {e}");
-                        return Err(e.into());
-                    }
-                    Err(e) => {
-                        error!("✗ Scan task panicked: {e}");
-                        return Err(e.into());
-                    }
-                }
-            }
-            _ = progress_interval.tick() => {
-                debug!("📚 Scan in progress...");
-            }
-        }
-    }
-
-    Ok(())
-}
-
-async fn get_audiobook_count(db: &Database) -> Result<usize> {
+fn get_audiobook_count(db: &Database) -> Result<usize> {
     // Get all libraries first
     let libraries = db.get_libraries()?;
 
@@ -292,8 +249,8 @@ async fn get_audiobook_count(db: &Database) -> Result<usize> {
     Ok(audiobooks.len())
 }
 
-async fn show_scan_results(db: &Database) -> Result<()> {
-    let count = get_audiobook_count(db).await?;
+fn show_scan_results(db: &Database) -> Result<()> {
+    let count = get_audiobook_count(db)?;
 
     if count == 0 {
         warn!("No audiobooks found in the library");
@@ -324,33 +281,29 @@ async fn show_scan_results(db: &Database) -> Result<()> {
     Ok(())
 }
 
-async fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
+fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
     debug!("Starting database operation: {operation:?}");
     match operation {
-        DbOperations::Init => handle_db_init(database_path).await,
-        DbOperations::List => handle_db_list(database_path).await,
-        DbOperations::Stats => handle_db_stats(database_path).await,
-        DbOperations::Clean => handle_db_clean(database_path).await,
+        DbOperations::Init => handle_db_init(database_path),
+        DbOperations::List => handle_db_list(database_path),
+        DbOperations::Stats => handle_db_stats(database_path),
+        DbOperations::Clean => handle_db_clean(database_path),
     }
 }
 
-async fn handle_db_init(database_path: PathBuf) -> Result<()> {
+fn handle_db_init(database_path: PathBuf) -> Result<()> {
     info!("Initializing database: {database_path:?}");
     debug!("About to call Database::open()");
-    let _db = Database::open(&database_path)
-        .await
-        .context("Failed to initialize database")?;
+    let _db = Database::open(&database_path).context("Failed to initialize database")?;
     debug!("Database::open() completed successfully");
     info!("✓ Database initialized successfully");
     Ok(())
 }
 
-async fn handle_db_list(database_path: PathBuf) -> Result<()> {
+fn handle_db_list(database_path: PathBuf) -> Result<()> {
     info!("Listing audiobooks in: {database_path:?}");
     debug!("About to call Database::open() for list operation");
-    let db = Database::open(&database_path)
-        .await
-        .context("Failed to open database")?;
+    let db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for list operation");
 
     // Get all libraries first
@@ -390,27 +343,23 @@ async fn handle_db_list(database_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-async fn handle_db_stats(database_path: PathBuf) -> Result<()> {
+fn handle_db_stats(database_path: PathBuf) -> Result<()> {
     info!("Database statistics: {database_path:?}");
     debug!("About to call Database::open() for stats operation");
-    let db = Database::open(&database_path)
-        .await
-        .context("Failed to open database")?;
+    let db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for stats operation");
 
     debug!("About to call get_audiobook_count()");
-    let count = get_audiobook_count(&db).await?;
+    let count = get_audiobook_count(&db)?;
     debug!("get_audiobook_count() completed with count: {count}");
     info!("Total audiobooks: {count}");
     Ok(())
 }
 
-async fn handle_db_clean(database_path: PathBuf) -> Result<()> {
+fn handle_db_clean(database_path: PathBuf) -> Result<()> {
     info!("Cleaning database: {database_path:?}");
     debug!("About to call Database::open() for clean operation");
-    let _db = Database::open(&database_path)
-        .await
-        .context("Failed to open database")?;
+    let _db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for clean operation");
 
     // TODO: Implement database cleanup/optimization

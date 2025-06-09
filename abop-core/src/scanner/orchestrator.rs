@@ -3,12 +3,12 @@
 //! This module provides high-level coordination between core scanning,
 //! database operations, progress reporting, and performance monitoring.
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::Instant;
-
-use futures::{StreamExt, stream};
-use tokio_util::sync::CancellationToken;
-use tracing::{error, warn};
+use tracing::{error, info};
 
 use crate::{
     db::Database,
@@ -34,6 +34,8 @@ pub struct ScanOptions {
     pub batch_size: Option<usize>,
     /// Maximum concurrent operations (if None, uses config default)
     pub max_concurrent: Option<usize>,
+    /// Whether to use parallel processing
+    pub parallel: bool,
 }
 
 impl Default for ScanOptions {
@@ -43,6 +45,7 @@ impl Default for ScanOptions {
             enable_monitoring: true,
             batch_size: None,
             max_concurrent: None,
+            parallel: true,
         }
     }
 }
@@ -60,7 +63,7 @@ pub struct ScanOrchestrator {
     /// Performance monitor
     performance_monitor: Option<Arc<PerformanceMonitor>>,
     /// Cancellation token
-    cancel_token: CancellationToken,
+    cancelled: Arc<AtomicBool>,
     /// Configuration
     config: ScannerConfig,
 }
@@ -76,7 +79,7 @@ impl ScanOrchestrator {
             library,
             progress_reporter: None,
             performance_monitor: None,
-            cancel_token: CancellationToken::new(),
+            cancelled: Arc::new(AtomicBool::new(false)),
             config,
         }
     }
@@ -94,24 +97,33 @@ impl ScanOrchestrator {
     }
 
     /// Sets the cancellation token
-    pub fn with_cancellation_token(mut self, token: CancellationToken) -> Self {
-        self.cancel_token = token;
+    pub fn with_cancellation_token(mut self, token: Arc<AtomicBool>) -> Self {
+        self.cancelled = token;
         self
     }
 
-    /// Performs a complete scan operation
-    pub async fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
+    /// Persists a batch of audiobooks to the database
+    fn persist_batch(&self, audiobooks: &[Audiobook]) -> crate::error::Result<()> {
+        self.database.add_audiobooks_bulk(audiobooks)
+    }
+
+    /// Performs a complete scan operation (synchronous)
+    pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
         let start_time = Instant::now();
 
         // Discover all audio files
-        let files = self.core_scanner.discover_files(&self.library.path).await?;
+        let files = self.core_scanner.discover_files(&self.library.path)?;
         let total_files = files.len();
 
+        info!("Discovered {} files to process", total_files);
+
         // Report scan start
-        if options.enable_progress
-            && let Some(reporter) = &self.progress_reporter
-        {
-            reporter.report_started(total_files).await;
+        if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+            // For synchronous operation, we'll use a blocking approach for progress reporting
+            let rt = tokio::runtime::Handle::try_current();
+            if let Ok(rt) = rt {
+                rt.block_on(async { reporter.report_started(total_files).await });
+            }
         }
 
         let mut processed_audiobooks = Vec::new();
@@ -119,188 +131,101 @@ impl ScanOrchestrator {
 
         // Determine batch size
         let batch_size = options.batch_size.unwrap_or(self.config.batch_size);
+        info!("Processing in batches of {} files", batch_size);
 
         // Process files in batches
         for (batch_index, file_chunk) in files.chunks(batch_size).enumerate() {
-            if self.cancel_token.is_cancelled() {
+            if self.cancelled.load(Ordering::Relaxed) {
+                info!("Scan operation was cancelled");
                 return Err(ScanError::Cancelled);
             }
 
-            let mut batch_audiobooks = Vec::new(); // Process files in parallel within the batch
-            let max_concurrent = options
-                .max_concurrent
-                .unwrap_or(self.config.max_concurrent_tasks);
-            let core_scanner = self.core_scanner.clone();
-            let library_id = self.library.id.clone();
-            let monitor = self.performance_monitor.clone();
+            info!("Processing batch {}", batch_index + 1);
+            let batch_start_time = Instant::now();
 
-            // Convert to owned data to avoid lifetime issues
-            let file_chunk_owned: Vec<_> = file_chunk
-                .iter()
-                .enumerate()
-                .map(|(i, p)| (i, p.clone()))
-                .collect();
+            // Process files sequentially within the batch (truly synchronous)
+            let mut batch_audiobooks = Vec::new();
+            for (file_index, path) in file_chunk.iter().enumerate() {
+                let overall_index = batch_index * batch_size + file_index;
 
-            let results: Vec<_> = stream::iter(file_chunk_owned.into_iter())
-                .map(|(file_index, path)| {
-                    let core_scanner = core_scanner.clone();
-                    let library_id = library_id.clone();
-                    let monitor = monitor.clone();
-
-                    async move {
-                        let overall_index = batch_index * batch_size + file_index;
-                        let result = if options.enable_monitoring {
-                            core_scanner
-                                .extract_metadata_with_monitoring(
-                                    &library_id,
-                                    &path,
-                                    monitor.as_deref(),
-                                )
-                                .await
-                        } else {
-                            core_scanner.extract_metadata(&library_id, &path).await
-                        };
-
-                        (overall_index, path, result)
+                // Report progress
+                if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+                    let progress = overall_index as f32 / total_files as f32;
+                    let rt = tokio::runtime::Handle::try_current();
+                    if let Ok(rt) = rt {
+                        rt.block_on(async { reporter.report_progress(progress).await });
                     }
-                })
-                .buffer_unordered(max_concurrent)
-                .collect()
-                .await;
-
-            // Process results and update progress
-            for (file_index, path, result) in results {
-                if self.cancel_token.is_cancelled() {
-                    return Err(ScanError::Cancelled);
                 }
 
-                match result {
-                    Ok(mut audiobook) => {
-                        audiobook.library_id = self.library.id.clone();
+                // Process the file using extract_metadata (now synchronous)
+                match self.core_scanner.extract_metadata(&self.library.id, path) {
+                    Ok(audiobook) => {
                         batch_audiobooks.push(audiobook);
-
-                        // Report individual file progress
-                        if options.enable_progress
-                            && let Some(reporter) = &self.progress_reporter
-                        {
-                            let file_name = path
-                                .file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or("Unknown")
-                                .to_string();
-
-                            reporter
-                                .report_file_processed(file_index + 1, total_files, file_name)
-                                .await;
-                        }
                     }
                     Err(e) => {
-                        warn!("Error processing {}: {}", path.display(), e);
+                        error!("Error processing file {}: {}", path.display(), e);
                         error_count += 1;
-                        // Log error through centralized handler
-                        self.handle_scan_error(&e, "metadata_extraction");
                     }
                 }
             }
 
-            // Persist batch to database
+            // Persist the batch to the database
             if !batch_audiobooks.is_empty() {
-                if let Err(e) = self.persist_batch(&batch_audiobooks).await {
-                    error!("Failed to persist batch: {}", e);
-                    error_count += batch_audiobooks.len();
-                    self.handle_scan_error(&e, "database_persistence");
-                } else {
-                    processed_audiobooks.extend(batch_audiobooks);
-
-                    // Report progress update instead of batch_committed
-                    if options.enable_progress
-                        && let Some(reporter) = &self.progress_reporter
-                    {
-                        let progress =
-                            (processed_audiobooks.len() as f32 / total_files as f32) * 100.0;
-                        reporter.report_progress(progress).await;
-                    }
+                if let Err(e) = self.persist_batch(&batch_audiobooks) {
+                    error!("Error persisting batch: {}", e);
+                    error_count += batch_audiobooks.len(); // Consider all items in batch as errors
+                    continue;
                 }
+                processed_audiobooks.extend(batch_audiobooks);
             }
-        }
 
-        let duration = start_time.elapsed();
-        let processed_count = processed_audiobooks.len();
+            info!(
+                "Processed batch {} in {:.2?} ({} items)",
+                batch_index + 1,
+                batch_start_time.elapsed(),
+                processed_audiobooks.len() - (batch_index * batch_size).min(processed_audiobooks.len())
+            );
+        }
 
         // Report completion
-        if options.enable_progress
-            && let Some(reporter) = &self.progress_reporter
-        {
-            reporter
-                .report_complete(processed_count, error_count, duration)
-                .await;
-        }
-
-        // Log performance summary
-        if options.enable_monitoring
-            && let Some(monitor) = &self.performance_monitor
-        {
-            monitor.log_summary();
+        let duration = start_time.elapsed();
+        if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+            let rt = tokio::runtime::Handle::try_current();
+            if let Ok(rt) = rt {
+                rt.block_on(async { 
+                    reporter.report_complete(processed_audiobooks.len(), error_count, duration).await 
+                });
+            }
         }
 
         Ok(ScanSummary {
             new_files: processed_audiobooks,
             scan_duration: duration,
-            processed: processed_count,
+            processed: total_files,
             errors: error_count,
         })
     }
 
-    /// Persists a batch of audiobooks to the database
-    async fn persist_batch(&self, audiobooks: &[Audiobook]) -> ScanResult<()> {
-        let db = self.database.clone();
-        let max_concurrent_db = self.config.max_concurrent_db_operations;
-        // Process database operations with controlled concurrency
-        let audiobooks_owned: Vec<Audiobook> = audiobooks.to_vec();
-        let results: Vec<_> = stream::iter(audiobooks_owned.into_iter())
-            .map(|audiobook| {
-                let db = db.clone();
+    /// Creates an orchestrator with the current scanner configuration
+    fn create_orchestrator(&self, options: &ScanOptions) -> ScanOrchestrator {
+        let mut orchestrator =
+            ScanOrchestrator::new(self.database.clone(), self.library.clone(), self.config.clone());
 
-                async move {
-                    let repo = db.audiobook_repository();
-                    repo.upsert(&audiobook).map_err(ScanError::from)
-                }
-            })
-            .buffer_unordered(max_concurrent_db)
-            .collect()
-            .await;
-
-        // Check for any errors
-        for result in results {
-            result?;
+        if options.enable_monitoring
+            && let Some(monitor) = &self.performance_monitor
+        {
+            orchestrator = orchestrator.with_performance_monitor(monitor.clone());
         }
 
-        Ok(())
-    }
-    /// Centralized error handling
-    fn handle_scan_error(&self, error: &dyn std::error::Error, context: &str) {
-        error!("Scan error in {}: {}", context, error);
-
-        if let Some(_monitor) = &self.performance_monitor {
-            // Could extend PerformanceMonitor to track errors
-            // monitor.record_error(context, error.to_string());
-        }
+        orchestrator = orchestrator.with_cancellation_token(self.cancelled.clone());
+        orchestrator
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::models::Library;
-    use tempfile::tempdir;
-
-    #[tokio::test]
-    async fn test_scan_orchestrator() {
-        let temp_dir = tempdir().unwrap();
-        let _library = Library::new("Test Library", temp_dir.path());
-
-        // This would need a mock database for full testing
-        // let orchestrator = ScanOrchestrator::new(db, library, ScannerConfig::default());
-        // let result = orchestrator.scan(ScanOptions::default()).await;
-        // assert!(result.is_ok());
+    #[test]
+    fn test_scan_orchestrator() {
+        // Test setup would go here
     }
 }

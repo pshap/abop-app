@@ -8,6 +8,15 @@ use thiserror::Error;
 /// Database-specific error types
 #[derive(Error, Debug, Clone)]
 pub enum DatabaseError {
+    /// Requested resource was not found.
+    #[error("Resource not found: {entity} with id {id} not found")]
+    NotFound {
+        /// The type of entity that was not found
+        entity: String,
+        /// The ID that was not found
+        id: String,
+    },
+
     /// Connection to the database failed.
     #[error("Database connection failed: {0}")]
     ConnectionFailed(String),
