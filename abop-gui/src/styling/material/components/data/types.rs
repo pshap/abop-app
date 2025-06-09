@@ -92,22 +92,6 @@ pub enum ColumnWidth {
     Shrink,
 }
 
-impl ColumnWidth {
-    /// Legacy alias for FillPortion (deprecated)
-    #[deprecated(since = "0.1.0", note = "Use FillPortion instead")]
-    #[allow(non_snake_case)]
-    pub fn Fill(portion: u16) -> Self {
-        Self::FillPortion(portion)
-    }
-
-    /// Legacy alias for Shrink (deprecated)
-    #[deprecated(since = "0.1.0", note = "Use Shrink instead")]
-    #[allow(non_snake_case)]
-    pub fn FitContent() -> Self {
-        Self::Shrink
-    }
-}
-
 impl From<f32> for ColumnWidth {
     fn from(value: f32) -> Self {
         Self::Fixed(value)

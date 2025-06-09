@@ -12,7 +12,7 @@
 //! ## Basic Table with Builder Pattern
 //!
 //! ```rust
-//! use crate::styling::material::components::data::*;
+//! use abop_gui::styling::material::components::data::*;
 //!
 //! // Create a simple readonly table
 //! let table = TableLayout::readonly()
@@ -23,9 +23,9 @@
 //!
 //! // Create an interactive table with custom configuration
 //! let interactive_table = TableLayout::interactive()
-//!     .column(column!(text: "title", "Title", 200.0))
-//!     .column(column!(number: "price", "Price"))
-//!     .column(column!(actions: "Actions"))
+//!     .text_column("title", "Title")
+//!     .number_column("price", "Price")
+//!     .actions_column("Actions")
 //!     .configure(|config| config.comfortable().with_stripes())
 //!     .build();
 //! ```

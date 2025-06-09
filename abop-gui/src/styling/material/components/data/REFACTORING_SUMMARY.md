@@ -34,15 +34,6 @@ enum ColumnWidth {
     Ratio(u32, u32),
     Shrink,
 }
-
-// With backward compatibility
-impl ColumnWidth {
-    #[deprecated(since = "0.1.0", note = "Use FillPortion instead")]
-    pub fn Fill(portion: u16) -> Self { Self::FillPortion(portion) }
-    
-    #[deprecated(since = "0.1.0", note = "Use Shrink instead")]
-    pub fn FitContent() -> Self { Self::Shrink }
-}
 ```
 
 ## Phase 2: ✅ Component Separation
