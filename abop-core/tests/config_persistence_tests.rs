@@ -1,6 +1,6 @@
 // Tests for config file persistence and recovery.
 
-use abop_core::config::{Config, WindowConfig};
+use abop_core::config::{Config, AppConfig, UiConfig, WindowConfig};
 use abop_core::models::ui::ThemeConfig;
 use std::fs;
 use std::path::PathBuf;
@@ -15,9 +15,19 @@ fn test_save_and_load_config() {
         window: WindowConfig {
             min_width: 1024,
             min_height: 768,
+            initial_width: 1024,
+            initial_height: 768,
+            remember_position: true,
+            remember_size: true,
+            start_maximized: false,
+            show_decorations: true,
+            resizable: true,
+            opacity: 1.0,
         },
         theme: ThemeConfig::Dark,
         data_dir: PathBuf::from("/tmp/abop_data"),
+        app: AppConfig::default(),
+        ui: UiConfig::default(),
     };
 
     // Save config to file using TOML format (as the actual Config uses)
@@ -83,6 +93,8 @@ fn test_different_theme_configurations() {
             window: WindowConfig::default(),
             theme: theme.clone(),
             data_dir: PathBuf::from("/tmp/test"),
+            app: AppConfig::default(),
+            ui: UiConfig::default(),
         };
 
         // Serialize and deserialize to test all theme variants

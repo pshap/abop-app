@@ -5,6 +5,11 @@ use hound;
 use thiserror::Error;
 use toml;
 
+pub mod macros;
+
+// Re-export commonly used macros and utilities
+pub use macros::*;
+
 /// Central error type for the ABOP application
 ///
 /// This enum represents all possible error cases that can occur in the core library,
