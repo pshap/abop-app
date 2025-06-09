@@ -21,12 +21,6 @@ pub fn column_width_to_length(width: &ColumnWidth) -> Length {
     }
 }
 
-/// Deprecated alias for backward compatibility
-#[deprecated(since = "0.1.0", note = "Use interaction_helpers::alignment_to_iced instead")]
-pub fn text_alignment_to_horizontal(align: TextAlignment) -> Horizontal {
-    interaction_helpers::alignment_to_iced(align)
-}
-
 /// Performance optimization helpers
 pub mod performance_helpers {
     /// Determine if virtual scrolling should be used based on data size
