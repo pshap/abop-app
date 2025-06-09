@@ -19,7 +19,7 @@ pub mod statistics;
 
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -88,7 +88,7 @@ struct DatabaseState {
 impl Database {
     /// Creates a new database connection with the specified configuration
     #[instrument(skip(config))]
-    pub async fn new(config: PoolConfig) -> Result<Self> {
+    pub fn new(config: PoolConfig) -> Result<Self> {
         let manager = SqliteConnectionManager::file(&config.path);
         let pool = Pool::builder()
             .max_size(config.max_connections as u32)
@@ -135,13 +135,14 @@ impl Database {
 
     /// Creates a new in-memory database for testing
     #[must_use = "Database should be used or an error handled"]
-    pub async fn in_memory() -> Result<Self> {
+    pub fn in_memory() -> Result<Self> {
         let config = PoolConfig {
             path: ":memory:".to_string(),
+            max_connections: 1,
             ..Default::default()
         };
 
-        Self::new(config).await
+        Self::new(config)
     }
     /// Initializes the database schema
     #[allow(dead_code)]
@@ -181,7 +182,7 @@ impl Database {
     }
     /// Adds a library to the database
     #[instrument(skip(self, library))]
-    pub async fn add_library(&self, library: &Library) -> Result<String> {
+    pub fn add_library(&self, library: &Library) -> Result<String> {
         let id = uuid::Uuid::new_v4().to_string();
         let library_name = library.name.clone();
         let library_path = library.path.to_string_lossy().to_string();
@@ -189,7 +190,7 @@ impl Database {
         let library_path_for_cache = library_path.clone();
 
         self.operations
-            .execute_async(move |conn| {
+            .execute(move |conn| {
                 conn.execute(
                     "INSERT INTO libraries (id, name, path) VALUES (?1, ?2, ?3)",
                     [
@@ -203,13 +204,11 @@ impl Database {
                 })?;
                 Ok(())
             })
-            .await
             .map_err(AppError::Database)?;
 
         // Update cache
         self.state
-            .lock()
-            .await
+            .blocking_lock()
             .library_cache
             .insert(library_path_for_cache, id.clone());
 
@@ -217,167 +216,150 @@ impl Database {
     }
     /// Gets a library ID from the database, using cache if available
     #[instrument(skip(self, path))]
-    async fn get_library_id(&self, path: &Path) -> Result<String> {
+    fn get_library_id(&self, path: &Path) -> Result<String> {
         let path_str = path.to_string_lossy().to_string();
 
         // Check cache first
-        if let Some(id) = self.state.lock().await.library_cache.get(&path_str) {
+        if let Some(id) = self.state.blocking_lock().library_cache.get(&path_str) {
             return Ok(id.clone());
         }
 
-        let path_str_clone = path_str.clone();
+        // Not in cache, query the database
+        let path_str_for_query = path_str.clone();
         let id = self
             .operations
-            .execute_async(move |conn| {
-                let mut stmt = conn
-                    .prepare("SELECT id FROM libraries WHERE path = ?1")
+            .execute(move |conn| {
+                let mut stmt = conn.prepare("SELECT id FROM libraries WHERE path = ?")?;
+                let id: Option<String> = stmt
+                    .query_row([&path_str_for_query], |row| row.get(0))
+                    .optional()
                     .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to prepare statement: {e}"),
-                    })?;
-
-                let id: String = stmt
-                    .query_row([&path_str_clone], |row| row.get(0))
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to get library id: {e}"),
-                    })?;
-
+                    message: format!("Failed to query library ID: {e}"),
+                })?;
                 Ok(id)
             })
-            .await
             .map_err(AppError::Database)?;
 
-        // Update cache
-        self.state
-            .lock()
-            .await
-            .library_cache
-            .insert(path_str, id.clone());
-
-        Ok(id)
+        if let Some(id) = id {
+            // Update cache
+            self.state
+                .blocking_lock()
+                .library_cache
+                .insert(path_str, id.clone());
+            Ok(id)
+        } else {
+            Err(AppError::Database(DatabaseError::NotFound {
+                entity: "Library".to_string(),
+                id: path_str,
+            }))
+        }
     }
     /// Adds an audiobook to the database
     #[instrument(skip(self, audiobook))]
-    pub async fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
-        let library_id = self
-            .get_library_id(audiobook.path.parent().unwrap())
-            .await?;
+    pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
+        let library_id = self.get_library_id(audiobook.path.parent().unwrap())?;
 
         let audiobook_clone = audiobook.clone();
-        self.operations.execute_async(move |conn| {
-            conn.execute(
-                "INSERT INTO audiobooks (id, library_id, path, title, author, narrator, description, duration_seconds, size_bytes, cover_art, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
-                 ON CONFLICT(library_id, path) DO UPDATE SET
-                    title = excluded.title,
-                    author = excluded.author,
-                    narrator = excluded.narrator,
-                    description = excluded.description,
-                    duration_seconds = excluded.duration_seconds,
-                    size_bytes = excluded.size_bytes,
-                    cover_art = excluded.cover_art,
-                    updated_at = excluded.updated_at",
-                [
-                    &audiobook_clone.id as &dyn rusqlite::ToSql,
-                    &library_id,
-                    &audiobook_clone.path.to_string_lossy().as_ref(),
-                    &audiobook_clone.title,
-                    &audiobook_clone.author,
-                    &audiobook_clone.narrator,
-                    &audiobook_clone.description,
-                    &audiobook_clone.duration_seconds.map(|d| d as i64),
-                    &audiobook_clone.size_bytes.map(|s| s as i64),
-                    &audiobook_clone.cover_art,
-                    &audiobook_clone.created_at.to_rfc3339(),
-                    &audiobook_clone.updated_at.to_rfc3339(),
-                ],
-            ).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to insert audiobook: {e}"),
-            })?;
+        let library_id_clone = library_id.clone();
+        self.operations
+            .execute(move |conn| {
+                let mut stmt = conn.prepare(
+                    "INSERT OR REPLACE INTO audiobooks 
+                (id, library_id, path, title, author, narrator, description, 
+                 duration_seconds, size_bytes, cover_art, created_at, updated_at) 
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                )?;
 
-            Ok(())
-        }).await.map_err(AppError::Database)?;
+                stmt.execute(rusqlite::params![
+                    audiobook_clone.id,
+                    library_id_clone,
+                    audiobook_clone.path.to_string_lossy(),
+                    audiobook_clone.title,
+                    audiobook_clone.author,
+                    audiobook_clone.narrator,
+                    audiobook_clone.description,
+                    audiobook_clone.duration_seconds.map(|d| d as i64),
+                    audiobook_clone.size_bytes.map(|s| s as i64),
+                    audiobook_clone.cover_art,
+                    audiobook_clone.created_at.to_rfc3339(),
+                    audiobook_clone.updated_at.to_rfc3339(),
+                ])
+                .map_err(|e| DatabaseError::ExecutionFailed {
+                    message: format!("Failed to insert audiobook: {e}"),
+                })?;
 
-        Ok(())
+                Ok(())
+            })
+            .map_err(AppError::Database)
     }
     /// Adds multiple audiobooks to the database in bulk
     #[instrument(skip(self, audiobooks))]
-    pub async fn add_audiobooks_bulk(&self, audiobooks: &[Audiobook]) -> Result<()> {
+    pub fn add_audiobooks_bulk(&self, audiobooks: &[Audiobook]) -> Result<()> {
         if audiobooks.is_empty() {
             return Ok(());
         }
 
-        // Group audiobooks by library for efficient bulk insert
-        let mut library_audiobooks = std::collections::HashMap::new();
+        // Group audiobooks by library path and collect owned data
+        let mut library_groups: std::collections::HashMap<PathBuf, Vec<Audiobook>> = std::collections::HashMap::new();
         for audiobook in audiobooks {
-            let library_path = audiobook.path.parent().unwrap();
-            library_audiobooks
-                .entry(library_path.to_path_buf())
+            let library_path = audiobook.path.parent().unwrap().to_path_buf();
+            library_groups
+                .entry(library_path)
                 .or_insert_with(Vec::new)
                 .push(audiobook.clone());
         }
 
-        // Process each library's audiobooks in bulk using new operations
-        for (library_path, books) in library_audiobooks {
-            let library_id = self.get_library_id(&library_path).await?;
+        // Process each library's audiobooks
+        for (library_path, audiobooks_for_library) in library_groups {
+            let library_id = self.get_library_id(&library_path)?;
 
-            // Use the bulk operations from DatabaseOperations
-            self.operations.execute_transaction_async(move |tx| {
+            self.operations.execute_transaction(move |tx| {
                 let mut stmt = tx.prepare(
-                    "INSERT INTO audiobooks (id, library_id, path, title, author, narrator, description, duration_seconds, size_bytes, cover_art, created_at, updated_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
-                     ON CONFLICT(library_id, path) DO UPDATE SET
-                        title = excluded.title,
-                        author = excluded.author,
-                        narrator = excluded.narrator,
-                        description = excluded.description,
-                        duration_seconds = excluded.duration_seconds,
-                        size_bytes = excluded.size_bytes,
-                        cover_art = excluded.cover_art,
-                        updated_at = excluded.updated_at",
-                ).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to prepare statement: {e}"),
-                })?;
+                    "INSERT OR REPLACE INTO audiobooks 
+                    (id, library_id, path, title, author, narrator, description, 
+                     duration_seconds, size_bytes, cover_art, created_at, updated_at) 
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                )?;
 
-                for audiobook in &books {
-                    stmt.execute([
-                        &audiobook.id as &dyn rusqlite::ToSql,
+                for audiobook in &audiobooks_for_library {
+                    stmt.execute(rusqlite::params![
+                        audiobook.id,
                         &library_id,
-                        &audiobook.path.to_string_lossy().as_ref(),
+                        audiobook.path.to_string_lossy(),
                         &audiobook.title,
                         &audiobook.author,
                         &audiobook.narrator,
                         &audiobook.description,
-                        &audiobook.duration_seconds.map(|d| d as i64),
-                        &audiobook.size_bytes.map(|s| s as i64),
+                        audiobook.duration_seconds.map(|d| d as i64),
+                        audiobook.size_bytes.map(|s| s as i64),
                         &audiobook.cover_art,
-                        &audiobook.created_at.to_rfc3339(),
-                        &audiobook.updated_at.to_rfc3339(),
+                        audiobook.created_at.to_rfc3339(),
+                        audiobook.updated_at.to_rfc3339(),
                     ])
                     .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to execute statement: {e}"),
+                        message: format!("Failed to insert audiobook: {e}"),
                     })?;
                 }
 
                 Ok(())
-            }).await.map_err(AppError::Database)?;
+            })?;
         }
 
         Ok(())
     }
     /// Gets all audiobooks from a library
     #[instrument(skip(self, library_path))]
-    pub async fn get_audiobooks(&self, library_path: &Path) -> Result<Vec<Audiobook>> {
-        let library_id = self.get_library_id(library_path).await?;
+    pub fn get_audiobooks(&self, library_path: &Path) -> Result<Vec<Audiobook>> {
+        let library_id = self.get_library_id(library_path)?;
 
-        let audiobooks = self
-            .operations
-            .execute_async(move |conn| {
+        self.operations
+            .execute_query(move |conn| {
                 let mut stmt = conn
                     .prepare(&SqlQueries::audiobook_select(Some(
                         "library_id = ?1 ORDER BY title",
                     )))
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to prepare statement: {e}"),
+                    .map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}"))
                     })?;
 
                 let rows = stmt
@@ -391,8 +373,8 @@ impl Database {
                             )),
                         }
                     })
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to execute query: {e}"),
+                    .map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to execute query: {e}"))
                     })?;
 
                 let mut audiobooks = Vec::new();
@@ -400,71 +382,69 @@ impl Database {
                     match row {
                         Ok(audiobook) => audiobooks.push(audiobook),
                         Err(e) => {
-                            return Err(DatabaseError::ExecutionFailed {
-                                message: format!("Failed to process row: {e}"),
-                            });
+                            return Err(DatabaseError::execution_failed(&format!(
+                                "Failed to process row: {e}"
+                            )));
                         }
                     }
                 }
 
                 Ok(audiobooks)
             })
-            .await
-            .map_err(AppError::Database)?;
-
-        Ok(audiobooks)
+            .map_err(AppError::Database)
     }
     /// Gets a single audiobook by path
     #[instrument(skip(self, path))]
-    pub async fn get_audiobook(&self, path: &Path) -> Result<Option<Audiobook>> {
-        let path_str = path.to_string_lossy().to_string();
-
-        let result = self
-            .operations
-            .execute_async(move |conn| {
-                let mut stmt = conn
-                    .prepare(&SqlQueries::audiobook_select(Some("path = ?1")))
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to prepare statement: {e}"),
-                    })?;
-
-                match stmt.query_row([&path_str], |row| {
-                    match RowMappers::audiobook_from_row(row) {
-                        Ok(audiobook) => Ok(audiobook),
-                        Err(_) => Err(rusqlite::Error::InvalidColumnType(
-                            0,
-                            "mapping failed".to_string(),
-                            rusqlite::types::Type::Null,
-                        )),
-                    }
-                }) {
-                    Ok(audiobook) => Ok(Some(audiobook)),
-                    Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-                    Err(e) => Err(DatabaseError::ExecutionFailed {
-                        message: format!("Failed to get audiobook: {e}"),
-                    }),
-                }
-            })
-            .await
-            .map_err(AppError::Database)?;
-
-        Ok(result)
-    }
-    /// Deletes an audiobook from the database
-    #[instrument(skip(self, path))]
-    pub async fn delete_audiobook(&self, path: &Path) -> Result<()> {
+    pub fn get_audiobook(&self, path: &Path) -> Result<Option<Audiobook>> {
         let path_str = path.to_string_lossy().to_string();
 
         self.operations
-            .execute_async(move |conn| {
+            .execute_query(move |conn| {
+                let mut stmt = conn
+                    .prepare(&SqlQueries::audiobook_select(Some("path = ?1")))
+                    .map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}"))
+                    })?;
+
+                let mut rows = stmt
+                    .query_map([&path_str], |row| {
+                        match RowMappers::audiobook_from_row(row) {
+                            Ok(audiobook) => Ok(audiobook),
+                            Err(_) => Err(rusqlite::Error::InvalidColumnType(
+                                0,
+                                "mapping failed".to_string(),
+                                rusqlite::types::Type::Null,
+                            )),
+                        }
+                    })
+                    .map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to execute query: {e}"))
+                    })?;
+
+                match rows.next() {
+                    Some(Ok(audiobook)) => Ok(Some(audiobook)),
+                    Some(Err(e)) => Err(DatabaseError::execution_failed(&format!(
+                        "Failed to process row: {e}"
+                    ))),
+                    None => Ok(None),
+                }
+            })
+            .map_err(AppError::Database)
+    }
+    /// Deletes an audiobook from the database
+    #[instrument(skip(self, path))]
+    pub fn delete_audiobook(&self, path: &Path) -> Result<()> {
+        let path_str = path.to_string_lossy().to_string();
+
+        self.operations
+            .execute(move |conn| {
                 conn.execute("DELETE FROM audiobooks WHERE path = ?1", [&path_str])
-                    .map_err(|e| DatabaseError::ExecutionFailed {
-                        message: format!("Failed to delete audiobook: {e}"),
+                    .map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to delete audiobook: {e}"))
                     })?;
 
                 Ok(())
             })
-            .await
             .map_err(AppError::Database)?;
 
         Ok(())
@@ -472,22 +452,23 @@ impl Database {
 
     /// Deletes all audiobooks from a library
     #[instrument(skip(self, library_path))]
-    pub async fn delete_library_audiobooks(&self, library_path: &Path) -> Result<()> {
-        let library_id = self.get_library_id(library_path).await?;
+    pub fn delete_library_audiobooks(&self, library_path: &Path) -> Result<()> {
+        let library_id = self.get_library_id(library_path)?;
 
         self.operations
-            .execute_async(move |conn| {
+            .execute(move |conn| {
                 conn.execute(
                     "DELETE FROM audiobooks WHERE library_id = ?1",
                     [&library_id],
                 )
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to delete library audiobooks: {e}"),
+                .map_err(|e| {
+                    DatabaseError::execution_failed(&format!(
+                        "Failed to delete library audiobooks: {e}"
+                    ))
                 })?;
 
                 Ok(())
             })
-            .await
             .map_err(AppError::Database)?;
 
         Ok(())
@@ -527,13 +508,13 @@ impl Database {
     }
 
     /// Opens a database at the specified path
-    pub async fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         let config = PoolConfig {
             path: path.as_ref().to_string_lossy().to_string(),
             ..Default::default()
         };
 
-        Self::new(config).await
+        Self::new(config)
     }
 
     /// Gets all libraries from the database
@@ -556,10 +537,34 @@ impl Database {
         self.library_repository()
     }
 
-    /// Create a new library and add it to the database
+    /// Finds a library by its path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database operation fails
+    pub fn find_library_by_path<P: AsRef<Path>>(&self, path: P) -> Result<Option<Library>> {
+        let repo = self.library_repository();
+        repo.find_by_path(path).map_err(AppError::from)
+    }
+
+    /// Create a new library and add it to the database if it doesn't already exist
+    ///
+    /// If a library with the same path already exists, returns the ID of the existing library.
+    /// Otherwise, creates a new library and returns its ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database operation fails
     #[instrument(skip(self))]
-    pub async fn add_library_with_path(&self, name: &str, path: PathBuf) -> Result<String> {
+    pub fn add_library_with_path(&self, name: &str, path: PathBuf) -> Result<String> {
+        // First check if a library with this path already exists
+        if let Some(existing) = self.find_library_by_path(&path)? {
+            debug!("Library already exists at path: {}", path.display());
+            return Ok(existing.id);
+        }
+
+        // If not, create a new library
         let library = Library::new(name, path);
-        self.add_library(&library).await
+        self.add_library(&library)
     }
 }

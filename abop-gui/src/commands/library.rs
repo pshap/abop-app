@@ -63,9 +63,10 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
             // Move all DB operations into the async task
             Some(Task::perform(
                 async move {
-                    // Open DB asynchronously
-                    let db = match Database::open(&db_path).await {
-                        Ok(db) => db,
+                    // Open DB synchronously in a blocking task
+                    let db = match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
+                        Ok(Ok(db)) => db,
+                        Ok(Err(e)) => return Err(e.to_string()),
                         Err(e) => return Err(e.to_string()),
                     };
 
@@ -76,7 +77,6 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                             // Create library and then fetch the actual Library struct
                             let library_id = match db
                                 .add_library_with_path("Default Library", library_path.clone())
-                                .await
                             {
                                 Ok(lib_id) => lib_id,
                                 Err(e) => return Err(e.to_string()),

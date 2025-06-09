@@ -5,9 +5,7 @@
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
-use tokio::sync::Semaphore;
 use tracing::warn;
 use walkdir::WalkDir;
 
@@ -27,8 +25,6 @@ use crate::{
 pub struct CoreScanner {
     /// Configuration for scanning operations
     config: ScannerConfig,
-    /// Semaphore to limit concurrent operations
-    semaphore: Arc<Semaphore>,
 }
 
 impl CoreScanner {
@@ -36,56 +32,33 @@ impl CoreScanner {
     #[must_use]
     pub fn new() -> Self {
         let config = ScannerConfig::default();
-        let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-
-        Self { config, semaphore }
+        Self { config }
     }
 
     /// Creates a new core scanner with custom configuration
     #[must_use]
     pub fn with_config(config: ScannerConfig) -> Self {
-        let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
-
-        Self { config, semaphore }
+        Self { config }
     }
 
-    /// Discovers all audio files in a directory
-    pub async fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
-        let path = path.to_path_buf();
-        let extensions = self.config.extensions.clone();
-
-        tokio::task::spawn_blocking(move || Self::find_audio_files_in_path(&path, &extensions))
-            .await
-            .map_err(|e| {
-                warn!("Failed to discover audio files: {}", e);
-                crate::scanner::error::ScanError::Io(std::io::Error::other(format!(
-                    "File discovery failed: {e}"
-                )))
-            })
+    /// Discovers all audio files in a directory (synchronous)
+    pub fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
+        let extensions = &self.config.extensions;
+        Ok(Self::find_audio_files_in_path(path, extensions))
     }
 
-    /// Extracts metadata from an audio file
-    pub async fn extract_metadata(&self, library_id: &str, path: &Path) -> Result<Audiobook> {
-        // Acquire semaphore permit to limit concurrent operations
-        let _permit = self.semaphore.acquire().await.map_err(|_| {
-            crate::error::AppError::Threading("Semaphore acquisition failed".to_string())
-        })?;
-
+    /// Extracts metadata from an audio file (synchronous)
+    pub fn extract_metadata(&self, library_id: &str, path: &Path) -> Result<Audiobook> {
         Self::extract_audiobook_metadata(library_id, path)
     }
 
-    /// Extracts metadata with performance monitoring
-    pub async fn extract_metadata_with_monitoring(
+    /// Extracts metadata with performance monitoring (synchronous)
+    pub fn extract_metadata_with_monitoring(
         &self,
         library_id: &str,
         path: &Path,
         monitor: Option<&PerformanceMonitor>,
     ) -> Result<Audiobook> {
-        // Acquire semaphore permit to limit concurrent operations
-        let _permit = self.semaphore.acquire().await.map_err(|_| {
-            crate::error::AppError::Threading("Semaphore acquisition failed".to_string())
-        })?;
-
         let start_time = std::time::Instant::now();
         let _timer = monitor.map(|m| {
             m.start_operation(
@@ -202,8 +175,8 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    #[tokio::test]
-    async fn test_discover_files() {
+    #[test]
+    fn test_discover_files() {
         let temp_dir = tempdir().unwrap();
         let test_files = ["test.mp3", "test.m4b", "test.txt", "test.flac"];
 
@@ -215,7 +188,7 @@ mod tests {
         }
 
         let scanner = CoreScanner::new();
-        let files = scanner.discover_files(temp_dir.path()).await.unwrap();
+        let files = scanner.discover_files(temp_dir.path()).unwrap();
 
         // Should find audio files but not txt
         assert!(files.len() >= 3);

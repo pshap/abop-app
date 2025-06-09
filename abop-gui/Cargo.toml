@@ -11,6 +11,9 @@ repository.workspace = true
 # Internal dependencies
 abop-core = { path = "../abop-core" }
 
+# Async runtime and futures
+futures = "0.3"
+
 # Iced with required features
 iced = { version = "0.13.1", features = [
     "canvas",

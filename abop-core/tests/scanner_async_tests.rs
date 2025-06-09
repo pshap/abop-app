@@ -1,15 +1,15 @@
 //! Comprehensive async tests for the LibraryScanner implementation
 //!
-//! These tests cover async behavior, cancellation scenarios, timeout handling,
-//! and error recovery that are specific to the new async implementation.
+//! These tests cover the async wrapper functionality that integrates the synchronous
+//! core scanner with asynchronous GUI operations.
 
 use abop_core::{
     db::Database,
     models::Library,
     scanner::{
-        LibraryScanner, ScanOptions, ScanProgress, ScannerConfig,
+        LibraryScanner, ScanOptions, ScanProgress,
         error::ScanError,
-        progress::{ChannelReporter, ProgressReporter},
+        progress::ProgressReporter,
     },
 };
 use std::time::Duration;
@@ -22,16 +22,37 @@ mod async_scanner_tests {
     use super::*;
 
     #[tokio::test]
+    async fn test_async_scan_wrapper() {
+        let temp_dir = tempdir().unwrap();
+        let db = Database::open(":memory:").unwrap(); // Now synchronous
+        let library = Library::new("Test Library", temp_dir.path());
+
+        let scanner = LibraryScanner::new(db, library);
+        
+        // Test the async wrapper around the sync core
+        let result = scanner.scan_async(ScanOptions::default()).await;
+        assert!(result.is_ok());
+        
+        let summary = result.unwrap();
+        assert_eq!(summary.new_files.len(), 0); // Empty directory
+        assert_eq!(summary.errors, 0);
+    }
+
+    #[tokio::test]
     async fn test_async_scan_with_progress() {
         let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").await.unwrap();
+        let db = Database::open(":memory:").unwrap(); // Now synchronous
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
         let (tx, mut rx) = mpsc::channel(100);
 
-        // Start scan with progress reporting
-        let scan_task = tokio::spawn(async move { scanner.scan_with_progress(tx).await }); // Collect progress updates
+        // Start scan with progress reporting using async wrapper
+        let scan_task = tokio::spawn(async move { 
+            scanner.scan_with_progress_async(ScanOptions::default(), tx).await 
+        });
+
+        // Collect progress updates
         let mut progress_updates = Vec::new();
         while let Some(progress) = rx.recv().await {
             let is_complete = matches!(progress, ScanProgress::Complete { .. });
@@ -44,11 +65,12 @@ mod async_scanner_tests {
         let result = scan_task.await.unwrap();
         assert!(result.is_ok());
 
-        // Should have at least Started and Complete events
+        // Should have at least Started and Complete events for empty directory
         assert!(!progress_updates.is_empty());
-        assert!(matches!(progress_updates[0], ScanProgress::Started { .. }));
-        assert!(matches!(
-            progress_updates.last().unwrap(),
+        if !progress_updates.is_empty() {
+            assert!(matches!(progress_updates[0], ScanProgress::Started { .. }));
+            assert!(matches!(
+                progress_updates.last().unwrap(),
             ScanProgress::Complete { .. }
         ));
     }
