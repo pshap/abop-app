@@ -61,7 +61,7 @@ mod tests {
         } else {
             "/test/library"
         };
-        
+
         let library = Library::new("Test Library", test_path);
         assert_eq!(library.name, "Test Library");
         assert_eq!(library.path, Path::new(test_path));
@@ -75,7 +75,7 @@ mod tests {
         } else {
             "/some/path"
         };
-        
+
         let library = Library::new("My Library", test_path);
         assert_eq!(library.display_name(), "My Library");
     }
