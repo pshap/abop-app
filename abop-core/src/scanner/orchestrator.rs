@@ -109,6 +109,8 @@ impl ScanOrchestrator {
 
     /// Performs a complete scan operation (synchronous)
     pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
+        log::warn!("🔍 SCAN ORCHESTRATOR: Starting scan for library '{}' with path: '{}'", 
+                   self.library.name, self.library.path.display());
         let start_time = Instant::now();
 
         // Discover all audio files

@@ -71,13 +71,24 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                             Err(e) => return Err(e.to_string()),
                         };
 
-                    // Look up or create library
-                    let library = match db.libraries().find_by_name("Default Library") {
-                        Ok(Some(lib)) => lib,
+                    // Look up or create library based on the selected path
+                    let library = match db.libraries().find_by_path(&library_path) {
+                        Ok(Some(lib)) => {
+                            log::warn!("🔍 LIBRARY COMMAND: Found existing library '{}' with path: '{}'", 
+                                      lib.name, lib.path.display());
+                            lib
+                        },
                         Ok(None) => {
+                            log::warn!("🔍 LIBRARY COMMAND: Creating new library with path: '{}'", library_path.display());
+                            // Create a library name based on the directory name
+                            let library_name = library_path
+                                .file_name()
+                                .and_then(|name| name.to_str())
+                                .unwrap_or("Audiobook Library");
+                            
                             // Create library and then fetch the actual Library struct
                             let library_id = match db
-                                .add_library_with_path("Default Library", library_path.clone())
+                                .add_library_with_path(library_name, library_path.clone())
                             {
                                 Ok(lib_id) => lib_id,
                                 Err(e) => return Err(e.to_string()),
@@ -85,7 +96,11 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
 
                             // Now get the actual Library struct
                             match db.libraries().find_by_id(&library_id) {
-                                Ok(Some(lib)) => lib,
+                                Ok(Some(lib)) => {
+                                    log::warn!("🔍 LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'", 
+                                              lib.name, lib.path.display());
+                                    lib
+                                },
                                 Ok(None) => {
                                     return Err("Library not found after creation".to_string());
                                 }
