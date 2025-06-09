@@ -15,7 +15,7 @@ pub struct ChannelMixerConfig {
 impl Default for ChannelMixerConfig {
     fn default() -> Self {
         Self {
-            target_channels: Some(2), // Stereo
+            target_channels: Some(1), // Mono (stereo to mono conversion only)
             mix_algorithm: MixingAlgorithm::Average,
         }
     }

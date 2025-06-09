@@ -1,7 +1,6 @@
 //! Audio channel mixing and conversion functionality
 //!
-//! This module provides channel conversion between mono and stereo audio,
-//! including upmixing mono to stereo and downmixing stereo to mono.
+//! This module provides channel conversion from stereo to mono audio only.
 
 use super::{
     config::ChannelMixerConfig,
@@ -28,9 +27,9 @@ pub enum ChannelMixerError {
     ProcessingError(String),
 }
 
-/// Audio channel mixer for converting between different channel configurations
+/// Audio channel mixer for converting stereo to mono
 ///
-/// Supports conversion between mono and stereo audio formats using
+/// Supports conversion from stereo to mono audio formats using
 /// various mixing algorithms.
 #[derive(Debug, Clone)]
 pub struct ChannelMixer {
@@ -75,7 +74,6 @@ impl ChannelMixer {
         );
 
         match (buffer.channels, target_channels) {
-            (1, 2) => Self::mono_to_stereo(buffer),
             (2, 1) => self.stereo_to_mono(buffer),
             _ => Err(AudioProcessingError::ChannelMixer(format!(
                 "Unsupported channel conversion: {} -> {}",
@@ -84,34 +82,7 @@ impl ChannelMixer {
         }
     }
 
-    /// Converts mono audio to stereo by duplicating the mono channel
-    fn mono_to_stereo(buffer: &mut AudioBuffer<f32>) -> Result<()> {
-        if buffer.channels != 1 {
-            return Err(AudioProcessingError::ChannelMixer(
-                "Buffer must be mono for mono-to-stereo conversion".to_string(),
-            ));
-        }
-
-        // TODO: Implement SIMD optimization for mono-to-stereo conversion
-        // - Process 8 mono samples at a time using f32x8 vectors
-        // - Load mono vector and duplicate to create left and right vectors
-        // - Interleave the vectors to create stereo output
-        // - Use SIMD shuffle operations for efficient interleaving
-        // - Handle remainder samples with scalar code
-        // - Should double processing speed for large mono buffers
-
-        let mut new_data = Vec::with_capacity(buffer.data.len() * 2);
-
-        for &sample in &buffer.data {
-            // Duplicate mono sample to both channels
-            new_data.push(sample);
-            new_data.push(sample);
-        }
-
-        buffer.data = new_data;
-        buffer.channels = 2;
-        Ok(())
-    }
+    // Mono to stereo conversion has been removed as per requirements
 
     /// Converts stereo audio to mono using the configured mixing algorithm
     fn stereo_to_mono(&self, buffer: &mut AudioBuffer<f32>) -> Result<()> {
@@ -250,19 +221,7 @@ mod tests {
         assert!(mixer.is_ok());
     }
 
-    #[test]
-    fn test_mono_to_stereo() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
-        let mut mixer = ChannelMixer::new(ChannelMixerConfig {
-            target_channels: Some(2),
-            ..Default::default()
-        })
-        .unwrap();
-
-        let result = mixer.process(&mut buffer);
-        assert!(result.is_ok());
-        assert_eq!(buffer.channels, 2);
-    }
+    // Mono to stereo test removed as per requirements
 
     #[test]
     fn test_stereo_to_mono() {

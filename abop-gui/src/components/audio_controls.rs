@@ -108,7 +108,7 @@ impl AudioControls {
                     column![
                         text("Processing Options").size(18),
                         row![
-                            text("Mono Conversion:"),
+                            text("Stereo to Mono:"),
                             text("Converts stereo audio to mono, reducing file size.")
                         ]
                         .spacing(material_tokens.spacing().md)
