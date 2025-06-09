@@ -214,7 +214,7 @@ impl<T: Clone + Default> AudioBufferPool<T> {
     #[must_use]
     pub fn new(pool_size: usize, buffer_capacity: usize) -> Self {
         let mut buffers = Vec::with_capacity(pool_size);
-        
+
         // Pre-allocate buffers with the specified capacity
         for _ in 0..pool_size {
             let mut data = Vec::with_capacity(buffer_capacity);
@@ -222,7 +222,7 @@ impl<T: Clone + Default> AudioBufferPool<T> {
             data.resize(buffer_capacity, T::default());
             // Clear to keep capacity but remove elements
             data.clear();
-            
+
             buffers.push(AudioBuffer::new(
                 data,
                 SampleFormat::F32, // Default format, will be overridden when used
@@ -230,13 +230,13 @@ impl<T: Clone + Default> AudioBufferPool<T> {
                 2,                 // Default channels, will be overridden when used
             ));
         }
-        
+
         Self {
             buffers: Arc::new(Mutex::new(buffers)),
             buffer_capacity,
         }
     }
-    
+
     /// Acquires a buffer from the pool, or creates a new one if none are available
     ///
     /// # Returns
@@ -244,14 +244,14 @@ impl<T: Clone + Default> AudioBufferPool<T> {
     /// An `AudioBuffer<T>` that can be used for processing
     pub fn acquire(&self) -> AudioBuffer<T> {
         // Try to get a buffer from the pool
-        if let Ok(mut buffers) = self.buffers.lock() {
-            if let Some(mut buffer) = buffers.pop() {
-                // Clear any existing data but keep capacity
-                buffer.data.clear();
-                return buffer;
-            }
+        if let Ok(mut buffers) = self.buffers.lock()
+            && let Some(mut buffer) = buffers.pop()
+        {
+            // Clear any existing data but keep capacity
+            buffer.data.clear();
+            return buffer;
         }
-        
+
         // If we couldn't get a buffer from the pool, create a new one
         AudioBuffer::new(
             Vec::with_capacity(self.buffer_capacity),
@@ -260,7 +260,7 @@ impl<T: Clone + Default> AudioBufferPool<T> {
             2,                 // Default channels, will be overridden when used
         )
     }
-    
+
     /// Releases a buffer back to the pool
     ///
     /// # Arguments
@@ -269,7 +269,7 @@ impl<T: Clone + Default> AudioBufferPool<T> {
     pub fn release(&self, mut buffer: AudioBuffer<T>) {
         // Clear the buffer data but keep capacity
         buffer.data.clear();
-        
+
         // Return the buffer to the pool
         if let Ok(mut buffers) = self.buffers.lock() {
             buffers.push(buffer);

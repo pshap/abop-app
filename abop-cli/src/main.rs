@@ -8,8 +8,8 @@ use abop_core::{
 };
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use log::{debug, error, info, warn};
-use std::path::{Path, PathBuf};
+use log::{debug, info, warn};
+use std::path::PathBuf;
 use std::time::Instant;
 
 /// Command line arguments for ABOP CLI

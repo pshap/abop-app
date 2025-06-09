@@ -155,7 +155,7 @@ impl LibraryScanner {
                 tokio::task::spawn_blocking(move || scanner.scan_sync())
                     .await
                     .map_err(|e| {
-                        crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
+                        crate::error::AppError::Threading(format!("Scan task panicked: {e}"))
                     })?
             },
             |result| result,
@@ -176,7 +176,7 @@ impl LibraryScanner {
                 tokio::task::spawn_blocking(move || scanner.scan_with_progress_sync(progress_tx))
                     .await
                     .map_err(|e| {
-                        crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
+                        crate::error::AppError::Threading(format!("Scan task panicked: {e}"))
                     })?
             },
             |result| result,
@@ -190,9 +190,7 @@ impl LibraryScanner {
 
         tokio::task::spawn_blocking(move || scanner.scan(options))
             .await
-            .map_err(|e| {
-                crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
-            })?
+            .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}")))?
     }
 
     /// Performs an async scan with progress reporting via channel
@@ -220,7 +218,7 @@ impl LibraryScanner {
             orchestrator.scan(scan_options)
         })
         .await
-        .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}").into()))?
+        .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}")))?
     }
 
     /// Creates an orchestrator with the current scanner configuration
