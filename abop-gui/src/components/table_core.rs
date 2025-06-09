@@ -21,7 +21,7 @@ pub struct AudiobookTable;
 impl AudiobookTable {
     /// Create default configuration for audiobook table
     #[must_use]
-    pub const fn default_config() -> data::DataTableConfig {
+    pub fn default_config() -> data::DataTableConfig {
         data::DataTableConfig {
             selectable: true,
             hoverable: true,
@@ -33,6 +33,8 @@ impl AudiobookTable {
             resizable_columns: false,
             min_column_width: 120.0,
             density: data::TableDensity::Standard,
+            // Use Default for the remaining fields
+            ..Default::default()
         }
     }
 
