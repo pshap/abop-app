@@ -149,33 +149,58 @@ impl CoreScanner {
 
     /// Internal helper to extract audiobook metadata (pure function)
     fn extract_audiobook_metadata(library_id: &str, path: &Path) -> Result<Audiobook> {
-        let metadata = AudioMetadata::from_file(path).map_err(|e| {
-            warn!("Error reading metadata for {}: {}", path.display(), e);
-            e
-        })?;
+        // Try to extract metadata, but fall back to basic file info if it fails
+        let metadata = match AudioMetadata::from_file(path) {
+            Ok(metadata) => Some(metadata),
+            Err(e) => {
+                // Check if this is a common expected error that shouldn't be treated as fatal
+                let error_msg = e.to_string();
+                if error_msg.contains("end of stream") || 
+                   error_msg.contains("Failed to probe audio format") ||
+                   error_msg.contains("unsupported format") {
+                    warn!("Unable to extract metadata from {}, using filename fallback: {}", path.display(), e);
+                    None // Use fallback instead of failing
+                } else {
+                    // For other errors, still fail as these might indicate real issues
+                    warn!("Error reading metadata for {}: {}", path.display(), e);
+                    return Err(e);
+                }
+            }
+        };
 
         let mut audiobook = Audiobook::new(library_id, path);
-        audiobook.title = Some(metadata.title.unwrap_or_else(|| {
-            path.file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("Unknown Title")
-                .to_string()
-        }));
-        audiobook.author = metadata.artist;
-        audiobook.narrator = metadata.narrator;
-        audiobook.duration_seconds = metadata.duration_seconds.map(|d| {
-            if d.is_nan() || d < 0.0 {
-                0
-            } else {
-                // Safely convert f64 to u64 with explicit bounds checking
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                let duration = d.round().clamp(0.0, f64::from(u32::MAX)) as u64;
-                duration
-            }
-        });
+        
+        // Extract title - prefer metadata, fall back to filename
+        audiobook.title = Some(
+            metadata
+                .as_ref()
+                .and_then(|m| m.title.clone())
+                .unwrap_or_else(|| {
+                    path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("Unknown Title")
+                        .to_string()
+                })
+        );
+        
+        // Set other metadata fields if available
+        if let Some(ref meta) = metadata {
+            audiobook.author = meta.artist.clone();
+            audiobook.narrator = meta.narrator.clone();
+            audiobook.duration_seconds = meta.duration_seconds.map(|d| {
+                if d.is_nan() || d < 0.0 {
+                    0
+                } else {
+                    // Safely convert f64 to u64 with explicit bounds checking
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    let duration = d.round().clamp(0.0, f64::from(u32::MAX)) as u64;
+                    duration
+                }
+            });
 
-        if let Some(cover_art) = metadata.cover_art {
-            audiobook.cover_art = Some(cover_art);
+            if let Some(cover_art) = &meta.cover_art {
+                audiobook.cover_art = Some(cover_art.clone());
+            }
         }
 
         // Set file size for metadata completeness

@@ -8,7 +8,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 use std::time::Instant;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{
     db::Database,
@@ -169,7 +169,14 @@ impl ScanOrchestrator {
                         batch_audiobooks.push(audiobook);
                     }
                     Err(e) => {
-                        error!("Error processing file {}: {}", path.display(), e);
+                        // Categorize errors for better logging
+                        let error_msg = e.to_string();
+                        if error_msg.contains("end of stream") || 
+                           error_msg.contains("Failed to probe audio format") {
+                            warn!("Skipping file with unreadable format {}: {}", path.display(), e);
+                        } else {
+                            error!("Error processing file {}: {}", path.display(), e);
+                        }
                         error_count += 1;
                     }
                 }

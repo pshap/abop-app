@@ -23,6 +23,9 @@ fn default_use_native_dialogs() -> bool { true }
 fn default_confirm_destructive_actions() -> bool { true }
 fn default_items_per_page() -> usize { 50 }
 fn default_show_progress_bars() -> bool { true }
+fn default_show_file_warnings() -> bool { true }
+fn default_continue_on_errors() -> bool { true }
+fn default_max_error_display() -> usize { 10 }
 
 /// Window appearance and behavior settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -114,6 +117,30 @@ impl Default for UiConfig {
             confirm_destructive_actions: true,
             items_per_page: 50,
             show_progress_bars: true,
+        }
+    }
+}
+
+/// Scanner behavior and error handling preferences
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScannerConfig {
+    /// Whether to show warnings for files that can't be read
+    #[serde(default = "default_show_file_warnings")]
+    pub show_file_warnings: bool,
+    /// Whether to continue scanning after errors
+    #[serde(default = "default_continue_on_errors")]
+    pub continue_on_errors: bool,
+    /// Maximum number of errors to show in UI before grouping
+    #[serde(default = "default_max_error_display")]
+    pub max_error_display: usize,
+}
+
+impl Default for ScannerConfig {
+    fn default() -> Self {
+        Self {
+            show_file_warnings: true,
+            continue_on_errors: true,
+            max_error_display: 10,
         }
     }
 }
@@ -276,6 +303,35 @@ impl ConfigValidation for UiConfig {
     }
 }
 
+impl ConfigValidation for ScannerConfig {
+    fn validate(&self) -> ValidationResult {
+        let mut result = ValidationResult::new();
+
+        // Validate max error display
+        if self.max_error_display == 0 {
+            result.add_warning(
+                "max_error_display",
+                "max_error_display should be greater than 0",
+                Some("Setting max_error_display to 10"),
+            );
+        }
+
+        result
+    }
+
+    fn validate_and_fix(&mut self) -> ValidationResult {
+        let mut result = ValidationResult::new();
+
+        // Auto-fix max error display (if zero or invalid)
+        if self.max_error_display == 0 {
+            self.max_error_display = 10;
+            result.add_warning("max_error_display", "Automatically set max_error_display to 10", None);
+        }
+
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -342,5 +398,33 @@ mod tests {
         assert_eq!(config.scale_factor, 4.0); // Should be auto-fixed
         assert_eq!(config.animation_speed, 0.0); // Should be auto-fixed
         assert_eq!(config.items_per_page, 50); // Should be auto-fixed
+    }
+
+    #[test]
+    fn test_scanner_config_default() {
+        let config = ScannerConfig::default();
+        assert!(config.show_file_warnings);
+        assert!(config.continue_on_errors);
+        assert_eq!(config.max_error_display, 10);
+    }
+
+    #[test]
+    fn test_scanner_config_validation() {
+        let mut config = ScannerConfig::default();
+        config.max_error_display = 0; // Invalid
+
+        let result = config.validate();
+        assert!(result.has_warnings());
+        assert_eq!(result.warnings.len(), 1);
+    }
+
+    #[test]
+    fn test_scanner_config_validate_and_fix() {
+        let mut config = ScannerConfig::default();
+        config.max_error_display = 0; // Invalid
+
+        let result = config.validate_and_fix();
+        assert!(result.has_warnings());
+        assert_eq!(config.max_error_display, 10); // Should be auto-fixed
     }
 }
