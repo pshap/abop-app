@@ -57,6 +57,9 @@ impl TableHeader {
         let width = match column.width {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::Fill(factor) => Length::FillPortion(factor),
+            data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
+            data::ColumnWidth::Auto => Length::Shrink,
+            data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
             data::ColumnWidth::Shrink | data::ColumnWidth::FitContent => Length::Shrink, // FitContent behaves like Shrink in Iced
         };
 
