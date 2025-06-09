@@ -21,8 +21,7 @@ use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tracing::{debug, info, instrument};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
@@ -211,7 +210,8 @@ impl Database {
 
         // Update cache
         self.state
-            .blocking_lock()
+            .lock()
+            .unwrap()
             .library_cache
             .insert(library_path_for_cache, id.clone());
 
@@ -223,7 +223,7 @@ impl Database {
         let path_str = path.to_string_lossy().to_string();
 
         // Check cache first
-        if let Some(id) = self.state.blocking_lock().library_cache.get(&path_str) {
+        if let Some(id) = self.state.lock().unwrap().library_cache.get(&path_str) {
             return Ok(id.clone());
         }
 
@@ -246,7 +246,8 @@ impl Database {
         if let Some(id) = id {
             // Update cache
             self.state
-                .blocking_lock()
+                .lock()
+                .unwrap()
                 .library_cache
                 .insert(path_str, id.clone());
             Ok(id)
