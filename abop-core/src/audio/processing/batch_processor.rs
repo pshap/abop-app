@@ -3,8 +3,8 @@
 use super::ProcessingConfig;
 use super::error::{AudioProcessingError, Result};
 use super::file_io::{AudioFileProcessor, FileProcessingOptions};
-use crate::audio::processing::pipeline::AudioProcessingPipeline;
 use crate::audio::AudioBufferPool;
+use crate::audio::processing::pipeline::AudioProcessingPipeline;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -85,7 +85,7 @@ impl BatchProcessor {
         self.progress_callback = Some(Arc::new(callback));
         self
     }
-    
+
     /// Enable memory pooling for efficient buffer reuse during processing
     ///
     /// # Arguments
@@ -97,11 +97,15 @@ impl BatchProcessor {
     ///
     /// Self for method chaining
     #[must_use]
-    pub fn with_buffer_pool(mut self, pool_size: Option<usize>, buffer_capacity: Option<usize>) -> Self {
+    pub fn with_buffer_pool(
+        mut self,
+        pool_size: Option<usize>,
+        buffer_capacity: Option<usize>,
+    ) -> Self {
         // Default to 16 buffers of 1MB each (assuming 4 bytes per f32 sample = 262,144 samples)
         let pool_size = pool_size.unwrap_or(16);
         let buffer_capacity = buffer_capacity.unwrap_or(262_144);
-        
+
         self.buffer_pool = Some(Arc::new(AudioBufferPool::new(pool_size, buffer_capacity)));
         self
     }
@@ -277,12 +281,15 @@ impl BatchProcessor {
             self.file_processor.pipeline.clone(),
             self.file_processor.options.clone(),
         );
-        
+
         // If we have a buffer pool, use it with the processor
         if let Some(pool) = &self.buffer_pool {
             // Pass the buffer pool to the processor (implementation would need to be added to AudioFileProcessor)
             // For now, we'll just log that we're using the pool
-            log::debug!("Using buffer pool for processing file: {}", input_path.display());
+            log::debug!(
+                "Using buffer pool for processing file: {}",
+                input_path.display()
+            );
             // In a real implementation, we would acquire a buffer from the pool,
             // use it for processing, and then release it back to the pool
         }

@@ -306,7 +306,7 @@ impl Database {
             let library_path = audiobook.path.parent().unwrap().to_path_buf();
             library_groups
                 .entry(library_path)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(audiobook.clone());
         }
 

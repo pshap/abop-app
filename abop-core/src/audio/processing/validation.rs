@@ -243,7 +243,8 @@ impl ConfigValidator {
                     target_sample_rate: Some(44100),
                     quality: super::config::ResampleQuality::High,
                     ..Default::default()
-                }),                channel_mixer: Some(super::config::ChannelMixerConfig {
+                }),
+                channel_mixer: Some(super::config::ChannelMixerConfig {
                     target_channels: Some(2), // Keep as stereo for music processing
                     ..Default::default()
                 }),
