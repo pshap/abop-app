@@ -85,7 +85,6 @@ impl LibraryScanner {
         self.cancelled.store(true, Ordering::Relaxed);
     }
 
-
     /// Primary scan method - unified interface for all scanning operations
     pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
         let orchestrator = self.create_orchestrator(&options);

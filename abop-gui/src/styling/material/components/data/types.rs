@@ -1042,21 +1042,30 @@ impl DataTableBuilder {
     ///
     /// # Arguments
     /// * `width` - Border width in logical pixels
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn border_width(mut self, width: f32) -> Self {
         self.config = self.config.border_width(width);
         self
     }
 
-    /// Set border radius
+    /// Set border radius for the table corners
     ///
     /// # Arguments
     /// * `radius` - Border radius in logical pixels
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn border_radius(mut self, radius: f32) -> Self {
         self.config = self.config.border_radius(radius);
         self
     }
 
-    /// Remove table borders
+    /// Remove all borders from the table
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn without_borders(mut self) -> Self {
         self.config = self.config.without_borders();
         self
@@ -1064,12 +1073,19 @@ impl DataTableBuilder {
 }
 
 impl Default for DataTableBuilder {
+    /// Creates a new `DataTableBuilder` with default settings
     fn default() -> Self {
         Self::new()
     }
 }
 
 /// Type-safe table configuration with compile-time guarantees
+///
+/// This generic struct provides compile-time guarantees about the table's capabilities
+/// through const generics:
+/// - `SELECTABLE`: Whether rows can be selected
+/// - `SORTABLE`: Whether columns can be sorted
+/// - `VIRTUAL`: Whether virtual scrolling is enabled
 #[derive(Debug, Clone)]
 pub struct TypedDataTableConfig<const SELECTABLE: bool, const SORTABLE: bool, const VIRTUAL: bool> {
     config: DataTableConfig,
@@ -1078,17 +1094,29 @@ pub struct TypedDataTableConfig<const SELECTABLE: bool, const SORTABLE: bool, co
 impl<const SELECTABLE: bool, const SORTABLE: bool, const VIRTUAL: bool>
     TypedDataTableConfig<SELECTABLE, SORTABLE, VIRTUAL>
 {
-    /// Create a new typed configuration
+    /// Create a new typed configuration with the specified compile-time guarantees
+    ///
+    /// # Arguments
+    /// * `config` - The underlying table configuration
+    ///
+    /// # Returns
+    /// A new `TypedDataTableConfig` instance with the specified capabilities
     pub fn new(config: DataTableConfig) -> Self {
         Self { config }
     }
 
-    /// Get the underlying configuration
+    /// Get a reference to the underlying configuration
+    ///
+    /// # Returns
+    /// A reference to the internal `DataTableConfig`
     pub fn config(&self) -> &DataTableConfig {
         &self.config
     }
 
-    /// Convert to untyped configuration
+    /// Consume this typed configuration and return the underlying untyped configuration
+    ///
+    /// # Returns
+    /// The inner `DataTableConfig` without type parameters
     pub fn into_config(self) -> DataTableConfig {
         self.config
     }
@@ -1100,12 +1128,18 @@ impl<const SORTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<true, SORTA
     /// 
     /// # Returns
     /// `true` if the selection was changed, `false` otherwise
+    ///
+    /// # Note
+    /// This method is only available when `SELECTABLE` is `true`
     pub fn select_all(&self) -> bool {
         // Implementation would be here
         true
     }
 
     /// Clears the current selection of rows
+    ///
+    /// # Note
+    /// This method is only available when `SELECTABLE` is `true`
     pub fn clear_selection(&self) {
         // Implementation would be here
     }
@@ -1117,11 +1151,17 @@ impl<const SELECTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<SELECTABL
     /// # Arguments
     /// * `_column_id` - The ID of the column to sort by
     /// * `_direction` - The sort direction (Ascending or Descending)
+    ///
+    /// # Note
+    /// This method is only available when `SORTABLE` is `true`
     pub fn sort_by_column(&self, _column_id: &str, _direction: SortDirection) {
         // Implementation would be here
     }
 
     /// Clears the current sort order of the table
+    ///
+    /// # Note
+    /// This method is only available when `SORTABLE` is `true`
     pub fn clear_sort(&self) {
         // Implementation would be here
     }
@@ -1134,6 +1174,9 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     /// 
     /// # Arguments
     /// * `_row_index` - The index of the row to scroll to
+    ///
+    /// # Note
+    /// This method is only available when `VIRTUAL` is `true`
     pub fn scroll_to_row(&self, _row_index: usize) {
         // Implementation would be here
     }
@@ -1142,6 +1185,9 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     /// 
     /// # Returns
     /// A tuple containing the (start_index, end_index) of visible rows
+    ///
+    /// # Note
+    /// This method is only available when `VIRTUAL` is `true`
     pub fn get_visible_range(&self) -> (usize, usize) {
         // Implementation would be here
         (0, 10)

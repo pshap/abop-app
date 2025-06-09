@@ -276,7 +276,7 @@ impl BatchProcessor {
 
     /// Process a single file using the internal file processor
     fn process_single_file(&self, input_path: &Path) -> Result<PathBuf> {
-        // Create a clone of the processor for this operation
+        // Create a new file processor for this file
         let mut processor = AudioFileProcessor::new(
             self.file_processor.pipeline.clone(),
             self.file_processor.options.clone(),
