@@ -3,7 +3,10 @@
 //! This module provides a simplified, high-level interface for scanning directories
 //! for audio files, extracting metadata, and updating the database.
 
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use crate::{
     db::Database,
@@ -102,7 +105,7 @@ impl LibraryScanner {
         // Convert std::sync::mpsc to tokio::sync::mpsc for the orchestrator
         let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
         let progress_reporter = Arc::new(ChannelReporter::new(tokio_tx));
-        
+
         let options = ScanOptions {
             enable_progress: true,
             enable_monitoring: self.performance_monitor.is_some(),
@@ -145,15 +148,15 @@ impl LibraryScanner {
     /// This runs the scan in a background task to prevent UI freezing
     pub fn scan_task(&self) -> Task<ScanResult<ScanSummary>> {
         let scanner = self.clone();
-        
+
         Task::perform(
             async move {
                 // Run CPU-bound work in a blocking task
-                tokio::task::spawn_blocking(move || {
-                    scanner.scan_sync()
-                })
-                .await
-                .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}").into()))?
+                tokio::task::spawn_blocking(move || scanner.scan_sync())
+                    .await
+                    .map_err(|e| {
+                        crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
+                    })?
             },
             |result| result,
         )
@@ -166,15 +169,15 @@ impl LibraryScanner {
         progress_tx: std::sync::mpsc::Sender<ScanProgress>,
     ) -> Task<ScanResult<ScanSummary>> {
         let scanner = self.clone();
-        
+
         Task::perform(
             async move {
                 // Run CPU-bound work in a blocking task
-                tokio::task::spawn_blocking(move || {
-                    scanner.scan_with_progress_sync(progress_tx)
-                })
-                .await
-                .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}").into()))?
+                tokio::task::spawn_blocking(move || scanner.scan_with_progress_sync(progress_tx))
+                    .await
+                    .map_err(|e| {
+                        crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
+                    })?
             },
             |result| result,
         )
@@ -184,12 +187,12 @@ impl LibraryScanner {
     /// This version can be awaited and runs the scan in background
     pub async fn scan_async(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
         let scanner = self.clone();
-        
-        tokio::task::spawn_blocking(move || {
-            scanner.scan(options)
-        })
-        .await
-        .map_err(|e| crate::error::AppError::Threading(format!("Scan task panicked: {e}").into()))?
+
+        tokio::task::spawn_blocking(move || scanner.scan(options))
+            .await
+            .map_err(|e| {
+                crate::error::AppError::Threading(format!("Scan task panicked: {e}").into())
+            })?
     }
 
     /// Performs an async scan with progress reporting via channel
@@ -199,7 +202,7 @@ impl LibraryScanner {
         progress_tx: tokio::sync::mpsc::Sender<ScanProgress>,
     ) -> ScanResult<ScanSummary> {
         let scanner = self.clone();
-        
+
         tokio::task::spawn_blocking(move || {
             let progress_reporter = Arc::new(ChannelReporter::new(progress_tx));
             let scan_options = ScanOptions {

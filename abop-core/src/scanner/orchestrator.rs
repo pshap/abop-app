@@ -118,7 +118,9 @@ impl ScanOrchestrator {
         info!("Discovered {} files to process", total_files);
 
         // Report scan start
-        if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+        if options.enable_progress
+            && let Some(reporter) = &self.progress_reporter
+        {
             // For synchronous operation, we'll use a blocking approach for progress reporting
             let rt = tokio::runtime::Handle::try_current();
             if let Ok(rt) = rt {
@@ -149,7 +151,9 @@ impl ScanOrchestrator {
                 let overall_index = batch_index * batch_size + file_index;
 
                 // Report progress
-                if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+                if options.enable_progress
+                    && let Some(reporter) = &self.progress_reporter
+                {
                     let progress = overall_index as f32 / total_files as f32;
                     let rt = tokio::runtime::Handle::try_current();
                     if let Ok(rt) = rt {
@@ -183,17 +187,22 @@ impl ScanOrchestrator {
                 "Processed batch {} in {:.2?} ({} items)",
                 batch_index + 1,
                 batch_start_time.elapsed(),
-                processed_audiobooks.len() - (batch_index * batch_size).min(processed_audiobooks.len())
+                processed_audiobooks.len()
+                    - (batch_index * batch_size).min(processed_audiobooks.len())
             );
         }
 
         // Report completion
         let duration = start_time.elapsed();
-        if options.enable_progress && let Some(reporter) = &self.progress_reporter {
+        if options.enable_progress
+            && let Some(reporter) = &self.progress_reporter
+        {
             let rt = tokio::runtime::Handle::try_current();
             if let Ok(rt) = rt {
-                rt.block_on(async { 
-                    reporter.report_complete(processed_audiobooks.len(), error_count, duration).await 
+                rt.block_on(async {
+                    reporter
+                        .report_complete(processed_audiobooks.len(), error_count, duration)
+                        .await
                 });
             }
         }
@@ -208,8 +217,11 @@ impl ScanOrchestrator {
 
     /// Creates an orchestrator with the current scanner configuration
     fn create_orchestrator(&self, options: &ScanOptions) -> ScanOrchestrator {
-        let mut orchestrator =
-            ScanOrchestrator::new(self.database.clone(), self.library.clone(), self.config.clone());
+        let mut orchestrator = ScanOrchestrator::new(
+            self.database.clone(),
+            self.library.clone(),
+            self.config.clone(),
+        );
 
         if options.enable_monitoring
             && let Some(monitor) = &self.performance_monitor

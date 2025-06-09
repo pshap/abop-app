@@ -234,8 +234,8 @@ impl Database {
                     .query_row([&path_str_for_query], |row| row.get(0))
                     .optional()
                     .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to query library ID: {e}"),
-                })?;
+                        message: format!("Failed to query library ID: {e}"),
+                    })?;
                 Ok(id)
             })
             .map_err(AppError::Database)?;
@@ -300,7 +300,8 @@ impl Database {
         }
 
         // Group audiobooks by library path and collect owned data
-        let mut library_groups: std::collections::HashMap<PathBuf, Vec<Audiobook>> = std::collections::HashMap::new();
+        let mut library_groups: std::collections::HashMap<PathBuf, Vec<Audiobook>> =
+            std::collections::HashMap::new();
         for audiobook in audiobooks {
             let library_path = audiobook.path.parent().unwrap().to_path_buf();
             library_groups
@@ -359,7 +360,9 @@ impl Database {
                         "library_id = ?1 ORDER BY title",
                     )))
                     .map_err(|e| {
-                        DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}"))
+                        DatabaseError::execution_failed(&format!(
+                            "Failed to prepare statement: {e}"
+                        ))
                     })?;
 
                 let rows = stmt
@@ -403,7 +406,9 @@ impl Database {
                 let mut stmt = conn
                     .prepare(&SqlQueries::audiobook_select(Some("path = ?1")))
                     .map_err(|e| {
-                        DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}"))
+                        DatabaseError::execution_failed(&format!(
+                            "Failed to prepare statement: {e}"
+                        ))
                     })?;
 
                 let mut rows = stmt

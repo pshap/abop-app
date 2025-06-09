@@ -64,11 +64,12 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
             Some(Task::perform(
                 async move {
                     // Open DB synchronously in a blocking task
-                    let db = match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
-                        Ok(Ok(db)) => db,
-                        Ok(Err(e)) => return Err(e.to_string()),
-                        Err(e) => return Err(e.to_string()),
-                    };
+                    let db =
+                        match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
+                            Ok(Ok(db)) => db,
+                            Ok(Err(e)) => return Err(e.to_string()),
+                            Err(e) => return Err(e.to_string()),
+                        };
 
                     // Look up or create library
                     let library = match db.libraries().find_by_name("Default Library") {
