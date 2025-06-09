@@ -1125,7 +1125,7 @@ impl<const SELECTABLE: bool, const SORTABLE: bool, const VIRTUAL: bool>
 // Compile-time methods only available for specific configurations
 impl<const SORTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<true, SORTABLE, VIRTUAL> {
     /// Selects all rows in the table
-    /// 
+    ///
     /// # Returns
     /// `true` if the selection was changed, `false` otherwise
     ///
@@ -1147,7 +1147,7 @@ impl<const SORTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<true, SORTA
 
 impl<const SELECTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<SELECTABLE, true, VIRTUAL> {
     /// Sorts the table by the specified column and direction
-    /// 
+    ///
     /// # Arguments
     /// * `_column_id` - The ID of the column to sort by
     /// * `_direction` - The sort direction (Ascending or Descending)
@@ -1171,7 +1171,7 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     TypedDataTableConfig<SELECTABLE, SORTABLE, true>
 {
     /// Scrolls the table to make the specified row visible
-    /// 
+    ///
     /// # Arguments
     /// * `_row_index` - The index of the row to scroll to
     ///
@@ -1182,7 +1182,7 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     }
 
     /// Gets the range of currently visible row indices
-    /// 
+    ///
     /// # Returns
     /// A tuple containing the (start_index, end_index) of visible rows
     ///

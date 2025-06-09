@@ -130,7 +130,6 @@ fn scan_library(
     config_preset: String,
     max_concurrent_tasks: Option<usize>,
     max_concurrent_db_operations: Option<usize>,
-
 ) -> Result<()> {
     info!("Scanning library: {library_path:?}");
 
