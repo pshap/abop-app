@@ -37,14 +37,22 @@ pub use button_style::{
 };
 // ButtonSize is now exported from widgets module
 pub use containers::*;
-pub use data::*;
+// Re-export data components (avoiding glob conflicts)
+pub use data::helpers as data_helpers;
+pub use data::{
+    ColumnDataType, ColumnWidth, DataTableBuilder, DataTableConfig, MaterialDataTable,
+    MaterialList, MaterialTreeView, SortDirection, SortState, TableColumn, TableDensity,
+    TextAlignment,
+};
 pub use feedback::*;
 pub use inputs::*;
 pub use menu_constants::*;
 pub use menu_container_style::*;
 pub use menu_item_style::*;
 pub use menus::*;
-pub use navigation::*;
+pub use navigation::{
+    helpers as nav_helpers, BreadcrumbItem, MaterialBreadcrumbs, MaterialTabBar, Tab,
+};
 pub use selection::*;
 pub use selection_style::*;
 pub use widgets::MaterialButton;
