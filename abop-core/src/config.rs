@@ -1,18 +1,39 @@
 //! Centralized configuration management for ABOP
+//!
+//! This module provides a modular configuration system that maintains backward
+//! compatibility while offering enhanced validation and organization.
 
 use crate::error::{AppError, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// Application configuration settings
+pub mod app;
+pub mod ui;
+pub mod validation;
+
+// Re-export for convenience
+pub use app::AppConfig;
+pub use ui::{UiConfig, WindowConfig};
+pub use validation::{ConfigValidation, ValidationResult, ValidationError};
+
+/// Main application configuration settings
+///
+/// This is the primary configuration struct that combines all configuration
+/// modules while maintaining backward compatibility with existing TOML files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// Window-specific configuration options
     pub window: WindowConfig,
     /// Theme and appearance settings
     pub theme: ThemeConfig,
-    /// Directory for application data storage
+    /// Directory for application data storage (backward compatibility)
     pub data_dir: PathBuf,
+    /// Application-level settings (new modular structure)
+    #[serde(default)]
+    pub app: AppConfig,
+    /// UI behavior and preferences (new modular structure)
+    #[serde(default)]
+    pub ui: UiConfig,
 }
 
 impl Config {
@@ -29,7 +50,18 @@ impl Config {
         let config_path = Self::config_path()?;
         if config_path.exists() {
             let contents = std::fs::read_to_string(&config_path)?;
-            Ok(toml::from_str(&contents)?)
+            let mut config: Config = toml::from_str(&contents)?;
+            
+            // Validate and auto-fix configuration
+            let validation_result = config.validate_and_fix();
+            if validation_result.has_errors() {
+                log::warn!("Configuration validation errors: {:?}", validation_result.errors);
+            }
+            if validation_result.has_warnings() {
+                log::info!("Configuration validation warnings: {:?}", validation_result.warnings);
+            }
+            
+            Ok(config)
         } else {
             let default = Self::default();
             default.save()?;
@@ -71,25 +103,58 @@ impl Default for Config {
             window: WindowConfig::default(),
             theme: ThemeConfig::default(),
             data_dir: dirs::data_dir().unwrap_or_else(|| PathBuf::from("./data")),
+            app: AppConfig::default(),
+            ui: UiConfig::default(),
         }
     }
 }
 
-/// Window appearance and behavior settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowConfig {
-    /// Minimum window width in pixels
-    pub min_width: u32,
-    /// Minimum window height in pixels
-    pub min_height: u32,
-}
+impl ConfigValidation for Config {
+    fn validate(&self) -> ValidationResult {
+        let mut result = ValidationResult::new();
 
-impl Default for WindowConfig {
-    fn default() -> Self {
-        Self {
-            min_width: 800,
-            min_height: 600,
+        // Validate sub-configurations
+        let window_result = self.window.validate();
+        result.errors.extend(window_result.errors);
+        result.warnings.extend(window_result.warnings);
+
+        let app_result = self.app.validate();
+        result.errors.extend(app_result.errors);
+        result.warnings.extend(app_result.warnings);
+
+        let ui_result = self.ui.validate();
+        result.errors.extend(ui_result.errors);
+        result.warnings.extend(ui_result.warnings);
+
+        // Validate data_dir (backward compatibility)
+        if let Err(e) = validation::validate_or_create_directory(&self.data_dir, "data_dir") {
+            result.add_error("data_dir", &e.to_string(), Some("Ensure the path is writable"));
         }
+
+        // Update overall validity
+        result.is_valid = result.errors.is_empty();
+        result
+    }
+
+    fn validate_and_fix(&mut self) -> ValidationResult {
+        let mut result = ValidationResult::new();
+
+        // Validate and fix sub-configurations
+        let window_result = self.window.validate_and_fix();
+        result.errors.extend(window_result.errors);
+        result.warnings.extend(window_result.warnings);
+
+        let app_result = self.app.validate_and_fix();
+        result.errors.extend(app_result.errors);
+        result.warnings.extend(app_result.warnings);
+
+        let ui_result = self.ui.validate_and_fix();
+        result.errors.extend(ui_result.errors);
+        result.warnings.extend(ui_result.warnings);
+
+        // Update overall validity
+        result.is_valid = result.errors.is_empty();
+        result
     }
 }
 

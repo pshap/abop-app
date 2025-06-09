@@ -122,10 +122,11 @@ mod library_scanner_tests {
             .unwrap();
 
         // Only audio files should be discovered and attempted to be processed
-        // However, since these are fake files without proper audio metadata,
-        // they might not result in valid audiobooks depending on the implementation
-        assert!(scan_summary.processed <= audio_files.len());
-        assert_eq!(scan_summary.errors, 0); // Basic assumption for this test
+        // Since these are fake files without proper audio metadata,
+        // they should be detected as audio files but fail metadata extraction
+        assert_eq!(scan_summary.processed, audio_files.len()); // Should attempt to process all audio files
+        assert_eq!(scan_summary.errors, audio_files.len()); // All fake files should generate errors
+        assert_eq!(scan_summary.new_files.len(), 0); // No valid audiobooks should be created
     }
 }
 
