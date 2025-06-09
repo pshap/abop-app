@@ -1,11 +1,6 @@
-# ABOP - Audiobook Org### What's Still Coming
-- 🔲 **Complete Application Integration**: Connecting all pieces into a polished, cohesive experience
-- 🔲 **Advanced Audio Processing**: Enhanced batch processing with customizable quality presets
-- 🔲 **Enhanced Playback Features**: Chapter navigation, bookmarks, and advanced playback controls
-- 🔲 **CLI Interface**: Command-line tools for headless operation and automation
-- 🔲 **Export/Import**: Backup and restore functionality for library databases & Processor
+# ABOP - Audiobook Organizer & Processor
 
-*A work-in-progress personal project for organizing and processing audiobooks*
+*A personal project for organizing and processing audiobooks*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -25,12 +20,12 @@
 - ✅ **File Management UI**: Directory scanning and audiobook library management interface
 - ✅ **Progress Tracking**: State persistence and progress monitoring for long-running operations
 
-### What's Still Coming
-- 🔲 **Complete Application Integration**: Connecting all pieces into a working whole
-- 🔲 **File Management UI**: Directory scanning and audiobook library management
-- 🔲 **Audio Playback**: Integrated playback controls and preview functionality
-- 🔲 **Batch Processing**: End-to-end automation for large audiobook collections
-- 🔲 **CLI Interface**: Command-line tools for headless operation
+### What's Coming Next
+- 🔲 **Complete Application Integration**: Connecting all pieces into a polished, cohesive experience
+- 🔲 **Advanced Audio Processing**: Enhanced batch processing with customizable quality presets
+- 🔲 **Enhanced Playback Features**: Chapter navigation, bookmarks, and advanced playback controls
+- 🔲 **CLI Interface**: Command-line tools for headless operation and automation
+- 🔲 **Export/Import**: Backup and restore functionality for library databases
 
 ## 🎯 Design Principles
 

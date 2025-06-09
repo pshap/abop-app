@@ -29,9 +29,9 @@ pub mod test_constants;
 
 // Re-exports from audio module
 pub use audio::{
-    AudioBuffer, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline, AudioStream,
-    ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, PlayerState, ProcessingConfig,
-    ResamplerConfig, SampleFormat, SilenceDetectorConfig,
+    AudioBuffer, AudioBufferPool, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline, 
+    AudioStream, ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, PlayerState, 
+    ProcessingConfig, ResamplerConfig, SampleFormat, SilenceDetectorConfig,
 };
 
 // Re-exports from component module
@@ -62,7 +62,7 @@ pub use services::ServiceContainer;
 pub mod prelude {
     pub use crate::{
         audio::{
-            AudioBuffer, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline,
+            AudioBuffer, AudioBufferPool, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline,
             AudioStream, ChannelMixerConfig, MixingAlgorithm, PlayerState, ProcessingConfig,
             SampleFormat,
         },
