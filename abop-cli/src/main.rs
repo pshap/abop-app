@@ -52,10 +52,6 @@ enum Commands {
         /// Maximum concurrent database operations
         #[arg(long)]
         max_concurrent_db_operations: Option<usize>,
-
-        /// Show progress during scan
-        #[arg(short, long)]
-        progress: bool,
     },
     /// Database operations
     Db {
@@ -108,7 +104,6 @@ fn main() -> Result<()> {
             config,
             max_concurrent_tasks,
             max_concurrent_db_operations,
-            progress,
         } => {
             debug!("Executing scan command");
             scan_library(
@@ -117,7 +112,6 @@ fn main() -> Result<()> {
                 config,
                 max_concurrent_tasks,
                 max_concurrent_db_operations,
-                progress,
             )
         }
         Commands::Db {
@@ -136,7 +130,7 @@ fn scan_library(
     config_preset: String,
     max_concurrent_tasks: Option<usize>,
     max_concurrent_db_operations: Option<usize>,
-    show_progress: bool,
+
 ) -> Result<()> {
     info!("Scanning library: {library_path:?}");
 

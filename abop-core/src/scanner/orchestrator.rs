@@ -214,24 +214,6 @@ impl ScanOrchestrator {
             errors: error_count,
         })
     }
-
-    /// Creates an orchestrator with the current scanner configuration
-    fn create_orchestrator(&self, options: &ScanOptions) -> ScanOrchestrator {
-        let mut orchestrator = ScanOrchestrator::new(
-            self.database.clone(),
-            self.library.clone(),
-            self.config.clone(),
-        );
-
-        if options.enable_monitoring
-            && let Some(monitor) = &self.performance_monitor
-        {
-            orchestrator = orchestrator.with_performance_monitor(monitor.clone());
-        }
-
-        orchestrator = orchestrator.with_cancellation_token(self.cancelled.clone());
-        orchestrator
-    }
 }
 
 #[cfg(test)]

@@ -282,18 +282,6 @@ impl BatchProcessor {
             self.file_processor.options.clone(),
         );
 
-        // If we have a buffer pool, use it with the processor
-        if let Some(pool) = &self.buffer_pool {
-            // Pass the buffer pool to the processor (implementation would need to be added to AudioFileProcessor)
-            // For now, we'll just log that we're using the pool
-            log::debug!(
-                "Using buffer pool for processing file: {}",
-                input_path.display()
-            );
-            // In a real implementation, we would acquire a buffer from the pool,
-            // use it for processing, and then release it back to the pool
-        }
-
         processor.process_file(input_path).map_err(|e| {
             AudioProcessingError::Pipeline(format!(
                 "Failed to process file '{}': {}",
