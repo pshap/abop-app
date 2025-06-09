@@ -85,10 +85,6 @@ impl LibraryScanner {
         self.cancelled.store(true, Ordering::Relaxed);
     }
 
-    /// Checks if the scan has been cancelled
-    fn is_cancelled(&self) -> bool {
-        self.cancelled.load(Ordering::Relaxed)
-    }
 
     /// Primary scan method - unified interface for all scanning operations
     pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {

@@ -798,171 +798,265 @@ impl DataTableBuilder {
         self
     }
     /// Enable or disable virtual scrolling
+    /// Enable or disable virtual scrolling for the table
+    ///
+    /// # Arguments
+    /// * `virtual_enabled` - Whether to enable virtual scrolling
     pub fn virtual_scrolling(mut self, virtual_enabled: bool) -> Self {
         self.config = self.config.enable_virtual_scrolling(virtual_enabled);
         self
     }
 
+    /// Enable virtual scrolling with an optional maximum number of visible rows
+    ///
+    /// # Arguments
+    /// * `max_visible` - Maximum number of rows to render at once (None for automatic calculation)
     pub fn with_virtual_scrolling(mut self, max_visible: Option<usize>) -> Self {
         self.config = self.config.with_virtual_scrolling(max_visible);
         self
     }
 
+    /// Disable virtual scrolling for the table
     pub fn without_virtual_scrolling(mut self) -> Self {
         self.config = self.config.without_virtual_scrolling();
         self
     }
 
+    /// Set the maximum number of visible rows in the virtual scrolling viewport
+    ///
+    /// # Arguments
+    /// * `max` - Maximum number of rows to render at once
     pub fn max_visible_rows(mut self, max: usize) -> Self {
         self.config = self.config.max_visible_rows(max);
         self
     }
 
+    /// Enable or disable row action buttons
+    ///
+    /// # Arguments
+    /// * `actions` - Whether to show row action buttons
     pub fn row_actions(mut self, actions: bool) -> Self {
         self.config = self.config.set_row_actions(actions);
         self
     }
 
+    /// Enable row action buttons
     pub fn with_row_actions(mut self) -> Self {
         self.config = self.config.with_row_actions();
         self
     }
 
+    /// Disable row action buttons
     pub fn without_row_actions(mut self) -> Self {
         self.config = self.config.without_row_actions();
         self
     }
 
+    /// Enable or disable column resizing
+    ///
+    /// # Arguments
+    /// * `resizable` - Whether columns should be resizable by the user
     pub fn resizable_columns(mut self, resizable: bool) -> Self {
         self.config = self.config.set_resizable_columns(resizable);
         self
     }
 
+    /// Enable column resizing
     pub fn with_resizable_columns(mut self) -> Self {
         self.config = self.config.with_resizable_columns();
         self
     }
 
+    /// Disable column resizing
     pub fn without_resizable_columns(mut self) -> Self {
         self.config = self.config.without_resizable_columns();
         self
     }
 
+    /// Set the minimum width for all columns
+    ///
+    /// # Arguments
+    /// * `width` - The minimum width in logical pixels
     pub fn min_column_width(mut self, width: f32) -> Self {
         self.config = self.config.min_column_width(width);
         self
     }
 
+    /// Set the table's density (spacing between rows)
+    ///
+    /// # Arguments
+    /// * `density` - The desired density level (Compact, Standard, or Comfortable)
     pub fn density(mut self, density: TableDensity) -> Self {
         self.config = self.config.density(density);
         self
     }
 
+    /// Set the table to use compact density (less spacing between rows)
     pub fn compact(mut self) -> Self {
         self.config = self.config.compact();
         self
     }
 
+    /// Set the table to use standard density (default spacing between rows)
     pub fn standard(mut self) -> Self {
         self.config = self.config.standard();
         self
     }
 
+    /// Set the table to use comfortable density (more spacing between rows)
     pub fn comfortable(mut self) -> Self {
         self.config = self.config.comfortable();
         self
     }
 
+    /// Set whether to show the table header
+    ///
+    /// # Arguments
+    /// * `show` - Whether to display the table header
     pub fn show_header(mut self, show: bool) -> Self {
         self.config = self.config.set_show_header(show);
         self
     }
 
+    /// Enable the table header
     pub fn with_header(mut self) -> Self {
         self.config = self.config.with_header();
         self
     }
 
+    /// Disable the table header
     pub fn without_header(mut self) -> Self {
         self.config = self.config.without_header();
         self
     }
 
+    /// Set whether to show the table footer
+    ///
+    /// # Arguments
+    /// * `show` - Whether to display the table footer
     pub fn show_footer(mut self, show: bool) -> Self {
         self.config = self.config.set_show_footer(show);
         self
     }
 
+    /// Enable the table footer
     pub fn with_footer(mut self) -> Self {
         self.config = self.config.with_footer();
         self
     }
 
+    /// Disable the table footer
     pub fn without_footer(mut self) -> Self {
         self.config = self.config.without_footer();
         self
     }
 
+    /// Set whether columns are sortable by default
+    ///
+    /// # Arguments
+    /// * `sortable` - Whether columns should be sortable by default
     pub fn sortable(mut self, sortable: bool) -> Self {
         self.config = self.config.set_sortable(sortable);
         self
     }
 
+    /// Enable column sorting by default
     pub fn with_sorting(mut self) -> Self {
         self.config = self.config.with_sorting();
         self
     }
 
+    /// Disable column sorting by default
     pub fn without_sorting(mut self) -> Self {
         self.config = self.config.without_sorting();
         self
     }
 
+    /// Set row height constraints
+    ///
+    /// # Arguments
+    /// * `min` - Minimum row height in logical pixels
+    /// * `max` - Maximum row height in logical pixels (optional)
     pub fn row_height(mut self, min: f32, max: Option<f32>) -> Self {
         self.config = self.config.row_height(min, max);
         self
     }
 
+    /// Set minimum row height
+    ///
+    /// # Arguments
+    /// * `height` - Minimum row height in logical pixels
     pub fn min_row_height(mut self, height: f32) -> Self {
         self.config = self.config.min_row_height(height);
         self
     }
 
+    /// Set maximum row height
+    ///
+    /// # Arguments
+    /// * `height` - Maximum row height in logical pixels
     pub fn max_row_height(mut self, height: f32) -> Self {
         self.config = self.config.max_row_height(height);
         self
     }
 
+    /// Set fixed header height
+    ///
+    /// # Arguments
+    /// * `height` - Fixed header height in logical pixels
     pub fn header_height(mut self, height: f32) -> Self {
         self.config = self.config.header_height(height);
         self
     }
 
+    /// Set fixed footer height
+    ///
+    /// # Arguments
+    /// * `height` - Fixed footer height in logical pixels
     pub fn footer_height(mut self, height: f32) -> Self {
         self.config = self.config.footer_height(height);
         self
     }
 
+    /// Set table border styling
+    ///
+    /// # Arguments
+    /// * `color` - Border color
+    /// * `width` - Border width in logical pixels
+    /// * `radius` - Border radius in logical pixels
     pub fn border(mut self, color: iced::Color, width: f32, radius: f32) -> Self {
         self.config = self.config.border(color, width, radius);
         self
     }
 
+    /// Set border color
+    ///
+    /// # Arguments
+    /// * `color` - The border color to use
     pub fn border_color(mut self, color: iced::Color) -> Self {
         self.config = self.config.border_color(color);
         self
     }
 
+    /// Set border width
+    ///
+    /// # Arguments
+    /// * `width` - Border width in logical pixels
     pub fn border_width(mut self, width: f32) -> Self {
         self.config = self.config.border_width(width);
         self
     }
 
+    /// Set border radius
+    ///
+    /// # Arguments
+    /// * `radius` - Border radius in logical pixels
     pub fn border_radius(mut self, radius: f32) -> Self {
         self.config = self.config.border_radius(radius);
         self
     }
 
+    /// Remove table borders
     pub fn without_borders(mut self) -> Self {
         self.config = self.config.without_borders();
         self
@@ -1002,23 +1096,32 @@ impl<const SELECTABLE: bool, const SORTABLE: bool, const VIRTUAL: bool>
 
 // Compile-time methods only available for specific configurations
 impl<const SORTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<true, SORTABLE, VIRTUAL> {
-    /// Methods only available when selection is enabled
+    /// Selects all rows in the table
+    /// 
+    /// # Returns
+    /// `true` if the selection was changed, `false` otherwise
     pub fn select_all(&self) -> bool {
         // Implementation would be here
         true
     }
 
+    /// Clears the current selection of rows
     pub fn clear_selection(&self) {
         // Implementation would be here
     }
 }
 
 impl<const SELECTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<SELECTABLE, true, VIRTUAL> {
-    /// Methods only available when sorting is enabled
+    /// Sorts the table by the specified column and direction
+    /// 
+    /// # Arguments
+    /// * `_column_id` - The ID of the column to sort by
+    /// * `_direction` - The sort direction (Ascending or Descending)
     pub fn sort_by_column(&self, _column_id: &str, _direction: SortDirection) {
         // Implementation would be here
     }
 
+    /// Clears the current sort order of the table
     pub fn clear_sort(&self) {
         // Implementation would be here
     }
@@ -1027,11 +1130,18 @@ impl<const SELECTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<SELECTABL
 impl<const SELECTABLE: bool, const SORTABLE: bool>
     TypedDataTableConfig<SELECTABLE, SORTABLE, true>
 {
-    /// Methods only available when virtual scrolling is enabled
+    /// Scrolls the table to make the specified row visible
+    /// 
+    /// # Arguments
+    /// * `_row_index` - The index of the row to scroll to
     pub fn scroll_to_row(&self, _row_index: usize) {
         // Implementation would be here
     }
 
+    /// Gets the range of currently visible row indices
+    /// 
+    /// # Returns
+    /// A tuple containing the (start_index, end_index) of visible rows
     pub fn get_visible_range(&self) -> (usize, usize) {
         // Implementation would be here
         (0, 10)
