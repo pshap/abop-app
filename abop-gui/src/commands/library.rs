@@ -37,8 +37,6 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
     match command {
         GuiCommand::ScanLibrary { library_path } => {
             use abop_core::db::Database;
-            use std::fs;
-            use std::path::PathBuf;
 
             state.scanning = true;
             state.scan_progress = Some(0.0);
@@ -47,29 +45,15 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                 library_path.display()
             );
 
-            // Prepare DB path
-            let data_dir = dirs::data_local_dir()
-                .unwrap_or_else(|| PathBuf::from("."))
-                .join("abop");
-            if let Err(e) = fs::create_dir_all(&data_dir) {
-                log::error!("Failed to create data dir: {e}");
-                return Some(Task::perform(
-                    async move { Err(format!("Failed to create data dir: {e}")) },
-                    Message::ScanComplete,
-                ));
-            }
-            let db_path = data_dir.join("library.db");
-
             // Move all DB operations into the async task
             Some(Task::perform(
                 async move {
-                    // Open DB synchronously in a blocking task
-                    let db =
-                        match tokio::task::spawn_blocking(move || Database::open(&db_path)).await {
-                            Ok(Ok(db)) => db,
-                            Ok(Err(e)) => return Err(e.to_string()),
-                            Err(e) => return Err(e.to_string()),
-                        };
+                    // Open centralized database synchronously in a blocking task
+                    let db = match tokio::task::spawn_blocking(move || Database::open_app_database()).await {
+                        Ok(Ok(db)) => db,
+                        Ok(Err(e)) => return Err(e.to_string()),
+                        Err(e) => return Err(e.to_string()),
+                    };
 
                     // Look up or create library based on the selected path
                     let library = match db.libraries().find_by_path(&library_path) {

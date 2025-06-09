@@ -147,15 +147,14 @@ fn scan_library(
         ));
     }
 
-    // Initialize database
-    let db_path = database_path.unwrap_or_else(|| {
-        let mut path = library_path.clone();
-        path.push("abop.db");
-        path
-    });
-
-    info!("Using database: {db_path:?}");
-    let db = Database::open(&db_path).context("Failed to initialize database")?;
+    // Initialize centralized database instead of per-library database
+    let db = if let Some(db_path) = database_path {
+        info!("Using custom database: {db_path:?}");
+        Database::open(&db_path).context("Failed to initialize database")?
+    } else {
+        info!("Using centralized application database");
+        Database::open_app_database().context("Failed to initialize centralized database")?
+    };
 
     // Check if a library with this path already exists
     let library = match db.libraries().find_by_path(&library_path)? {

@@ -23,7 +23,7 @@ use rusqlite::{Connection, OptionalExtension};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
 pub use self::connection_adapter::ConnectionAdapter;
@@ -76,6 +76,8 @@ pub struct Database {
     operations: DatabaseOperations,
     /// Mutex for thread-safe access to shared state
     state: Arc<Mutex<DatabaseState>>,
+    /// Database file path for repository creation
+    db_path: PathBuf,
 }
 
 /// Shared state for database operations
@@ -130,6 +132,7 @@ impl Database {
             pool,
             operations,
             state: Arc::new(Mutex::new(DatabaseState::default())),
+            db_path: PathBuf::from(&config.path),
         })
     }
 
@@ -299,20 +302,18 @@ impl Database {
             return Ok(());
         }
 
-        // Group audiobooks by library path and collect owned data
-        let mut library_groups: std::collections::HashMap<PathBuf, Vec<Audiobook>> =
+        // Group audiobooks by library_id (which is already stored in each audiobook)
+        let mut library_groups: std::collections::HashMap<String, Vec<Audiobook>> =
             std::collections::HashMap::new();
         for audiobook in audiobooks {
-            let library_path = audiobook.path.parent().unwrap().to_path_buf();
             library_groups
-                .entry(library_path)
+                .entry(audiobook.library_id.clone())
                 .or_default()
                 .push(audiobook.clone());
         }
 
         // Process each library's audiobooks
-        for (library_path, audiobooks_for_library) in library_groups {
-            let library_id = self.get_library_id(&library_path)?;
+        for (library_id, audiobooks_for_library) in library_groups {
 
             self.operations.execute_transaction(move |tx| {
                 let mut stmt = tx.prepare(
@@ -491,25 +492,31 @@ impl Database {
     /// Get the audiobook repository
     #[must_use]
     pub fn audiobook_repository(&self) -> AudiobookRepository {
-        AudiobookRepository::new(Arc::new(EnhancedConnection::with_config(
-            ConnectionConfig::default(),
-        )))
+        let config = ConnectionConfig {
+            path: self.db_path.clone(),
+            ..Default::default()
+        };
+        AudiobookRepository::new(Arc::new(EnhancedConnection::with_config(config)))
     }
 
     /// Get the library repository
     #[must_use]
     pub fn library_repository(&self) -> LibraryRepository {
-        LibraryRepository::new(Arc::new(EnhancedConnection::with_config(
-            ConnectionConfig::default(),
-        )))
+        let config = ConnectionConfig {
+            path: self.db_path.clone(),
+            ..Default::default()
+        };
+        LibraryRepository::new(Arc::new(EnhancedConnection::with_config(config)))
     }
 
     /// Get the progress repository
     #[must_use]
     pub fn progress_repository(&self) -> ProgressRepository {
-        ProgressRepository::new(Arc::new(EnhancedConnection::with_config(
-            ConnectionConfig::default(),
-        )))
+        let config = ConnectionConfig {
+            path: self.db_path.clone(),
+            ..Default::default()
+        };
+        ProgressRepository::new(Arc::new(EnhancedConnection::with_config(config)))
     }
 
     /// Opens a database at the specified path
@@ -520,6 +527,32 @@ impl Database {
         };
 
         Self::new(config)
+    }
+
+    /// Opens the centralized application database
+    /// 
+    /// This creates a single database file in the app's data directory,
+    /// avoiding the need for separate databases per library.
+    pub fn open_app_database() -> Result<Self> {
+        let db_path = Self::get_app_database_path()?;
+        
+        // Ensure the parent directory exists
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| AppError::Config(format!("Failed to create database directory: {}", e)))?;
+        }
+        
+        info!("Using centralized database at: {}", db_path.display());
+        Self::open(&db_path)
+    }
+
+    /// Gets the path to the centralized application database
+    pub fn get_app_database_path() -> Result<PathBuf> {
+        let mut path = dirs::data_dir()
+            .ok_or_else(|| AppError::Config("Could not find data directory".to_string()))?;
+        path.push("abop-iced");
+        path.push("database.db");
+        Ok(path)
     }
 
     /// Gets all libraries from the database
