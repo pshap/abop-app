@@ -43,19 +43,19 @@ impl AudiobookTable {
     pub fn define_columns() -> Vec<data::TableColumn> {
         vec![
             data::TableColumn::new("title", "Title")
-                .width(data::ColumnWidth::Fill(6))
+                .width(data::ColumnWidth::FillPortion(6))
                 .align(data::TextAlignment::Start)
                 .sortable(true),
             data::TableColumn::new("author", "Author")
-                .width(data::ColumnWidth::Fill(4))
+                .width(data::ColumnWidth::FillPortion(4))
                 .align(data::TextAlignment::Start)
                 .sortable(true),
             data::TableColumn::new("duration", "Duration")
-                .width(data::ColumnWidth::Fill(2))
+                .width(data::ColumnWidth::FillPortion(2))
                 .align(data::TextAlignment::End)
                 .sortable(true),
             data::TableColumn::new("size", "Size")
-                .width(data::ColumnWidth::Fill(2))
+                .width(data::ColumnWidth::FillPortion(2))
                 .align(data::TextAlignment::End)
                 .sortable(true),
         ]
