@@ -44,6 +44,16 @@ impl CoreScanner {
     /// Discovers all audio files in a directory (synchronous)
     pub fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
         let extensions = &self.config.extensions;
+
+        // Verify the path exists before scanning
+        if !path.exists() {
+            warn!(
+                "Error reading directory: The system cannot find the path specified: {}",
+                path.display()
+            );
+            return Ok(Vec::new()); // Return empty list instead of failing
+        }
+
         Ok(Self::find_audio_files_in_path(path, extensions))
     }
 
@@ -82,7 +92,17 @@ impl CoreScanner {
     fn find_audio_files_in_path(path: &Path, extensions: &[String]) -> Vec<PathBuf> {
         log::debug!("🔍 CORE SCANNER: Starting scan of path: {}", path.display());
 
+        // Double-check that the path exists and is accessible
+        if !path.exists() {
+            warn!(
+                "Error reading directory: Path does not exist: {}",
+                path.display()
+            );
+            return Vec::new();
+        }
+
         let results: Vec<PathBuf> = WalkDir::new(path)
+            .follow_links(true) // Follow symbolic links
             .into_iter()
             .filter_map(|entry| match entry {
                 Ok(entry) => {
@@ -91,7 +111,11 @@ impl CoreScanner {
                     Some(entry)
                 }
                 Err(e) => {
-                    log::warn!("Error reading directory entry: {e}");
+                    warn!(
+                        "Error reading directory entry: IO error for operation on {}: {}",
+                        path.display(),
+                        e
+                    );
                     None
                 }
             })

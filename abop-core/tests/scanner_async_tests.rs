@@ -7,9 +7,7 @@ use abop_core::{
     db::Database,
     models::Library,
     scanner::{
-        LibraryScanner, ScanOptions, ScanProgress,
-        error::ScanError,
-        progress::ProgressReporter,
+        LibraryScanner, ScanOptions, ScanProgress, error::ScanError, progress::ProgressReporter,
     },
 };
 use std::time::Duration;
@@ -28,11 +26,11 @@ mod async_scanner_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        
+
         // Test the async wrapper around the sync core
         let result = scanner.scan_async(ScanOptions::default()).await;
         assert!(result.is_ok());
-        
+
         let summary = result.unwrap();
         assert_eq!(summary.new_files.len(), 0); // Empty directory
         assert_eq!(summary.errors, 0);
@@ -48,8 +46,10 @@ mod async_scanner_tests {
         let (tx, mut rx) = mpsc::channel(100);
 
         // Start scan with progress reporting using async wrapper
-        let scan_task = tokio::spawn(async move { 
-            scanner.scan_with_progress_async(ScanOptions::default(), tx).await 
+        let scan_task = tokio::spawn(async move {
+            scanner
+                .scan_with_progress_async(ScanOptions::default(), tx)
+                .await
         });
 
         // Collect progress updates
@@ -71,8 +71,9 @@ mod async_scanner_tests {
             assert!(matches!(progress_updates[0], ScanProgress::Started { .. }));
             assert!(matches!(
                 progress_updates.last().unwrap(),
-            ScanProgress::Complete { .. }
-        ));
+                ScanProgress::Complete { .. }
+            ));
+        }
     }
     #[tokio::test]
     async fn test_scan_cancellation() {
