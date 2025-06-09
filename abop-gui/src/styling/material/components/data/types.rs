@@ -2,6 +2,8 @@
 
 use iced::Padding;
 
+use super::constants::{density, defaults};
+
 /// Sort direction for table columns
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortDirection {
@@ -26,27 +28,27 @@ impl TableDensity {
     /// Get row height for the density level
     pub fn row_height(&self) -> f32 {
         match self {
-            Self::Compact => 32.0,
-            Self::Standard => 48.0,
-            Self::Comfortable => 56.0,
+            Self::Compact => density::COMPACT_ROW_HEIGHT,
+            Self::Standard => density::STANDARD_ROW_HEIGHT,
+            Self::Comfortable => density::COMFORTABLE_ROW_HEIGHT,
         }
     }
 
     /// Get header height for the density level
     pub fn header_height(&self) -> f32 {
         match self {
-            Self::Compact => 40.0,
-            Self::Standard => 56.0,
-            Self::Comfortable => 64.0,
+            Self::Compact => density::COMPACT_HEADER_HEIGHT,
+            Self::Standard => density::STANDARD_HEADER_HEIGHT,
+            Self::Comfortable => density::COMFORTABLE_HEADER_HEIGHT,
         }
     }
 
     /// Get cell padding for the density level
     pub fn cell_padding(&self) -> Padding {
         match self {
-            Self::Compact => Padding::new(8.0),
-            Self::Standard => Padding::new(12.0),
-            Self::Comfortable => Padding::new(16.0),
+            Self::Compact => Padding::new(density::COMPACT_CELL_PADDING),
+            Self::Standard => Padding::new(density::STANDARD_CELL_PADDING),
+            Self::Comfortable => Padding::new(density::COMFORTABLE_CELL_PADDING),
         }
     }
 }
@@ -332,20 +334,20 @@ impl Default for DataTableConfig {
             max_visible_rows: None,
             row_actions: false,
             resizable_columns: true,
-            min_column_width: 80.0,
+            min_column_width: defaults::MIN_COLUMN_WIDTH,
 
             // Table styling
             density: TableDensity::Standard,
             show_header: true,
             show_footer: false,
             sortable: true,
-            min_row_height: 32.0,
+            min_row_height: defaults::MIN_ROW_HEIGHT,
             max_row_height: None,
             header_height: None,
             footer_height: None,
             border_color: None,
-            border_width: 1.0,
-            border_radius: 4.0,
+            border_width: defaults::BORDER_WIDTH,
+            border_radius: defaults::BORDER_RADIUS,
         }
     }
 }
@@ -367,12 +369,12 @@ impl DataTableConfig {
             max_visible_rows: None,
             row_actions: false,
             resizable_columns: false,
-            min_column_width: 60.0,
+            min_column_width: defaults::MINIMAL_MIN_COLUMN_WIDTH,
             density: TableDensity::Compact,
             show_header: true,
             show_footer: false,
             sortable: false,
-            min_row_height: 28.0,
+            min_row_height: defaults::MINIMAL_MIN_ROW_HEIGHT,
             max_row_height: None,
             header_height: None,
             footer_height: None,
@@ -390,21 +392,21 @@ impl DataTableConfig {
             sticky_header: true,
             striped: true,
             virtual_scrolling: true,
-            max_visible_rows: Some(100),
+            max_visible_rows: Some(defaults::DEFAULT_MAX_VISIBLE_ROWS),
             row_actions: true,
             resizable_columns: true,
-            min_column_width: 100.0,
+            min_column_width: defaults::ADVANCED_MIN_COLUMN_WIDTH,
             density: TableDensity::Comfortable,
             show_header: true,
             show_footer: true,
             sortable: true,
-            min_row_height: 40.0,
-            max_row_height: Some(120.0),
-            header_height: Some(64.0),
-            footer_height: Some(48.0),
+            min_row_height: defaults::ADVANCED_MIN_ROW_HEIGHT,
+            max_row_height: Some(defaults::ADVANCED_MAX_ROW_HEIGHT),
+            header_height: Some(defaults::ADVANCED_HEADER_HEIGHT),
+            footer_height: Some(defaults::ADVANCED_FOOTER_HEIGHT),
             border_color: Some(iced::Color::from_rgb(0.9, 0.9, 0.9)),
-            border_width: 1.0,
-            border_radius: 8.0,
+            border_width: defaults::BORDER_WIDTH,
+            border_radius: defaults::ADVANCED_BORDER_RADIUS,
         }
     }
 
@@ -691,391 +693,6 @@ impl DataTableConfig {
         self.border_color = None;
         self.border_width = 0.0;
         self
-    }
-}
-
-/// Builder for creating table configurations with a fluent API
-#[derive(Debug, Clone)]
-pub struct DataTableBuilder {
-    config: DataTableConfig,
-}
-
-impl DataTableBuilder {
-    /// Create a new table builder with default configuration
-    pub fn new() -> Self {
-        Self {
-            config: DataTableConfig::default(),
-        }
-    }
-
-    /// Start with minimal configuration
-    pub fn minimal() -> Self {
-        Self {
-            config: DataTableConfig::minimal(),
-        }
-    }
-
-    /// Start with advanced configuration
-    pub fn advanced() -> Self {
-        Self {
-            config: DataTableConfig::advanced(),
-        }
-    }
-
-    /// Build the final configuration
-    pub fn build(self) -> DataTableConfig {
-        self.config
-    }
-
-    /// Apply all configuration methods through delegation    /// Enable or disable row selection
-    pub fn selectable(mut self, selectable: bool) -> Self {
-        self.config = self.config.set_selectable(selectable);
-        self
-    }
-
-    /// Enable row selection (fluent API)
-    pub fn with_selection(mut self) -> Self {
-        self.config = self.config.with_selection();
-        self
-    }
-
-    /// Disable row selection (fluent API)
-    pub fn without_selection(mut self) -> Self {
-        self.config = self.config.without_selection();
-        self
-    }
-
-    /// Enable or disable row hover effects
-    pub fn hoverable(mut self, hoverable: bool) -> Self {
-        self.config = self.config.set_hoverable(hoverable);
-        self
-    }
-
-    /// Enable row hover effects (fluent API)
-    pub fn with_hover(mut self) -> Self {
-        self.config = self.config.with_hover();
-        self
-    }
-
-    /// Disable row hover effects (fluent API)
-    pub fn without_hover(mut self) -> Self {
-        self.config = self.config.without_hover();
-        self
-    }
-    /// Enable or disable sticky header
-    pub fn sticky_header(mut self, sticky: bool) -> Self {
-        self.config = self.config.set_sticky_header(sticky);
-        self
-    }
-
-    /// Enable sticky header (fluent API)
-    pub fn with_sticky_header(mut self) -> Self {
-        self.config = self.config.with_sticky_header();
-        self
-    }
-
-    /// Disable sticky header (fluent API)
-    pub fn without_sticky_header(mut self) -> Self {
-        self.config = self.config.without_sticky_header();
-        self
-    }
-
-    /// Enable or disable striped rows
-    pub fn striped(mut self, striped: bool) -> Self {
-        self.config = self.config.set_striped(striped);
-        self
-    }
-
-    /// Enable striped rows (fluent API)
-    pub fn with_stripes(mut self) -> Self {
-        self.config = self.config.with_stripes();
-        self
-    }
-
-    /// Disable striped rows (fluent API)
-    pub fn without_stripes(mut self) -> Self {
-        self.config = self.config.without_stripes();
-        self
-    }
-    /// Enable or disable virtual scrolling
-    /// Enable or disable virtual scrolling for the table
-    ///
-    /// # Arguments
-    /// * `virtual_enabled` - Whether to enable virtual scrolling
-    pub fn virtual_scrolling(mut self, virtual_enabled: bool) -> Self {
-        self.config = self.config.enable_virtual_scrolling(virtual_enabled);
-        self
-    }
-
-    /// Enable virtual scrolling with an optional maximum number of visible rows
-    ///
-    /// # Arguments
-    /// * `max_visible` - Maximum number of rows to render at once (None for automatic calculation)
-    pub fn with_virtual_scrolling(mut self, max_visible: Option<usize>) -> Self {
-        self.config = self.config.with_virtual_scrolling(max_visible);
-        self
-    }
-
-    /// Disable virtual scrolling for the table
-    pub fn without_virtual_scrolling(mut self) -> Self {
-        self.config = self.config.without_virtual_scrolling();
-        self
-    }
-
-    /// Set the maximum number of visible rows in the virtual scrolling viewport
-    ///
-    /// # Arguments
-    /// * `max` - Maximum number of rows to render at once
-    pub fn max_visible_rows(mut self, max: usize) -> Self {
-        self.config = self.config.max_visible_rows(max);
-        self
-    }
-
-    /// Enable or disable row action buttons
-    ///
-    /// # Arguments
-    /// * `actions` - Whether to show row action buttons
-    pub fn row_actions(mut self, actions: bool) -> Self {
-        self.config = self.config.set_row_actions(actions);
-        self
-    }
-
-    /// Enable row action buttons
-    pub fn with_row_actions(mut self) -> Self {
-        self.config = self.config.with_row_actions();
-        self
-    }
-
-    /// Disable row action buttons
-    pub fn without_row_actions(mut self) -> Self {
-        self.config = self.config.without_row_actions();
-        self
-    }
-
-    /// Enable or disable column resizing
-    ///
-    /// # Arguments
-    /// * `resizable` - Whether columns should be resizable by the user
-    pub fn resizable_columns(mut self, resizable: bool) -> Self {
-        self.config = self.config.set_resizable_columns(resizable);
-        self
-    }
-
-    /// Enable column resizing
-    pub fn with_resizable_columns(mut self) -> Self {
-        self.config = self.config.with_resizable_columns();
-        self
-    }
-
-    /// Disable column resizing
-    pub fn without_resizable_columns(mut self) -> Self {
-        self.config = self.config.without_resizable_columns();
-        self
-    }
-
-    /// Set the minimum width for all columns
-    ///
-    /// # Arguments
-    /// * `width` - The minimum width in logical pixels
-    pub fn min_column_width(mut self, width: f32) -> Self {
-        self.config = self.config.min_column_width(width);
-        self
-    }
-
-    /// Set the table's density (spacing between rows)
-    ///
-    /// # Arguments
-    /// * `density` - The desired density level (Compact, Standard, or Comfortable)
-    pub fn density(mut self, density: TableDensity) -> Self {
-        self.config = self.config.density(density);
-        self
-    }
-
-    /// Set the table to use compact density (less spacing between rows)
-    pub fn compact(mut self) -> Self {
-        self.config = self.config.compact();
-        self
-    }
-
-    /// Set the table to use standard density (default spacing between rows)
-    pub fn standard(mut self) -> Self {
-        self.config = self.config.standard();
-        self
-    }
-
-    /// Set the table to use comfortable density (more spacing between rows)
-    pub fn comfortable(mut self) -> Self {
-        self.config = self.config.comfortable();
-        self
-    }
-
-    /// Set whether to show the table header
-    ///
-    /// # Arguments
-    /// * `show` - Whether to display the table header
-    pub fn show_header(mut self, show: bool) -> Self {
-        self.config = self.config.set_show_header(show);
-        self
-    }
-
-    /// Enable the table header
-    pub fn with_header(mut self) -> Self {
-        self.config = self.config.with_header();
-        self
-    }
-
-    /// Disable the table header
-    pub fn without_header(mut self) -> Self {
-        self.config = self.config.without_header();
-        self
-    }
-
-    /// Set whether to show the table footer
-    ///
-    /// # Arguments
-    /// * `show` - Whether to display the table footer
-    pub fn show_footer(mut self, show: bool) -> Self {
-        self.config = self.config.set_show_footer(show);
-        self
-    }
-
-    /// Enable the table footer
-    pub fn with_footer(mut self) -> Self {
-        self.config = self.config.with_footer();
-        self
-    }
-
-    /// Disable the table footer
-    pub fn without_footer(mut self) -> Self {
-        self.config = self.config.without_footer();
-        self
-    }
-
-    /// Set whether columns are sortable by default
-    ///
-    /// # Arguments
-    /// * `sortable` - Whether columns should be sortable by default
-    pub fn sortable(mut self, sortable: bool) -> Self {
-        self.config = self.config.set_sortable(sortable);
-        self
-    }
-
-    /// Enable column sorting by default
-    pub fn with_sorting(mut self) -> Self {
-        self.config = self.config.with_sorting();
-        self
-    }
-
-    /// Disable column sorting by default
-    pub fn without_sorting(mut self) -> Self {
-        self.config = self.config.without_sorting();
-        self
-    }
-
-    /// Set row height constraints
-    ///
-    /// # Arguments
-    /// * `min` - Minimum row height in logical pixels
-    /// * `max` - Maximum row height in logical pixels (optional)
-    pub fn row_height(mut self, min: f32, max: Option<f32>) -> Self {
-        self.config = self.config.row_height(min, max);
-        self
-    }
-
-    /// Set minimum row height
-    ///
-    /// # Arguments
-    /// * `height` - Minimum row height in logical pixels
-    pub fn min_row_height(mut self, height: f32) -> Self {
-        self.config = self.config.min_row_height(height);
-        self
-    }
-
-    /// Set maximum row height
-    ///
-    /// # Arguments
-    /// * `height` - Maximum row height in logical pixels
-    pub fn max_row_height(mut self, height: f32) -> Self {
-        self.config = self.config.max_row_height(height);
-        self
-    }
-
-    /// Set fixed header height
-    ///
-    /// # Arguments
-    /// * `height` - Fixed header height in logical pixels
-    pub fn header_height(mut self, height: f32) -> Self {
-        self.config = self.config.header_height(height);
-        self
-    }
-
-    /// Set fixed footer height
-    ///
-    /// # Arguments
-    /// * `height` - Fixed footer height in logical pixels
-    pub fn footer_height(mut self, height: f32) -> Self {
-        self.config = self.config.footer_height(height);
-        self
-    }
-
-    /// Set table border styling
-    ///
-    /// # Arguments
-    /// * `color` - Border color
-    /// * `width` - Border width in logical pixels
-    /// * `radius` - Border radius in logical pixels
-    pub fn border(mut self, color: iced::Color, width: f32, radius: f32) -> Self {
-        self.config = self.config.border(color, width, radius);
-        self
-    }
-
-    /// Set border color
-    ///
-    /// # Arguments
-    /// * `color` - The border color to use
-    pub fn border_color(mut self, color: iced::Color) -> Self {
-        self.config = self.config.border_color(color);
-        self
-    }
-
-    /// Set border width
-    ///
-    /// # Arguments
-    /// * `width` - Border width in logical pixels
-    ///
-    /// # Returns
-    /// Self for method chaining
-    pub fn border_width(mut self, width: f32) -> Self {
-        self.config = self.config.border_width(width);
-        self
-    }
-
-    /// Set border radius for the table corners
-    ///
-    /// # Arguments
-    /// * `radius` - Border radius in logical pixels
-    ///
-    /// # Returns
-    /// Self for method chaining
-    pub fn border_radius(mut self, radius: f32) -> Self {
-        self.config = self.config.border_radius(radius);
-        self
-    }
-
-    /// Remove all borders from the table
-    ///
-    /// # Returns
-    /// Self for method chaining
-    pub fn without_borders(mut self) -> Self {
-        self.config = self.config.without_borders();
-        self
-    }
-}
-
-impl Default for DataTableBuilder {
-    /// Creates a new `DataTableBuilder` with default settings
-    fn default() -> Self {
-        Self::new()
     }
 }
 

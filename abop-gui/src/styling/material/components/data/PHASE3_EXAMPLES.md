@@ -70,25 +70,23 @@ let custom_config = DataTableConfig::minimal()
     .border_radius(8.0);
 ```
 
-### DataTableBuilder (Alternative Approach)
+### Direct Configuration Building
 
 ```rust
-// Using the dedicated builder
-let config = DataTableBuilder::new()
-    .selectable(true)
-    .hoverable(true)
-    .striped(true)
+// Using DataTableConfig directly with fluent API
+let config = DataTableConfig::new()
+    .set_selectable(true)
+    .set_hoverable(true)
+    .with_stripes()
     .compact()
     .with_virtual_scrolling(Some(100))
-    .border_width(2.0)
-    .build();
+    .border_width(2.0);
 
-// Starting with presets
-let config = DataTableBuilder::advanced()
+// Starting with presets and customizing
+let config = DataTableConfig::advanced()
     .without_stripes()
     .compact()
-    .max_visible_rows(200)
-    .build();
+    .max_visible_rows(200);
 ```
 
 ## Type-Safe APIs
