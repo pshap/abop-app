@@ -56,15 +56,27 @@ mod tests {
 
     #[test]
     fn test_library_creation() {
-        let library = Library::new("Test Library", "/path/to/library");
+        let test_path = if cfg!(windows) {
+            r"C:\test\library"
+        } else {
+            "/test/library"
+        };
+        
+        let library = Library::new("Test Library", test_path);
         assert_eq!(library.name, "Test Library");
-        assert_eq!(library.path, Path::new("/path/to/library"));
+        assert_eq!(library.path, Path::new(test_path));
         assert!(!library.id.is_empty());
     }
 
     #[test]
     fn test_library_display_name() {
-        let library = Library::new("My Library", "/some/path");
+        let test_path = if cfg!(windows) {
+            r"C:\some\path"
+        } else {
+            "/some/path"
+        };
+        
+        let library = Library::new("My Library", test_path);
         assert_eq!(library.display_name(), "My Library");
     }
 }
