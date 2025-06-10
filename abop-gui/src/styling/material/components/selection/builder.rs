@@ -9,6 +9,179 @@ use super::common::*;
 use super::chip::DEFAULT_ANIMATION_DURATION;
 
 // ============================================================================
+// Common Configuration Constants
+// ============================================================================
+
+/// Default constants for builder configuration
+pub mod defaults {
+    use super::*;
+    use std::time::Duration;
+
+    /// Default maximum label length for most components
+    pub const DEFAULT_MAX_LABEL_LENGTH: usize = 200;
+    
+    /// Default animation duration for checkbox and switch components (milliseconds)
+    pub const DEFAULT_CHECKBOX_ANIMATION_DURATION_MS: u64 = 200;
+    
+    /// Default animation duration for radio components (milliseconds) 
+    pub const DEFAULT_RADIO_ANIMATION_DURATION_MS: u64 = 100;
+    
+    /// Default animation duration for switch components (milliseconds)
+    pub const DEFAULT_SWITCH_ANIMATION_DURATION_MS: u64 = 200;
+
+    /// Create default validation configuration for standard components
+    #[must_use]
+    pub fn default_validation_config() -> ValidationConfig {
+        ValidationConfig {
+            max_label_length: DEFAULT_MAX_LABEL_LENGTH,
+            allow_empty_label: true,
+            custom_rules: Vec::new(),
+        }
+    }
+
+    /// Create default animation configuration for checkbox components
+    #[must_use]
+    pub fn default_checkbox_animation_config() -> AnimationConfig {
+        AnimationConfig {
+            duration: Duration::from_millis(DEFAULT_CHECKBOX_ANIMATION_DURATION_MS),
+            enabled: true,
+            respect_reduced_motion: true,
+            easing: EasingCurve::Standard,
+        }
+    }
+
+    /// Create default animation configuration for radio components
+    #[must_use]
+    pub fn default_radio_animation_config() -> AnimationConfig {
+        AnimationConfig {
+            duration: Duration::from_millis(DEFAULT_RADIO_ANIMATION_DURATION_MS),
+            enabled: true,
+            respect_reduced_motion: true,
+            easing: EasingCurve::Standard,
+        }
+    }
+
+    /// Create default animation configuration for switch components
+    #[must_use]
+    pub fn default_switch_animation_config() -> AnimationConfig {
+        AnimationConfig {
+            duration: Duration::from_millis(DEFAULT_SWITCH_ANIMATION_DURATION_MS),
+            enabled: true,
+            respect_reduced_motion: true,
+            easing: EasingCurve::Standard,
+        }
+    }
+
+    /// Create default animation configuration for chip components
+    #[must_use]
+    pub fn default_chip_animation_config() -> AnimationConfig {
+        AnimationConfig {
+            duration: DEFAULT_ANIMATION_DURATION,
+            enabled: true,
+            respect_reduced_motion: true,
+            easing: EasingCurve::Standard,
+        }
+    }
+}
+
+// ============================================================================
+// Common Builder Methods Macro
+// ============================================================================
+
+/// Macro to generate common builder methods that are shared across all builders
+/// This eliminates code duplication for disabled, size, error, validation, and animation methods
+macro_rules! impl_common_builder_methods {
+    ($builder:ty) => {
+        impl $builder {
+            /// Set disabled state
+            #[must_use]
+            pub const fn disabled(mut self, disabled: bool) -> Self {
+                self.props.disabled = disabled;
+                self
+            }
+
+            /// Set component size
+            #[must_use]
+            pub const fn size(mut self, size: ComponentSize) -> Self {
+                self.props.size = size;
+                self
+            }
+
+            /// Set error state for validation feedback
+            #[must_use]
+            pub const fn error(mut self, error: bool) -> Self {
+                self.error_state = error;
+                self
+            }
+
+            /// Set validation configuration
+            #[must_use]
+            pub fn validation(mut self, config: ValidationConfig) -> Self {
+                self.validation_config = config;
+                self
+            }
+
+            /// Set animation configuration
+            #[must_use]
+            pub const fn animation(mut self, config: AnimationConfig) -> Self {
+                self.animation_config = config;
+                self
+            }
+
+            /// Check if error state is enabled
+            #[must_use]
+            pub const fn has_error(&self) -> bool {
+                self.error_state
+            }
+        }
+    };
+}
+
+// ============================================================================
+// Enhanced Validation Helper
+// ============================================================================
+
+/// Enhanced validation with better error context
+pub fn validate_with_context<T>(
+    _builder: &T,
+    component_type: &str,
+    validate_fn: impl FnOnce() -> Result<(), SelectionError>,
+) -> Result<(), SelectionError> {
+    validate_fn().map_err(|e| match e {
+        SelectionError::ValidationError(msg) => {
+            SelectionError::ValidationError(format!("{component_type}: {msg}"))
+        }
+        SelectionError::InvalidLabel { reason } => {
+            SelectionError::InvalidLabel {
+                reason: format!("{component_type}: {reason}"),
+            }
+        }
+        SelectionError::LabelTooLong { len, max } => {
+            SelectionError::LabelTooLong { len, max }
+        }
+        SelectionError::EmptyLabel => {
+            SelectionError::EmptyLabel
+        }
+        SelectionError::InvalidState { details } => {
+            SelectionError::InvalidState {
+                details: format!("{component_type}: {details}"),
+            }
+        }
+        SelectionError::ConflictingStates { details } => {
+            SelectionError::ConflictingStates {
+                details: format!("{component_type}: {details}"),
+            }
+        }
+        SelectionError::CustomRule { rule, message } => {
+            SelectionError::CustomRule {
+                rule,
+                message: format!("{component_type}: {message}"),
+            }
+        }
+    })
+}
+
+// ============================================================================
 // Builder Trait System
 // ============================================================================
 
@@ -88,17 +261,8 @@ impl CheckboxBuilder {
             state,
             props: ComponentProps::new(),
             error_state: false,
-            validation_config: ValidationConfig {
-                max_label_length: 200,
-                allow_empty_label: true,
-                custom_rules: Vec::new(),
-            },
-            animation_config: AnimationConfig {
-                duration: std::time::Duration::from_millis(200),
-                enabled: true,
-                respect_reduced_motion: true,
-                easing: EasingCurve::Standard,
-            },
+            validation_config: defaults::default_validation_config(),
+            animation_config: defaults::default_checkbox_animation_config(),
         }
     }
 
@@ -106,41 +270,6 @@ impl CheckboxBuilder {
     #[must_use]
     pub fn label<S: Into<String>>(mut self, label: S) -> Self {
         self.props.label = Some(label.into());
-        self
-    }
-
-    /// Set disabled state
-    #[must_use]
-    pub const fn disabled(mut self, disabled: bool) -> Self {
-        self.props.disabled = disabled;
-        self
-    }
-
-    /// Set component size
-    #[must_use]
-    pub const fn size(mut self, size: ComponentSize) -> Self {
-        self.props.size = size;
-        self
-    }
-
-    /// Set error state for validation feedback
-    #[must_use]
-    pub const fn error(mut self, error: bool) -> Self {
-        self.error_state = error;
-        self
-    }
-
-    /// Set validation configuration
-    #[must_use]
-    pub fn validation(mut self, config: ValidationConfig) -> Self {
-        self.validation_config = config;
-        self
-    }
-
-    /// Set animation configuration
-    #[must_use]
-    pub const fn animation(mut self, config: AnimationConfig) -> Self {
-        self.animation_config = config;
         self
     }
 
@@ -179,13 +308,10 @@ impl CheckboxBuilder {
     pub const fn props(&self) -> &ComponentProps {
         &self.props
     }
-
-    /// Check if error state is enabled
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
 }
+
+// Apply common builder methods to CheckboxBuilder
+impl_common_builder_methods!(CheckboxBuilder);
 
 impl ComponentBuilder<CheckboxState> for CheckboxBuilder {
     type Component = Checkbox;
@@ -206,9 +332,11 @@ impl ComponentBuilder<CheckboxState> for CheckboxBuilder {
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
-        validate_checkbox_state(self.state, &self.props)?;
-        validate_props(&self.props, &self.validation_config)?;
-        Ok(())
+        validate_with_context(self, "CheckboxBuilder", || {
+            validate_checkbox_state(self.state, &self.props)?;
+            validate_props(&self.props, &self.validation_config)?;
+            Ok(())
+        })
     }
 }
 
@@ -243,17 +371,8 @@ where
             value,
             props: ComponentProps::new(),
             error_state: false,
-            validation_config: ValidationConfig {
-                max_label_length: 200,
-                allow_empty_label: true,
-                custom_rules: Vec::new(),
-            },
-            animation_config: AnimationConfig {
-                duration: std::time::Duration::from_millis(100),
-                enabled: true,
-                respect_reduced_motion: true,
-                easing: EasingCurve::Standard,
-            },
+            validation_config: defaults::default_validation_config(),
+            animation_config: defaults::default_radio_animation_config(),
         }
     }
 
@@ -299,6 +418,12 @@ where
         self
     }
 
+    /// Check if error state is enabled
+    #[must_use]
+    pub const fn has_error(&self) -> bool {
+        self.error_state
+    }
+
     /// Get the radio value
     #[must_use]
     pub const fn value(&self) -> &T {
@@ -310,13 +435,11 @@ where
     pub const fn props(&self) -> &ComponentProps {
         &self.props
     }
-
-    /// Check if error state is enabled
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
 }
+
+// Apply common builder methods to RadioBuilder
+// Note: Cannot use generic macro for RadioBuilder due to Rust macro limitations
+// These methods are manually implemented in the RadioBuilder impl block above
 
 impl<T> ComponentBuilder<T> for RadioBuilder<T>
 where
@@ -340,8 +463,10 @@ where
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
-        validate_props(&self.props, &self.validation_config)?;
-        Ok(())
+        validate_with_context(self, "RadioBuilder", || {
+            validate_props(&self.props, &self.validation_config)?;
+            Ok(())
+        })
     }
 }
 
@@ -370,17 +495,8 @@ impl SwitchBuilder {
             state,
             props: ComponentProps::new(),
             error_state: false,
-            validation_config: ValidationConfig {
-                max_label_length: 200,
-                allow_empty_label: true,
-                custom_rules: Vec::new(),
-            },
-            animation_config: AnimationConfig {
-                duration: std::time::Duration::from_millis(200),
-                enabled: true,
-                respect_reduced_motion: true,
-                easing: EasingCurve::Standard,
-            },
+            validation_config: defaults::default_validation_config(),
+            animation_config: defaults::default_switch_animation_config(),
         }
     }
 
@@ -388,41 +504,6 @@ impl SwitchBuilder {
     #[must_use]
     pub fn label<S: Into<String>>(mut self, label: S) -> Self {
         self.props.label = Some(label.into());
-        self
-    }
-
-    /// Set disabled state
-    #[must_use]
-    pub const fn disabled(mut self, disabled: bool) -> Self {
-        self.props.disabled = disabled;
-        self
-    }
-
-    /// Set component size
-    #[must_use]
-    pub const fn size(mut self, size: ComponentSize) -> Self {
-        self.props.size = size;
-        self
-    }
-
-    /// Set error state for validation feedback
-    #[must_use]
-    pub const fn error(mut self, error: bool) -> Self {
-        self.error_state = error;
-        self
-    }
-
-    /// Set validation configuration
-    #[must_use]
-    pub fn validation(mut self, config: ValidationConfig) -> Self {
-        self.validation_config = config;
-        self
-    }
-
-    /// Set animation configuration
-    #[must_use]
-    pub const fn animation(mut self, config: AnimationConfig) -> Self {
-        self.animation_config = config;
         self
     }
 
@@ -455,13 +536,10 @@ impl SwitchBuilder {
     pub const fn props(&self) -> &ComponentProps {
         &self.props
     }
-
-    /// Check if error state is enabled
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
 }
+
+// Apply common builder methods to SwitchBuilder
+impl_common_builder_methods!(SwitchBuilder);
 
 impl ComponentBuilder<SwitchState> for SwitchBuilder {
     type Component = Switch;
@@ -482,9 +560,11 @@ impl ComponentBuilder<SwitchState> for SwitchBuilder {
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
-        validate_switch_state(self.state, &self.props)?;
-        validate_props(&self.props, &self.validation_config)?;
-        Ok(())
+        validate_with_context(self, "SwitchBuilder", || {
+            validate_switch_state(self.state, &self.props)?;
+            validate_props(&self.props, &self.validation_config)?;
+            Ok(())
+        })
     }
 }
 
@@ -502,6 +582,7 @@ pub struct ChipBuilder {
     state: ChipState,
     variant: ChipVariant,
     props: ComponentProps,
+    error_state: bool,
     validation_config: ValidationConfig,
     animation_config: AnimationConfig,
 }
@@ -516,13 +597,9 @@ impl ChipBuilder {
             state: ChipState::Unselected,
             variant,
             props: ComponentProps::new().with_label(label),
+            error_state: false,
             validation_config: validation_config_for_chips(),
-            animation_config: AnimationConfig {
-                duration: DEFAULT_ANIMATION_DURATION,
-                enabled: true,
-                respect_reduced_motion: true,
-                easing: EasingCurve::Standard,
-            },
+            animation_config: defaults::default_chip_animation_config(),
         }
     }
     /// Set the chip state
@@ -543,33 +620,8 @@ impl ChipBuilder {
         self
     }
 
-    /// Set disabled state
-    #[must_use]
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.props.disabled = disabled;
-        self
-    }
-
-    /// Set component size
-    #[must_use]
-    pub fn size(mut self, size: ComponentSize) -> Self {
-        self.props.size = size;
-        self
-    }
-
-    /// Set validation configuration
-    #[must_use]
-    pub fn validation(mut self, config: ValidationConfig) -> Self {
-        self.validation_config = config;
-        self
-    }
-
-    /// Set animation configuration
-    #[must_use]
-    pub const fn animation(mut self, config: AnimationConfig) -> Self {
-        self.animation_config = config;
-        self
-    }
+    // Common builder methods (disabled, size, error, validation, animation, has_error) 
+    // are provided by the impl_common_builder_methods! macro applied below
 
     // ========================================================================
     // Enhanced UI Builder Methods
@@ -675,6 +727,9 @@ impl ChipBuilder {
     }
 }
 
+// Apply common builder methods to ChipBuilder
+impl_common_builder_methods!(ChipBuilder);
+
 impl ComponentBuilder<ChipState> for ChipBuilder {
     type Component = Chip;
     type Error = SelectionError;
@@ -690,14 +745,17 @@ impl ComponentBuilder<ChipState> for ChipBuilder {
             state: self.state,
             variant: self.variant,
             props: self.props,
+            error_state: self.error_state,
             animation_config: self.animation_config,
         }
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
-        validate_chip_state(self.state, self.variant, &self.props)?;
-        validate_props(&self.props, &self.validation_config)?;
-        Ok(())
+        validate_with_context(self, "ChipBuilder", || {
+            validate_chip_state(self.state, self.variant, &self.props)?;
+            validate_props(&self.props, &self.validation_config)?;
+            Ok(())
+        })
     }
 }
 
@@ -759,6 +817,7 @@ pub struct Chip {
     pub(crate) state: ChipState,
     pub(crate) variant: ChipVariant,
     pub(crate) props: ComponentProps,
+    pub(crate) error_state: bool,
     pub(crate) animation_config: AnimationConfig,
 }
 
@@ -768,6 +827,7 @@ impl PartialEq for Chip {
             && self.state == other.state
             && self.variant == other.variant
             && self.props == other.props
+            && self.error_state == other.error_state
         // Note: animation_config is excluded from equality comparison
     }
 }
