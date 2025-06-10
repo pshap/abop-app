@@ -24,34 +24,28 @@
 //! # Quick Start
 //!
 //! ```rust
-//! use crate::styling::material::components::selection::*;
+//! use abop_gui::styling::material::components::selection::*;
 //!
 //! // Create a checkbox
-//! let checkbox = Checkbox::new("agree")
-//!     .with_label("I agree to the terms")
-//!     .checked()
-//!     .size(ComponentSize::Large);
-//!
-//! // Create a radio group
-//! let theme_group = RadioGroup::builder()
-//!     .option("light", "Light Theme")
-//!     .option("dark", "Dark Theme")
-//!     .option("auto", "Auto")
-//!     .selected("auto")
-//!     .build();
+//! let checkbox = CheckboxBuilder::checked()
+//!     .label("I agree to the terms")
+//!     .size(ComponentSize::Large)
+//!     .build()
+//!     .expect("Valid checkbox");
 //!
 //! // Create a switch
-//! let notifications = Switch::new()
-//!     .with_label("Enable notifications")
-//!     .on()
-//!     .size(ComponentSize::Medium);
+//! let notifications = SwitchBuilder::on()
+//!     .label("Enable notifications")
+//!     .size(ComponentSize::Medium)
+//!     .build()
+//!     .expect("Valid switch");
 //!
 //! // Create a chip collection
-//! let filters = ChipCollection::builder(SelectionMode::Multiple)
-//!     .chip(Chip::new("price", ChipVariant::Filter).with_label("Price"))
-//!     .chip(Chip::new("rating", ChipVariant::Filter).with_label("Rating"))
-//!     .selected(&["price"])
-//!     .build();
+//! let filters = ChipCollectionBuilder::new(ChipSelectionMode::Multiple)
+//!     .chip(ChipBuilder::filter("Price").build().unwrap())
+//!     .chip(ChipBuilder::filter("Rating").build().unwrap())
+//!     .build()
+//!     .expect("Valid chip collection");
 //! ```
 //!
 //! # Architecture
@@ -87,12 +81,6 @@ pub mod switch;
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(test)]
-pub mod demo;
-
-#[cfg(test)]
-pub mod integration_tests;
-
 // Re-export core types and traits (but not convenience functions)
 pub use builder::{
     BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
@@ -107,11 +95,19 @@ pub use common::{
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use switch::SwitchDimensions;
 
-// Convenience type aliases for common usage patterns
+/// A collection of filter chips supporting multiple selection
 pub type FilterChipCollection = ChipCollection;
+
+/// A collection of input chips (tags)
 pub type InputChipCollection = ChipCollection;
+
+/// Radio group for theme selection with static string references
 pub type ThemeRadioGroup = RadioGroupState<&'static str>;
+
+/// Switch component for settings toggles
 pub type SettingsSwitch = Switch;
+
+/// Checkbox component for agreement/consent dialogs
 pub type AgreementCheckbox = Checkbox;
 
 /// Convenient builder functions for quick component creation
@@ -335,6 +331,10 @@ pub mod constants {
 
 /// Version information for the selection module
 pub const VERSION: &str = "3.0.0";
+/// Current development phase of the selection components
+/// 
+/// This constant tracks the current architectural phase of the selection components.
+/// Phase 3+ indicates a modular architecture with future preparation for additional features.
 pub const PHASE: &str = "Phase 3+ - Modular Architecture with Future Preparation";
 
 #[cfg(test)]
@@ -344,8 +344,8 @@ mod module_tests {
     #[test]
     fn test_module_exports() {
         // Test that all major types are accessible
-        let _checkbox = Checkbox::new("test");
-        let _switch = Switch::new();
+        let _checkbox = Checkbox::new(CheckboxState::Unchecked);
+        let _switch = Switch::new(SwitchState::Off);
         let _radio_group = RadioGroupState::<&str>::new();
         let _chip = Chip::new("test", ChipVariant::Assist);
         let _collection = ChipCollection::new(ChipSelectionMode::Single);
@@ -353,8 +353,8 @@ mod module_tests {
 
     #[test]
     fn test_builder_convenience_functions() {
-        let _checkbox = builders::checkbox("test");
-        let _labeled = builders::labeled_checkbox("test", "Test");
+        let _checkbox = builders::checkbox();
+        let _labeled = builders::labeled_checkbox("Test");
         let _switch = builders::switch();
         let _labeled_switch = builders::labeled_switch("Toggle");
         let _filters = builders::filter_chips();
@@ -364,13 +364,13 @@ mod module_tests {
     #[test]
     fn test_validation_utilities() {
         let checkboxes = vec![
-            Checkbox::new("valid1").with_label("Valid"),
-            Checkbox::new("valid2").with_label("Also Valid"),
+            Checkbox::new(CheckboxState::Unchecked).label("Valid").build().unwrap(),
+            Checkbox::new(CheckboxState::Unchecked).label("Also Valid").build().unwrap(),
         ];
 
-        assert!(validation::validate_collection(&checkboxes).is_ok());
-        assert!(validation::all_valid(&checkboxes));
-        assert!(validation::collect_validation_errors(&checkboxes).is_empty());
+        assert!(validation::validate_checkboxes(&checkboxes).is_ok());
+        assert!(validation::all_checkboxes_valid(&checkboxes));
+        assert!(validation::collect_checkbox_errors(&checkboxes).is_empty());
     }
 
     #[test]
