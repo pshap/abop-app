@@ -17,7 +17,7 @@ pub mod audio {
         let _builder = CastingBuilder::for_audiobook_processing();
         let mut total_duration = 0.0;        for &(samples, rate) in tracks {
             let duration = crate::utils::casting::domain::audio::safe_samples_to_duration(samples, rate)
-                .map_err(|e| AppError::Audio(format!("Duration calculation failed: {}", e)))?;
+                .map_err(|e| AppError::Audio(format!("Duration calculation failed: {e}")))?;
             total_duration += duration;
         }
 
@@ -33,7 +33,7 @@ pub mod audio {
         let latency_seconds = target_latency_ms / 1000.0;
         
         builder.time_to_samples(latency_seconds, sample_rate)
-            .map_err(|e| AppError::Audio(format!("Buffer size calculation failed: {}", e)))
+            .map_err(|e| AppError::Audio(format!("Buffer size calculation failed: {e}")))
     }
 
     /// Convert between different audio formats safely
@@ -48,7 +48,7 @@ pub mod audio {
         let to_bits = to_format.bit_depth();
         
         builder.convert_audio_value(value, from_bits, to_bits)
-            .map_err(|e| AppError::Audio(format!("Sample format conversion failed: {}", e)))
+            .map_err(|e| AppError::Audio(format!("Sample format conversion failed: {e}")))
     }
 
     /// Audio sample format enumeration
@@ -105,10 +105,10 @@ pub mod database {
 
         let total_items_usize = builder.int_to_int::<i64, usize>(total_items)
             .map_err(|e| AppError::Database(crate::db::error::DatabaseError::ExecutionFailed {
-                message: format!("Failed to convert total items: {}", e)
+                message: format!("Failed to convert total items: {e}")
             }))?;
 
-        let total_pages = (total_items_usize + page_size - 1) / page_size;
+        let total_pages = total_items_usize.div_ceil(page_size);
         let offset = current_page.saturating_sub(1) * page_size;
         let has_next = current_page < total_pages;
         let has_prev = current_page > 1;
@@ -178,7 +178,7 @@ pub mod ui {
         
         let columns = (available_width / item_width_with_gap).floor().max(1.0);
         let columns_usize = builder.float_to_int::<usize>(columns.into())
-            .map_err(|e| AppError::Other(format!("Grid calculation failed: {}", e)))?;
+            .map_err(|e| AppError::Other(format!("Grid calculation failed: {e}")))?;
 
         // Calculate actual item width
         let total_gap_width = gap * (columns - 1.0);
@@ -303,7 +303,7 @@ pub mod file {
 
             for entry in entries {
                 let entry = entry
-                    .map_err(|e| AppError::Io(format!("Failed to read directory entry: {}", e)))?;
+                    .map_err(|e| AppError::Io(format!("Failed to read directory entry: {e}")))?;
                 let path = entry.path();
 
                 if path.is_dir() {

@@ -40,9 +40,8 @@ pub use containers::*;
 // Re-export data components (avoiding glob conflicts)
 pub use data::helpers as data_helpers;
 pub use data::{
-    ColumnDataType, ColumnWidth, DataTableConfig, MaterialDataTable,
-    MaterialList, MaterialTreeView, SortDirection, SortState, TableColumn, TableDensity,
-    TextAlignment,
+    ColumnDataType, ColumnWidth, DataTableConfig, MaterialDataTable, MaterialList,
+    MaterialTreeView, SortDirection, SortState, TableColumn, TableDensity, TextAlignment,
 };
 pub use feedback::*;
 pub use inputs::*;

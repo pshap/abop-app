@@ -8,14 +8,14 @@ pub mod density {
     pub const STANDARD_ROW_HEIGHT: f32 = 48.0;
     /// Row height for comfortable density (generous spacing)
     pub const COMFORTABLE_ROW_HEIGHT: f32 = 56.0;
-    
+
     /// Header height for compact density
     pub const COMPACT_HEADER_HEIGHT: f32 = 40.0;
     /// Header height for standard density
     pub const STANDARD_HEADER_HEIGHT: f32 = 56.0;
     /// Header height for comfortable density
     pub const COMFORTABLE_HEADER_HEIGHT: f32 = 64.0;
-    
+
     /// Cell padding for compact density
     pub const COMPACT_CELL_PADDING: f32 = 8.0;
     /// Cell padding for standard density
@@ -34,12 +34,12 @@ pub mod defaults {
     pub const BORDER_WIDTH: f32 = 1.0;
     /// Default border radius in pixels
     pub const BORDER_RADIUS: f32 = 4.0;
-    
+
     /// Minimal configuration minimum column width
     pub const MINIMAL_MIN_COLUMN_WIDTH: f32 = 60.0;
     /// Minimal configuration minimum row height
     pub const MINIMAL_MIN_ROW_HEIGHT: f32 = 28.0;
-    
+
     /// Advanced configuration minimum column width
     pub const ADVANCED_MIN_COLUMN_WIDTH: f32 = 100.0;
     /// Advanced configuration minimum row height
@@ -52,7 +52,7 @@ pub mod defaults {
     pub const ADVANCED_FOOTER_HEIGHT: f32 = 48.0;
     /// Advanced configuration border radius
     pub const ADVANCED_BORDER_RADIUS: f32 = 8.0;
-    
+
     /// Default virtual scrolling max visible rows
     pub const DEFAULT_MAX_VISIBLE_ROWS: usize = 100;
 }

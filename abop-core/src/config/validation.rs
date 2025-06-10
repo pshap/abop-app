@@ -129,8 +129,7 @@ pub fn validate_range<T: PartialOrd + std::fmt::Display>(
 ) -> Result<()> {
     if value < min || value > max {
         return Err(AppError::Config(format!(
-            "Value '{}' for field '{}' is out of range [{}, {}]",
-            value, field_name, min, max
+            "Value '{value}' for field '{field_name}' is out of range [{min}, {max}]"
         )));
     }
     Ok(())

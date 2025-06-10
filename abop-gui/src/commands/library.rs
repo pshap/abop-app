@@ -49,7 +49,7 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
             Some(Task::perform(
                 async move {
                     // Open centralized database synchronously in a blocking task
-                    let db = match tokio::task::spawn_blocking(move || Database::open_app_database()).await {
+                    let db = match tokio::task::spawn_blocking(Database::open_app_database).await {
                         Ok(Ok(db)) => db,
                         Ok(Err(e)) => return Err(e.to_string()),
                         Err(e) => return Err(e.to_string()),
@@ -58,18 +58,24 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                     // Look up or create library based on the selected path
                     let library = match db.libraries().find_by_path(&library_path) {
                         Ok(Some(lib)) => {
-                            log::warn!("🔍 LIBRARY COMMAND: Found existing library '{}' with path: '{}'", 
-                                      lib.name, lib.path.display());
+                            log::warn!(
+                                "🔍 LIBRARY COMMAND: Found existing library '{}' with path: '{}'",
+                                lib.name,
+                                lib.path.display()
+                            );
                             lib
-                        },
+                        }
                         Ok(None) => {
-                            log::warn!("🔍 LIBRARY COMMAND: Creating new library with path: '{}'", library_path.display());
+                            log::warn!(
+                                "🔍 LIBRARY COMMAND: Creating new library with path: '{}'",
+                                library_path.display()
+                            );
                             // Create a library name based on the directory name
                             let library_name = library_path
                                 .file_name()
                                 .and_then(|name| name.to_str())
                                 .unwrap_or("Audiobook Library");
-                            
+
                             // Create library and then fetch the actual Library struct
                             let library_id = match db
                                 .add_library_with_path(library_name, library_path.clone())
@@ -81,10 +87,13 @@ pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Optio
                             // Now get the actual Library struct
                             match db.libraries().find_by_id(&library_id) {
                                 Ok(Some(lib)) => {
-                                    log::warn!("🔍 LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'", 
-                                              lib.name, lib.path.display());
+                                    log::warn!(
+                                        "🔍 LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'",
+                                        lib.name,
+                                        lib.path.display()
+                                    );
                                     lib
-                                },
+                                }
                                 Ok(None) => {
                                     return Err("Library not found after creation".to_string());
                                 }
