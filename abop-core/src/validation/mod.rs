@@ -6,20 +6,27 @@
 
 mod error;
 mod recovery;
+mod repair_constants;
+mod repair_handlers;
+mod repair_patterns;
 mod state_validator;
-mod validators;
+pub mod validators;
 
 pub use error::{ValidationError, ValidationResult, ValidationSeverity};
 pub use recovery::{RepairAction, RepairContext, StateRepairStrategy};
+pub use repair_handlers::{RepairHandler, get_all_handlers};
+pub use repair_patterns::IssuePattern;
 pub use state_validator::{StateValidator, ValidationConfig};
 pub use validators::*;
 
 /// Default validation configuration for typical use cases
+#[must_use]
 pub fn default_validation_config() -> ValidationConfig {
     ValidationConfig::default()
 }
 
 /// Validate an application state with default configuration
+#[must_use]
 pub fn validate_app_state(state: &crate::models::AppState) -> ValidationResult {
     let validator = StateValidator::new(default_validation_config());
     validator.validate(state)

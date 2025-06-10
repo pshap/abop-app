@@ -15,8 +15,8 @@ mod error_handling_tests {
 
         // Verify the app state is initialized correctly
         assert_eq!(state.current_view, abop_core::models::ui::ViewType::Library);
-        assert!(state.data.libraries.is_empty());
-        assert!(state.data.audiobooks.is_empty());
+        assert!(state.app_data.libraries.is_empty());
+        assert!(state.app_data.audiobooks.is_empty());
 
         // In a real implementation, errors would be propagated through messages or channels
         // For this test, we just verify we can create errors properly
@@ -26,16 +26,15 @@ mod error_handling_tests {
     #[test]
     fn test_error_conversion_between_types() {
         // Simulate a std::io::Error
-        let io_error = io::Error::new(io::ErrorKind::Other, "disk full");
+        let io_error = io::Error::other("disk full");
 
         // Convert to app Error
-        let app_error = AppError::Io(io_error);
+        let app_error = AppError::Io(io_error.to_string());
 
         // Ensure the error is of the correct variant and message is preserved
         match app_error {
             AppError::Io(inner) => {
-                assert_eq!(inner.kind(), io::ErrorKind::Other);
-                assert_eq!(inner.to_string(), "disk full");
+                assert!(inner.contains("disk full"));
             }
             _ => panic!("Expected AppError::Io variant"),
         }

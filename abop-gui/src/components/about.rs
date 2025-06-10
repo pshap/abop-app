@@ -4,9 +4,9 @@ use iced::Element;
 use iced::Length;
 use iced::widget::{column, container, text};
 
-use crate::design_tokens::spacing;
 use crate::messages::Message;
 use crate::styling::container::LayoutContainerStyles;
+use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
 
 /// About dialog and application information display component
@@ -34,6 +34,7 @@ impl AboutView {
     /// An Iced `Element` representing the About dialog UI
     #[must_use]
     pub fn view<'a>(theme: ThemeMode) -> Element<'a, Message> {
+        let tokens = MaterialTokens::default();
         let content = column![
             text("About ABOP").size(24),
             text("Audiobook Organizer & Processor").size(18),
@@ -41,13 +42,13 @@ impl AboutView {
             text("Version 1.0.0").size(14),
             text("© 2024 ABOP Team").size(12),
         ]
-        .spacing(spacing::MD);
+        .spacing(tokens.spacing.md);
 
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .style(LayoutContainerStyles::content(theme))
-            .padding(spacing::MD)
+            .padding(tokens.spacing.md)
             .into()
     }
 }

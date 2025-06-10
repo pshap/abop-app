@@ -12,7 +12,8 @@ fn handle_audio_message(state: &mut AppState, message: AudioMessage) -> Option<(
     match message {
         AudioMessage::ProcessAudio => {
             // Add notification to state
-            if state.data.audiobooks.is_empty() || !state.data.audiobooks.iter().any(|a| a.selected)
+            if state.app_data.audiobooks.is_empty()
+                || !state.app_data.audiobooks.iter().any(|a| a.selected)
             {
                 // No audiobooks selected
                 add_notification(state, "No audiobooks selected for processing");
@@ -28,7 +29,7 @@ fn handle_audio_message(state: &mut AppState, message: AudioMessage) -> Option<(
             add_notification(state, "Audio processing completed successfully");
         }
         AudioMessage::AudioError(error) => {
-            add_notification(state, &format!("Audio processing error: {}", error));
+            add_notification(state, &format!("Audio processing error: {error}"));
         }
         AudioMessage::Cancel => {
             add_notification(state, "Audio processing cancelled");
@@ -41,17 +42,17 @@ fn handle_audio_message(state: &mut AppState, message: AudioMessage) -> Option<(
 fn add_notification(state: &mut AppState, message: &str) {
     // Since AppState doesn't have notifications field, we'll store them in a custom field
     // For testing purposes, we'll use the description field of the first audiobook
-    if state.data.audiobooks.is_empty() {
+    if state.app_data.audiobooks.is_empty() {
         // Create a dummy audiobook to store notifications
         use abop_core::models::Audiobook;
         use std::path::PathBuf;
 
         let mut audiobook = Audiobook::new("Test Library", PathBuf::new());
         audiobook.description = Some(message.to_string());
-        state.data.audiobooks.push(audiobook);
+        state.app_data.audiobooks.push(audiobook);
     } else {
         // Update the first audiobook's description
-        state.data.audiobooks[0].description = Some(message.to_string());
+        state.app_data.audiobooks[0].description = Some(message.to_string());
     }
 }
 
@@ -64,7 +65,7 @@ mod audio_handler_tests {
     // Helper function to get notification message from state
     fn get_notification(state: &AppState) -> Option<String> {
         state
-            .data
+            .app_data
             .audiobooks
             .first()
             .and_then(|a| a.description.clone())
@@ -74,7 +75,7 @@ mod audio_handler_tests {
     fn add_test_audiobook(state: &mut AppState) {
         let mut audiobook = Audiobook::new("Test Library", PathBuf::new());
         audiobook.selected = true;
-        state.data.audiobooks.push(audiobook);
+        state.app_data.audiobooks.push(audiobook);
     }
 
     #[test]
@@ -101,8 +102,7 @@ mod audio_handler_tests {
         assert!(
             notification.to_lowercase().contains("option")
                 || notification.to_lowercase().contains("select"),
-            "Notification: {:?}",
-            notification
+            "Notification: {notification:?}"
         );
     }
 

@@ -14,6 +14,9 @@ use super::{
     validation::ConfigValidator,
 };
 use crate::audio::AudioBuffer;
+
+#[cfg(test)]
+use super::casting_utils::sample_calculations::safe_duration_to_samples;
 use log::trace;
 
 /// Audio resampling error type
@@ -98,7 +101,7 @@ impl LinearResampler {
         #[cfg(feature = "simd")]
         {
             trace!("Using SIMD-accelerated resampling");
-            return Self::resample_buffer_simd(buffer, target_rate);
+            Self::resample_buffer_simd(buffer, target_rate)
         }
 
         #[cfg(not(feature = "simd"))]
@@ -235,6 +238,8 @@ impl Default for LinearResampler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio::SampleFormat;
+    use crate::test_utils::audio::{create_stereo_test_buffer, create_test_buffer};
 
     #[cfg(feature = "simd")]
     #[test]
@@ -247,7 +252,7 @@ mod tests {
         }
 
         // Only run SIMD tests if we're in release mode or explicitly enabled
-        if cfg!(debug_assertions) && !std::env::var("RUN_SIMD_TESTS").is_ok() {
+        if cfg!(debug_assertions) && std::env::var("RUN_SIMD_TESTS").is_err() {
             println!("Skipping SIMD tests in debug mode. Set RUN_SIMD_TESTS=1 to run them.");
             return;
         }
@@ -258,7 +263,7 @@ mod tests {
         let sample_rate = 44100;
         let channels = 2;
         let duration_secs = 0.1; // 100ms
-        let mut buffer = create_test_buffer(sample_rate, channels, duration_secs);
+        let mut buffer = create_test_buffer(sample_rate, channels, duration_secs, Some(0.5));
 
         // Make a copy for SIMD processing
         let mut buffer_simd = buffer.clone();
@@ -269,7 +274,7 @@ mod tests {
         // Process with scalar implementation
         let scalar_start = Instant::now();
         LinearResampler::resample_buffer_scalar(&mut buffer, target_rate).unwrap();
-        let scalar_duration = scalar_start.elapsed();
+        let _scalar_duration = scalar_start.elapsed();
 
         // Process with SIMD implementation
         LinearResampler::resample_buffer_simd(&mut buffer_simd, target_rate).unwrap();
@@ -278,20 +283,15 @@ mod tests {
         assert_eq!(
             buffer.data.len(),
             buffer_simd.data.len(),
-            "Output buffer length mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate,
-            target_rate,
-            channels
+            "Output buffer length mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
         assert_eq!(
             buffer.sample_rate, buffer_simd.sample_rate,
-            "Sample rate mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate, target_rate, channels
+            "Sample rate mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
         assert_eq!(
             buffer.channels, buffer_simd.channels,
-            "Channel count mismatch for {}Hz->{}Hz, {}ch",
-            sample_rate, target_rate, channels
+            "Channel count mismatch for {sample_rate}Hz->{target_rate}Hz, {channels}ch"
         );
 
         // Compare sample values with a small epsilon for floating-point imprecision
@@ -300,11 +300,7 @@ mod tests {
             let diff = (scalar - simd).abs();
             assert!(
                 diff <= epsilon,
-                "Sample {} differs by {} (scalar={}, simd={})",
-                i,
-                diff,
-                scalar,
-                simd
+                "Sample {i} differs by {diff} (scalar={scalar}, simd={simd})"
             );
         }
 
@@ -364,35 +360,6 @@ mod tests {
         assert!(buffer.data.is_empty());
     }
 
-    use super::super::casting_utils::sample_calculations::{
-        safe_duration_to_samples, safe_samples_to_duration,
-    };
-    use crate::audio::SampleFormat;
-    /// Creates a test audio buffer with a sine wave
-    fn create_test_buffer(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
-        let num_samples = safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
-        let channels_usize = usize::from(channels);
-        let mut data = Vec::with_capacity(num_samples * channels_usize);
-
-        // Generate a simple sine wave test signal
-        for i in 0..num_samples {
-            let t = safe_samples_to_duration(i, sample_rate).unwrap_or(0.0);
-            let sample = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5;
-
-            // Duplicate for each channel
-            for _ in 0..channels {
-                data.push(sample);
-            }
-        }
-
-        AudioBuffer {
-            data,
-            format: SampleFormat::F32,
-            sample_rate,
-            channels,
-        }
-    }
-
     #[test]
     fn test_resampler_creation() {
         let config = ResamplerConfig {
@@ -405,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_resampler_downsample() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1);
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
         let config = ResamplerConfig {
             target_sample_rate: Some(22050),
             ..Default::default()
@@ -424,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_resampler_upsample() {
-        let mut buffer = create_test_buffer(22050, 1, 0.1);
+        let mut buffer = create_test_buffer(22050, 1, 0.1, Some(0.5));
         let config = ResamplerConfig {
             target_sample_rate: Some(44100),
             ..Default::default()
@@ -443,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_resampler_no_change() {
-        let mut buffer = create_test_buffer(44100, 1, 0.1);
+        let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.5));
         let original_len = buffer.data.len();
 
         let config = ResamplerConfig {
@@ -461,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_resampler_stereo() {
-        let mut buffer = create_test_buffer(44100, 2, 0.1);
+        let mut buffer = create_stereo_test_buffer(44100, 0.1);
         let config = ResamplerConfig {
             target_sample_rate: Some(48000),
             ..Default::default()

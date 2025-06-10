@@ -3,6 +3,7 @@
 use super::ProcessingConfig;
 use super::error::{AudioProcessingError, Result};
 use super::file_io::{AudioFileProcessor, FileProcessingOptions};
+use crate::audio::AudioBufferPool;
 use crate::audio::processing::pipeline::AudioProcessingPipeline;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -17,6 +18,8 @@ pub struct BatchProcessor {
     pub enable_parallel: bool,
     /// Progress callback for reporting batch progress
     progress_callback: Option<Arc<dyn Fn(f32, String) + Send + Sync>>,
+    /// Buffer pool for efficient memory reuse during processing
+    buffer_pool: Option<Arc<AudioBufferPool<f32>>>,
 }
 
 /// Result of batch processing operation
@@ -69,6 +72,7 @@ impl BatchProcessor {
             file_processor,
             enable_parallel,
             progress_callback: None,
+            buffer_pool: None,
         })
     }
 
@@ -79,6 +83,30 @@ impl BatchProcessor {
         F: Fn(f32, String) + Send + Sync + 'static,
     {
         self.progress_callback = Some(Arc::new(callback));
+        self
+    }
+
+    /// Enable memory pooling for efficient buffer reuse during processing
+    ///
+    /// # Arguments
+    ///
+    /// * `pool_size` - Number of buffers to pre-allocate (default: 16)
+    /// * `buffer_capacity` - Capacity of each buffer in samples (default: 1MB)
+    ///
+    /// # Returns
+    ///
+    /// Self for method chaining
+    #[must_use]
+    pub fn with_buffer_pool(
+        mut self,
+        pool_size: Option<usize>,
+        buffer_capacity: Option<usize>,
+    ) -> Self {
+        // Default to 16 buffers of 1MB each (assuming 4 bytes per f32 sample = 262,144 samples)
+        let pool_size = pool_size.unwrap_or(16);
+        let buffer_capacity = buffer_capacity.unwrap_or(262_144);
+
+        self.buffer_pool = Some(Arc::new(AudioBufferPool::new(pool_size, buffer_capacity)));
         self
     }
 
@@ -168,7 +196,21 @@ impl BatchProcessor {
             .collect())
     }
 
+    /// Report progress for a file processing operation
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    fn report_progress(&self, index: usize, total: usize) {
+        if let Some(callback) = &self.progress_callback {
+            let progress = if total == 0 {
+                0.0f32
+            } else {
+                let progress_f64 = (index as f64 / total as f64) * 100.0;
+                progress_f64.clamp(0.0, 100.0) as f32
+            };
+            let message = format!("Processing file {} of {}", index + 1, total);
+            callback(progress, message);
+        }
+    }
+
     /// Process files in parallel with detailed result tracking
     fn process_files_parallel_detailed<P: AsRef<Path> + Send + Sync>(
         &self,
@@ -189,20 +231,12 @@ impl BatchProcessor {
         // - Should improve performance on mixed workloads and reduce memory pressure
         // - Integrate with existing progress_callback system for better UX
 
+        let total_files = input_paths.len();
         let results: Vec<_> = input_paths
             .par_iter()
             .enumerate()
             .map(|(index, path)| {
-                if let Some(callback) = &self.progress_callback {
-                    let progress = if input_paths.is_empty() {
-                        0.0f32
-                    } else {
-                        let progress_f64 = (index as f64 / input_paths.len() as f64) * 100.0;
-                        progress_f64.clamp(0.0, 100.0) as f32
-                    };
-                    let message = format!("Processing file {} of {}", index + 1, input_paths.len());
-                    callback(progress, message);
-                }
+                self.report_progress(index, total_files);
 
                 let input_path = path.as_ref().to_path_buf();
                 match self.process_single_file(&input_path) {
@@ -221,7 +255,6 @@ impl BatchProcessor {
         }
     }
 
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
     /// Process files sequentially with detailed result tracking
     fn process_files_sequential_detailed<P: AsRef<Path>>(
         &self,
@@ -229,17 +262,9 @@ impl BatchProcessor {
         successful: &mut Vec<(PathBuf, PathBuf)>,
         failed: &mut Vec<(PathBuf, AudioProcessingError)>,
     ) {
+        let total_files = input_paths.len();
         for (index, path) in input_paths.iter().enumerate() {
-            if let Some(callback) = &self.progress_callback {
-                let progress = if input_paths.is_empty() {
-                    0.0f32
-                } else {
-                    let progress_f64 = (index as f64 / input_paths.len() as f64) * 100.0;
-                    progress_f64.clamp(0.0, 100.0) as f32
-                };
-                let message = format!("Processing file {} of {}", index + 1, input_paths.len());
-                callback(progress, message);
-            }
+            self.report_progress(index, total_files);
 
             let input_path = path.as_ref().to_path_buf();
             match self.process_single_file(&input_path) {
@@ -251,7 +276,7 @@ impl BatchProcessor {
 
     /// Process a single file using the internal file processor
     fn process_single_file(&self, input_path: &Path) -> Result<PathBuf> {
-        // Create a clone of the processor for this operation
+        // Create a new file processor for this file
         let mut processor = AudioFileProcessor::new(
             self.file_processor.pipeline.clone(),
             self.file_processor.options.clone(),

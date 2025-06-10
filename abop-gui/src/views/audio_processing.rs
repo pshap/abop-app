@@ -11,7 +11,7 @@ use crate::styling::container::LayoutContainerStyles;
 
 /// Creates the audio processing view with conversion and playback controls
 #[must_use]
-pub fn audio_processing_view(state: &UiState) -> iced::Element<Message> {
+pub fn audio_processing_view(state: &UiState) -> iced::Element<'_, Message> {
     // Use the StatusDisplay component for processing status
     let status_display = StatusDisplay::view(
         state.scanning,

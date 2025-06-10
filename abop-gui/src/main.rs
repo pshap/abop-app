@@ -4,28 +4,44 @@
 use abop_gui::app::App;
 use abop_gui::assets;
 
-use iced::{Size, Task};
 use log::info;
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use thiserror::Error;
+use tracing_subscriber::EnvFilter;
 
 // Import centralized types from abop-core
 use abop_core::{Config, ServiceContainer};
 
+/// Errors that can occur during application initialization
+#[derive(Error, Debug)]
+pub enum InitError {
+    #[error("Failed to initialize logging: {0}")]
+    Logging(#[from] tracing_subscriber::util::TryInitError),
+
+    #[error("Failed to parse logging directive: {0}")]
+    LogDirective(#[from] tracing_subscriber::filter::ParseError),
+
+    #[error("Failed to load configuration: {0}")]
+    Config(#[from] abop_core::AppError),
+}
+
+fn init_logging() -> Result<(), InitError> {
+    let filter = EnvFilter::default()
+        .add_directive("abop_gui=info".parse()?)
+        .add_directive("abop_core=info".parse()?)
+        .add_directive("iced=warn".parse()?);
+
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+
+    Ok(())
+}
+
+fn load_config_with_fallback() -> Result<Config, InitError> {
+    Config::load().map_err(InitError::Config)
+}
+
 fn main() -> iced::Result {
-    // Initialize logger with tracing
-    tracing_subscriber::registry()
-        .with(
-            EnvFilter::from_default_env()
-                .add_directive("abop_gui=info".parse().unwrap())
-                .add_directive("abop_core=info".parse().unwrap())
-                .add_directive("iced=warn".parse().unwrap()),
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_ansi(true)
-                .with_writer(std::io::stdout),
-        )
-        .init();
+    // Initialize logging - panic on failure since this is critical
+    init_logging().expect("Failed to initialize logging");
 
     info!("Starting ABOP GUI with Iced 0.13.1 (new functional approach)...");
 
@@ -33,8 +49,11 @@ fn main() -> iced::Result {
     assets::register_fonts();
     info!("Material Design fonts registered");
 
-    // Load configuration
-    let config = Config::load().unwrap_or_default();
+    // Load configuration with fallback to defaults
+    let config = load_config_with_fallback().unwrap_or_else(|e| {
+        log::warn!("Failed to load configuration: {e}. Using defaults.");
+        Config::default()
+    });
 
     // Initialize services
     let _services = ServiceContainer::new();
@@ -50,9 +69,9 @@ fn main() -> iced::Result {
     )
     .subscription(App::subscription)
     .theme(|app: &App| app.state.theme_mode.theme())
-    .window_size(Size::new(
+    .window_size(iced::Size::new(
         config.window.min_width as f32,
         config.window.min_height as f32,
     ))
-    .run_with(move || (app, Task::none()))
+    .run_with(move || (app, iced::Task::none()))
 }

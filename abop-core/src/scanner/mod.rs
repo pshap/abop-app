@@ -3,22 +3,36 @@
 //! This module provides functionality to scan directories for audio files,
 //! extract metadata, and update the database with the found files.
 //!
-//! The module supports both traditional rayon-based parallel processing and
-//! a modern async/await implementation using Tokio and Iced's Task system
+//! The module uses a modern async/await implementation with Tokio and Iced's Task system
 //! for fine-grained control over scanning operations.
 
-pub mod library_scanner;
-pub mod thread_pool;
+mod config;
+mod constants;
+mod core_scanner;
 pub mod error;
+mod file_discovery;
+mod library_scanner;
+mod orchestrator;
+mod performance;
 pub mod progress;
-pub mod config;
-pub mod result;
-pub mod performance;
+mod result;
+mod state;
+mod task_manager;
 
-pub use library_scanner::{LibraryScanner, ScanProgressUpdate, LibraryScanResult, SUPPORTED_AUDIO_EXTENSIONS};
-pub use thread_pool::{ScanningThreadPool, ThreadPoolConfig, ScanTask, ScanTaskResult, ScanProgress as ThreadPoolScanProgress};
-pub use error::{ScanError, ScanResult};
-pub use progress::{ScanProgress, ProgressReporter, ChannelReporter};
-pub use performance::{PerformanceMonitor, PerformanceMetrics, OperationType, SlowOperation};
 pub use config::*;
+pub use constants::*;
+pub use core_scanner::CoreScanner;
+pub use error::{ScanError, ScanResult};
+pub use file_discovery::FileDiscoverer;
+pub use library_scanner::{LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS};
+pub use orchestrator::{ScanOptions, ScanOrchestrator};
+pub use performance::{OperationType, PerformanceMetrics, PerformanceMonitor, SlowOperation};
+pub use progress::{ChannelReporter, ProgressReporter, ScanProgress};
 pub use result::*;
+pub use state::ScannerState;
+pub use task_manager::TaskManager;
+
+// Re-export common types for convenience
+pub use crate::db::Database;
+pub use crate::error::AppError;
+pub use crate::models::{Audiobook, Library};

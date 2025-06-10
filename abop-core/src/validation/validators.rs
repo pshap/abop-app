@@ -1,4 +1,25 @@
-//! Specific validators for different aspects of application state
+//! Validation functions for audiobook data and metadata
+//!
+//! This module provides validation functions to ensure data integrity and consistency
+//! across the application. It includes validators for:
+//! - Audio file paths and formats
+//! - Metadata fields (title, author, duration, etc.)
+//! - Library structure and organization
+//!
+//! # Examples
+//! ```
+//! use abop_core::validation::{ValidationConfig, ValidationResult};
+//! use abop_core::validation::validators::{FileValidator, MetadataValidator};
+//! use std::path::PathBuf;
+//!
+//! let config = ValidationConfig::default();
+//! let file_validator = FileValidator::new(&config);
+//! let mut result = ValidationResult::new();
+//!
+//! // Validate an audio file path
+//! let path = PathBuf::from("book.mp3");
+//! file_validator.validate_audio_file_path(&path, &mut result);
+//! ```
 
 use super::error::{ValidationError, ValidationResult};
 use super::state_validator::ValidationConfig;
@@ -8,16 +29,18 @@ use std::path::Path;
 
 /// Validates file and directory references
 /// Validates file paths and file system related validations
+#[derive(Debug, Clone)]
 pub struct FileValidator {
     /// Configuration for file validation
-    _config: ValidationConfig,
+    config: ValidationConfig,
 }
 
 impl FileValidator {
-    /// Create a new FileValidator with the given configuration
+    /// Create a new `FileValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
-            _config: config.clone(),
+            config: config.clone(),
         }
     }
 
@@ -99,14 +122,14 @@ impl FileValidator {
             }
 
             // Validate audio file extension
-            if self._config.check_audio_formats {
-                self.validate_audio_file_extension(path, result);
+            if self.config.check_audio_formats {
+                Self::validate_audio_file_extension(path, result);
             }
         }
     }
 
     /// Validate that a file has a supported audio extension
-    fn validate_audio_file_extension(&self, path: &Path, result: &mut ValidationResult) {
+    fn validate_audio_file_extension(path: &Path, result: &mut ValidationResult) {
         let supported_extensions = &["mp3", "m4a", "m4b", "flac", "ogg", "wav", "aac"];
 
         if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
@@ -134,13 +157,15 @@ impl FileValidator {
 
 /// Validates audiobook metadata consistency and integrity
 /// Validates metadata consistency and integrity
+#[derive(Debug, Clone)]
 pub struct MetadataValidator {
     /// Configuration for metadata validation
     _config: ValidationConfig,
 }
 
 impl MetadataValidator {
-    /// Create a new MetadataValidator with the given configuration
+    /// Create a new `MetadataValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -154,13 +179,7 @@ impl MetadataValidator {
         result: &mut ValidationResult,
     ) {
         // Check for missing critical metadata
-        if audiobook.title.is_none()
-            || audiobook
-                .title
-                .as_ref()
-                .map(|t| t.trim().is_empty())
-                .unwrap_or(true)
-        {
+        if audiobook.title.as_ref().is_none_or(|t| t.trim().is_empty()) {
             result.add_issue(
                 ValidationError::info("metadata", "Audiobook is missing title")
                     .with_file_path(audiobook.path.clone())
@@ -223,13 +242,15 @@ impl MetadataValidator {
 
 /// Validates referential integrity between different data entities
 /// Validates referential integrity between entities
+#[derive(Debug, Clone)]
 pub struct IntegrityValidator {
     /// Configuration for integrity validation
     _config: ValidationConfig,
 }
 
 impl IntegrityValidator {
-    /// Create a new IntegrityValidator with the given configuration
+    /// Create a new `IntegrityValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -238,19 +259,15 @@ impl IntegrityValidator {
 
     /// Validate cross-references between all state entities
     pub fn validate_cross_references(&self, state: &AppState, result: &mut ValidationResult) {
-        self.validate_library_audiobook_references(state, result);
-        self.validate_duplicate_ids(state, result);
+        Self::validate_library_audiobook_references(state, result);
+        Self::validate_duplicate_ids(state, result);
     }
 
     /// Validate that audiobooks reference existing libraries
-    fn validate_library_audiobook_references(
-        &self,
-        state: &AppState,
-        result: &mut ValidationResult,
-    ) {
-        let library_ids: HashSet<_> = state.data.libraries.iter().map(|lib| &lib.id).collect();
+    fn validate_library_audiobook_references(state: &AppState, result: &mut ValidationResult) {
+        let library_ids: HashSet<_> = state.app_data.libraries.iter().map(|lib| &lib.id).collect();
 
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             if !library_ids.contains(&audiobook.library_id) {
                 result.add_issue(
                     ValidationError::error(
@@ -266,10 +283,10 @@ impl IntegrityValidator {
     }
 
     /// Check for duplicate IDs across all entities
-    fn validate_duplicate_ids(&self, state: &AppState, result: &mut ValidationResult) {
+    fn validate_duplicate_ids(state: &AppState, result: &mut ValidationResult) {
         // Check library ID duplicates
         let mut library_ids = HashSet::new();
-        for library in &state.data.libraries {
+        for library in &state.app_data.libraries {
             if !library_ids.insert(&library.id) {
                 result.add_issue(
                     ValidationError::critical("integrity", "Duplicate library ID found")
@@ -281,7 +298,7 @@ impl IntegrityValidator {
 
         // Check audiobook ID duplicates
         let mut audiobook_ids = HashSet::new();
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             if !audiobook_ids.insert(&audiobook.id) {
                 result.add_issue(
                     ValidationError::critical("integrity", "Duplicate audiobook ID found")
@@ -294,7 +311,7 @@ impl IntegrityValidator {
 
         // Check progress ID duplicates
         let mut progress_ids = HashSet::new();
-        for progress in &state.data.progress {
+        for progress in &state.app_data.progress {
             let progress_key = &progress.audiobook_id; // Progress is unique per audiobook
             if !progress_ids.insert(progress_key) {
                 result.add_issue(
@@ -309,13 +326,15 @@ impl IntegrityValidator {
 
 /// Validates schema version compatibility
 /// Validates schema version compatibility
+#[derive(Debug, Clone)]
 pub struct SchemaValidator {
     /// Configuration for schema validation
     _config: ValidationConfig,
 }
 
 impl SchemaValidator {
-    /// Create a new SchemaValidator with the given configuration
+    /// Create a new `SchemaValidator` with the given configuration
+    #[must_use]
     pub fn new(config: &ValidationConfig) -> Self {
         Self {
             _config: config.clone(),
@@ -323,33 +342,9 @@ impl SchemaValidator {
     }
 
     /// Validate schema version compatibility
-    pub fn validate_schema_version(&self, _state: &AppState, result: &mut ValidationResult) {
-        // For now, we don't have explicit schema versioning in the AppState
-        // This is a placeholder for future schema evolution
-
-        // In the future, this would check something like:
-        // if let Some(version) = state.schema_version {
-        //     if !self.is_compatible_version(version) {
-        //         result.add_issue(
-        //             ValidationError::critical("schema", "Incompatible schema version")
-        //                 .with_field("schema_version")
-        //                 .with_suggestion("Migrate data to current schema version")
-        //         );
-        //     }
-        // }
-
-        // For now, we'll add an info message suggesting schema versioning
-        result.add_issue(
-            ValidationError::info("schema", "No explicit schema version found")
-                .with_suggestion("Consider adding schema versioning for future compatibility"),
-        );
-    }
-
-    /// Check if a schema version is compatible (placeholder)
-    #[allow(dead_code)]
-    fn is_compatible_version(&self, _version: &str) -> bool {
-        // Placeholder for version compatibility logic
-        true
+    pub fn validate_schema_version(&self, _state: &AppState, _result: &mut ValidationResult) {
+        // Schema validation will be implemented when versioning is added to AppState
+        // Currently not needed as the project doesn't require backward compatibility
     }
 }
 
@@ -410,15 +405,15 @@ mod tests {
 
         // Add duplicate library IDs
         state
-            .data
+            .app_data
             .libraries
             .push(Library::new("Library 1", "/path1"));
         state
-            .data
+            .app_data
             .libraries
             .push(Library::new("Library 2", "/path2"));
         // Manually set duplicate ID
-        state.data.libraries[1].id = state.data.libraries[0].id.clone();
+        state.app_data.libraries[1].id = state.app_data.libraries[0].id.clone();
 
         validator.validate_cross_references(&state, &mut result);
 

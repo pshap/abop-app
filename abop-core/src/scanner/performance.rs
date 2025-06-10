@@ -1,10 +1,16 @@
 //! Performance monitoring and instrumentation for scanner operations
 
-use std::time::{Duration, Instant};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use serde::{Serialize, Deserialize};
-use tracing::{info, warn, debug};
+use std::time::{Duration, Instant};
+use tracing::{debug, info, warn};
+
+/// Type alias for operation timing data
+type OperationTimings = Vec<(OperationType, Duration)>;
+
+/// Type alias for thread-safe operation timing storage
+type SharedOperationTimings = Arc<Mutex<HashMap<String, OperationTimings>>>;
 
 /// Performance metrics for scanner operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,10 +51,15 @@ pub struct SlowOperation {
 /// Types of operations we track
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OperationType {
+    /// Reading audio file data from disk
     FileRead,
+    /// Extracting metadata (title, author, etc.) from audio files
     MetadataExtraction,
+    /// Inserting or updating records in the database
     DatabaseInsert,
+    /// Processing cover art images
     ImageProcessing,
+    /// Analyzing audio content (duration, format, etc.)
     AudioAnalysis,
 }
 
@@ -57,7 +68,7 @@ pub enum OperationType {
 pub struct PerformanceMonitor {
     start_time: Instant,
     metrics: Arc<Mutex<PerformanceMetrics>>,
-    operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+    operation_times: SharedOperationTimings,
     slowest_threshold: Duration,
 }
 
@@ -73,7 +84,11 @@ impl PerformanceMonitor {
     }
 
     /// Record the start of an operation
-    pub fn start_operation(&self, file_path: &str, operation_type: OperationType) -> OperationTimer {
+    pub fn start_operation(
+        &self,
+        file_path: &str,
+        operation_type: OperationType,
+    ) -> OperationTimer {
         OperationTimer::new(
             file_path.to_string(),
             operation_type,
@@ -86,7 +101,7 @@ impl PerformanceMonitor {
     pub fn record_file_processed(&self, duration: Duration, success: bool) {
         let mut metrics = self.metrics.lock().unwrap();
         metrics.files_processed += 1;
-        
+
         if !success {
             metrics.error_count += 1;
         }
@@ -100,7 +115,7 @@ impl PerformanceMonitor {
             let alpha = 0.1;
             let current_avg_ms = metrics.avg_time_per_file.as_millis() as f64;
             let new_duration_ms = duration.as_millis() as f64;
-            let new_avg_ms = current_avg_ms * (1.0 - alpha) + new_duration_ms * alpha;
+            let new_avg_ms = current_avg_ms.mul_add(1.0 - alpha, new_duration_ms * alpha);
             metrics.avg_time_per_file = Duration::from_millis(new_avg_ms as u64);
         }
 
@@ -117,10 +132,9 @@ impl PerformanceMonitor {
         metrics.total_duration = self.start_time.elapsed();
 
         // Collect slowest operations
-        let operation_times = self.operation_times.lock().unwrap();
         let mut all_operations = Vec::new();
 
-        for (file_path, operations) in operation_times.iter() {
+        for (file_path, operations) in self.operation_times.lock().unwrap().iter() {
             for (op_type, duration) in operations {
                 if *duration > self.slowest_threshold {
                     all_operations.push(SlowOperation {
@@ -144,7 +158,7 @@ impl PerformanceMonitor {
     /// Log performance summary
     pub fn log_summary(&self) {
         let metrics = self.get_metrics();
-        
+
         info!(
             "Scanner Performance Summary: {} files in {:?} ({:.2} files/sec, {:.1}% errors)",
             metrics.files_processed,
@@ -191,13 +205,16 @@ impl PerformanceMonitor {
         };
 
         if error_rate > 0.1 {
-            recommendations.push(
-                format!("High error rate ({:.1}%). Check file permissions and format support.", error_rate * 100.0)
-            );
+            recommendations.push(format!(
+                "High error rate ({:.1}%). Check file permissions and format support.",
+                error_rate * 100.0
+            ));
         }
 
         // Check for slow operations
-        let slow_io_ops = metrics.slowest_operations.iter()
+        let slow_io_ops = metrics
+            .slowest_operations
+            .iter()
             .filter(|op| matches!(op.operation_type, OperationType::FileRead))
             .count();
 
@@ -222,7 +239,7 @@ pub struct OperationTimer {
     file_path: String,
     operation_type: OperationType,
     start_time: Instant,
-    operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+    operation_times: SharedOperationTimings,
     slowest_threshold: Duration,
 }
 
@@ -230,7 +247,7 @@ impl OperationTimer {
     fn new(
         file_path: String,
         operation_type: OperationType,
-        operation_times: Arc<Mutex<HashMap<String, Vec<(OperationType, Duration)>>>>,
+        operation_times: SharedOperationTimings,
         slowest_threshold: Duration,
     ) -> Self {
         Self {
@@ -245,11 +262,12 @@ impl OperationTimer {
     /// Complete the operation and record its duration
     pub fn complete(self) -> Duration {
         let duration = self.start_time.elapsed();
-        
+
         // Record the operation time
         {
             let mut times = self.operation_times.lock().unwrap();
-            times.entry(self.file_path.clone())
+            times
+                .entry(self.file_path.clone())
                 .or_default()
                 .push((self.operation_type.clone(), duration));
         }
@@ -258,9 +276,7 @@ impl OperationTimer {
         if duration > self.slowest_threshold {
             debug!(
                 "Slow operation detected: {:?} on {} took {:?}",
-                self.operation_type,
-                self.file_path,
-                duration
+                self.operation_type, self.file_path, duration
             );
         }
 
@@ -269,7 +285,7 @@ impl OperationTimer {
 }
 
 impl PerformanceMetrics {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             total_duration: Duration::ZERO,
             io_duration: Duration::ZERO,
@@ -306,7 +322,7 @@ mod tests {
     fn test_performance_monitor_creation() {
         let monitor = PerformanceMonitor::new();
         let metrics = monitor.get_metrics();
-        
+
         assert_eq!(metrics.files_processed, 0);
         assert_eq!(metrics.error_count, 0);
         assert!(metrics.total_duration < Duration::from_millis(100));
@@ -315,11 +331,11 @@ mod tests {
     #[test]
     fn test_operation_timer() {
         let monitor = PerformanceMonitor::new();
-        
+
         let timer = monitor.start_operation("test.mp3", OperationType::FileRead);
         thread::sleep(Duration::from_millis(10));
         let duration = timer.complete();
-        
+
         assert!(duration >= Duration::from_millis(10));
         assert!(duration < Duration::from_millis(50));
     }
@@ -327,11 +343,11 @@ mod tests {
     #[test]
     fn test_file_processing_metrics() {
         let monitor = PerformanceMonitor::new();
-        
+
         // Record some file processing
         monitor.record_file_processed(Duration::from_millis(100), true);
         monitor.record_file_processed(Duration::from_millis(200), false);
-        
+
         let metrics = monitor.get_metrics();
         assert_eq!(metrics.files_processed, 2);
         assert_eq!(metrics.error_count, 1);
@@ -341,12 +357,12 @@ mod tests {
     #[test]
     fn test_slowest_operations_tracking() {
         let monitor = PerformanceMonitor::new();
-        
+
         // Create a slow operation
         let timer = monitor.start_operation("slow.mp3", OperationType::MetadataExtraction);
         thread::sleep(Duration::from_millis(10));
         timer.complete();
-        
+
         let metrics = monitor.get_metrics();
         // The operation should be tracked if it exceeds the threshold
         // (in our test, the threshold is 500ms, so this won't be considered slow)
@@ -356,12 +372,12 @@ mod tests {
     #[test]
     fn test_performance_recommendations() {
         let monitor = PerformanceMonitor::new();
-        
+
         // Simulate many errors
         for _ in 0..10 {
             monitor.record_file_processed(Duration::from_millis(100), false);
         }
-        
+
         let recommendations = monitor.get_recommendations();
         assert!(!recommendations.is_empty());
         assert!(recommendations.iter().any(|r| r.contains("error rate")));

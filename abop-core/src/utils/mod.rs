@@ -3,28 +3,17 @@
 //! This module contains various utility functions and types used throughout the application.
 
 pub mod casting;
+pub mod enhanced;
 pub mod size;
 pub mod time;
 pub mod timer;
 
 // Re-export commonly used utilities
 pub use casting::*;
+pub use enhanced::*;
 pub use size::*;
 pub use time::*;
 pub use timer::*;
-
-// Legacy re-exports for backward compatibility
-pub mod time_utils {
-    //! Time formatting utilities (legacy module)
-    //!
-    //! This module is kept for backward compatibility. Prefer using the top-level time module.
-    //!
-    //! # Examples
-    //! ```
-    //! use abop_core::utils::time::*;
-    //! ```
-    pub use super::time::*;
-}
 
 #[cfg(test)]
 mod tests {
@@ -42,5 +31,21 @@ mod tests {
         assert_eq!(format_bytes(1_048_576), "1 MB");
         assert_eq!(format_bytes(500), "500 B");
         assert_eq!(format_bytes(1536), "1.5 KB");
+    }
+
+    #[test]
+    fn test_enhanced_utilities() {
+        // Test audio utilities
+        let tracks = vec![(44100, 44100), (48000, 48000)];
+        let duration = enhanced::audio::calculate_total_duration(&tracks).unwrap();
+        assert!((duration - 2.0).abs() < 0.01);
+
+        // Test database utilities
+        let pagination = enhanced::database::calculate_pagination(100, 10, 3).unwrap();
+        assert_eq!(pagination.total_pages, 10);
+
+        // Test UI utilities
+        let layout = enhanced::ui::calculate_grid_layout(800.0, 150.0, 10.0).unwrap();
+        assert!(layout.columns >= 1);
     }
 }

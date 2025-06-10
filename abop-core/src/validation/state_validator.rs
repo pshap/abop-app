@@ -1,10 +1,12 @@
 //! Main state validator implementation
 
-use super::error::{ValidationError, ValidationResult};
-use super::validators::{FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator};
 use crate::models::{AppState, Audiobook, Library, Progress};
+use crate::validation::{
+    FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator,
+    error::{ValidationError, ValidationResult},
+};
 
-/// Configuration for state validation behavior
+/// Configuration options for state validation
 #[derive(Debug, Clone)]
 pub struct ValidationConfig {
     /// Whether to validate file existence for referenced paths
@@ -39,7 +41,8 @@ impl Default for ValidationConfig {
 
 impl ValidationConfig {
     /// Create a fast validation configuration (minimal checks)
-    pub fn fast() -> Self {
+    #[must_use]
+    pub const fn fast() -> Self {
         Self {
             check_file_existence: false,
             check_metadata_consistency: true,
@@ -52,7 +55,8 @@ impl ValidationConfig {
     }
 
     /// Create a thorough validation configuration (all checks enabled)
-    pub fn thorough() -> Self {
+    #[must_use]
+    pub const fn thorough() -> Self {
         Self {
             check_file_existence: true,
             check_metadata_consistency: true,
@@ -66,6 +70,7 @@ impl ValidationConfig {
 }
 
 /// Main state validator that orchestrates all validation checks
+#[derive(Debug, Clone)]
 pub struct StateValidator {
     config: ValidationConfig,
     file_validator: FileValidator,
@@ -76,6 +81,7 @@ pub struct StateValidator {
 
 impl StateValidator {
     /// Create a new state validator with the given configuration
+    #[must_use]
     pub fn new(config: ValidationConfig) -> Self {
         Self {
             file_validator: FileValidator::new(&config),
@@ -87,6 +93,7 @@ impl StateValidator {
     }
 
     /// Validate an entire application state
+    #[must_use]
     pub fn validate(&self, state: &AppState) -> ValidationResult {
         let mut result = ValidationResult::new();
 
@@ -97,18 +104,18 @@ impl StateValidator {
         }
 
         // Validate libraries
-        for library in &state.data.libraries {
+        for library in &state.app_data.libraries {
             self.validate_library(library, &mut result);
         }
 
         // Validate audiobooks
-        for audiobook in &state.data.audiobooks {
+        for audiobook in &state.app_data.audiobooks {
             self.validate_audiobook(audiobook, &mut result);
         }
 
         // Validate progress entries
-        for progress in &state.data.progress {
-            self.validate_progress(progress, &state.data.audiobooks, &mut result);
+        for progress in &state.app_data.progress {
+            self.validate_progress(progress, &state.app_data.audiobooks, &mut result);
         }
 
         // Cross-referential integrity checks
@@ -317,7 +324,7 @@ mod tests {
     fn test_library_name_validation() {
         let mut state = AppState::default();
         let library = Library::new("", "/non/existent/path");
-        state.data.libraries.push(library);
+        state.app_data.libraries.push(library);
 
         let validator = StateValidator::new(ValidationConfig::fast());
         let result = validator.validate(&state);
@@ -337,7 +344,7 @@ mod tests {
 
         // Add progress for non-existent audiobook
         let progress = Progress::new("non-existent-id", 100);
-        state.data.progress.push(progress);
+        state.app_data.progress.push(progress);
 
         let validator = StateValidator::new(ValidationConfig::fast());
         let result = validator.validate(&state);

@@ -1,7 +1,8 @@
+-- filepath: c:\Users\pshap\coding\abop\abop-core\src\db\migrations\001_initial_schema.sql
 -- Initial database schema for ABOP
 
 -- Libraries table
-CREATE TABLE IF NOT EXISTS libraries (
+CREATE TABLE libraries (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     path TEXT NOT NULL UNIQUE,
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS libraries (
 );
 
 -- Audiobooks table
-CREATE TABLE IF NOT EXISTS audiobooks (
+CREATE TABLE audiobooks (
     id TEXT PRIMARY KEY,
     library_id TEXT NOT NULL,
     path TEXT NOT NULL UNIQUE,
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS audiobooks (
 );
 
 -- Progress tracking table
-CREATE TABLE IF NOT EXISTS progress (
+CREATE TABLE progress (
     id TEXT PRIMARY KEY,
     audiobook_id TEXT NOT NULL UNIQUE,
     position_seconds INTEGER NOT NULL DEFAULT 0,
@@ -39,20 +40,15 @@ CREATE TABLE IF NOT EXISTS progress (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_audiobooks_library_id ON audiobooks(library_id);
-CREATE INDEX IF NOT EXISTS idx_audiobooks_path ON audiobooks(path);
-CREATE INDEX IF NOT EXISTS idx_progress_audiobook_id ON progress(audiobook_id);
+CREATE INDEX idx_audiobooks_library_id ON audiobooks(library_id);
+CREATE INDEX idx_audiobooks_path ON audiobooks(path);
+CREATE INDEX idx_progress_audiobook_id ON progress(audiobook_id);
 
 -- Trigger to update the updated_at timestamp on audiobooks update
-CREATE TRIGGER IF NOT EXISTS update_audiobooks_timestamp
+CREATE TRIGGER update_audiobooks_timestamp
 AFTER UPDATE ON audiobooks
 BEGIN
     UPDATE audiobooks SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- Trigger to update the updated_at timestamp on progress update
-CREATE TRIGGER IF NOT EXISTS update_progress_timestamp
-AFTER UPDATE ON progress
-BEGIN
-    UPDATE progress SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- Note: No default library is seeded - libraries should be created by users with valid paths

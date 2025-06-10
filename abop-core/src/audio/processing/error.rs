@@ -79,7 +79,7 @@ impl From<crate::error::AppError> for AudioProcessingError {
     fn from(error: crate::error::AppError) -> Self {
         match error {
             crate::error::AppError::Audio(msg) => Self::Pipeline(msg),
-            crate::error::AppError::Io(e) => Self::FileIo(e.to_string()),
+            crate::error::AppError::Io(e) => Self::FileIo(e),
             crate::error::AppError::Database(msg) => {
                 Self::Pipeline(format!("Database error: {msg}"))
             }

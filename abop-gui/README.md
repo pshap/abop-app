@@ -177,3 +177,9 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 ---
 
 **Part of the ABOP ecosystem** • **Built with ❤️ using Iced and Rust** • **Modern, responsive, and performant**
+
+## Styling Guidelines
+
+1. **Use Material Design Tokens**: Always use `crate::styling::material::*` tokens instead of hardcoded values
+2. **Follow Material Design 3**: Adhere to Material Design 3 specifications for components and layouts
+3. **Theme Support**: Use the theme system for consistent styling across the application

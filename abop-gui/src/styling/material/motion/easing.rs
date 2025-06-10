@@ -25,12 +25,6 @@ pub enum EasingType {
     EmphasizedAccelerate,
     /// Emphasized curve with dramatic deceleration
     EmphasizedDecelerate,
-    /// Legacy easing from Material Design 2 for backward compatibility
-    Legacy,
-    /// Legacy curve with acceleration emphasis
-    LegacyAccelerate,
-    /// Legacy curve with deceleration emphasis
-    LegacyDecelerate,
 }
 
 /// Cubic Bezier curve control points
@@ -291,33 +285,6 @@ fn create_easing_curves() -> HashMap<EasingType, EasingCurve> {
         ),
     );
 
-    curves.insert(
-        EasingType::Legacy,
-        EasingCurve::new(
-            "legacy",
-            CubicBezier::new(0.4, 0.0, 0.2, 1.0),
-            "Legacy easing for backward compatibility",
-        ),
-    );
-
-    curves.insert(
-        EasingType::LegacyAccelerate,
-        EasingCurve::new(
-            "legacy-accelerate",
-            CubicBezier::new(0.4, 0.0, 1.0, 1.0),
-            "Legacy easing that accelerates",
-        ),
-    );
-
-    curves.insert(
-        EasingType::LegacyDecelerate,
-        EasingCurve::new(
-            "legacy-decelerate",
-            CubicBezier::new(0.0, 0.0, 0.2, 1.0),
-            "Legacy easing that decelerates",
-        ),
-    );
-
     curves
 }
 
@@ -381,17 +348,17 @@ mod tests {
 
         // Print the curve values for debugging
         println!("Standard Easing Curve Values:");
-        println!("t=0.0 -> {}", t0);
-        println!("t=0.1 -> {}", t1);
-        println!("t=0.2 -> {}", t2);
-        println!("t=0.3 -> {}", t3);
-        println!("t=0.4 -> {}", t4);
-        println!("t=0.5 -> {}", t5);
-        println!("t=0.6 -> {}", t6);
-        println!("t=0.7 -> {}", t7);
-        println!("t=0.8 -> {}", t8);
-        println!("t=0.9 -> {}", t9);
-        println!("t=1.0 -> {}", t10);
+        println!("t=0.0 -> {t0}");
+        println!("t=0.1 -> {t1}");
+        println!("t=0.2 -> {t2}");
+        println!("t=0.3 -> {t3}");
+        println!("t=0.4 -> {t4}");
+        println!("t=0.5 -> {t5}");
+        println!("t=0.6 -> {t6}");
+        println!("t=0.7 -> {t7}");
+        println!("t=0.8 -> {t8}");
+        println!("t=0.9 -> {t9}");
+        println!("t=1.0 -> {t10}");
 
         // Verify the curve starts at 0 and ends at 1
         assert_eq!(t0, 0.0, "Curve should start at 0.0");
@@ -450,9 +417,6 @@ mod tests {
         assert!(all_curves.contains_key(&EasingType::Emphasized));
         assert!(all_curves.contains_key(&EasingType::EmphasizedAccelerate));
         assert!(all_curves.contains_key(&EasingType::EmphasizedDecelerate));
-        assert!(all_curves.contains_key(&EasingType::Legacy));
-        assert!(all_curves.contains_key(&EasingType::LegacyAccelerate));
-        assert!(all_curves.contains_key(&EasingType::LegacyDecelerate));
     }
 
     #[test]
@@ -467,7 +431,6 @@ mod tests {
         let curves = [
             CubicBezier::new(0.2, 0.0, 0.0, 1.0), // standard
             CubicBezier::new(0.3, 0.0, 1.0, 1.0), // standard-accelerate
-            CubicBezier::new(0.4, 0.0, 0.2, 1.0), // legacy
         ];
 
         for curve in &curves {

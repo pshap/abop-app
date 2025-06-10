@@ -28,38 +28,6 @@ pub use domain::file_size::{
 };
 pub use domain::ui::*;
 
-// Legacy re-exports for backward compatibility
-pub mod audio_conversions {
-    //! Audio-specific conversions (legacy module)
-    //!
-    //! This module is kept for backward compatibility. Prefer using the top-level module functions.
-
-    pub use super::domain::audio::*;
-}
-
-pub mod db_conversions {
-    //! Database-specific conversions (legacy module)
-    //!
-    //! This module is kept for backward compatibility. Prefer using the top-level module functions.
-
-    pub use super::domain::db::max_safe_db_count;
-    pub use super::domain::db::safe_db_count_to_usize;
-    pub use super::domain::db::safe_usize_to_i64;
-    pub use super::domain::db::validate_db_count;
-}
-
-pub mod ui_conversions {
-    //! UI-specific conversions (legacy module)
-    //!
-    //! This module is kept for backward compatibility. Prefer using the top-level module functions.
-
-    pub use super::domain::ui::*;
-}
-
-// For backward compatibility
-#[deprecated(note = "Use `domain::file_size::FileSizePrecision` instead")]
-pub use domain::file_size::FileSizePrecision as FileSizePrecisionCompat;
-
 #[cfg(test)]
 mod tests {
     use super::*;

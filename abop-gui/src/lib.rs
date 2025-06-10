@@ -38,9 +38,6 @@ pub mod library;
 // Utility functions
 pub mod utils;
 
-// Legacy implementation (kept for reference temporarily)
-// pub mod app_new;
-
 // Component modules
 /// UI component modules for the ABOP graphical interface
 ///
@@ -59,9 +56,6 @@ pub mod utils;
 /// - `table` - Table components for audiobook library display
 /// - `toolbar` - Toolbar components with action buttons
 pub mod components;
-
-// Design token system
-pub mod design_tokens;
 
 // Professional theme system
 pub mod theme;

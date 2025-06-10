@@ -16,10 +16,10 @@ pub fn create_progress_indicator<'a, Message: Clone + 'a>(
     theme: ThemeMode,
     tokens: &MaterialTokens,
 ) -> Element<'a, Message> {
-    let progress_text = match progress {
-        Some(value) => format!("{:.0}% - {}", value * 100.0, message),
-        None => message.to_string(),
-    };
+    let progress_text = progress.map_or_else(
+        || message.to_string(),
+        |value| format!("{:.0}% - {}", value * 100.0, message),
+    );
     container(text(progress_text))
         .style(BaseContainerStyles::card(theme))
         .padding(tokens.spacing().md)

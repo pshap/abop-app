@@ -7,15 +7,13 @@ use crate::db::error::{DatabaseError, DbResult};
 use rusqlite::{Connection, Result as SqliteResult};
 use std::collections::HashMap;
 
-/// Represents a database migration with rollback capability
+/// Represents a database migration
 #[derive(Debug, Clone)]
 pub struct Migration {
     /// The version number of this migration
     pub version: u32,
-    /// The SQL to execute for this migration (forward)
+    /// The SQL to execute for this migration
     pub up_sql: &'static str,
-    /// The SQL to execute to rollback this migration (backward)
-    pub down_sql: &'static str,
     /// Description of what this migration does
     pub description: &'static str,
 }
@@ -23,12 +21,10 @@ pub struct Migration {
 /// Migration execution result
 #[derive(Debug)]
 pub struct MigrationResult {
-    /// The version that was applied/rolled back
+    /// The version that was applied
     pub version: u32,
     /// Description of the migration
     pub description: String,
-    /// Whether this was a rollback operation
-    pub is_rollback: bool,
 }
 
 /// Migration manager for enhanced database operations
@@ -84,13 +80,30 @@ impl MigrationManager {
     /// - The current migration version cannot be determined
     /// - Database query fails
     pub fn pending_migrations(&self, conn: &Connection) -> DbResult<Vec<&Migration>> {
+        log::debug!("Getting current database version");
         let current_version = self.current_version(conn)?;
+        log::debug!("Current database version: {current_version}");
+
         let mut pending: Vec<&Migration> = self
             .migrations
             .values()
             .filter(|m| m.version > current_version)
             .collect();
         pending.sort_by_key(|m| m.version);
+
+        log::debug!(
+            "Found {} pending migrations after version {}",
+            pending.len(),
+            current_version
+        );
+        for migration in &pending {
+            log::debug!(
+                "  - Migration {}: {}",
+                migration.version,
+                migration.description
+            );
+        }
+
         Ok(pending)
     }
 
@@ -103,165 +116,120 @@ impl MigrationManager {
     /// - Any migration fails to apply
     /// - Database transaction fails
     pub fn migrate_up(&self, conn: &mut Connection) -> DbResult<Vec<MigrationResult>> {
+        log::debug!("Starting migrate_up - setting up migrations table");
         Self::setup_migrations_table(conn)?;
+        log::debug!("Migrations table setup complete");
 
+        log::debug!("Getting pending migrations");
         let pending = self.pending_migrations(conn)?;
+        log::debug!("Found {} pending migrations", pending.len());
+
         if pending.is_empty() {
+            log::debug!("No pending migrations, returning empty results");
             return Ok(vec![]);
         }
 
         let mut results = Vec::new();
 
-        for migration in pending {
-            let result = Self::apply_migration(conn, migration, false)?;
+        for (i, migration) in pending.iter().enumerate() {
+            log::debug!(
+                "Applying migration {}/{}: version {}",
+                i + 1,
+                pending.len(),
+                migration.version
+            );
+            let result = Self::apply_migration(conn, migration)?;
+            log::debug!("Migration {} applied successfully", migration.version);
             results.push(result);
         }
 
+        log::debug!("All {} migrations applied successfully", results.len());
         Ok(results)
     }
 
-    /// Rollback to a specific version
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The target version is invalid or higher than current version
-    /// - Current migration version cannot be determined
-    /// - Any migration rollback fails
-    /// - Database transaction fails
-    pub fn migrate_down(
-        &self,
-        conn: &mut Connection,
-        target_version: u32,
-    ) -> DbResult<Vec<MigrationResult>> {
-        let current_version = self.current_version(conn)?;
+    // Note: Rollback functionality removed as backward compatibility is not needed
 
-        if target_version >= current_version {
-            return Err(DatabaseError::MigrationFailed {
-                version: target_version,
-                message: format!(
-                    "Target version {target_version} is not less than current version {current_version}"
-                ),
-            });
-        }
-
-        let mut results = Vec::new();
-        let mut version_to_rollback = current_version;
-
-        while version_to_rollback > target_version {
-            if let Some(migration) = self.migrations.get(&version_to_rollback) {
-                let result = Self::apply_migration(conn, migration, true)?;
-                results.push(result);
-            }
-
-            if version_to_rollback == 0 {
-                break;
-            }
-            version_to_rollback -= 1;
-        }
-
-        Ok(results)
-    }
-
-    /// Apply a single migration (up or down)
-    fn apply_migration(
-        conn: &mut Connection,
-        migration: &Migration,
-        is_rollback: bool,
-    ) -> DbResult<MigrationResult> {
+    /// Apply a single migration
+    fn apply_migration(conn: &mut Connection, migration: &Migration) -> DbResult<MigrationResult> {
         let tx = conn.transaction().map_err(DatabaseError::from)?;
 
-        let sql = if is_rollback {
-            migration.down_sql
-        } else {
-            migration.up_sql
-        };
-        let operation = if is_rollback { "rollback" } else { "apply" };
-
         log::info!(
-            "{}ing migration {} - {}",
-            operation,
+            "Applying migration {} - {}",
             migration.version,
             migration.description
         );
-        log::debug!("Migration SQL: {sql}");
+        log::debug!("Migration SQL: {}", migration.up_sql);
 
         // Execute the migration SQL
-        if let Err(e) = tx.execute_batch(sql) {
-            log::error!(
-                "Failed to {} migration {}: {}",
-                operation,
-                migration.version,
-                e
-            );
+        if let Err(e) = tx.execute_batch(migration.up_sql) {
+            log::error!("Failed to apply migration {}: {}", migration.version, e);
             return Err(DatabaseError::MigrationFailed {
                 version: migration.version,
-                message: format!("Failed to {operation}: {e}"),
+                message: format!("Failed to apply: {e}"),
             });
         }
 
         // Update migration tracking
-        if is_rollback {
-            tx.execute(
-                "UPDATE migrations SET applied = 0, rolled_back_at = CURRENT_TIMESTAMP WHERE version = ?",
-                [migration.version],
-            ).map_err(DatabaseError::from)?;
-        } else {
-            tx.execute(
-                "INSERT OR REPLACE INTO migrations (version, description, applied, applied_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP)",
-                [&migration.version.to_string(), migration.description],
-            ).map_err(DatabaseError::from)?;
-        }
+        tx.execute(
+            "INSERT OR REPLACE INTO migrations (version, description, applied, applied_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP)",
+            [&migration.version.to_string(), migration.description],
+        ).map_err(DatabaseError::from)?;
 
         tx.commit().map_err(DatabaseError::from)?;
 
         Ok(MigrationResult {
             version: migration.version,
             description: migration.description.to_string(),
-            is_rollback,
         })
     }
 
     /// Setup the migrations table
     fn setup_migrations_table(conn: &Connection) -> DbResult<()> {
+        log::debug!("Creating migrations table if it doesn't exist");
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS migrations (
                 version INTEGER PRIMARY KEY,
                 description TEXT NOT NULL,
                 applied INTEGER NOT NULL DEFAULT 1,
-                applied_at TIMESTAMP,
-                rolled_back_at TIMESTAMP
+                applied_at TIMESTAMP
             )",
         )
         .map_err(DatabaseError::from)?;
+        log::debug!("Migrations table created successfully");
 
         Ok(())
     }
 }
 
-/// Gets all migrations in order with rollback SQL
+/// Gets all migrations in order
 fn get_migrations() -> Vec<Migration> {
     vec![
         Migration {
             version: 1,
             up_sql: include_str!("migrations/001_initial_schema.sql"),
-            down_sql: include_str!("migrations/001_initial_schema_down.sql"),
             description: "Initial database schema with libraries, audiobooks, and progress tracking",
         },
         Migration {
             version: 2,
-            up_sql: include_str!("migrations/002_add_bookmarks.sql"),
-            down_sql: include_str!("migrations/002_add_bookmarks_down.sql"),
-            description: "Add bookmarks table for user bookmarks",
+            up_sql: include_str!("migrations/002_add_selected_column.sql"),
+            description: "Add selected column to audiobooks table for UI selection state",
         },
     ]
 }
 
 /// Simplified migration runner that uses the enhanced migration manager
 pub fn run_migrations(conn: &mut Connection) -> SqliteResult<()> {
+    log::debug!("Starting run_migrations function");
     let manager = MigrationManager::new();
+    log::debug!("MigrationManager created successfully");
+
+    log::debug!("About to call manager.migrate_up()");
     match manager.migrate_up(conn) {
         Ok(results) => {
+            log::debug!(
+                "migrate_up completed successfully with {} results",
+                results.len()
+            );
             for result in results {
                 log::info!(
                     "Applied migration {} - {}",
@@ -269,6 +237,7 @@ pub fn run_migrations(conn: &mut Connection) -> SqliteResult<()> {
                     result.description
                 );
             }
+            log::debug!("All migration results processed successfully");
             Ok(())
         }
         Err(e) => {
@@ -328,39 +297,5 @@ mod tests {
         // Check no pending migrations
         let pending = manager.pending_migrations(&conn).unwrap();
         assert!(pending.is_empty(), "Should have no pending migrations");
-    }
-
-    #[test]
-    fn test_migration_rollback() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        let manager = MigrationManager::new();
-
-        // Apply all migrations first
-        manager.migrate_up(&mut conn).unwrap();
-        let _initial_version = manager.current_version(&conn).unwrap();
-
-        // Rollback to version 1
-        let rollback_results = manager.migrate_down(&mut conn, 1).unwrap();
-        assert!(
-            !rollback_results.is_empty(),
-            "Should have rolled back migrations"
-        );
-
-        // Check version is now 1
-        let current_version = manager.current_version(&conn).unwrap();
-        assert_eq!(current_version, 1, "Version should be 1 after rollback");
-
-        // Rollback to version 0 (empty database)
-        let rollback_results = manager.migrate_down(&mut conn, 0).unwrap();
-        assert!(
-            !rollback_results.is_empty(),
-            "Should have rolled back to version 0"
-        );
-
-        let current_version = manager.current_version(&conn).unwrap();
-        assert_eq!(
-            current_version, 0,
-            "Version should be 0 after complete rollback"
-        );
     }
 }

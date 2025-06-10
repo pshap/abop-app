@@ -18,6 +18,7 @@ pub use processing::{
 };
 
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 /// Supported audio file formats
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -88,7 +89,7 @@ impl AudioFormat {
 }
 
 /// Represents an audio stream with its properties
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AudioStream {
     /// The sample rate in Hz
     pub sample_rate: u32,
@@ -190,14 +191,88 @@ impl<T> AudioBuffer<T> {
     }
 }
 
-// TODO: Implement AudioBufferPool for memory optimization
-// High priority memory pool implementation needed for batch processing
-// - Create AudioBufferPool<T> struct with Arc<Mutex<Vec<AudioBuffer<T>>>>
-// - Implement new(pool_size: usize, buffer_capacity: usize) method
-// - Add acquire() -> Option<AudioBuffer<T>> method for getting pooled buffers
-// - Add release(buffer: AudioBuffer<T>) method for returning buffers to pool
-// - Clear buffer data but keep capacity when releasing
-// - Thread-safe implementation for use in BatchProcessor parallel operations
-// - Pool size should be 16 buffers with 1MB capacity each for optimal performance
-// - Integrate with existing BatchProcessor::process_files_parallel method
-// - Reduces allocation overhead during bulk audio processing operations
+/// A thread-safe pool of reusable audio buffers to reduce allocation overhead
+/// during batch processing operations.
+pub struct AudioBufferPool<T> {
+    /// The pool of available buffers
+    buffers: Arc<Mutex<Vec<AudioBuffer<T>>>>,
+    /// The capacity of each buffer in the pool
+    buffer_capacity: usize,
+}
+
+impl<T: Clone + Default> AudioBufferPool<T> {
+    /// Creates a new buffer pool with the specified size and capacity
+    ///
+    /// # Arguments
+    ///
+    /// * `pool_size` - The number of buffers to pre-allocate
+    /// * `buffer_capacity` - The capacity of each buffer in elements
+    ///
+    /// # Returns
+    ///
+    /// A new `AudioBufferPool` instance
+    #[must_use]
+    pub fn new(pool_size: usize, buffer_capacity: usize) -> Self {
+        let mut buffers = Vec::with_capacity(pool_size);
+
+        // Pre-allocate buffers with the specified capacity
+        for _ in 0..pool_size {
+            let mut data = Vec::with_capacity(buffer_capacity);
+            // Initialize with default values to ensure capacity
+            data.resize(buffer_capacity, T::default());
+            // Clear to keep capacity but remove elements
+            data.clear();
+
+            buffers.push(AudioBuffer::new(
+                data,
+                SampleFormat::F32, // Default format, will be overridden when used
+                44100,             // Default sample rate, will be overridden when used
+                2,                 // Default channels, will be overridden when used
+            ));
+        }
+
+        Self {
+            buffers: Arc::new(Mutex::new(buffers)),
+            buffer_capacity,
+        }
+    }
+
+    /// Acquires a buffer from the pool, or creates a new one if none are available
+    ///
+    /// # Returns
+    ///
+    /// An `AudioBuffer<T>` that can be used for processing
+    pub fn acquire(&self) -> AudioBuffer<T> {
+        // Try to get a buffer from the pool
+        if let Ok(mut buffers) = self.buffers.lock()
+            && let Some(mut buffer) = buffers.pop()
+        {
+            // Clear any existing data but keep capacity
+            buffer.data.clear();
+            return buffer;
+        }
+
+        // If we couldn't get a buffer from the pool, create a new one
+        AudioBuffer::new(
+            Vec::with_capacity(self.buffer_capacity),
+            SampleFormat::F32, // Default format, will be overridden when used
+            44100,             // Default sample rate, will be overridden when used
+            2,                 // Default channels, will be overridden when used
+        )
+    }
+
+    /// Releases a buffer back to the pool
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer` - The buffer to return to the pool
+    pub fn release(&self, mut buffer: AudioBuffer<T>) {
+        // Clear the buffer data but keep capacity
+        buffer.data.clear();
+
+        // Return the buffer to the pool
+        if let Ok(mut buffers) = self.buffers.lock() {
+            buffers.push(buffer);
+        }
+    }
+}

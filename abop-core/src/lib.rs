@@ -19,6 +19,7 @@ pub mod message;
 pub mod models;
 pub mod scanner;
 pub mod services;
+pub mod test_utils;
 pub mod utils;
 pub mod validation;
 
@@ -28,9 +29,9 @@ pub mod test_constants;
 
 // Re-exports from audio module
 pub use audio::{
-    AudioBuffer, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline, AudioStream,
-    ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, PlayerState, ProcessingConfig,
-    ResamplerConfig, SampleFormat, SilenceDetectorConfig,
+    AudioBuffer, AudioBufferPool, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline,
+    AudioStream, ChannelMixerConfig, MixingAlgorithm, NormalizerConfig, PlayerState,
+    ProcessingConfig, ResamplerConfig, SampleFormat, SilenceDetectorConfig,
 };
 
 // Re-exports from component module
@@ -40,7 +41,7 @@ pub use component::{Component, Renderable, Updatable};
 pub use config::Config;
 
 // Re-exports from constants module
-pub use constants::{config as config_constants, ui};
+pub use constants::config as config_constants;
 
 // Re-exports from scanner module
 pub use scanner::SUPPORTED_AUDIO_EXTENSIONS;
@@ -61,13 +62,13 @@ pub use services::ServiceContainer;
 pub mod prelude {
     pub use crate::{
         audio::{
-            AudioBuffer, AudioDecoder, AudioFormat, AudioPlayer, AudioProcessingPipeline,
-            AudioStream, ChannelMixerConfig, MixingAlgorithm, PlayerState, ProcessingConfig,
-            SampleFormat,
+            AudioBuffer, AudioBufferPool, AudioDecoder, AudioFormat, AudioPlayer,
+            AudioProcessingPipeline, AudioStream, ChannelMixerConfig, MixingAlgorithm, PlayerState,
+            ProcessingConfig, SampleFormat,
         },
         component::{Component, Renderable, Updatable},
         config::Config,
-        constants::{config as config_constants, ui},
+        constants::config as config_constants,
         error::{AppError, Result},
         message::AppMessage,
         models::{AppData, AppState, ThemeConfig, UserPreferences, ViewType},

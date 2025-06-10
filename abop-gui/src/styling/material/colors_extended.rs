@@ -12,10 +12,6 @@ pub struct ExtendedMaterialColors {
     /// Existing MaterialColors base
     pub base: MaterialColors,
     
-    /// Missing surface tokens
-    pub surface_bright: Color,
-    pub surface_dim: Color,
-    
     /// Missing container tokens  
     pub tertiary_container: Color,
     pub on_tertiary_container: Color,
@@ -72,10 +68,6 @@ impl ExtendedMaterialColors {
             tertiary_container: base.tertiary.container,
             on_tertiary_container: base.tertiary.on_container,
             on_error_container: base.error.on_container,
-            
-            // Surface tokens - will be properly implemented with palette mapping
-            surface_bright: base.surface, // Placeholder - will be updated
-            surface_dim: base.surface,    // Placeholder - will be updated
             
             base,
         }

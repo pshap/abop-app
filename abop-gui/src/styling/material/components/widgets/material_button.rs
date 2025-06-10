@@ -327,13 +327,12 @@ where
 
         Node::with_children(size, vec![content_node.move_to(content_position)])
     }
-
     fn draw(
         &self,
         tree: &Tree,
         renderer: &mut Renderer,
         theme: &Theme,
-        style: &Style,
+        _style: &Style,
         layout: Layout<'_>,
         cursor: Cursor,
         viewport: &Rectangle,
@@ -395,7 +394,6 @@ where
                 } else {
                     colors.text
                 },
-                ..*style
             };
 
             self.content.as_widget().draw(
@@ -450,8 +448,10 @@ where
 
                 if self.state != new_state {
                     self.state = new_state;
+                    event::Status::Captured
+                } else {
+                    event::Status::Ignored
                 }
-                event::Status::Captured
             }
             _ => event::Status::Ignored,
         };

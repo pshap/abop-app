@@ -4,14 +4,14 @@ use iced::Task;
 use std::collections::HashSet;
 
 use crate::audio::{convert_selected_to_mono, play_selected_audio, stop_audio};
-use crate::messages::{Command, Message};
+use crate::messages::{Command as GuiCommand, Message};
 use crate::state::UiState;
 
 /// Handles audio-related commands
 #[must_use]
-pub fn handle_audio_command(state: &mut UiState, command: Command) -> Option<Task<Message>> {
+pub fn handle_audio_command(state: &mut UiState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
-        Command::ConvertToMono {
+        GuiCommand::ConvertToMono {
             selected_ids,
             audiobooks,
         } => {
@@ -28,7 +28,7 @@ pub fn handle_audio_command(state: &mut UiState, command: Command) -> Option<Tas
                 Message::AudioProcessingComplete,
             ))
         }
-        Command::PlayAudio {
+        GuiCommand::PlayAudio {
             selected_ids,
             audiobooks,
         } => {
@@ -41,7 +41,7 @@ pub fn handle_audio_command(state: &mut UiState, command: Command) -> Option<Tas
                 Message::PlaybackStarted,
             ))
         }
-        Command::StopAudio => {
+        GuiCommand::StopAudio => {
             log::info!("Executing StopAudio command");
             stop_audio();
             // Return a task that will trigger the PlaybackStopped message

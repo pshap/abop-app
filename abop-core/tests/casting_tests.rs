@@ -3,14 +3,14 @@
 //! These tests verify the behavior of the safe casting utilities, including:
 //! - Database count conversions
 //! - Audio sample rate and duration calculations
-//! - File size formatting
 //! - Domain-specific error conditions
+//!
+//! Note: File size formatting tests are in domain/file_size.rs
 
 use abop_core::utils::casting::{
     builder::{CastingBuilder, PrecisionMode, RoundingMode},
     domain::audio,
     domain::db::{can_fit_in_usize, safe_db_count_to_usize, validate_db_count},
-    domain::file_size::{self, FileSizePrecision},
     domain::ui,
 };
 
@@ -127,35 +127,6 @@ fn test_safe_progress() {
 }
 
 #[test]
-fn test_file_size_formatting() {
-    assert_eq!(
-        file_size::format_file_size(0, FileSizePrecision::Standard),
-        "0 B"
-    );
-    assert_eq!(
-        file_size::format_file_size(1023, FileSizePrecision::Standard),
-        "1023 B"
-    );
-    assert_eq!(
-        file_size::format_file_size(1024, FileSizePrecision::Standard),
-        "1.00 KB"
-    );
-    assert_eq!(
-        file_size::format_file_size(1536, FileSizePrecision::Standard),
-        "1.50 KB"
-    );
-    assert_eq!(
-        file_size::format_file_size(1048576, FileSizePrecision::Standard),
-        "1.00 MB"
-    );
-
-    // Test exact formatting
-    assert_eq!(file_size::format_file_size_exact(1023), "1023 B");
-    assert_eq!(file_size::format_file_size_exact(2048), "2 KB");
-    assert_eq!(file_size::format_file_size_exact(1572864), "2 MB");
-}
-
-#[test]
 fn test_domain_specific_errors() {
     // Test audio errors
     assert!(audio::safe_duration_to_samples(-1.0, 44100).is_err());
@@ -216,27 +187,115 @@ fn test_ui_conversion_methods() {
 }
 
 #[test]
-fn test_audio_validation_functions() {
-    // Test validate_channel_count
-    assert_eq!(audio::validate_channel_count(2).unwrap(), 2);
-    assert!(audio::validate_channel_count(0).is_err());
-    assert!(audio::validate_channel_count(16).is_err());
+fn test_validate_channel_count() {
+    // Test valid cases
+    assert_eq!(
+        audio::validate_channel_count(1).unwrap(),
+        1,
+        "Single channel should be valid"
+    );
+    assert_eq!(
+        audio::validate_channel_count(2).unwrap(),
+        2,
+        "Stereo should be valid"
+    );
+    assert_eq!(
+        audio::validate_channel_count(6).unwrap(),
+        6,
+        "5.1 surround should be valid"
+    );
 
-    // Test validate_bit_depth
-    assert_eq!(audio::validate_bit_depth(16).unwrap(), 16);
-    assert!(audio::validate_bit_depth(7).is_err());
-    assert!(audio::validate_bit_depth(33).is_err());
+    // Test invalid cases
+    assert!(
+        audio::validate_channel_count(0).is_err(),
+        "Zero channels should be invalid"
+    );
+    assert!(
+        audio::validate_channel_count(16).is_err(),
+        "More than 8 channels should be invalid"
+    );
+}
 
-    // Test validate_audiobook_duration
-    assert!(audio::validate_audiobook_duration(60.0).is_ok()); // 1 minute
-    assert!(audio::validate_audiobook_duration(0.5).is_err()); // Too short
-    assert!(audio::validate_audiobook_duration(400000.0).is_err()); // Too long
+#[test]
+fn test_validate_bit_depth() {
+    // Test valid cases
+    assert_eq!(
+        audio::validate_bit_depth(16).unwrap(),
+        16,
+        "16-bit should be valid"
+    );
+    assert_eq!(
+        audio::validate_bit_depth(24).unwrap(),
+        24,
+        "24-bit should be valid"
+    );
+    assert_eq!(
+        audio::validate_bit_depth(32).unwrap(),
+        32,
+        "32-bit should be valid"
+    );
 
-    // Test validate_sample_rate_audiobook
-    assert_eq!(audio::validate_sample_rate_audiobook(44100).unwrap(), 44100);
-    assert_eq!(audio::validate_sample_rate_audiobook(48000).unwrap(), 48000);
-    assert!(audio::validate_sample_rate_audiobook(0).is_err());
-    assert!(audio::validate_sample_rate_audiobook(200000).is_err());
+    // Test invalid cases
+    assert!(
+        audio::validate_bit_depth(7).is_err(),
+        "7-bit should be invalid (not a power of 2)"
+    );
+    assert!(
+        audio::validate_bit_depth(33).is_err(),
+        "33-bit should be invalid (too high)"
+    );
+}
+
+#[test]
+fn test_validate_audiobook_duration() {
+    // Test valid cases
+    assert!(
+        audio::validate_audiobook_duration(60.0).is_ok(),
+        "1 minute should be valid"
+    );
+    assert!(
+        audio::validate_audiobook_duration(3600.0).is_ok(),
+        "1 hour should be valid"
+    );
+    assert!(
+        audio::validate_audiobook_duration(7200.0).is_ok(),
+        "2 hours should be valid"
+    );
+
+    // Test invalid cases
+    assert!(
+        audio::validate_audiobook_duration(0.5).is_err(),
+        "30 seconds should be too short"
+    );
+    assert!(
+        audio::validate_audiobook_duration(400000.0).is_err(),
+        "Too long duration should be invalid"
+    );
+}
+
+#[test]
+fn test_validate_sample_rate_audiobook() {
+    // Test valid cases
+    assert_eq!(
+        audio::validate_sample_rate_audiobook(44100).unwrap(),
+        44100,
+        "44.1kHz should be valid"
+    );
+    assert_eq!(
+        audio::validate_sample_rate_audiobook(48000).unwrap(),
+        48000,
+        "48kHz should be valid"
+    );
+
+    // Test invalid cases
+    assert!(
+        audio::validate_sample_rate_audiobook(0).is_err(),
+        "Zero sample rate should be invalid"
+    );
+    assert!(
+        audio::validate_sample_rate_audiobook(200000).is_err(),
+        "200kHz should be invalid (too high)"
+    );
 }
 
 #[test]

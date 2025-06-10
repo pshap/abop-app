@@ -245,7 +245,7 @@ impl ConfigValidator {
                     ..Default::default()
                 }),
                 channel_mixer: Some(super::config::ChannelMixerConfig {
-                    target_channels: Some(2), // Stereo for music
+                    target_channels: Some(2), // Keep as stereo for music processing
                     ..Default::default()
                 }),
                 normalizer: Some(super::config::NormalizerConfig {

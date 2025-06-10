@@ -48,7 +48,7 @@ pub fn validate_db_count(count: i64) -> Result<usize, DomainCastError> {
 
 /// Check if an i64 database count can safely fit in usize
 #[inline]
-pub fn can_fit_in_usize(count: i64) -> bool {
+pub const fn can_fit_in_usize(count: i64) -> bool {
     // Check if count is non-negative and within the safe range
     // Since i64::MAX is always <= usize::MAX on 64-bit systems,
     // and usize::MAX can overflow when cast to i64, we compare differently
@@ -82,7 +82,7 @@ pub fn safe_usize_to_i64(value: usize) -> Result<i64, DomainCastError> {
 
 /// Platform-aware maximum safe database count
 #[inline]
-pub fn max_safe_db_count() -> i64 {
+pub const fn max_safe_db_count() -> i64 {
     if cfg!(target_pointer_width = "64") {
         i64::MAX
     } else {

@@ -29,7 +29,7 @@ pub use constants::*;
 
 /// Convert ButtonSize enum to pixel dimensions for regular buttons
 #[must_use]
-pub fn button_size_to_pixels(size: ButtonSize) -> f32 {
+pub const fn button_size_to_pixels(size: ButtonSize) -> f32 {
     match size {
         ButtonSize::Small => SMALL,
         ButtonSize::Medium => MEDIUM,
@@ -39,7 +39,7 @@ pub fn button_size_to_pixels(size: ButtonSize) -> f32 {
 
 /// Convert ButtonSize enum to pixel dimensions for FABs
 #[must_use]
-pub fn fab_size_to_pixels(size: ButtonSize) -> f32 {
+pub const fn fab_size_to_pixels(size: ButtonSize) -> f32 {
     match size {
         ButtonSize::Small => FAB_SMALL,
         ButtonSize::Medium => FAB_MEDIUM,

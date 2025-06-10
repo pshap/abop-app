@@ -21,7 +21,7 @@ impl Default for FileSizePrecision {
 
 impl FileSizePrecision {
     /// Get the number of decimal places for this precision mode
-    pub fn decimal_places(self) -> usize {
+    pub const fn decimal_places(self) -> usize {
         match self {
             Self::Exact => 0,
             Self::Standard => 2,

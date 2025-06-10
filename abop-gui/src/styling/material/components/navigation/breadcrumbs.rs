@@ -112,22 +112,22 @@ impl MaterialBreadcrumbs {
         let on_surface = tokens.colors.on_surface;
         let on_surface_variant = tokens.colors.on_surface_variant;
         let primary = tokens.colors.primary.base;
-
-        let items_to_show: Vec<&BreadcrumbItem> = if let Some(max) = self.max_items {
-            if self.items.len() > max {
-                let mut result = Vec::new();
-                result.push(&self.items[0]);
-                if self.items.len() > max + 1 {
-                    // Ellipsis logic could go here
+        let items_to_show: Vec<&BreadcrumbItem> = self.max_items.map_or_else(
+            || self.items.iter().collect(),
+            |max| {
+                if self.items.len() > max {
+                    let mut result = Vec::new();
+                    result.push(&self.items[0]);
+                    if self.items.len() > max + 1 {
+                        // Ellipsis logic could go here
+                    }
+                    result.extend(&self.items[self.items.len().saturating_sub(max - 1)..]);
+                    result
+                } else {
+                    self.items.iter().collect()
                 }
-                result.extend(&self.items[self.items.len().saturating_sub(max - 1)..]);
-                result
-            } else {
-                self.items.iter().collect()
-            }
-        } else {
-            self.items.iter().collect()
-        };
+            },
+        );
 
         let elements: Vec<Element<'a, Message>> = items_to_show
             .iter()

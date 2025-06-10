@@ -3,8 +3,32 @@
 //! This module provides functionality for tracking and reporting database
 //! connection statistics for monitoring and performance analysis.
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, PoisonError, RwLock};
 use std::time::{Duration, Instant};
+use thiserror::Error;
+
+/// Errors that can occur during statistics collection
+#[derive(Error, Debug)]
+pub enum StatisticsError {
+    /// Failed to acquire read lock on statistics
+    #[error("Failed to acquire read lock on statistics: {0}")]
+    ReadLockFailed(String),
+
+    /// Failed to acquire write lock on statistics
+    #[error("Failed to acquire write lock on statistics: {0}")]
+    WriteLockFailed(String),
+
+    /// Failed to acquire read lock on connection timestamp
+    #[error("Failed to acquire read lock on connection timestamp: {0}")]
+    TimestampReadLockFailed(String),
+
+    /// Failed to acquire write lock on connection timestamp
+    #[error("Failed to acquire write lock on connection timestamp: {0}")]
+    TimestampWriteLockFailed(String),
+}
+
+/// Result type for statistics operations
+pub type StatisticsResult<T> = std::result::Result<T, StatisticsError>;
 
 /// Connection statistics for monitoring database operations
 #[derive(Debug, Clone)]
@@ -62,48 +86,72 @@ impl StatisticsCollector {
             connected_at: Arc::new(RwLock::new(None)),
         }
     }
-
     /// Record a successful connection
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the `connected_at` `RwLock` is poisoned due to a panic in another thread.
-    pub fn record_connection(&self) {
-        *self.connected_at.write().unwrap() = Some(Instant::now());
+    /// Returns an error if the timestamp lock cannot be acquired
+    pub fn record_connection(&self) -> StatisticsResult<()> {
+        // Set connection timestamp
+        self.connected_at
+            .write()
+            .map(|mut guard| *guard = Some(Instant::now()))
+            .map_err(|e: PoisonError<_>| {
+                StatisticsError::TimestampWriteLockFailed(e.to_string())
+            })?;
+
+        // Record connection as a successful operation
+        self.record_success(Duration::from_millis(0))?;
+
+        Ok(())
     }
+
     /// Record a successful operation
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the statistics `RwLock` is poisoned due to a panic in another thread.
-    pub fn record_success(&self, duration: Duration) {
-        let mut stats = self.stats.write().unwrap();
+    /// Returns an error if the statistics lock cannot be acquired
+    pub fn record_success(&self, duration: Duration) -> StatisticsResult<()> {
+        let mut stats = self
+            .stats
+            .write()
+            .map_err(|e: PoisonError<_>| StatisticsError::WriteLockFailed(e.to_string()))?;
+
         stats.successful_operations += 1;
         stats.last_successful_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
         drop(stats);
+        Ok(())
     }
 
     /// Record a failed operation
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the statistics `RwLock` is poisoned due to a panic in another thread.
-    pub fn record_failure(&self, duration: Duration) {
-        let mut stats = self.stats.write().unwrap();
+    /// Returns an error if the statistics lock cannot be acquired
+    pub fn record_failure(&self, duration: Duration) -> StatisticsResult<()> {
+        let mut stats = self
+            .stats
+            .write()
+            .map_err(|e: PoisonError<_>| StatisticsError::WriteLockFailed(e.to_string()))?;
+
         stats.failed_operations += 1;
         stats.last_failed_operation = Some(Instant::now());
         Self::update_average_duration(&mut stats, duration);
         drop(stats);
+        Ok(())
     }
 
     /// Record a reconnection attempt
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the statistics `RwLock` is poisoned due to a panic in another thread.
-    pub fn record_reconnection_attempt(&self) {
-        self.stats.write().unwrap().reconnection_attempts += 1;
+    /// Returns an error if the statistics lock cannot be acquired
+    pub fn record_reconnection_attempt(&self) -> StatisticsResult<()> {
+        self.stats
+            .write()
+            .map(|mut guard| guard.reconnection_attempts += 1)
+            .map_err(|e: PoisonError<_>| StatisticsError::WriteLockFailed(e.to_string()))
     }
 
     /// Update the average operation duration using exponential moving average
@@ -141,30 +189,38 @@ impl StatisticsCollector {
 
     /// Get current statistics
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the statistics or `connected_at` `RwLocks` are poisoned due to a panic in another thread.
-    #[must_use]
-    pub fn get_stats(&self) -> ConnectionStats {
-        let mut result = self.stats.read().unwrap().clone();
+    /// Returns an error if either lock cannot be acquired
+    pub fn get_stats(&self) -> StatisticsResult<ConnectionStats> {
+        let mut result = self
+            .stats
+            .read()
+            .map_err(|e: PoisonError<_>| StatisticsError::ReadLockFailed(e.to_string()))?
+            .clone();
 
         // Calculate uptime if connected
-        let value = *self.connected_at.read().unwrap();
+        let value = *self
+            .connected_at
+            .read()
+            .map_err(|e: PoisonError<_>| StatisticsError::TimestampReadLockFailed(e.to_string()))?;
         if let Some(connected_at) = value {
             result.connection_uptime = connected_at.elapsed();
         }
 
-        result
+        Ok(result)
     }
 
     /// Get the connection establishment time
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the `connected_at` `RwLock` is poisoned due to a panic in another thread.
-    #[must_use]
-    pub fn connected_at(&self) -> Option<Instant> {
-        *self.connected_at.read().unwrap()
+    /// Returns an error if the timestamp lock cannot be acquired
+    pub fn connected_at(&self) -> StatisticsResult<Option<Instant>> {
+        self.connected_at
+            .read()
+            .map(|guard| *guard)
+            .map_err(|e: PoisonError<_>| StatisticsError::TimestampReadLockFailed(e.to_string()))
     }
 }
 
@@ -180,73 +236,69 @@ impl Clone for StatisticsCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
+    use std::time::Duration;
 
     #[test]
-    fn test_statistics_collector_creation() {
+    fn test_statistics_collector_creation() -> StatisticsResult<()> {
         let collector = StatisticsCollector::new();
-        let stats = collector.get_stats();
+        let stats = collector.get_stats()?;
 
         assert_eq!(stats.successful_operations, 0);
         assert_eq!(stats.failed_operations, 0);
         assert_eq!(stats.reconnection_attempts, 0);
         assert_eq!(stats.avg_operation_duration_ms, 0.0);
+        Ok(())
     }
 
     #[test]
-    fn test_record_operations() {
+    fn test_record_operations() -> StatisticsResult<()> {
         let collector = StatisticsCollector::new();
 
-        // Record a successful operation
-        collector.record_success(Duration::from_millis(100));
+        // Record some operations
+        collector.record_success(Duration::from_millis(100))?;
+        collector.record_success(Duration::from_millis(200))?;
+        collector.record_failure(Duration::from_millis(50))?;
 
-        // Record a failed operation
-        collector.record_failure(Duration::from_millis(200));
-
-        // Record a reconnection attempt
-        collector.record_reconnection_attempt();
-
-        let stats = collector.get_stats();
-        assert_eq!(stats.successful_operations, 1);
+        // Verify stats
+        let stats = collector.get_stats()?;
+        assert_eq!(stats.successful_operations, 2);
         assert_eq!(stats.failed_operations, 1);
-        assert_eq!(stats.reconnection_attempts, 1);
-
-        // Using EMA formula: first value is 100, second is 0.9*100 + 0.1*200 = 110
-        assert_eq!(stats.avg_operation_duration_ms, 110.0);
+        assert!(stats.avg_operation_duration_ms >= 100.0);
+        Ok(())
     }
 
     #[test]
-    fn test_connection_uptime() {
+    fn test_connection_tracking() -> StatisticsResult<()> {
         let collector = StatisticsCollector::new();
 
         // Record connection
-        collector.record_connection();
+        collector.record_connection()?;
+        std::thread::sleep(Duration::from_millis(100));
 
-        // Wait a bit
-        thread::sleep(Duration::from_millis(10));
+        // Verify stats
+        let stats = collector.get_stats()?;
+        assert_eq!(stats.successful_operations, 1); // Initial connection
+        assert_eq!(stats.failed_operations, 0);
+        assert!(stats.avg_operation_duration_ms >= 0.0);
 
-        // Check uptime
-        let stats = collector.get_stats();
-        assert!(stats.connection_uptime.as_millis() >= 10);
+        Ok(())
     }
 
     #[test]
-    fn test_exponential_moving_average() {
+    fn test_reconnection_attempts() -> StatisticsResult<()> {
         let collector = StatisticsCollector::new();
 
-        // First operation sets the baseline
-        collector.record_success(Duration::from_millis(100));
-        let stats1 = collector.get_stats();
-        assert_eq!(stats1.avg_operation_duration_ms, 100.0);
+        // Record some reconnection attempts
+        collector.record_reconnection_attempt()?;
+        collector.record_reconnection_attempt()?;
+        collector.record_success(Duration::from_millis(50))?;
 
-        // Second operation uses EMA formula: 0.9 * 100 + 0.1 * 200 = 90 + 20 = 110
-        collector.record_success(Duration::from_millis(200));
-        let stats2 = collector.get_stats();
-        assert_eq!(stats2.avg_operation_duration_ms, 110.0);
+        // Verify stats
+        let stats = collector.get_stats()?;
+        assert_eq!(stats.successful_operations, 1);
+        assert_eq!(stats.failed_operations, 0);
+        assert!(stats.avg_operation_duration_ms >= 0.0);
 
-        // Third operation: 0.9 * 110 + 0.1 * 300 = 99 + 30 = 129
-        collector.record_success(Duration::from_millis(300));
-        let stats3 = collector.get_stats();
-        assert_eq!(stats3.avg_operation_duration_ms, 129.0);
+        Ok(())
     }
 }

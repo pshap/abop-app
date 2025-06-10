@@ -2,12 +2,20 @@
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use tokio::sync::Mutex;
 
 use crate::styling::material::MaterialTokens;
-use crate::library::ScanProgress;
 use crate::theme::ThemeMode;
-use abop_core::{AppState, PlayerState, models::Audiobook};
+use abop_core::scanner::progress::ScanProgress;
+use abop_core::{
+    models::AppState,
+    scanner::{LibraryScanner, ScannerState},
+};
+
+use abop_core::audio::player::PlayerState;
+use abop_core::models::Audiobook;
 
 // ================================================================================================
 // HELPER FUNCTIONS
@@ -55,7 +63,7 @@ pub struct DirectoryInfo {
 // ================================================================================================
 
 /// GUI-specific wrapper around the centralized `AppState`
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct UiState {
     /// Core application state from abop-core
     pub core_state: AppState,
@@ -99,6 +107,18 @@ pub struct UiState {
     pub material_tokens: MaterialTokens,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
+    /// Current active task if any
+    pub active_task: Option<TaskInfo>,
+    /// List of recent tasks
+    pub recent_tasks: Vec<TaskInfo>,
+    /// Whether to show task history
+    pub show_task_history: bool,
+    /// Current state of the library scanner
+    pub scanner_state: ScannerState,
+    /// Current progress information for an active scan
+    pub scanner_progress: Option<ScanProgress>,
+    /// Active library scanner instance if a scan is in progress
+    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
 }
 
 impl UiState {
@@ -142,8 +162,14 @@ impl UiState {
                     scan_duration: Duration::from_secs(0),
                 })
                 .collect(),
-            audiobooks: core_state.data.audiobooks,
+            audiobooks: core_state.app_data.audiobooks,
             needs_redraw: false,
+            active_task: None,
+            recent_tasks: Vec::new(),
+            show_task_history: false,
+            scanner_state: ScannerState::Idle,
+            scanner_progress: None,
+            scanner: None,
         }
     }
 
@@ -173,7 +199,6 @@ impl UiState {
             }
         }
     }
-
     /// Create UI state from core state and ensure metadata is synchronized
     #[must_use]
     pub fn from_core_state_synced(core_state: AppState) -> Self {
@@ -201,13 +226,128 @@ impl UiState {
         self.theme_mode = ThemeMode::MaterialDynamic;
         self.material_tokens = MaterialTokens::from_seed_color(seed, is_dark);
     }
+
+    /// Starts a new library scan operation
+    ///
+    /// # Arguments
+    ///
+    /// * `_path` - Path to the library directory to scan (currently unused as scanner is pre-configured)
+    ///
+    /// This method will update the scanner state to Complete or Error based on the scan result
+    pub async fn start_scan(&mut self, _path: PathBuf) {
+        if let Some(scanner) = &self.scanner {
+            // Clone the Arc to avoid holding the lock during the scan operation
+            let scanner_arc = Arc::clone(scanner);
+
+            // Spawn the scan operation in a separate task to avoid blocking the UI
+            // This allows the scanner to run independently without holding any locks
+            let scan_result = tokio::task::spawn_blocking(move || {
+                // Use futures::executor::block_on to wait for the async lock in the blocking context
+                let scanner_guard = futures::executor::block_on(scanner_arc.lock());
+                scanner_guard.scan(abop_core::scanner::ScanOptions::default())
+            })
+            .await;
+
+            match scan_result {
+                Ok(Ok(_result)) => {
+                    self.scanner_state = ScannerState::Complete;
+                }
+                Ok(Err(_e)) => {
+                    self.scanner_state = ScannerState::Error;
+                }
+                Err(_join_error) => {
+                    self.scanner_state = ScannerState::Error;
+                }
+            }
+        }
+    }
+
+    /// Updates the current scan progress information
+    ///
+    /// # Arguments
+    ///
+    /// * `progress` - New progress information from the scanner
+    pub async fn update_scan_progress(&mut self, progress: ScanProgress) {
+        self.scanner_progress = Some(progress);
+    }
+
+    /// Updates the current scanner state
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - New state for the scanner
+    pub async fn update_scan_state(&mut self, state: ScannerState) {
+        self.scanner_state = state;
+    }
+
+    /// Pauses the current scan operation
+    ///
+    /// Note: This is currently a no-op as the LibraryScanner doesn't support pausing
+    pub async fn pause_scan(&mut self) {
+        // LibraryScanner doesn't have pause method - this is a no-op
+        self.scanner_state = ScannerState::Paused;
+    }
+
+    /// Resumes a paused scan operation
+    ///
+    /// Note: This is currently a no-op as the LibraryScanner doesn't support resuming
+    pub async fn resume_scan(&mut self) {
+        // LibraryScanner doesn't have resume method - this is a no-op
+        self.scanner_state = ScannerState::Scanning;
+    }
+
+    /// Cancels the current scan operation
+    ///
+    /// This will stop the scanner and update the state to Cancelled
+    pub async fn cancel_scan(&mut self) {
+        if let Some(scanner) = &self.scanner {
+            scanner.lock().await.cancel_scan();
+            self.scanner_state = ScannerState::Cancelled;
+        }
+    }
 }
 
 impl Default for UiState {
     fn default() -> Self {
-        // Try to load persisted AppState, fall back to default if it fails
-        let app_state = AppState::load().unwrap_or_else(|_| AppState::default());
-        Self::from_core_state_synced(app_state)
+        let mut state = Self::from_core_state_synced(AppState::default());
+        state.scanner_state = ScannerState::Idle;
+        state.scanner_progress = None;
+        state.scanner = None;
+        state
+    }
+}
+
+impl std::fmt::Debug for UiState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UiState")
+            .field("core_state", &self.core_state)
+            .field("theme_mode", &self.theme_mode)
+            .field("material_tokens", &self.material_tokens)
+            .field("settings_open", &self.settings_open)
+            .field("recent_directories_open", &self.recent_directories_open)
+            .field("table_state", &self.table_state)
+            .field("selected_audiobooks", &self.selected_audiobooks)
+            .field("scanning", &self.scanning)
+            .field("scan_progress", &self.scan_progress)
+            .field("enhanced_scan_progress", &self.enhanced_scan_progress)
+            .field("saving", &self.saving)
+            .field("save_progress", &self.save_progress)
+            .field("processing_audio", &self.processing_audio)
+            .field("processing_progress", &self.processing_progress)
+            .field("processing_status", &self.processing_status)
+            .field("player_state", &self.player_state)
+            .field("current_playing_file", &self.current_playing_file)
+            .field("library_path", &self.library_path)
+            .field("recent_directories", &self.recent_directories)
+            .field("audiobooks", &self.audiobooks)
+            .field("needs_redraw", &self.needs_redraw)
+            .field("active_task", &self.active_task)
+            .field("recent_tasks", &self.recent_tasks)
+            .field("show_task_history", &self.show_task_history)
+            .field("scanner_state", &self.scanner_state)
+            .field("scanner_progress", &self.scanner_progress)
+            .field("scanner", &"<LibraryScanner>") // Handle non-Debug LibraryScanner
+            .finish()
     }
 }
 
@@ -225,6 +365,69 @@ impl Default for TableState {
         Self {
             sort_column: "title".to_string(),
             sort_ascending: true,
+        }
+    }
+}
+
+/// Information about a task
+#[derive(Debug, Clone)]
+pub struct TaskInfo {
+    /// Unique identifier for the task
+    pub id: String,
+    /// Task type
+    pub task_type: TaskType,
+    /// Current progress (0.0 to 1.0)
+    pub progress: f32,
+    /// Task status message
+    pub status: String,
+    /// Whether the task is currently running
+    pub is_running: bool,
+    /// Whether the task has completed
+    pub is_completed: bool,
+    /// Error message if task failed
+    pub error: Option<String>,
+    /// Start time of the task
+    pub start_time: chrono::DateTime<chrono::Local>,
+    /// End time of the task if completed
+    pub end_time: Option<chrono::DateTime<chrono::Local>>,
+}
+
+/// Types of background tasks that can be performed
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskType {
+    /// Scanning a library directory for audiobooks
+    Scan,
+    /// Processing audio files (e.g., extracting metadata)
+    Process,
+    /// Importing audiobooks from another source
+    Import,
+    /// Exporting audiobooks to another format
+    Export,
+}
+
+impl std::fmt::Display for TaskType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Scan => write!(f, "Scanning"),
+            Self::Process => write!(f, "Processing"),
+            Self::Import => write!(f, "Importing"),
+            Self::Export => write!(f, "Exporting"),
+        }
+    }
+}
+
+impl Default for TaskInfo {
+    fn default() -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            task_type: TaskType::Scan,
+            progress: 0.0,
+            status: "Ready".to_string(),
+            is_running: false,
+            is_completed: false,
+            error: None,
+            start_time: chrono::Local::now(),
+            end_time: None,
         }
     }
 }

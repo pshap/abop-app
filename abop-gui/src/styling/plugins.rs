@@ -7,7 +7,7 @@ use crate::theme::ThemeMode;
 use iced::{Background, Border, Color, Shadow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// Plugin trait for style extensions
 pub trait StylePlugin: Send + Sync {
@@ -108,6 +108,29 @@ pub enum StylePluginError {
     DependencyMissing(String),
 }
 
+/// Style plugin errors
+#[derive(Debug, thiserror::Error)]
+pub enum StyleError {
+    /// Lock error
+    #[error("Lock error: {0}")]
+    LockError(String),
+    /// Plugin error
+    #[error("Plugin error: {0}")]
+    PluginError(#[from] StylePluginError),
+}
+
+impl<T> From<PoisonError<RwLockReadGuard<'_, T>>> for StyleError {
+    fn from(err: PoisonError<RwLockReadGuard<'_, T>>) -> Self {
+        Self::LockError(err.to_string())
+    }
+}
+
+impl<T> From<PoisonError<RwLockWriteGuard<'_, T>>> for StyleError {
+    fn from(err: PoisonError<RwLockWriteGuard<'_, T>>) -> Self {
+        Self::LockError(err.to_string())
+    }
+}
+
 /// Plugin registry for managing style plugins
 pub struct StylePluginRegistry {
     plugins: RwLock<HashMap<String, Box<dyn StylePlugin>>>,
@@ -137,7 +160,7 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry or theme `RwLock` is poisoned.
-    pub fn register_plugin(&self, plugin: Box<dyn StylePlugin>) -> Result<(), StylePluginError> {
+    pub fn register_plugin(&self, plugin: Box<dyn StylePlugin>) -> Result<(), StyleError> {
         let info = plugin.info();
 
         // Validate API version
@@ -145,16 +168,17 @@ impl StylePluginRegistry {
             return Err(StylePluginError::ApiVersionMismatch {
                 expected: "1.0".to_string(),
                 actual: info.api_version,
-            });
+            }
+            .into());
         }
 
-        let mut plugins = self.plugins.write().unwrap();
-        let theme = self.current_theme.read().unwrap();
+        self.plugins.write()?.insert(info.name, {
+            let theme = self.current_theme.read()?;
+            let mut plugin = plugin;
+            plugin.initialize(&theme)?;
+            plugin
+        });
 
-        let mut plugin = plugin;
-        plugin.initialize(&theme)?;
-
-        plugins.insert(info.name, plugin);
         Ok(())
     }
 
@@ -178,9 +202,7 @@ impl StylePluginRegistry {
     /// Panics if the internal plugin registry mutex is poisoned.
     #[must_use]
     pub fn get_plugin_style(&self, component: &str, variant: &str) -> Option<CustomComponentStyle> {
-        let plugins = self.plugins.read().unwrap();
-
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(style) = plugin.get_component_style(component, variant) {
                 return Some(style);
             }
@@ -195,10 +217,9 @@ impl StylePluginRegistry {
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
     pub fn get_all_custom_colors(&self) -> HashMap<String, Color> {
-        let plugins = self.plugins.read().unwrap();
         let mut colors = HashMap::new();
 
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(plugin_colors) = plugin.get_custom_colors() {
                 colors.extend(plugin_colors);
             }
@@ -213,10 +234,9 @@ impl StylePluginRegistry {
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
     pub fn get_all_custom_tokens(&self) -> HashMap<String, f32> {
-        let plugins = self.plugins.read().unwrap();
         let mut tokens = HashMap::new();
 
-        for plugin in plugins.values() {
+        for plugin in self.plugins.read().unwrap().values() {
             if let Some(plugin_tokens) = plugin.get_custom_tokens() {
                 tokens.extend(plugin_tokens);
             }

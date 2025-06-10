@@ -105,7 +105,7 @@ mod audio_operations_tests {
         // Create several small WAV files
         let mut files = vec![];
         for i in 0..4 {
-            let path = dir.path().join(format!("test_{}.wav", i));
+            let path = dir.path().join(format!("test_{i}.wav"));
             let spec = hound::WavSpec {
                 channels: 1,
                 sample_rate: 8000,

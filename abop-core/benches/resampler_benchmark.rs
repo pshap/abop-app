@@ -5,12 +5,12 @@ use abop_core::audio::{
     processing::{resampler::LinearResampler, traits::AudioProcessor},
 };
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use rand::Rng;
+use rand::{Rng, thread_rng};
 
 fn generate_test_audio(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
     let samples = (sample_rate as f32 * duration_secs) as usize * channels as usize;
-    let mut rng = rand::rng();
-    let data: Vec<f32> = (0..samples).map(|_| rng.random_range(-1.0..=1.0)).collect();
+    let mut rng = thread_rng();
+    let data: Vec<f32> = (0..samples).map(|_| rng.gen_range(-1.0..=1.0)).collect();
 
     AudioBuffer {
         data,
@@ -37,7 +37,7 @@ fn bench_resampler(c: &mut Criterion) {
 
         // Benchmark using the public API
         group.bench_function(
-            format!("public_api_{}Hz_to_{}Hz_{}ch", src_rate, dst_rate, channels),
+            format!("public_api_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"),
             |b| {
                 let mut resampler = LinearResampler::with_target_rate(*dst_rate).unwrap();
                 b.iter(|| {
@@ -51,7 +51,7 @@ fn bench_resampler(c: &mut Criterion) {
         // Benchmark scalar implementation directly (for comparison)
         group.bench_function(
             format!(
-                "direct_scalar_{}Hz_to_{}Hz_{}ch", src_rate, dst_rate, channels
+                "direct_scalar_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"
             ),
             |b| {
                 b.iter(|| {

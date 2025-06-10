@@ -10,7 +10,7 @@ use crate::styling::container::LayoutContainerStyles;
 /// Creates the about view
 #[allow(unused_variables)]
 #[must_use]
-pub fn about_view(state: &UiState) -> iced::Element<Message> {
+pub fn about_view(state: &UiState) -> iced::Element<'_, Message> {
     // Use the AboutView component
     let about_content = crate::components::about::AboutView::view(state.theme_mode);
     container(about_content)

@@ -58,7 +58,6 @@ pub fn get_file_format_simple(path: &Path) -> String {
 pub fn sort_audiobooks(state: &mut UiState) {
     let column = &state.table_state.sort_column;
     let ascending = state.table_state.sort_ascending;
-
     state.audiobooks.sort_by(|a, b| {
         let ordering = match column.as_str() {
             "title" => a
@@ -72,6 +71,7 @@ pub fn sort_audiobooks(state: &mut UiState) {
                 .unwrap_or("Unknown")
                 .cmp(b.author.as_deref().unwrap_or("Unknown")),
             "duration" => a.duration_seconds.cmp(&b.duration_seconds),
+            "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
             "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
             _ => std::cmp::Ordering::Equal,
         };

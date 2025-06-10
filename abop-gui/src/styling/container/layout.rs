@@ -5,6 +5,7 @@
 //! foundation of the application's visual hierarchy.
 
 use crate::styling::material::MaterialTokens;
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::theme::ThemeMode;
 use iced::border::Radius;
 use iced::widget::container;

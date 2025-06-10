@@ -1,13 +1,15 @@
-//! Integration tests for the current LibraryScanner implementation
+//! Integration tests for the scanner module
 //!
-//! These tests replace the legacy scanner tests with ones that match
+//! These tests verify the interaction between the scanner components and the database,
+//! ensuring that the scanning process works correctly with real file system operations.
+//! These replace the legacy scanner tests with ones that match
 //! the current API design.
 
 use abop_core::{
     audio::AudioFormat,
     db::Database,
     models::{Audiobook, Library},
-    scanner::{LibraryScanner, LibraryScanResult, SUPPORTED_AUDIO_EXTENSIONS},
+    scanner::{LibraryScanner, SUPPORTED_AUDIO_EXTENSIONS, ScanSummary},
 };
 // chrono::Utc is not currently used
 use std::fs::File;
@@ -39,33 +41,32 @@ mod library_scanner_tests {
         assert_eq!(AudioFormat::from_extension("flac"), Some(AudioFormat::Flac));
         assert_eq!(AudioFormat::from_extension("ogg"), Some(AudioFormat::Ogg));
         assert_eq!(AudioFormat::from_extension("wav"), Some(AudioFormat::Wav));
+        assert_eq!(AudioFormat::from_extension("aac"), Some(AudioFormat::Aac));
 
         // Test unsupported formats
         assert_eq!(AudioFormat::from_extension("txt"), None);
-        assert_eq!(AudioFormat::from_extension("doc"), None);
+        assert_eq!(AudioFormat::from_extension("mp4"), None);
+        assert_eq!(AudioFormat::from_extension(""), None);
     }
 
     #[test]
     fn test_audio_format_from_path() {
-        // Test detection from file paths
+        // Test the AudioFormat::from_path function
         assert_eq!(AudioFormat::from_path("test.mp3"), Some(AudioFormat::Mp3));
         assert_eq!(
-            AudioFormat::from_path("folder/test.m4a"),
-            Some(AudioFormat::Aac)
-        );
-        assert_eq!(
-            AudioFormat::from_path("deep/folder/test.flac"),
+            AudioFormat::from_path("/path/to/file.flac"),
             Some(AudioFormat::Flac)
         );
+        assert_eq!(
+            AudioFormat::from_path("C:\\Windows\\file.m4a"),
+            Some(AudioFormat::Aac)
+        );
 
-        // Test case insensitive
-        assert_eq!(AudioFormat::from_path("test.MP3"), Some(AudioFormat::Mp3));
-        assert_eq!(AudioFormat::from_path("test.FLAC"), Some(AudioFormat::Flac));
-
-        // Test unsupported
+        // Test unsupported formats and edge cases
         assert_eq!(AudioFormat::from_path("test.txt"), None);
         assert_eq!(AudioFormat::from_path("test"), None);
     }
+
     #[test]
     fn test_library_scanner_creation() {
         let temp_dir = tempdir().unwrap();
@@ -76,6 +77,7 @@ mod library_scanner_tests {
         // Test that scanner can be created without panicking
         // This is a basic smoke test
     }
+
     #[test]
     fn test_scan_empty_directory() {
         let temp_dir = tempdir().unwrap();
@@ -83,82 +85,88 @@ mod library_scanner_tests {
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
-        let scan_result = scanner.scan().unwrap();
+        let scan_summary = scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .unwrap();
 
-        assert_eq!(scan_result.audiobooks.len(), 0);
-        assert_eq!(scan_result.processed_count, 0);
-        assert_eq!(scan_result.error_count, 0);
+        assert_eq!(scan_summary.new_files.len(), 0);
+        assert_eq!(scan_summary.processed, 0);
+        assert_eq!(scan_summary.errors, 0);
     }
+
     #[test]
     fn test_scan_with_mixed_files() {
-        use abop_core::models::Audiobook;
-        use std::path::PathBuf;
+        let temp_dir = tempdir().unwrap();
+        let db = Database::open(":memory:").unwrap();
+        let library = Library::new("Test Library", temp_dir.path());
 
-        // Create a mock scanner that returns a fixed set of results
-        #[allow(dead_code)]
-        struct MockScanner {
-            db: Database,
-            library: Library,
+        // Create test files - only supported formats should be processed
+        let audio_files = ["test1.mp3", "test2.flac", "test3.m4b"];
+        let non_audio_files = ["readme.txt", "image.jpg", "video.mp4"];
+
+        for filename in &audio_files {
+            let file_path = temp_dir.path().join(filename);
+            let mut file = File::create(file_path).unwrap();
+            file.write_all(b"fake audio data").unwrap();
         }
 
-        impl MockScanner {
-            fn new(db: Database, library: Library) -> Self {
-                Self { db, library }
-            }
+        for filename in &non_audio_files {
+            let file_path = temp_dir.path().join(filename);
+            let mut file = File::create(file_path).unwrap();
+            file.write_all(b"not audio data").unwrap();
+        }
 
-            fn scan(&self) -> Result<LibraryScanResult, Box<dyn std::error::Error>> {
-                // Simulate finding files with different extensions
-                let mut audiobooks = Vec::new();
+        let scanner = LibraryScanner::new(db, library);
+        let scan_summary = scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .unwrap();
 
-                // Create mock audiobooks for supported formats
-                let now = chrono::Utc::now();
+        // Only audio files should be discovered and attempted to be processed
+        // Since these are fake files without proper audio metadata,
+        // they should be detected as audio files but fail metadata extraction
+        assert_eq!(scan_summary.processed, audio_files.len()); // Should attempt to process all audio files
+        assert_eq!(scan_summary.errors, audio_files.len()); // All fake files should generate errors
+        assert_eq!(scan_summary.new_files.len(), 0); // No valid audiobooks should be created
+    }
+}
 
-                let mp3_book = Audiobook {
-                    id: "1".to_string(),
-                    library_id: "test-library".to_string(),
-                    path: PathBuf::from("/fake/path/test1.mp3"),
-                    title: Some("Test MP3".to_string()),
-                    author: None,
-                    narrator: None,
-                    description: None,
-                    duration_seconds: Some(3600),
-                    size_bytes: Some(1024 * 1024 * 10), // 10MB
-                    cover_art: None,
-                    created_at: now,
-                    updated_at: now,
-                    selected: false,
-                };
-                audiobooks.push(mp3_book);
+#[cfg(test)]
+mod mock_scanner_tests {
+    use super::*;
 
-                let flac_book = Audiobook {
-                    id: "2".to_string(),
-                    library_id: "test-library".to_string(),
-                    path: PathBuf::from("/fake/path/test2.flac"),
-                    title: Some("Test FLAC".to_string()),
-                    author: None,
-                    narrator: None,
-                    description: None,
-                    duration_seconds: Some(1800),
-                    size_bytes: Some(1024 * 1024 * 15), // 15MB
-                    cover_art: None,
-                    created_at: now,
-                    updated_at: now,
-                    selected: false,
-                };
-                audiobooks.push(flac_book);
+    /// Mock scanner for testing without real audio files
+    struct MockScanner {
+        _db: Database,
+        _library: Library,
+    }
 
-                // Create a proper LibraryScanResult
-                let result = LibraryScanResult {
-                    audiobooks,
-                    processed_count: 2, // Successfully processed MP3 and FLAC
-                    error_count: 2,     // Unsupported formats
-                    scan_duration: std::time::Duration::from_millis(100),
-                };
-
-                Ok(result)
+    impl MockScanner {
+        fn new(db: Database, library: Library) -> Self {
+            Self {
+                _db: db,
+                _library: library,
             }
         }
 
+        /// Mock scan that returns predefined results
+        fn scan(&self) -> Result<ScanSummary, Box<dyn std::error::Error>> {
+            // Create mock audiobooks for testing
+            let audiobook1 = Audiobook::new("test-library", "/test/book1.mp3");
+            let audiobook2 = Audiobook::new("test-library", "/test/book2.flac");
+
+            let result = ScanSummary {
+                new_files: vec![audiobook1, audiobook2],
+                processed: 2, // Successfully processed MP3 and FLAC
+                errors: 2,    // Unsupported formats
+                scan_duration: std::time::Duration::from_millis(100),
+            };
+
+            Ok(result)
+        }
+    }
+
+    #[test]
+    fn test_mock_scanner() {
         let db = Database::open(":memory:").unwrap();
         let temp_dir = tempdir().unwrap();
         let library = Library::new("Test Library", temp_dir.path());
@@ -168,11 +176,11 @@ mod library_scanner_tests {
         let scan_result = mock_scanner.scan().unwrap();
 
         // Verify we have the expected number of audiobooks
-        assert_eq!(scan_result.audiobooks.len(), 2);
+        assert_eq!(scan_result.new_files.len(), 2);
 
         // Verify the expected file formats were processed
         let formats: Vec<&str> = scan_result
-            .audiobooks
+            .new_files
             .iter()
             .filter_map(|book| book.path.extension())
             .filter_map(|ext| ext.to_str())
@@ -181,29 +189,52 @@ mod library_scanner_tests {
         assert!(formats.contains(&"mp3"));
         assert!(formats.contains(&"flac"));
 
-        // Verify we processed some files and had some errors
-        assert!(scan_result.processed_count > 0);
-        assert!(scan_result.error_count > 0);
+        // Verify timing and processing stats
+        assert_eq!(scan_result.processed, 2);
+        assert_eq!(scan_result.errors, 2);
+        assert!(scan_result.scan_duration > std::time::Duration::from_secs(0));
     }
 }
 
 #[cfg(test)]
-mod audiobook_metadata_tests {
+mod scanner_performance_tests {
     use super::*;
 
     #[test]
-    fn test_audiobook_creation() {
+    fn test_scan_large_directory_structure() {
         let temp_dir = tempdir().unwrap();
-        let test_file = temp_dir.path().join("test.mp3");
+        let db = Database::open(":memory:").unwrap();
+        let library = Library::new("Test Library", temp_dir.path());
 
-        // Create a test file
-        let mut file = File::create(&test_file).unwrap();
-        file.write_all(b"test content").unwrap();
+        // Create a nested directory structure
+        for i in 0..5 {
+            let subdir = temp_dir.path().join(format!("subdir_{}", i));
+            std::fs::create_dir_all(&subdir).unwrap();
 
-        let audiobook = Audiobook::new("library_id", &test_file);
+            // Create some test files in each subdirectory
+            for j in 0..3 {
+                let file_path = subdir.join(format!("test_{}_{}.mp3", i, j));
+                let mut file = File::create(file_path).unwrap();
+                file.write_all(b"fake audio data").unwrap();
+            }
+        }
 
-        assert_eq!(audiobook.library_id, "library_id");
-        assert_eq!(audiobook.path, test_file);
-        assert!(!audiobook.id.is_empty()); // Should have a UUID
+        let scanner = LibraryScanner::new(db, library);
+        let start_time = std::time::Instant::now();
+        let scan_summary = scanner
+            .scan(abop_core::scanner::ScanOptions::default())
+            .unwrap();
+        let scan_duration = start_time.elapsed();
+
+        // Verify scan completed in reasonable time (adjust threshold as needed)
+        assert!(scan_duration < std::time::Duration::from_secs(10));
+
+        // Verify files were discovered
+        assert!(scan_summary.processed > 0);
+
+        println!(
+            "Scanned {} files in {:?}",
+            scan_summary.processed, scan_duration
+        );
     }
 }

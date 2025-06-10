@@ -6,15 +6,24 @@
 use thiserror::Error;
 
 /// Database-specific error types
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum DatabaseError {
+    /// Requested resource was not found.
+    #[error("Resource not found: {entity} with id {id} not found")]
+    NotFound {
+        /// The type of entity that was not found
+        entity: String,
+        /// The ID that was not found
+        id: String,
+    },
+
     /// Connection to the database failed.
     #[error("Database connection failed: {0}")]
     ConnectionFailed(String),
 
     /// Raw `SQLite` error from the underlying driver.
     #[error("SQLite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
+    Sqlite(String),
 
     /// Database transaction failed.
     #[error("Database transaction failed: {message}")]
@@ -102,6 +111,9 @@ pub enum DatabaseError {
     /// Query execution failed.
     #[error("Query failed: {0}")]
     Query(String),
+    /// I/O error occurred.
+    #[error("I/O error: {0}")]
+    Io(String),
 }
 
 /// Convenient Result type for database operations
@@ -167,9 +179,21 @@ impl DatabaseError {
 impl From<DatabaseError> for crate::error::AppError {
     fn from(err: DatabaseError) -> Self {
         match err {
-            DatabaseError::Sqlite(rusqlite_err) => Self::Database(rusqlite_err),
+            DatabaseError::Sqlite(e) => Self::Database(DatabaseError::Sqlite(e)),
             other => Self::Other(other.to_string()),
         }
+    }
+}
+
+impl From<std::io::Error> for DatabaseError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(err.to_string())
+    }
+}
+
+impl From<rusqlite::Error> for DatabaseError {
+    fn from(err: rusqlite::Error) -> Self {
+        Self::Sqlite(err.to_string())
     }
 }
 

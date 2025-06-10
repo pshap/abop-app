@@ -135,7 +135,7 @@ impl ButtonColors {
 
     /// Get the disabled background color for a button variant
     #[must_use]
-    pub fn disabled_background_color(&self, variant: ButtonStyleVariant) -> Color {
+    pub const fn disabled_background_color(&self, variant: ButtonStyleVariant) -> Color {
         match variant {
             ButtonStyleVariant::Filled | ButtonStyleVariant::FilledTonal => {
                 ColorUtils::with_alpha(self.colors.on_surface, self.state_opacity.disabled)
@@ -146,7 +146,7 @@ impl ButtonColors {
 
     /// Get the disabled text color for any button variant
     #[must_use]
-    pub fn disabled_text_color(&self) -> Color {
+    pub const fn disabled_text_color(&self) -> Color {
         ColorUtils::with_alpha(self.colors.on_surface, self.state_opacity.disabled)
     }
 

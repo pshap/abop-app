@@ -42,10 +42,7 @@ impl Timer {
     pub fn elapsed_ms(&self) -> u64 {
         let elapsed = self.elapsed().as_millis();
         // Cap at u64::MAX to avoid truncation
-        match u64::try_from(elapsed) {
-            Ok(ms) => ms,
-            Err(_) => u64::MAX,
-        }
+        u64::try_from(elapsed).map_or(u64::MAX, |ms| ms)
     }
 
     /// Get the timer label

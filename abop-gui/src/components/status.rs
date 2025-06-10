@@ -1,11 +1,10 @@
 use iced::Element;
 use iced::Length;
-use iced::widget::{column, container, text, row};
+use iced::widget::{column, container, row, text};
 use std::path::PathBuf;
 
-
 use abop_core::PlayerState;
-use crate::library::ScanProgress;
+use abop_core::scanner::ScanProgress;
 
 use crate::components::common::create_progress_indicator;
 use crate::messages::Message;
@@ -146,60 +145,67 @@ impl StatusDisplay {
         params: EnhancedStatusDisplayParams<'a>,
         tokens: &MaterialTokens,
     ) -> Element<'a, Message> {
-        let mut status_column = column![];
-
-        // Show enhanced scanning progress if active
+        let mut status_column = column![]; // Show enhanced scanning progress if active
         if params.scanning {
             if let Some(progress) = &params.scan_progress {
-                let progress_text = if let Some(current_file) = &progress.current_file {
-                    format!(
-                        "Scanning: {} ({}/{}) - {:.1} files/sec",
-                        current_file
-                            .split(std::path::MAIN_SEPARATOR)
-                            .last()
-                            .unwrap_or(current_file),
-                        progress.processed,
-                        progress.total,
-                        progress.throughput
-                    )
-                } else {
-                    format!(
-                        "Scanning library... ({}/{}) - {:.1} files/sec",
-                        progress.processed,
-                        progress.total,
-                        progress.throughput
-                    )
-                };
-
-                let eta_text = if let Some(eta) = progress.eta {
-                    if eta.as_secs() > 0 {
-                        format!(" - ETA: {}s", eta.as_secs())
-                    } else {
-                        String::new()
+                // Extract information from ScanProgress enum
+                let (progress_percentage, processed, total, current_file) = match progress {
+                    abop_core::scanner::ScanProgress::Started { total_files } => {
+                        (0.0, 0, *total_files, None)
                     }
-                } else {
-                    String::new()
+                    abop_core::scanner::ScanProgress::FileProcessed {
+                        current,
+                        total,
+                        file_name,
+                        progress_percentage,
+                    } => (
+                        *progress_percentage,
+                        *current,
+                        *total,
+                        Some(file_name.clone()),
+                    ),
+                    abop_core::scanner::ScanProgress::BatchCommitted {
+                        total_processed, ..
+                    } => {
+                        (0.5, *total_processed, *total_processed, None) // Assume 50% progress for batches
+                    }
+                    abop_core::scanner::ScanProgress::Complete { processed, .. } => {
+                        (1.0, *processed, *processed, None)
+                    }
+                    abop_core::scanner::ScanProgress::Cancelled { processed, .. } => {
+                        (0.0, *processed, *processed, None)
+                    }
                 };
 
-                let full_text = format!("{}{}", progress_text, eta_text);
+                let progress_text = current_file.as_ref().map_or_else(
+                    || format!("Scanning library... ({processed}/{total})",),
+                    |current_file| {
+                        format!(
+                            "Scanning: {} ({}/{})",
+                            current_file
+                                .split(std::path::MAIN_SEPARATOR)
+                                .next_back()
+                                .unwrap_or(current_file),
+                            processed,
+                            total,
+                        )
+                    },
+                );
 
                 status_column = status_column.push(
                     column![
                         create_progress_indicator(
-                            Some(progress.progress_percentage),
-                            &full_text,
+                            Some(progress_percentage),
+                            &progress_text,
                             params.theme,
                             tokens,
                         ),
                         row![
-                            text(format!("Progress: {:.1}%", progress.progress_percentage * 100.0))
-                                .size(12),
-                            text(format!("Throughput: {:.1} files/sec", progress.throughput))
-                                .size(12),
+                            text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12),
                         ]
                         .spacing(tokens.spacing().md as u16)
                     ]
-                    .spacing(tokens.spacing().sm as u16)
+                    .spacing(tokens.spacing().sm as u16),
                 );
             } else {
                 status_column = status_column.push(create_progress_indicator(

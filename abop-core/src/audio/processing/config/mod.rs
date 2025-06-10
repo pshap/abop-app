@@ -188,8 +188,13 @@ impl ProcessingConfig {
 // Submodules
 mod builder;
 mod channel_mixer;
+/// Normalizer configuration module.
 mod normalizer;
+/// Output configuration module.
 mod output;
+/// Resampler configuration module.
 mod resampler;
-mod silence_detector;
+/// Silence detector configuration module.
+pub mod silence_detector;
+/// Validation configuration module.
 pub mod validation;

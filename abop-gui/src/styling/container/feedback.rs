@@ -5,6 +5,7 @@
 //! to provide clear visual communication about system state and user actions.
 
 use crate::styling::material::MaterialTokens;
+use crate::styling::material::helpers::ElevationHelpers;
 use crate::theme::ThemeMode;
 use iced::widget::container;
 use iced::{Background, Border, Color};

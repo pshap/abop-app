@@ -28,7 +28,7 @@ pub struct ButtonBuilder<'a, M: Clone + 'a> {
 
 impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// Create a new button builder with the given tokens
-    pub fn new(tokens: &'a MaterialTokens) -> Self {
+    pub const fn new(tokens: &'a MaterialTokens) -> Self {
         Self {
             label: None,
             icon_name: None,
@@ -45,38 +45,38 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Set the button label text
-    pub fn label(mut self, label: &'a str) -> Self {
+    pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
         self
     }
 
     /// Set the icon name and position
-    pub fn icon(mut self, icon_name: &'a str, position: IconPosition) -> Self {
+    pub const fn icon(mut self, icon_name: &'a str, position: IconPosition) -> Self {
         self.icon_name = Some(icon_name);
         self.icon_position = position;
         self
     }
 
     /// Set the Material Design variant
-    pub fn variant(mut self, variant: MaterialButtonVariant) -> Self {
+    pub const fn variant(mut self, variant: MaterialButtonVariant) -> Self {
         self.variant = variant;
         self
     }
 
     /// Set the button size
-    pub fn size(mut self, size: ButtonSize) -> Self {
+    pub const fn size(mut self, size: ButtonSize) -> Self {
         self.size = Some(size);
         self
     }
 
     /// Set custom width
-    pub fn width(mut self, width: Length) -> Self {
+    pub const fn width(mut self, width: Length) -> Self {
         self.width = Some(width);
         self
     }
 
     /// Set custom height
-    pub fn height(mut self, height: Length) -> Self {
+    pub const fn height(mut self, height: Length) -> Self {
         self.height = Some(height);
         self
     }
@@ -88,7 +88,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Make the button disabled
-    pub fn disabled(mut self) -> Self {
+    pub const fn disabled(mut self) -> Self {
         self.disabled = true;
         self
     }
@@ -228,7 +228,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 ///     .on_press(AppMessage::Export)
 ///     .build();
 /// ```
-pub fn button_builder<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a, M> {
+pub const fn button_builder<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a, M> {
     ButtonBuilder::new(tokens)
 }
 

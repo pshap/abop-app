@@ -59,7 +59,7 @@ pub fn safe_f64_to_usize_samples(value: f64) -> Result<usize, CastError> {
 /// # Note
 /// f32 can exactly represent all integers up to 2^24. For larger values,
 /// precision loss occurs, which may not be acceptable for some calculations.
-pub fn safe_usize_to_f32_rms(sample_count: usize) -> Result<f32, CastError> {
+pub const fn safe_usize_to_f32_rms(sample_count: usize) -> Result<f32, CastError> {
     const MAX_EXACT: usize = 1 << 24; // 2^24
 
     if sample_count > MAX_EXACT {
@@ -220,7 +220,7 @@ pub fn validate_audiobook_duration(duration_secs: f32) -> Result<f32, DomainCast
     }
 
     // Reasonable bounds: 1 second to 100 hours
-    if !(1.0..=360000.0).contains(&duration_secs) {
+    if !(1.0..=360_000.0).contains(&duration_secs) {
         return Err(AudioCastError::InvalidDuration(duration_secs).into());
     }
 
@@ -237,7 +237,7 @@ pub fn validate_sample_rate_audiobook(sample_rate: u32) -> Result<u32, DomainCas
     // Common audiobook sample rates
     match sample_rate {
         8000 | 11025 | 16000 | 22050 | 44100 | 48000 | 96000 => Ok(sample_rate),
-        _ if (8000..=192000).contains(&sample_rate) => Ok(sample_rate), // Allow reasonable range
+        _ if (8000..=192_000).contains(&sample_rate) => Ok(sample_rate), // Allow reasonable range
         _ => Err(AudioCastError::InvalidSampleRate(sample_rate).into()),
     }
 }

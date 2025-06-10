@@ -4,7 +4,6 @@
 //! specialized handlers based on message type and category.
 
 pub mod data_updates;
-pub mod placeholders;
 pub mod ui_state;
 
 use iced::Task;
@@ -20,14 +19,16 @@ pub fn handle_message(state: &mut UiState, message: Message) -> Task<Message> {
         return commands::handle_command(state, command);
     }
 
-    // Try UI state handlers
+    // Try UI state handlers first
     if let Some(task) = ui_state::handle_ui_message(state, message.clone()) {
         return task;
     }
 
-    // Try data update handlers
-    if let Some(task) = data_updates::handle_data_message(state, message.clone()) {
+    // Try GUI message handlers
+    if let Some(task) = data_updates::handle_gui_message(state, message.clone()) {
         return task;
-    } // Try placeholder handlers (currently does nothing)
-    placeholders::handle_placeholder_message(state, message.clone())
+    }
+
+    // Handle core operations
+    data_updates::handle_core_operation(state, message)
 }
