@@ -264,7 +264,7 @@ mod chip_collection_tests {
         collection.add_chip(ChipBuilder::assist("test").build().unwrap());
 
         // Should not allow selection in None mode
-        assert!(collection.select_chip(0).is_ok()); // But selection is ignored in None mode
+        assert!(collection.select_chip(0).is_err()); // Selection should be rejected in None mode
         assert!(collection.selected_chips().is_empty());
     }
 
@@ -301,9 +301,9 @@ mod chip_collection_tests {
     fn test_chip_collection_validation() {
         let mut collection = ChipCollection::new(ChipSelectionMode::Single);
         assert!(collection.validate().is_ok());        // Add chip with invalid label (too long)
-        let long_label = "x".repeat(201);
+        let long_label = "x".repeat(101);
         let result = ChipBuilder::filter(&long_label).build();
-        assert!(matches!(result, Err(SelectionError::LabelTooLong { len: 201, max: 100 })));
+        assert!(matches!(result, Err(SelectionError::LabelTooLong { len: 101, max: 100 })));
         
         // Add a valid chip
         collection.add_chip(ChipBuilder::filter("valid").build().unwrap());
