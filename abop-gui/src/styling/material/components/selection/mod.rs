@@ -87,10 +87,6 @@ pub mod switch;
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(test)]
-pub mod demo;
-
-
 // Re-export core types and traits (but not convenience functions)
 pub use builder::{
     BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
