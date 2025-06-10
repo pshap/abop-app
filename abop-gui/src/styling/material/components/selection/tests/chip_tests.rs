@@ -8,7 +8,7 @@ mod chip_tests {
     // Import from the main selection module - available to all tests in this module
     use crate::styling::material::components::selection::{
         Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
-        ChipVariant, ComponentBuilder, ComponentSize, SelectionError, SelectionWidget,
+        ChipVariant, ComponentBuilder, ComponentSize, SelectionError, SelectionWidget, StatefulWidget,
     };
 
     // Helper function to create a test chip

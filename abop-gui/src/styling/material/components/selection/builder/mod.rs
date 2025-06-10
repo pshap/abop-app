@@ -64,7 +64,7 @@ mod checkbox;
 mod chip;
 mod components;
 mod factory;
-mod patterns;
+pub mod patterns;
 mod radio;
 mod switch;
 mod validation;

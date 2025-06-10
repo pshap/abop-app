@@ -12,6 +12,7 @@
 use super::super::common::*;
 use super::{
     checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
+    patterns::ComponentBuilder,
 };
 
 // ============================================================================
@@ -207,6 +208,7 @@ pub fn icon_chip<S: Into<String>, I: Into<String>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::patterns::ComponentBuilder;
 
     #[test]
     fn test_primary_factory_functions() {

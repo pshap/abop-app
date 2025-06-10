@@ -213,6 +213,7 @@ impl CustomCheckboxWidget {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::builder::ComponentBuilder;
 
     #[test]
     fn test_checkbox_creation() {
@@ -239,13 +240,15 @@ mod tests {
         assert!(!checkbox.is_selected());
 
         // Toggle to checked
-        let new_state = checkbox.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = checkbox.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, CheckboxState::Unchecked);
         assert_eq!(new_state, CheckboxState::Checked);
         assert_eq!(checkbox.state(), CheckboxState::Checked);
         assert!(checkbox.is_selected());
 
         // Toggle back to unchecked
-        let new_state = checkbox.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = checkbox.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, CheckboxState::Checked);
         assert_eq!(new_state, CheckboxState::Unchecked);
         assert_eq!(checkbox.state(), CheckboxState::Unchecked);
         assert!(!checkbox.is_selected());

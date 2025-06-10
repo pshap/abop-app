@@ -317,6 +317,7 @@ pub fn switch_from_bool(enabled: bool) -> SwitchBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::builder::ComponentBuilder;
 
     #[test]
     fn test_switch_creation() {
@@ -342,14 +343,16 @@ mod tests {
         assert!(!switch.to_bool());
 
         // Toggle to on
-        let new_state = switch.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = switch.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, SwitchState::Off);
         assert_eq!(new_state, SwitchState::On);
         assert_eq!(switch.state(), SwitchState::On);
         assert!(switch.is_on());
         assert!(switch.to_bool());
 
         // Toggle back to off
-        let new_state = switch.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = switch.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, SwitchState::On);
         assert_eq!(new_state, SwitchState::Off);
         assert_eq!(switch.state(), SwitchState::Off);
         assert!(switch.is_off());

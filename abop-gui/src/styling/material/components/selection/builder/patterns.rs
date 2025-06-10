@@ -82,40 +82,38 @@ pub trait BatchBuilder<T>: ComponentBuilder<T> {
 // Phase 2: Advanced Builder Patterns
 // ============================================================================
 
-/// Trait for builders that support advanced conditional configuration
-pub trait AdvancedConditionalBuilder<T>: ComponentBuilder<T> {
-    /// Apply configuration with validation at each step
-    fn when_valid(
+/// Extended conditional builder with validation support
+pub trait AdvancedConditionalBuilder<T>: ConditionalBuilder<T> {
+    /// Apply a configuration when a validation condition passes
+    fn when_validated<F, G>(
         self,
-        condition: bool,
-        f: impl FnOnce(Self) -> Result<Self, SelectionError>,
+        validator: F,
+        config: G,
     ) -> Result<Self, SelectionError>
     where
         Self: Sized,
-    {
-        if condition { f(self) } else { Ok(self) }
-    }
-
-    /// Apply configuration with custom validation
-    fn when_validated<F, V>(self, validator: V, f: F) -> Result<Self, SelectionError>
-    where
-        Self: Sized,
-        F: FnOnce(Self) -> Self,
-        V: FnOnce(&Self) -> Result<(), SelectionError>,
+        F: FnOnce(&Self) -> Result<(), SelectionError>,
+        G: FnOnce(Self) -> Self,
     {
         validator(&self)?;
-        Ok(f(self))
+        Ok(config(self))
     }
 
-    /// Chain multiple conditional operations
-    fn chain_when(self, conditions: &[(bool, Box<dyn Fn(Self) -> Self>)]) -> Self
+    /// Apply a configuration with a fallible operation
+    fn try_when<F>(
+        self,
+        condition: bool,
+        config: F,
+    ) -> Result<Self, SelectionError>
     where
-        Self: Sized + Clone,
+        Self: Sized,
+        F: FnOnce(Self) -> Result<Self, SelectionError>,
     {
-        conditions
-            .iter()
-            .filter(|(condition, _)| *condition)
-            .fold(self, |builder, (_, transform)| transform(builder.clone()))
+        if condition {
+            config(self)
+        } else {
+            Ok(self)
+        }
     }
 }
 
