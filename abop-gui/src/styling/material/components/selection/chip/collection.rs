@@ -59,7 +59,8 @@ impl ChipCollection {
         } else {
             Ok(())
         }
-    }    /// Create a new chip collection
+    }
+    /// Create a new chip collection
     #[must_use]
     pub fn new(selection_mode: ChipSelectionMode) -> Self {
         Self {
@@ -160,7 +161,7 @@ impl ChipCollection {
     pub fn toggle_chip(&mut self, index: usize) -> Result<ChipState, SelectionError> {
         self.validate_index(index)?;
         self.validate_selection_allowed()?;
-        
+
         match self.selection_mode {
             ChipSelectionMode::Single => {
                 // In single mode, selecting toggles off others
@@ -171,14 +172,10 @@ impl ChipCollection {
                 }
                 Ok(self.chips[index].state())
             }
-            ChipSelectionMode::Multiple => {
-                self.chips[index].toggle()
-            }
-            ChipSelectionMode::None => {
-                Err(SelectionError::InvalidState {
-                    details: "Selection not allowed in this collection".to_string(),
-                })
-            }
+            ChipSelectionMode::Multiple => self.chips[index].toggle(),
+            ChipSelectionMode::None => Err(SelectionError::InvalidState {
+                details: "Selection not allowed in this collection".to_string(),
+            }),
         }
     }
 
@@ -271,7 +268,7 @@ mod tests {
     #[test]
     fn test_chip_collection_selection() {
         let mut collection = ChipCollection::new(ChipSelectionMode::Multiple);
-        
+
         // Add chips
         collection.add_chip(Chip::filter("Option 1").build().unwrap());
         collection.add_chip(Chip::filter("Option 2").build().unwrap());
@@ -296,7 +293,7 @@ mod tests {
     #[test]
     fn test_chip_collection_single_selection() {
         let mut collection = ChipCollection::new(ChipSelectionMode::Single);
-        
+
         // Add chips
         collection.add_chip(Chip::filter("A").build().unwrap());
         collection.add_chip(Chip::filter("B").build().unwrap());

@@ -3,10 +3,10 @@
 //! This module provides improved builder patterns with better ergonomics,
 //! method chaining, and consistent APIs across chip and collection builders.
 
-use super::core::{MAX_CHIP_LABEL_LENGTH};
-use super::collection::{ChipCollection, ChipSelectionMode};
 use super::super::builder::{Chip, ChipBuilder as CoreChipBuilder, ComponentBuilder};
 use super::super::common::*;
+use super::collection::{ChipCollection, ChipSelectionMode};
+use super::core::MAX_CHIP_LABEL_LENGTH;
 
 // ============================================================================
 // Re-export builders from core module
@@ -112,7 +112,8 @@ impl ChipCollectionBuilder {
     pub fn validation(mut self, config: ValidationConfig) -> Self {
         self.validation_config = config;
         self
-    }    /// Build the chip collection with validation
+    }
+    /// Build the chip collection with validation
     pub fn build(self) -> Result<ChipCollection, SelectionError> {
         let collection = ChipCollection::from_builder_parts(
             self.chips,
@@ -232,41 +233,25 @@ impl ChipCollectionBuilder {
     /// Add a chip conditionally
     #[must_use]
     pub fn chip_if(self, condition: bool, chip: Chip) -> Self {
-        if condition {
-            self.chip(chip)
-        } else {
-            self
-        }
+        if condition { self.chip(chip) } else { self }
     }
 
     /// Add a filter chip conditionally
     #[must_use]
     pub fn filter_if<S: Into<String>>(self, condition: bool, label: S) -> Self {
-        if condition {
-            self.filter(label)
-        } else {
-            self
-        }
+        if condition { self.filter(label) } else { self }
     }
 
     /// Add an assist chip conditionally
     #[must_use]
     pub fn assist_if<S: Into<String>>(self, condition: bool, label: S) -> Self {
-        if condition {
-            self.assist(label)
-        } else {
-            self
-        }
+        if condition { self.assist(label) } else { self }
     }
 
     /// Add an input chip conditionally
     #[must_use]
     pub fn input_if<S: Into<String>>(self, condition: bool, label: S) -> Self {
-        if condition {
-            self.input(label)
-        } else {
-            self
-        }
+        if condition { self.input(label) } else { self }
     }
 
     /// Add a suggestion chip conditionally
@@ -371,10 +356,16 @@ mod tests {
     #[test]
     fn test_convenience_functions() {
         let filter_collection = filter_chip_collection().build().unwrap();
-        assert_eq!(filter_collection.selection_mode(), ChipSelectionMode::Multiple);
+        assert_eq!(
+            filter_collection.selection_mode(),
+            ChipSelectionMode::Multiple
+        );
 
         let single_collection = single_select_chip_collection().build().unwrap();
-        assert_eq!(single_collection.selection_mode(), ChipSelectionMode::Single);
+        assert_eq!(
+            single_collection.selection_mode(),
+            ChipSelectionMode::Single
+        );
 
         let input_collection = input_chip_collection().build().unwrap();
         assert_eq!(input_collection.selection_mode(), ChipSelectionMode::None);

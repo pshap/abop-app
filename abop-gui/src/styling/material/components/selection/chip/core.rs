@@ -136,7 +136,7 @@ impl Chip {
 impl SelectionWidget<ChipState> for Chip {
     type Message = ChipState;
     type Builder = ChipBuilder;
-    
+
     fn new(state: ChipState) -> Self::Builder {
         // Note: Chips require label and variant, so this is a placeholder
         ChipBuilder::filter(DEFAULT_CHIP_LABEL).with_state(state)
