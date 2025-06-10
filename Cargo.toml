@@ -8,7 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 # Critical dependencies with pinned versions
-iced = { version = "0.13.1", features = ["tokio", "advanced"] }
+iced = { version = "^0.13.1", features = ["tokio", "advanced"] }
 
 # Other dependencies with caret versioning
 tokio = { version = "^1", features = ["full"] }
@@ -29,7 +29,7 @@ tracing-subscriber = { version = "^0.3", features = ["env-filter"] }
 walkdir = "^2"
 id3 = "^1"
 mp4ameta = "^0.4"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "^0.31", features = ["bundled"] }
 lru = "^0.12"
 num_cpus = "^1"
 tempfile = "^3"
