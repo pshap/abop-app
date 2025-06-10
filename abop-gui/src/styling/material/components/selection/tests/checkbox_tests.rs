@@ -1,7 +1,11 @@
 //! Comprehensive tests for the modern Checkbox component
 
-use crate::styling::material::components::selection::builder::*;
-use crate::styling::material::components::selection::checkbox::*;
+use crate::styling::material::components::selection::builder::{
+    Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder, checkbox
+};
+use crate::styling::material::components::selection::checkbox::{
+    checked_checkbox, unchecked_checkbox, indeterminate_checkbox, checkbox_from_bool
+};
 use crate::styling::material::components::selection::common::*;
 
 #[test]

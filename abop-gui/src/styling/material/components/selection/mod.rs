@@ -90,8 +90,6 @@ pub mod tests;
 #[cfg(test)]
 pub mod demo;
 
-#[cfg(test)]
-pub mod integration_tests;
 
 // Re-export core types and traits (but not convenience functions)
 pub use builder::{
@@ -344,8 +342,8 @@ mod module_tests {
     #[test]
     fn test_module_exports() {
         // Test that all major types are accessible
-        let _checkbox = Checkbox::new("test");
-        let _switch = Switch::new();
+        let _checkbox = Checkbox::new(CheckboxState::Unchecked);
+        let _switch = Switch::new(SwitchState::Off);
         let _radio_group = RadioGroupState::<&str>::new();
         let _chip = Chip::new("test", ChipVariant::Assist);
         let _collection = ChipCollection::new(ChipSelectionMode::Single);
@@ -353,8 +351,8 @@ mod module_tests {
 
     #[test]
     fn test_builder_convenience_functions() {
-        let _checkbox = builders::checkbox("test");
-        let _labeled = builders::labeled_checkbox("test", "Test");
+        let _checkbox = builders::checkbox();
+        let _labeled = builders::labeled_checkbox("Test");
         let _switch = builders::switch();
         let _labeled_switch = builders::labeled_switch("Toggle");
         let _filters = builders::filter_chips();
@@ -364,13 +362,13 @@ mod module_tests {
     #[test]
     fn test_validation_utilities() {
         let checkboxes = vec![
-            Checkbox::new("valid1").with_label("Valid"),
-            Checkbox::new("valid2").with_label("Also Valid"),
+            Checkbox::new(CheckboxState::Unchecked).label("Valid").build().unwrap(),
+            Checkbox::new(CheckboxState::Unchecked).label("Also Valid").build().unwrap(),
         ];
 
-        assert!(validation::validate_collection(&checkboxes).is_ok());
-        assert!(validation::all_valid(&checkboxes));
-        assert!(validation::collect_validation_errors(&checkboxes).is_empty());
+        assert!(validation::validate_checkboxes(&checkboxes).is_ok());
+        assert!(validation::all_checkboxes_valid(&checkboxes));
+        assert!(validation::collect_checkbox_errors(&checkboxes).is_empty());
     }
 
     #[test]

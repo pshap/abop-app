@@ -177,7 +177,9 @@ impl Chip {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         let next_state = self.state.toggle();
-        self.view(Some(on_toggle(next_state)), color_scheme)
+        let message = on_toggle(next_state);
+        let message_clone = message.clone();
+        self.view(Some(message), color_scheme).map(move |_| message_clone)
     }
 
     /// Create a view for filter chips with selection state management
@@ -190,7 +192,9 @@ impl Chip {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         let is_selected = self.is_selected();
-        self.view(Some(on_selection_change(!is_selected)), color_scheme)
+        let message = on_selection_change(!is_selected);
+        let message_clone = message.clone();
+        self.view(Some(message), color_scheme).map(move |_| message_clone)
     }
 }
 

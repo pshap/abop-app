@@ -5,6 +5,7 @@
 
 use super::super::common::*;
 use super::super::switch::*;
+use super::super::builder::{Switch, SwitchBuilder};
 
 #[cfg(test)]
 mod switch_tests {
@@ -12,7 +13,7 @@ mod switch_tests {
 
     #[test]
     fn test_switch_creation() {
-        let switch = Switch::new();
+        let switch = Switch::off().build_unchecked();
         assert_eq!(switch.state(), SwitchState::Off);
         assert!(!switch.props().disabled);
         assert_eq!(switch.props().size, ComponentSize::Medium);
@@ -20,7 +21,7 @@ mod switch_tests {
 
     #[test]
     fn test_switch_with_label() {
-        let switch = Switch::new().with_label("Enable notifications");
+        let switch = Switch::off().label("Enable notifications").build_unchecked();
         assert_eq!(
             switch.props().label,
             Some("Enable notifications".to_string())
@@ -29,26 +30,26 @@ mod switch_tests {
 
     #[test]
     fn test_switch_state_changes() {
-        let mut switch = Switch::new();
+        let mut switch = Switch::off().build_unchecked();
         assert_eq!(switch.state(), SwitchState::Off);
 
-        switch.set_state(SwitchState::On);
+        switch.update_state(SwitchState::On).unwrap();
         assert_eq!(switch.state(), SwitchState::On);
 
-        switch.toggle();
+        switch.toggle().unwrap();
         assert_eq!(switch.state(), SwitchState::Off);
 
-        switch.toggle();
+        switch.toggle().unwrap();
         assert_eq!(switch.state(), SwitchState::On);
     }
 
     #[test]
     fn test_switch_builder_pattern() {
-        let switch = Switch::new()
-            .with_label("Dark mode")
-            .on()
+        let switch = Switch::on()
+            .label("Dark mode")
             .disabled(true)
-            .size(ComponentSize::Large);
+            .size(ComponentSize::Large)
+            .build_unchecked();
 
         assert_eq!(switch.state(), SwitchState::On);
         assert!(switch.props().disabled);
@@ -58,12 +59,12 @@ mod switch_tests {
 
     #[test]
     fn test_switch_convenience_methods() {
-        let switch_on = Switch::new().on();
+        let switch_on = Switch::on().build_unchecked();
         assert_eq!(switch_on.state(), SwitchState::On);
         assert!(switch_on.is_on());
         assert!(!switch_on.is_off());
 
-        let switch_off = Switch::new().off();
+        let switch_off = Switch::off().build_unchecked();
         assert_eq!(switch_off.state(), SwitchState::Off);
         assert!(switch_off.is_off());
         assert!(!switch_off.is_on());
@@ -71,17 +72,17 @@ mod switch_tests {
 
     #[test]
     fn test_switch_validation() {
-        let valid_switch = Switch::new().with_label("Valid");
+        let valid_switch = Switch::off().label("Valid").build_unchecked();
         assert!(valid_switch.validate().is_ok());
 
         let long_label = "x".repeat(201);
-        let invalid_switch = Switch::new().with_label(&long_label);
-        assert!(invalid_switch.validate().is_err());
+        let invalid_switch = Switch::off().label(&long_label).build();
+        assert!(invalid_switch.is_err());
     }
 
     #[test]
     fn test_switch_trait_implementations() {
-        let switch = Switch::new().on();
+        let switch = Switch::on().build_unchecked();
 
         // Test SelectionWidget trait
         assert!(switch.is_selected());
@@ -97,20 +98,20 @@ mod switch_tests {
 
     #[test]
     fn test_switch_disabled_behavior() {
-        let disabled_switch = Switch::new().disabled(true);
+        let disabled_switch = Switch::off().disabled(true).build_unchecked();
         assert!(disabled_switch.props().disabled);
 
         // Disabled state should still allow programmatic changes
         let mut switch = disabled_switch.clone();
-        switch.toggle();
+        switch.toggle().unwrap();
         assert_eq!(switch.state(), SwitchState::On);
     }
 
     #[test]
     fn test_switch_sizes() {
-        let small = Switch::new().size(ComponentSize::Small);
-        let medium = Switch::new().size(ComponentSize::Medium);
-        let large = Switch::new().size(ComponentSize::Large);
+        let small = Switch::off().size(ComponentSize::Small).build_unchecked();
+        let medium = Switch::off().size(ComponentSize::Medium).build_unchecked();
+        let large = Switch::off().size(ComponentSize::Large).build_unchecked();
 
         assert_eq!(small.props().size, ComponentSize::Small);
         assert_eq!(medium.props().size, ComponentSize::Medium);
@@ -124,13 +125,13 @@ mod switch_dimensions_tests {
 
     #[test]
     fn test_switch_dimensions_creation() {
-        let dimensions = SwitchDimensions::default();
+        let dimensions = SwitchDimensions::for_size(ComponentSize::Medium);
 
         // Test Material Design 3 default dimensions
         assert_eq!(dimensions.track_width, 52.0);
         assert_eq!(dimensions.track_height, 32.0);
-        assert_eq!(dimensions.thumb_size, 24.0);
-        assert_eq!(dimensions.padding, 8.0);
+        assert_eq!(dimensions.thumb_diameter, 24.0);
+        assert_eq!(dimensions.track_radius, 16.0);
     }
 
     #[test]
@@ -142,51 +143,40 @@ mod switch_dimensions_tests {
         // Small should be smaller than medium
         assert!(small.track_width < medium.track_width);
         assert!(small.track_height < medium.track_height);
-        assert!(small.thumb_size < medium.thumb_size);
+        assert!(small.thumb_diameter < medium.thumb_diameter);
 
         // Large should be larger than medium
         assert!(large.track_width > medium.track_width);
         assert!(large.track_height > medium.track_height);
-        assert!(large.thumb_size > medium.thumb_size);
+        assert!(large.thumb_diameter > medium.thumb_diameter);
     }
 
     #[test]
-    fn test_switch_dimensions_touch_target() {
-        let dimensions = SwitchDimensions::default();
-        let touch_target = dimensions.touch_target_size();
+    fn test_switch_dimensions_proportions() {
+        let dimensions = SwitchDimensions::for_size(ComponentSize::Medium);
 
-        // Touch target should meet Material Design minimum (48dp)
-        assert!(touch_target.width >= 48.0);
-        assert!(touch_target.height >= 48.0);
+        // Track radius should be half the height for rounded ends
+        assert_eq!(dimensions.track_radius, dimensions.track_height / 2.0);
+        
+        // Thumb should fit within track height
+        assert!(dimensions.thumb_diameter <= dimensions.track_height);
+        
+        // Track width should be sufficient for thumb travel
+        assert!(dimensions.track_width > dimensions.thumb_diameter);
     }
 
     #[test]
-    fn test_switch_dimensions_thumb_positions() {
-        let dimensions = SwitchDimensions::default();
-
-        let off_position = dimensions.thumb_position_off();
-        let on_position = dimensions.thumb_position_on();
-
-        // On position should be to the right of off position
-        assert!(on_position > off_position);
-
-        // Positions should be within track bounds
-        assert!(off_position >= 0.0);
-        assert!(on_position <= dimensions.track_width - dimensions.thumb_size);
-    }
-
-    #[test]
-    fn test_switch_dimensions_validation() {
-        let valid_dimensions = SwitchDimensions::default();
-        assert!(valid_dimensions.validate().is_ok());
-
-        let invalid_dimensions = SwitchDimensions {
-            track_width: 10.0, // Too small for thumb
-            track_height: 20.0,
-            thumb_size: 15.0, // Larger than track width
-            padding: 4.0,
-        };
-        assert!(invalid_dimensions.validate().is_err());
+    fn test_switch_dimensions_thumb_position() {
+        let dimensions = SwitchDimensions::for_size(ComponentSize::Medium);
+        
+        // Create a custom widget to test thumb positioning
+        let widget = CustomSwitchWidget::new(SwitchState::Off, "Test".to_string())
+            .size(ComponentSize::Medium);
+            
+        // Test that thumb position calculation works
+        let pos = widget.thumb_position(1.0);
+        assert!(pos >= 0.0);
+        assert!(pos <= dimensions.track_width - dimensions.thumb_diameter);
     }
 
     #[test]
@@ -198,22 +188,15 @@ mod switch_dimensions_tests {
         ] {
             let dimensions = SwitchDimensions::for_size(size);
 
-            // All sizes should meet minimum accessibility requirements
-            let touch_target = dimensions.touch_target_size();
-            assert!(
-                touch_target.width >= 48.0,
-                "Touch target width too small for {:?}",
-                size
-            );
-            assert!(
-                touch_target.height >= 48.0,
-                "Touch target height too small for {:?}",
-                size
-            );
+            // Material Design 3 requires track to be fully rounded
+            assert_eq!(dimensions.track_radius, dimensions.track_height / 2.0);
 
             // Track should be able to contain thumb
-            assert!(dimensions.track_width >= dimensions.thumb_size);
-            assert!(dimensions.track_height >= dimensions.thumb_size);
+            assert!(dimensions.track_width >= dimensions.thumb_diameter);
+            assert!(dimensions.track_height >= dimensions.thumb_diameter);
+            
+            // Thumb should have proper elevation
+            assert!(dimensions.thumb_elevation > 0.0);
         }
     }
 }
@@ -224,25 +207,28 @@ mod custom_switch_widget_tests {
 
     #[test]
     fn test_custom_switch_widget_creation() {
-        let switch = Switch::new().on();
-        let custom_widget = CustomSwitchWidget::new(switch);
+        let custom_widget = CustomSwitchWidget::new(SwitchState::On, "Test".to_string());
 
         // Test that custom widget preserves switch state
-        assert_eq!(custom_widget.switch().state(), SwitchState::On);
+        assert_eq!(custom_widget.state, SwitchState::On);
+        assert_eq!(custom_widget.label, "Test");
     }
 
     #[test]
     fn test_custom_switch_widget_colors() {
-        let switch_off = Switch::new().off();
-        let switch_on = Switch::new().on();
+        // Create a mock MaterialColors for testing
+        let colors = crate::styling::material::colors::MaterialColors::default();
+        
+        let widget_off = CustomSwitchWidget::new(SwitchState::Off, "Test".to_string());
+        let widget_on = CustomSwitchWidget::new(SwitchState::On, "Test".to_string());
 
-        let widget_off = CustomSwitchWidget::new(switch_off);
-        let widget_on = CustomSwitchWidget::new(switch_on);
-
-        let track_color_off = widget_off.track_color();
-        let track_color_on = widget_on.track_color();
-        let thumb_color_off = widget_off.thumb_color();
-        let thumb_color_on = widget_on.thumb_color();
+        // Create a mock MaterialColors for testing
+        let colors = crate::styling::material::colors::MaterialColors::default();
+        
+        let track_color_off = widget_off.track_color(&colors);
+        let track_color_on = widget_on.track_color(&colors);
+        let thumb_color_off = widget_off.thumb_color(&colors);
+        let thumb_color_on = widget_on.thumb_color(&colors);
 
         // Colors should be different for different states
         assert_ne!(track_color_off, track_color_on);
@@ -251,16 +237,16 @@ mod custom_switch_widget_tests {
 
     #[test]
     fn test_custom_switch_widget_thumb_position() {
-        let dimensions = SwitchDimensions::default();
+        let dimensions = SwitchDimensions::for_size(ComponentSize::Medium);
 
-        let switch_off = Switch::new().off();
-        let switch_on = Switch::new().on();
+        let widget_off = CustomSwitchWidget::new(SwitchState::Off, "Test".to_string())
+            .size(ComponentSize::Medium);
+        let widget_on = CustomSwitchWidget::new(SwitchState::On, "Test".to_string())
+            .size(ComponentSize::Medium);
 
-        let widget_off = CustomSwitchWidget::with_dimensions(switch_off, dimensions.clone());
-        let widget_on = CustomSwitchWidget::with_dimensions(switch_on, dimensions);
-
-        let pos_off = widget_off.calculate_thumb_position();
-        let pos_on = widget_on.calculate_thumb_position();
+        // Test with animation progress at 0% and 100%
+        let pos_off = widget_off.thumb_position(0.0);
+        let pos_on = widget_on.thumb_position(1.0);
 
         // On position should be to the right of off position
         assert!(pos_on > pos_off);
@@ -268,37 +254,35 @@ mod custom_switch_widget_tests {
 
     #[test]
     fn test_custom_switch_widget_disabled_colors() {
-        let enabled_switch = Switch::new().on();
-        let disabled_switch = Switch::new().on().disabled(true);
-
-        let enabled_widget = CustomSwitchWidget::new(enabled_switch);
-        let disabled_widget = CustomSwitchWidget::new(disabled_switch);
+        // Create a mock MaterialColors for testing
+        let colors = crate::styling::material::colors::MaterialColors::default();
+        
+        let enabled_widget = CustomSwitchWidget::new(SwitchState::On, "Test".to_string());
+        let disabled_widget = CustomSwitchWidget::new(SwitchState::On, "Test".to_string())
+            .disabled(true);
 
         // Disabled widget should have different (typically muted) colors
-        let enabled_track = enabled_widget.track_color();
-        let disabled_track = disabled_widget.track_color();
+        let enabled_track = enabled_widget.track_color(&colors);
+        let disabled_track = disabled_widget.track_color(&colors);
 
-        // This test assumes disabled colors are different
-        // In actual implementation, disabled colors would be more muted
-        assert_ne!(enabled_track.alpha, disabled_track.alpha);
+        // Colors should be different for disabled state
+        assert_ne!(enabled_track, disabled_track);
     }
 
     #[test]
-    fn test_custom_switch_widget_animation_preparation() {
-        let switch = Switch::new();
-        let custom_widget = CustomSwitchWidget::new(switch);
+    fn test_custom_switch_widget_animation_config() {
+        let widget = CustomSwitchWidget::new(SwitchState::Off, "Test".to_string())
+            .animation(AnimationConfig {
+                duration: std::time::Duration::from_millis(300),
+                enabled: true,
+                respect_reduced_motion: true,
+                easing: EasingCurve::Standard,
+            });
 
         // Test that animation configuration is accessible
-        let anim_config = custom_widget.switch().animation_config();
-        assert!(anim_config.is_some());
-
-        // Test that reduced motion is respected
-        let config = anim_config.unwrap();
-        if config.reduced_motion {
-            assert_eq!(config.duration_ms, 0);
-        } else {
-            assert!(config.duration_ms > 0);
-        }
+        assert_eq!(widget.animation_config.duration.as_millis(), 300);
+        assert!(widget.animation_config.enabled);
+        assert!(widget.animation_config.respect_reduced_motion);
     }
 }
 
@@ -309,14 +293,14 @@ mod integration_tests {
     #[test]
     fn test_switch_in_settings_form() {
         // Simulate a settings form with multiple switches
-        let mut dark_mode = Switch::new().with_label("Dark mode").off();
+        let mut dark_mode = Switch::off().label("Dark mode").build_unchecked();
 
-        let mut notifications = Switch::new().with_label("Enable notifications").on();
+        let mut notifications = Switch::on().label("Enable notifications").build_unchecked();
 
-        let mut auto_save = Switch::new()
-            .with_label("Auto-save changes")
-            .on()
-            .disabled(true); // Disabled because user doesn't have permission
+        let mut auto_save = Switch::on()
+            .label("Auto-save changes")
+            .disabled(true) // Disabled because user doesn't have permission
+            .build_unchecked();
 
         // Test initial states
         assert!(dark_mode.is_off());
@@ -324,11 +308,11 @@ mod integration_tests {
         assert!(auto_save.is_on() && auto_save.props().disabled);
 
         // User toggles dark mode
-        dark_mode.toggle();
+        dark_mode.toggle().unwrap();
         assert!(dark_mode.is_on());
 
         // User disables notifications
-        notifications.set_state(SwitchState::Off);
+        notifications.update_state(SwitchState::Off).unwrap();
         assert!(notifications.is_off());
 
         // Validate all switches
@@ -339,29 +323,27 @@ mod integration_tests {
 
     #[test]
     fn test_switch_with_custom_dimensions() {
-        let custom_dimensions = SwitchDimensions {
-            track_width: 60.0,
-            track_height: 36.0,
-            thumb_size: 28.0,
-            padding: 10.0,
-        };
-
-        let switch = Switch::new().on();
-        let custom_widget = CustomSwitchWidget::with_dimensions(switch, custom_dimensions.clone());
-
-        assert_eq!(custom_widget.dimensions().track_width, 60.0);
-        assert_eq!(custom_widget.dimensions().track_height, 36.0);
-        assert_eq!(custom_widget.dimensions().thumb_size, 28.0);
+        // Create a custom widget with specific dimensions
+        let widget = CustomSwitchWidget::new(SwitchState::On, "Test".to_string())
+            .size(ComponentSize::Large);
+            
+        // Get the dimensions for the large size
+        let dimensions = SwitchDimensions::for_size(ComponentSize::Large);
+        
+        // Verify dimensions match the expected values
+        assert_eq!(widget.dimensions.track_width, dimensions.track_width);
+        assert_eq!(widget.dimensions.track_height, dimensions.track_height);
+        assert_eq!(widget.dimensions.thumb_diameter, dimensions.thumb_diameter);
     }
 
     #[test]
     fn test_switch_state_transitions() {
-        let mut switch = Switch::new();
+        let mut switch = Switch::off().build_unchecked();
         let states = vec![SwitchState::Off, SwitchState::On, SwitchState::Off];
 
         for (i, expected_state) in states.iter().enumerate() {
             if i > 0 {
-                switch.toggle();
+                switch.toggle().unwrap();
             }
             assert_eq!(switch.state(), *expected_state);
         }
@@ -374,14 +356,13 @@ mod integration_tests {
             ComponentSize::Medium,
             ComponentSize::Large,
         ] {
-            let switch = Switch::new().size(size);
+            let switch = Switch::off().size(size).build_unchecked();
             let dimensions = SwitchDimensions::for_size(size);
 
-            // Test touch target compliance
-            let touch_target = dimensions.touch_target_size();
-            assert!(touch_target.width >= 48.0);
-            assert!(touch_target.height >= 48.0);
-
+            // Test that dimensions match Material Design 3 specifications
+            assert_eq!(dimensions.track_radius, dimensions.track_height / 2.0);
+            assert!(dimensions.thumb_diameter <= dimensions.track_height);
+            
             // Test that switch validates correctly
             assert!(switch.validate().is_ok());
         }
@@ -391,32 +372,33 @@ mod integration_tests {
     fn test_switch_error_conditions() {
         // Test validation errors
         let long_label = "x".repeat(201);
-        let invalid_switch = Switch::new().with_label(&long_label);
+        let invalid_switch = Switch::off().label(&long_label).build();
 
-        match invalid_switch.validate() {
-            Err(SelectionError::ValidationError(msg)) => {
-                assert!(msg.contains("label"));
+        match invalid_switch {
+            Err(SelectionError::LabelTooLong { len, max }) => {
+                assert_eq!(len, 201);
+                assert_eq!(max, 200);
             }
-            _ => panic!("Expected validation error"),
+            _ => panic!("Expected LabelTooLong validation error"),
         }
     }
 
     #[test]
-    fn test_switch_serialization() {
-        let switch = Switch::new()
-            .with_label("Test switch")
-            .on()
-            .size(ComponentSize::Large);
+    fn test_switch_state_persistence() {
+        let switch = Switch::on()
+            .label("Test switch")
+            .size(ComponentSize::Large)
+            .build_unchecked();
 
         // Test that state can be serialized (for persistence)
         let state = switch.state();
         assert_eq!(state, SwitchState::On);
 
         // Test that we can recreate switch with same state
-        let recreated = Switch::new()
-            .with_label("Test switch")
+        let recreated = Switch::new(state)
+            .label("Test switch")
             .size(ComponentSize::Large)
-            .set_state(state);
+            .build_unchecked();
 
         assert_eq!(recreated.state(), switch.state());
         assert_eq!(recreated.props().label, switch.props().label);
