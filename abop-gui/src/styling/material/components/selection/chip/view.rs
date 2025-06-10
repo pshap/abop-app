@@ -12,9 +12,9 @@ use crate::styling::material::components::selection_style::{
 };
 
 use iced::{
-    Element, Renderer, Color, Padding,
+    Color, Element, Padding, Renderer,
     theme::Theme,
-    widget::{Text, button, Row, Container},
+    widget::{Container, Row, Text, button},
 };
 use iced_font_awesome::fa_icon_solid;
 
@@ -89,7 +89,9 @@ impl Chip {
         let mut chip_button = button(content).style(style_fn);
 
         // Only add on_press handler if the chip is not disabled and callback is provided
-        if !self.props().disabled && let Some(message) = on_press {
+        if !self.props().disabled
+            && let Some(message) = on_press
+        {
             chip_button = chip_button.on_press(message);
         }
 
@@ -226,13 +228,13 @@ impl Chip {
                 ComponentSize::Medium => 14.0,
                 ComponentSize::Large => 16.0,
             };
-            
+
             let icon = fa_icon_solid(icon_name)
                 .size(icon_size)
                 .style(move |_theme: &Theme| iced::widget::text::Style {
                     color: Some(color_scheme.on_surface),
                 });
-            
+
             content_row = content_row.push(icon);
         }
 
@@ -242,21 +244,19 @@ impl Chip {
             .style(move |_theme: &Theme| iced::widget::text::Style {
                 color: Some(color_scheme.on_surface),
             });
-        
+
         content_row = content_row.push(text_element);
 
         // Add badge if specified
         if let Some(count) = config.badge_count {
             let badge_color = config.badge_color.unwrap_or(color_scheme.error.base);
             let badge_text_color = color_scheme.on_error;
-            
-            let badge = Container::new(
-                Text::new(count.to_string())
-                    .size(10.0)
-                    .style(move |_theme: &Theme| iced::widget::text::Style {
-                        color: Some(badge_text_color),
-                    })
-            )
+
+            let badge = Container::new(Text::new(count.to_string()).size(10.0).style(
+                move |_theme: &Theme| iced::widget::text::Style {
+                    color: Some(badge_text_color),
+                },
+            ))
             .padding(Padding::from([2, 6]))
             .style(move |_theme: &Theme| iced::widget::container::Style {
                 background: Some(iced::Background::Color(badge_color)),
@@ -267,7 +267,7 @@ impl Chip {
                 },
                 ..Default::default()
             });
-            
+
             content_row = content_row.push(badge);
         }
 
@@ -278,16 +278,14 @@ impl Chip {
                 ComponentSize::Medium => 14.0,
                 ComponentSize::Large => 16.0,
             };
-            
+
             // If there's a trailing press action, make it a separate button
             if let Some(trailing_message) = config.on_trailing_press {
-                let icon_button = button(
-                    fa_icon_solid(icon_name)
-                        .size(icon_size)
-                        .style(move |_theme: &Theme| iced::widget::text::Style {
-                            color: Some(color_scheme.on_surface_variant),
-                        })
-                )
+                let icon_button = button(fa_icon_solid(icon_name).size(icon_size).style(
+                    move |_theme: &Theme| iced::widget::text::Style {
+                        color: Some(color_scheme.on_surface_variant),
+                    },
+                ))
                 .padding(Padding::from([2, 2]))
                 .style(move |_theme: &Theme, _status| iced::widget::button::Style {
                     background: Some(iced::Background::Color(Color::TRANSPARENT)),
@@ -300,7 +298,7 @@ impl Chip {
                     shadow: iced::Shadow::default(),
                 })
                 .on_press(trailing_message);
-                
+
                 content_row = content_row.push(icon_button);
             } else {
                 // Just a static icon
@@ -309,7 +307,7 @@ impl Chip {
                     .style(move |_theme: &Theme| iced::widget::text::Style {
                         color: Some(color_scheme.on_surface_variant),
                     });
-                
+
                 content_row = content_row.push(icon);
             }
         }
@@ -318,7 +316,9 @@ impl Chip {
         let mut chip_button = button(content_row).style(style_fn);
 
         // Add main press handler if specified and chip is not disabled
-        if !self.props().disabled && let Some(message) = config.on_press {
+        if !self.props().disabled
+            && let Some(message) = config.on_press
+        {
             chip_button = chip_button.on_press(message);
         }
 

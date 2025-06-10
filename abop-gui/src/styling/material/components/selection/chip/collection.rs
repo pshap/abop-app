@@ -8,9 +8,9 @@ use super::super::common::*;
 use crate::styling::material::colors::MaterialColors;
 
 use iced::{
-    Element, Renderer, Length,
+    Element, Length, Renderer,
     theme::Theme,
-    widget::{Row, Column, Container, Scrollable},
+    widget::{Column, Container, Row, Scrollable},
 };
 
 // ============================================================================
@@ -176,10 +176,29 @@ impl ChipCollection {
     pub fn deselect_chip(&mut self, index: usize) -> Result<(), SelectionError> {
         self.validate_index(index)?;
         self.validate_selection_allowed()?;
-        self.chips[index].unselect()
+        self.chips[index].unselect()?;
+        Ok(())
     }
 
-    /// Toggle chip selection by index
+    /// Toggle chip selection by index with mode-specific behavior
+    ///
+    /// # Mode-Specific Behavior:
+    ///
+    /// ## Single Selection Mode
+    /// - If the chip is currently selected: deselects it (no chips selected)
+    /// - If the chip is unselected: selects it and deselects all others
+    /// - Always maintains at most one selected chip
+    ///
+    /// ## Multiple Selection Mode  
+    /// - Simply toggles the individual chip's selection state
+    /// - Does not affect other chips in the collection
+    /// - Allows any number of chips to be selected
+    ///
+    /// ## No Selection Mode
+    /// - Returns an error as selection is not allowed
+    ///
+    /// # Returns
+    /// The new state of the toggled chip, or an error if the operation is invalid
     pub fn toggle_chip(&mut self, index: usize) -> Result<ChipState, SelectionError> {
         self.validate_index(index)?;
         self.validate_selection_allowed()?;
@@ -188,13 +207,17 @@ impl ChipCollection {
             ChipSelectionMode::Single => {
                 // In single mode, selecting toggles off others
                 if self.chips[index].is_selected() {
-                    self.chips[index].unselect()?;
+                    let _previous_state = self.chips[index].unselect()?;
+                    Ok(self.chips[index].state())
                 } else {
                     self.select_chip(index)?;
+                    Ok(self.chips[index].state())
                 }
-                Ok(self.chips[index].state())
             }
-            ChipSelectionMode::Multiple => self.chips[index].toggle(),
+            ChipSelectionMode::Multiple => {
+                let (_previous, new_state) = self.chips[index].toggle()?;
+                Ok(new_state)
+            }
             ChipSelectionMode::None => Err(SelectionError::InvalidState {
                 details: "Selection not allowed in this collection".to_string(),
             }),
@@ -312,11 +335,11 @@ impl ChipCollection {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         let selected_indices = self.selected_indices();
-        
+
         self.view_collection(
             move |index, _state| {
                 let mut new_selection = selected_indices.clone();
-                
+
                 match self.selection_mode {
                     ChipSelectionMode::None => {
                         // No selection change for assist/suggestion chips
@@ -368,20 +391,18 @@ impl ChipCollection {
 
         match layout {
             ChipCollectionLayout::Row => {
-                let row = self.chips
-                    .iter()
-                    .enumerate()
-                    .fold(Row::new().spacing(spacing), |row, (index, chip)| {
-                        let chip_view = chip.view(
-                            Some(on_chip_press(index, chip.state())),
-                            color_scheme,
-                        );
+                let row = self.chips.iter().enumerate().fold(
+                    Row::new().spacing(spacing),
+                    |row, (index, chip)| {
+                        let chip_view =
+                            chip.view(Some(on_chip_press(index, chip.state())), color_scheme);
                         row.push(chip_view)
-                    });
+                    },
+                );
 
                 Scrollable::new(row)
                     .direction(iced::widget::scrollable::Direction::Horizontal(
-                        iced::widget::scrollable::Scrollbar::new()
+                        iced::widget::scrollable::Scrollbar::new(),
                     ))
                     .into()
             }
@@ -389,14 +410,14 @@ impl ChipCollection {
                 // For wrap layout, use a column of rows
                 // This is a simplified implementation - in a real app you might want
                 // a proper wrapping container
-                let column = self.chips
+                let column = self
+                    .chips
                     .chunks(6) // Wrap after 6 chips per row (adjust as needed)
                     .enumerate()
                     .fold(Column::new().spacing(spacing), |column, (_, chunk)| {
-                        let row = chunk
-                            .iter()
-                            .enumerate()
-                            .fold(Row::new().spacing(spacing), |row, (chunk_index, chip)| {
+                        let row = chunk.iter().enumerate().fold(
+                            Row::new().spacing(spacing),
+                            |row, (chunk_index, chip)| {
                                 // Calculate the actual index in the full collection
                                 let chip_index = chunk_index; // This needs proper calculation
                                 let chip_view = chip.view(
@@ -404,7 +425,8 @@ impl ChipCollection {
                                     color_scheme,
                                 );
                                 row.push(chip_view)
-                            });
+                            },
+                        );
                         column.push(row)
                     });
 
@@ -412,23 +434,23 @@ impl ChipCollection {
             }
             ChipCollectionLayout::Grid(columns) => {
                 // Grid layout with specified number of columns
-                let column = self.chips
-                    .chunks(columns as usize)
-                    .enumerate()
-                    .fold(Column::new().spacing(spacing), |column, (row_index, chunk)| {
-                        let row = chunk
-                            .iter()
-                            .enumerate()
-                            .fold(Row::new().spacing(spacing), |row, (col_index, chip)| {
+                let column = self.chips.chunks(columns as usize).enumerate().fold(
+                    Column::new().spacing(spacing),
+                    |column, (row_index, chunk)| {
+                        let row = chunk.iter().enumerate().fold(
+                            Row::new().spacing(spacing),
+                            |row, (col_index, chip)| {
                                 let chip_index = row_index * (columns as usize) + col_index;
                                 let chip_view = chip.view(
                                     Some(on_chip_press(chip_index, chip.state())),
                                     color_scheme,
                                 );
                                 row.push(chip_view)
-                            });
+                            },
+                        );
                         column.push(row)
-                    });
+                    },
+                );
 
                 column.into()
             }

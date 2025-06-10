@@ -86,27 +86,37 @@ impl Chip {
         &self.animation_config
     }
 
-    /// Update the chip state with validation
-    pub fn update_state(&mut self, new_state: ChipState) -> Result<(), SelectionError> {
+    /// Update the chip state with validation and transition feedback
+    ///
+    /// Returns the previous state to allow callers to detect changes
+    pub fn update_state(&mut self, new_state: ChipState) -> Result<ChipState, SelectionError> {
         validate_chip_state(new_state, self.variant, &self.props)?;
+        let previous_state = self.state;
         self.state = new_state;
-        Ok(())
+        Ok(previous_state)
     }
 
-    /// Toggle the chip selection state
-    pub fn toggle(&mut self) -> Result<ChipState, SelectionError> {
-        let new_state = self.state.toggle();
+    /// Toggle the chip selection state with transition feedback
+    ///
+    /// Returns both the previous and new states for complete transition tracking
+    pub fn toggle(&mut self) -> Result<(ChipState, ChipState), SelectionError> {
+        let previous_state = self.state;
+        let new_state = previous_state.toggle();
         self.update_state(new_state)?;
-        Ok(new_state)
+        Ok((previous_state, new_state))
     }
 
-    /// Set chip as selected
-    pub fn select(&mut self) -> Result<(), SelectionError> {
+    /// Set chip as selected with transition feedback
+    ///
+    /// Returns the previous state to detect if the selection actually changed
+    pub fn select(&mut self) -> Result<ChipState, SelectionError> {
         self.update_state(ChipState::Selected)
     }
 
-    /// Set chip as unselected
-    pub fn unselect(&mut self) -> Result<(), SelectionError> {
+    /// Set chip as unselected with transition feedback
+    ///
+    /// Returns the previous state to detect if the selection actually changed
+    pub fn unselect(&mut self) -> Result<ChipState, SelectionError> {
         self.update_state(ChipState::Unselected)
     }
 
@@ -157,11 +167,12 @@ impl SelectionWidget<ChipState> for Chip {
 
 impl StatefulWidget<ChipState> for Chip {
     fn update_state(&mut self, new_state: ChipState) -> Result<(), SelectionError> {
-        self.update_state(new_state)
+        self.update_state(new_state)?;
+        Ok(())
     }
 
     fn transition_to(&mut self, new_state: ChipState) -> Result<ChipState, SelectionError> {
-        self.update_state(new_state)?;
+        let _previous_state = self.update_state(new_state)?;
         Ok(self.state)
     }
 }
@@ -211,7 +222,7 @@ mod tests {
         assert!(chip.is_selected());
 
         // Toggle to unselected
-        let new_state = chip.toggle().expect("Should toggle successfully");
+        let (_previous_state, new_state) = chip.toggle().expect("Should toggle successfully");
         assert_eq!(new_state, ChipState::Unselected);
         assert!(chip.is_unselected());
     }
