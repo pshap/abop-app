@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
 
+// Import the constant from chip module
+use super::chip::MAX_CHIP_LABEL_LENGTH;
+
 // ============================================================================
 // Component States (Modern State-Based Design)
 // ============================================================================
@@ -470,11 +473,11 @@ pub fn validate_chip_state(
 
     // Validate label length for chips (stricter than other components)
     if let Some(ref label) = props.label
-        && label.len() > 100
+        && label.len() > MAX_CHIP_LABEL_LENGTH
     {
         return Err(SelectionError::LabelTooLong {
             len: label.len(),
-            max: 100,
+            max: MAX_CHIP_LABEL_LENGTH,
         });
     }
 
