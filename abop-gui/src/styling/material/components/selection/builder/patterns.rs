@@ -94,15 +94,6 @@ pub trait AdvancedConditionalBuilder<T>: ConditionalBuilder<T> {
         validator(&self)?;
         Ok(config(self))
     }
-
-    /// Apply a configuration with a fallible operation
-    fn try_when<F>(self, condition: bool, config: F) -> Result<Self, SelectionError>
-    where
-        Self: Sized,
-        F: FnOnce(Self) -> Result<Self, SelectionError>,
-    {
-        if condition { config(self) } else { Ok(self) }
-    }
 }
 
 /// Trait for builders that support state validation at compile time

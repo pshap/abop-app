@@ -148,6 +148,7 @@ pub trait ValidationComposer {
 }
 
 /// Default implementation of validation composer
+#[allow(dead_code)]
 pub struct DefaultValidationComposer;
 
 impl ValidationComposer for DefaultValidationComposer {
@@ -324,6 +325,7 @@ pub fn validate_with_context<T>(
 }
 
 /// Enhanced validation that returns a detailed ValidationResult
+#[allow(dead_code)]
 pub fn validate_with_detailed_context<T>(
     _builder: &T,
     context: ValidationContext,
@@ -341,6 +343,7 @@ pub fn validate_with_detailed_context<T>(
 }
 
 /// Batch validation for multiple components
+#[allow(dead_code)]
 pub fn validate_batch<T>(
     items: &[T],
     component_type: &str,
