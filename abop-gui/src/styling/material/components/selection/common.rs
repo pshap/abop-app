@@ -242,16 +242,19 @@ pub struct ComponentProps {
     pub disabled: bool,
     /// The size variant of the component
     pub size: ComponentSize,
+    /// Metadata storage for extended properties (icons, badges, layout, etc.)
+    pub metadata: std::collections::HashMap<String, String>,
 }
 
 impl ComponentProps {
     /// Create new component properties
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             label: None,
             disabled: false,
             size: ComponentSize::Medium,
+            metadata: std::collections::HashMap::new(),
         }
     }
 
@@ -264,16 +267,54 @@ impl ComponentProps {
 
     /// Set disabled state (builder pattern)
     #[must_use]
-    pub const fn disabled(mut self, disabled: bool) -> Self {
+    pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
     /// Set size (builder pattern)
     #[must_use]
-    pub const fn size(mut self, size: ComponentSize) -> Self {
+    pub fn size(mut self, size: ComponentSize) -> Self {
         self.size = size;
         self
+    }
+
+    /// Add metadata key-value pair (builder pattern)
+    ///
+    /// This method allows storing arbitrary metadata for enhanced features
+    /// like icons, badges, layout preferences, etc.
+    ///
+    /// # Arguments
+    /// * `key` - The metadata key
+    /// * `value` - The metadata value
+    #[must_use]
+    pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
+        self.metadata.insert(key.into(), value.into());
+        self
+    }
+
+    /// Get metadata value by key
+    ///
+    /// # Arguments
+    /// * `key` - The metadata key to look up
+    ///
+    /// # Returns
+    /// Optional reference to the metadata value
+    #[must_use]
+    pub fn get_metadata(&self, key: &str) -> Option<&String> {
+        self.metadata.get(key)
+    }
+
+    /// Check if metadata contains a specific key
+    ///
+    /// # Arguments
+    /// * `key` - The metadata key to check
+    ///
+    /// # Returns
+    /// True if the key exists in metadata
+    #[must_use]
+    pub fn has_metadata(&self, key: &str) -> bool {
+        self.metadata.contains_key(key)
     }
 }
 
@@ -628,5 +669,22 @@ mod tests {
         assert_eq!(props.label, Some("Test Label".to_string()));
         assert!(props.disabled);
         assert_eq!(props.size, ComponentSize::Large);
+    }
+
+    #[test]
+    fn test_component_props_metadata() {
+        let props = ComponentProps::new()
+            .with_metadata("leading_icon", "filter")
+            .with_metadata("badge_count", "5")
+            .with_metadata("layout", "wrap");
+
+        assert_eq!(props.get_metadata("leading_icon"), Some(&"filter".to_string()));
+        assert_eq!(props.get_metadata("badge_count"), Some(&"5".to_string()));
+        assert_eq!(props.get_metadata("layout"), Some(&"wrap".to_string()));
+        assert_eq!(props.get_metadata("nonexistent"), None);
+
+        assert!(props.has_metadata("leading_icon"));
+        assert!(props.has_metadata("badge_count"));
+        assert!(!props.has_metadata("nonexistent"));
     }
 }

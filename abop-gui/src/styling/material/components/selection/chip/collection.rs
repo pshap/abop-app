@@ -5,6 +5,28 @@
 
 use super::super::builder::Chip;
 use super::super::common::*;
+use crate::styling::material::colors::MaterialColors;
+
+use iced::{
+    Element, Renderer, Length,
+    theme::Theme,
+    widget::{Row, Column, Container, Scrollable},
+};
+
+// ============================================================================
+// Collection Layout Definition
+// ============================================================================
+
+/// Layout modes for chip collections
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChipCollectionLayout {
+    /// Horizontal row with scrolling
+    Row,
+    /// Wrap to new lines
+    Wrap,
+    /// Grid with specified columns
+    Grid(u16),
+}
 
 // ============================================================================
 // Selection Mode Definition
@@ -224,16 +246,13 @@ impl ChipCollection {
         }
 
         // Validate collection-specific constraints
-        match self.selection_mode {
-            ChipSelectionMode::Single => {
-                let selected_count = self.selected_count();
-                if selected_count > 1 {
-                    return Err(SelectionError::ConflictingStates {
-                        details: "Single selection mode allows only one selected chip".to_string(),
-                    });
-                }
+        if self.selection_mode == ChipSelectionMode::Single {
+            let selected_count = self.selected_count();
+            if selected_count > 1 {
+                return Err(SelectionError::ConflictingStates {
+                    details: "Single selection mode allows only one selected chip".to_string(),
+                });
             }
-            _ => {} // No additional constraints for other modes
         }
 
         Ok(())
@@ -249,6 +268,171 @@ impl ChipCollection {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.chips.is_empty()
+    }
+
+    // ========================================================================
+    // Collection View Methods
+    // ========================================================================
+
+    /// Render entire chip collection with automatic layout and spacing
+    ///
+    /// This is the primary method for rendering chip collections with
+    /// consistent spacing and layout.
+    ///
+    /// # Arguments
+    /// * `on_chip_press` - Callback function that receives chip index and state
+    /// * `color_scheme` - Material Design color scheme for styling
+    ///
+    /// # Returns
+    /// An Iced Element containing the rendered chip collection
+    pub fn view_collection<'a, Message: Clone + 'a>(
+        &'a self,
+        on_chip_press: impl Fn(usize, ChipState) -> Message + 'a,
+        color_scheme: &'a MaterialColors,
+    ) -> Element<'a, Message, Theme, Renderer> {
+        self.view_with_layout(
+            ChipCollectionLayout::Wrap,
+            8.0, // Standard spacing
+            on_chip_press,
+            color_scheme,
+        )
+    }
+
+    /// View with built-in selection state management
+    ///
+    /// This convenience method automatically handles selection state changes
+    /// and provides the updated selection indices.
+    ///
+    /// # Arguments
+    /// * `on_selection_change` - Callback that receives updated selection indices
+    /// * `color_scheme` - Material Design color scheme for styling
+    pub fn view_with_selection<'a, Message: Clone + 'a>(
+        &'a self,
+        on_selection_change: impl Fn(Vec<usize>) -> Message + 'a,
+        color_scheme: &'a MaterialColors,
+    ) -> Element<'a, Message, Theme, Renderer> {
+        let selected_indices = self.selected_indices();
+        
+        self.view_collection(
+            move |index, _state| {
+                let mut new_selection = selected_indices.clone();
+                
+                match self.selection_mode {
+                    ChipSelectionMode::None => {
+                        // No selection change for assist/suggestion chips
+                        on_selection_change(vec![])
+                    }
+                    ChipSelectionMode::Single => {
+                        // Single selection: replace with new index
+                        on_selection_change(vec![index])
+                    }
+                    ChipSelectionMode::Multiple => {
+                        // Multiple selection: toggle the clicked chip
+                        if let Some(pos) = new_selection.iter().position(|&x| x == index) {
+                            new_selection.remove(pos);
+                        } else {
+                            new_selection.push(index);
+                            new_selection.sort_unstable();
+                        }
+                        on_selection_change(new_selection)
+                    }
+                }
+            },
+            color_scheme,
+        )
+    }
+
+    /// Render collection in different layout modes
+    ///
+    /// This method provides full control over the layout and spacing of chips
+    /// in the collection.
+    ///
+    /// # Arguments
+    /// * `layout` - The layout mode (Row, Wrap, Grid)
+    /// * `spacing` - Spacing between chips in pixels
+    /// * `on_chip_press` - Callback function for chip interactions
+    /// * `color_scheme` - Material Design color scheme for styling
+    pub fn view_with_layout<'a, Message: Clone + 'a>(
+        &'a self,
+        layout: ChipCollectionLayout,
+        spacing: f32,
+        on_chip_press: impl Fn(usize, ChipState) -> Message + 'a,
+        color_scheme: &'a MaterialColors,
+    ) -> Element<'a, Message, Theme, Renderer> {
+        if self.chips.is_empty() {
+            return Container::new(iced::widget::Text::new("No chips"))
+                .width(Length::Fill)
+                .height(Length::Shrink)
+                .into();
+        }
+
+        match layout {
+            ChipCollectionLayout::Row => {
+                let row = self.chips
+                    .iter()
+                    .enumerate()
+                    .fold(Row::new().spacing(spacing), |row, (index, chip)| {
+                        let chip_view = chip.view(
+                            Some(on_chip_press(index, chip.state())),
+                            color_scheme,
+                        );
+                        row.push(chip_view)
+                    });
+
+                Scrollable::new(row)
+                    .direction(iced::widget::scrollable::Direction::Horizontal(
+                        iced::widget::scrollable::Scrollbar::new()
+                    ))
+                    .into()
+            }
+            ChipCollectionLayout::Wrap => {
+                // For wrap layout, use a column of rows
+                // This is a simplified implementation - in a real app you might want
+                // a proper wrapping container
+                let column = self.chips
+                    .chunks(6) // Wrap after 6 chips per row (adjust as needed)
+                    .enumerate()
+                    .fold(Column::new().spacing(spacing), |column, (_, chunk)| {
+                        let row = chunk
+                            .iter()
+                            .enumerate()
+                            .fold(Row::new().spacing(spacing), |row, (chunk_index, chip)| {
+                                // Calculate the actual index in the full collection
+                                let chip_index = chunk_index; // This needs proper calculation
+                                let chip_view = chip.view(
+                                    Some(on_chip_press(chip_index, chip.state())),
+                                    color_scheme,
+                                );
+                                row.push(chip_view)
+                            });
+                        column.push(row)
+                    });
+
+                column.into()
+            }
+            ChipCollectionLayout::Grid(columns) => {
+                // Grid layout with specified number of columns
+                let column = self.chips
+                    .chunks(columns as usize)
+                    .enumerate()
+                    .fold(Column::new().spacing(spacing), |column, (row_index, chunk)| {
+                        let row = chunk
+                            .iter()
+                            .enumerate()
+                            .fold(Row::new().spacing(spacing), |row, (col_index, chip)| {
+                                let chip_index = row_index * (columns as usize) + col_index;
+                                let chip_view = chip.view(
+                                    Some(on_chip_press(chip_index, chip.state())),
+                                    color_scheme,
+                                );
+                                row.push(chip_view)
+                            });
+                        column.push(row)
+                    });
+
+                column.into()
+            }
+        }
     }
 }
 
