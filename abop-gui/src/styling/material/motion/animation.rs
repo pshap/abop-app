@@ -376,6 +376,7 @@ pub mod interpolation {
 
     /// Linear interpolation for colors (RGB)
     #[must_use]
+    #[allow(dead_code)]
     pub fn lerp_color(
         start: (f32, f32, f32),
         end: (f32, f32, f32),
@@ -423,6 +424,7 @@ pub mod helpers {
 
     /// Create a scale animation for button press
     #[must_use]
+    #[allow(dead_code)]
     pub fn button_press_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::Scale).with_speed_factor(1.5) // Faster for responsiveness
     }
