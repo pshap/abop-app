@@ -9,120 +9,13 @@
 
 use super::builder::{ComponentBuilder, Radio, RadioBuilder};
 use super::common::*;
-use crate::styling::material::colors::MaterialColors;
-use crate::styling::material::components::selection_style::{
-    SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
-};
-
-use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 
 // ============================================================================
 // Component Implementation
 // ============================================================================
 
-impl<T> Radio<T>
-where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
-{
-    /// Create a new radio button with the specified value
-    #[must_use]
-    pub fn new(value: T) -> RadioBuilder<T> {
-        RadioBuilder::new(value)
-    }
-
-    /// Get the radio button value
-    #[must_use]
-    pub fn value(&self) -> &T {
-        &self.value
-    }
-
-    /// Get the component properties
-    #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the radio button is in error state
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration
-    #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
-    }
-
-    /// Check if this radio button is selected based on the current group value
-    #[must_use]
-    pub fn is_selected(&self, selected_value: Option<&T>) -> bool {
-        selected_value == Some(&self.value)
-    }
-
-    /// Create the Iced widget element for this radio button
-    ///
-    /// # Arguments
-    /// * `selected_value` - The currently selected value in the radio group
-    /// * `on_select` - Callback function called when this radio button is selected
-    /// * `color_scheme` - Material Design color scheme to use for styling
-    ///
-    /// # Returns
-    /// An Iced Element that can be added to the UI
-    pub fn view<'a, Message: Clone + 'a>(
-        &self,
-        selected_value: Option<T>,
-        on_select: impl FnOnce(T) -> Message + Copy + 'a,
-        color_scheme: &'a MaterialColors,
-    ) -> Element<'a, Message, Theme, Renderer>
-    where
-        T: Copy + 'a,
-    {
-        // Convert modern size to legacy size
-        let legacy_size = match self.props.size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
-        // Create styling function
-        let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Radio)
-            .size(legacy_size)
-            .error(self.error_state)
-            .radio_style(); // Create the radio button label
-        let default_label = String::new();
-        let label = self.props.label.as_ref().unwrap_or(&default_label);
-
-        // Create radio widget
-        let radio = IcedRadio::new(label, self.value, selected_value, on_select).style(style_fn);
-
-        // Note: Radio widget always requires on_select callback in Iced API
-        // Disabled state is handled through styling and visual appearance only
-
-        radio.into()
-    }
-
-    /// Create a view for use in radio groups with automatic state management
-    ///
-    /// This is a convenience method for radio groups where the selected value
-    /// is managed by the parent component.
-    pub fn view_in_group<'a, Message: Clone + 'a>(
-        &self,
-        group_state: &RadioGroupState<T>,
-        on_change: impl FnOnce(T) -> Message + Copy + 'a,
-        color_scheme: &'a MaterialColors,
-    ) -> Element<'a, Message, Theme, Renderer>
-    where
-        T: Copy + 'a,
-    {
-        self.view(group_state.selected_value(), on_change, color_scheme)
-    }
-}
+// Note: Radio component struct is defined in builder/components.rs
+// All Radio methods are implemented there to avoid duplication
 
 // ============================================================================
 // Radio Group Management
@@ -380,30 +273,7 @@ where
 // ============================================================================
 // Trait Implementations
 // ============================================================================
-
-impl<T> SelectionWidget<T> for Radio<T>
-where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
-{
-    type Message = T;
-    type Builder = RadioBuilder<T>;
-
-    fn new(value: T) -> Self::Builder {
-        RadioBuilder::new(value)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        validate_props(&self.props, &validation_config_for_toggles())
-    }
-
-    fn state(&self) -> T {
-        self.value.clone()
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
+// Note: SelectionWidget implementation is in builder/components.rs to avoid conflicts
 
 impl<T> AnimatedWidget for Radio<T>
 where
