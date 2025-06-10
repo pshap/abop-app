@@ -83,7 +83,7 @@ pub struct CheckboxBuilder {
 impl CheckboxBuilder {
     /// Create a new checkbox builder with the specified state
     #[must_use]
-    pub const fn new(state: CheckboxState) -> Self {
+    pub fn new(state: CheckboxState) -> Self {
         Self {
             state,
             props: ComponentProps::new(),
@@ -238,7 +238,7 @@ where
 {
     /// Create a new radio builder with the specified value
     #[must_use]
-    pub const fn new(value: T) -> Self {
+    pub fn new(value: T) -> Self {
         Self {
             value,
             props: ComponentProps::new(),
@@ -365,7 +365,7 @@ pub struct SwitchBuilder {
 impl SwitchBuilder {
     /// Create a new switch builder with the specified state
     #[must_use]
-    pub const fn new(state: SwitchState) -> Self {
+    pub fn new(state: SwitchState) -> Self {
         Self {
             state,
             props: ComponentProps::new(),
@@ -545,14 +545,14 @@ impl ChipBuilder {
 
     /// Set disabled state
     #[must_use]
-    pub const fn disabled(mut self, disabled: bool) -> Self {
+    pub fn disabled(mut self, disabled: bool) -> Self {
         self.props.disabled = disabled;
         self
     }
 
     /// Set component size
     #[must_use]
-    pub const fn size(mut self, size: ComponentSize) -> Self {
+    pub fn size(mut self, size: ComponentSize) -> Self {
         self.props.size = size;
         self
     }
@@ -569,6 +569,61 @@ impl ChipBuilder {
     pub const fn animation(mut self, config: AnimationConfig) -> Self {
         self.animation_config = config;
         self
+    }
+
+    // ========================================================================
+    // Enhanced UI Builder Methods
+    // ========================================================================
+
+    /// Add a leading icon to the chip
+    ///
+    /// Leading icons appear before the chip label and are typically used
+    /// to provide visual context or categorization.
+    ///
+    /// # Arguments
+    /// * `icon_name` - Font Awesome icon name (e.g., "filter", "user")
+    #[must_use]
+    pub fn with_leading_icon<S: Into<String>>(mut self, icon_name: S) -> Self {
+        // Store icon information in props for later use during view rendering
+        self.props = self.props.with_metadata("leading_icon", icon_name.into());
+        self
+    }
+
+    /// Add a trailing icon to the chip
+    ///
+    /// Trailing icons appear after the chip label and are typically used
+    /// for actions like deletion or expansion.
+    ///
+    /// # Arguments
+    /// * `icon_name` - Font Awesome icon name (e.g., "times", "chevron-down")
+    #[must_use]
+    pub fn with_trailing_icon<S: Into<String>>(mut self, icon_name: S) -> Self {
+        // Store icon information in props for later use during view rendering
+        self.props = self.props.with_metadata("trailing_icon", icon_name.into());
+        self
+    }
+
+    /// Add a badge with count to the chip
+    ///
+    /// Badges display numeric counts and are useful for showing quantities
+    /// or notification counts.
+    ///
+    /// # Arguments
+    /// * `count` - The number to display in the badge
+    #[must_use]
+    pub fn with_badge(mut self, count: u32) -> Self {
+        // Store badge information in props for later use during view rendering
+        self.props = self.props.with_metadata("badge_count", count.to_string());
+        self
+    }
+
+    /// Make the chip deletable with a trailing delete icon
+    ///
+    /// This is a convenience method that adds a trailing "times" icon
+    /// commonly used for deletion functionality.
+    #[must_use]
+    pub fn deletable(self) -> Self {
+        self.with_trailing_icon("times")
     }
 
     /// Convenience method to create filter chip

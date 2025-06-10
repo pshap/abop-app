@@ -31,7 +31,7 @@ pub struct ChipCollectionBuilder {
 impl ChipCollectionBuilder {
     /// Create a new chip collection builder
     #[must_use]
-    pub const fn new(selection_mode: ChipSelectionMode) -> Self {
+    pub fn new(selection_mode: ChipSelectionMode) -> Self {
         Self {
             chips: Vec::new(),
             selection_mode,
@@ -95,14 +95,14 @@ impl ChipCollectionBuilder {
 
     /// Set collection size (applies to all chips)
     #[must_use]
-    pub const fn size(mut self, size: ComponentSize) -> Self {
+    pub fn size(mut self, size: ComponentSize) -> Self {
         self.props.size = size;
         self
     }
 
     /// Set collection disabled state (applies to all chips)
     #[must_use]
-    pub const fn disabled(mut self, disabled: bool) -> Self {
+    pub fn disabled(mut self, disabled: bool) -> Self {
         self.props.disabled = disabled;
         self
     }
@@ -112,6 +112,92 @@ impl ChipCollectionBuilder {
     pub fn validation(mut self, config: ValidationConfig) -> Self {
         self.validation_config = config;
         self
+    }
+
+    // ========================================================================
+    // Enhanced Layout and Spacing Builder Methods
+    // ========================================================================
+
+    /// Set layout mode for the chip collection
+    ///
+    /// This determines how chips are arranged when rendered.
+    ///
+    /// # Arguments
+    /// * `layout` - The layout mode (Row, Wrap, or Grid)
+    #[must_use]
+    pub fn with_layout(mut self, layout: super::collection::ChipCollectionLayout) -> Self {
+        // Store layout in props metadata for use during rendering
+        let layout_str = match layout {
+            super::collection::ChipCollectionLayout::Row => "row",
+            super::collection::ChipCollectionLayout::Wrap => "wrap",
+            super::collection::ChipCollectionLayout::Grid(cols) => &format!("grid_{cols}"),
+        };
+        self.props = self.props.with_metadata("layout", layout_str.to_string());
+        self
+    }
+
+    /// Set spacing between chips
+    ///
+    /// Controls the gap between chips in pixels.
+    ///
+    /// # Arguments
+    /// * `spacing` - Spacing in pixels (recommended values: 4.0, 8.0, 12.0, 16.0)
+    #[must_use]
+    pub fn with_spacing(mut self, spacing: f32) -> Self {
+        // Store spacing in props metadata for use during rendering
+        self.props = self.props.with_metadata("spacing", spacing.to_string());
+        self
+    }
+
+    /// Use row layout (horizontal scrolling)
+    ///
+    /// Convenience method for horizontal chip layout with scrolling.
+    #[must_use]
+    pub fn row_layout(self) -> Self {
+        self.with_layout(super::collection::ChipCollectionLayout::Row)
+    }
+
+    /// Use wrap layout (multiple rows)
+    ///
+    /// Convenience method for wrapping chips to new rows.
+    #[must_use]
+    pub fn wrap_layout(self) -> Self {
+        self.with_layout(super::collection::ChipCollectionLayout::Wrap)
+    }
+
+    /// Use grid layout with specified columns
+    ///
+    /// Convenience method for grid layout with fixed number of columns.
+    ///
+    /// # Arguments
+    /// * `columns` - Number of columns in the grid
+    #[must_use]
+    pub fn grid_layout(self, columns: u16) -> Self {
+        self.with_layout(super::collection::ChipCollectionLayout::Grid(columns))
+    }
+
+    /// Use compact spacing (4px)
+    ///
+    /// Convenience method for tight spacing between chips.
+    #[must_use]
+    pub fn compact_spacing(self) -> Self {
+        self.with_spacing(4.0)
+    }
+
+    /// Use standard spacing (8px)
+    ///
+    /// Convenience method for standard spacing between chips.
+    #[must_use]
+    pub fn standard_spacing(self) -> Self {
+        self.with_spacing(8.0)
+    }
+
+    /// Use comfortable spacing (16px)
+    ///
+    /// Convenience method for generous spacing between chips.
+    #[must_use]
+    pub fn comfortable_spacing(self) -> Self {
+        self.with_spacing(16.0)
     }
     /// Build the chip collection with validation
     pub fn build(self) -> Result<ChipCollection, SelectionError> {
@@ -144,19 +230,19 @@ impl ChipCollectionBuilder {
 
 /// Create a filter chip collection (multiple selection)
 #[must_use]
-pub const fn filter_chip_collection() -> ChipCollectionBuilder {
+pub fn filter_chip_collection() -> ChipCollectionBuilder {
     ChipCollectionBuilder::new(ChipSelectionMode::Multiple)
 }
 
 /// Create a single-select chip collection
 #[must_use]
-pub const fn single_select_chip_collection() -> ChipCollectionBuilder {
+pub fn single_select_chip_collection() -> ChipCollectionBuilder {
     ChipCollectionBuilder::new(ChipSelectionMode::Single)
 }
 
 /// Create an input chip collection (no selection)
 #[must_use]
-pub const fn input_chip_collection() -> ChipCollectionBuilder {
+pub fn input_chip_collection() -> ChipCollectionBuilder {
     ChipCollectionBuilder::new(ChipSelectionMode::None)
 }
 
