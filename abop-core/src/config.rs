@@ -14,7 +14,7 @@ pub mod validation;
 // Re-export for convenience
 pub use app::AppConfig;
 pub use ui::{UiConfig, WindowConfig};
-pub use validation::{ConfigValidation, ValidationResult, ValidationError};
+pub use validation::{ConfigValidation, ValidationError, ValidationResult};
 
 /// Main application configuration settings
 ///
@@ -51,16 +51,22 @@ impl Config {
         if config_path.exists() {
             let contents = std::fs::read_to_string(&config_path)?;
             let mut config: Config = toml::from_str(&contents)?;
-            
+
             // Validate and auto-fix configuration
             let validation_result = config.validate_and_fix();
             if validation_result.has_errors() {
-                log::warn!("Configuration validation errors: {:?}", validation_result.errors);
+                log::warn!(
+                    "Configuration validation errors: {:?}",
+                    validation_result.errors
+                );
             }
             if validation_result.has_warnings() {
-                log::info!("Configuration validation warnings: {:?}", validation_result.warnings);
+                log::info!(
+                    "Configuration validation warnings: {:?}",
+                    validation_result.warnings
+                );
             }
-            
+
             Ok(config)
         } else {
             let default = Self::default();
@@ -128,7 +134,11 @@ impl ConfigValidation for Config {
 
         // Validate data_dir (backward compatibility)
         if let Err(e) = validation::validate_or_create_directory(&self.data_dir, "data_dir") {
-            result.add_error("data_dir", &e.to_string(), Some("Ensure the path is writable"));
+            result.add_error(
+                "data_dir",
+                &e.to_string(),
+                Some("Ensure the path is writable"),
+            );
         }
 
         // Update overall validity

@@ -3,8 +3,8 @@
 //! This module provides high-level utility functions that combine multiple
 //! casting operations and add domain-specific logic for common use cases.
 
-use crate::utils::casting::CastingBuilder;
 use crate::error::{AppError, Result};
+use crate::utils::casting::CastingBuilder;
 
 /// Audio processing utilities
 pub mod audio {
@@ -15,9 +15,11 @@ pub mod audio {
         tracks: &[(usize, u32)], // (sample_count, sample_rate) pairs
     ) -> Result<f32> {
         let _builder = CastingBuilder::for_audiobook_processing();
-        let mut total_duration = 0.0;        for &(samples, rate) in tracks {
-            let duration = crate::utils::casting::domain::audio::safe_samples_to_duration(samples, rate)
-                .map_err(|e| AppError::Audio(format!("Duration calculation failed: {e}")))?;
+        let mut total_duration = 0.0;
+        for &(samples, rate) in tracks {
+            let duration =
+                crate::utils::casting::domain::audio::safe_samples_to_duration(samples, rate)
+                    .map_err(|e| AppError::Audio(format!("Duration calculation failed: {e}")))?;
             total_duration += duration;
         }
 
@@ -31,8 +33,9 @@ pub mod audio {
     ) -> Result<usize> {
         let builder = CastingBuilder::for_realtime_audio();
         let latency_seconds = target_latency_ms / 1000.0;
-        
-        builder.time_to_samples(latency_seconds, sample_rate)
+
+        builder
+            .time_to_samples(latency_seconds, sample_rate)
             .map_err(|e| AppError::Audio(format!("Buffer size calculation failed: {e}")))
     }
 
@@ -43,11 +46,12 @@ pub mod audio {
         to_format: AudioSampleFormat,
     ) -> Result<i64> {
         let builder = CastingBuilder::for_audio();
-        
+
         let from_bits = from_format.bit_depth();
         let to_bits = to_format.bit_depth();
-        
-        builder.convert_audio_value(value, from_bits, to_bits)
+
+        builder
+            .convert_audio_value(value, from_bits, to_bits)
             .map_err(|e| AppError::Audio(format!("Sample format conversion failed: {e}")))
     }
 
@@ -94,19 +98,24 @@ pub mod database {
         current_page: usize,
     ) -> Result<PaginationInfo> {
         let builder = CastingBuilder::for_database();
-        
+
         // Validate inputs
         if total_items < 0 {
-            return Err(AppError::InvalidData("Total items cannot be negative".to_string()));
+            return Err(AppError::InvalidData(
+                "Total items cannot be negative".to_string(),
+            ));
         }
         if page_size == 0 {
-            return Err(AppError::InvalidData("Page size cannot be zero".to_string()));
+            return Err(AppError::InvalidData(
+                "Page size cannot be zero".to_string(),
+            ));
         }
 
-        let total_items_usize = builder.int_to_int::<i64, usize>(total_items)
-            .map_err(|e| AppError::Database(crate::db::error::DatabaseError::ExecutionFailed {
-                message: format!("Failed to convert total items: {e}")
-            }))?;
+        let total_items_usize = builder.int_to_int::<i64, usize>(total_items).map_err(|e| {
+            AppError::Database(crate::db::error::DatabaseError::ExecutionFailed {
+                message: format!("Failed to convert total items: {e}"),
+            })
+        })?;
 
         let total_pages = total_items_usize.div_ceil(page_size);
         let offset = current_page.saturating_sub(1) * page_size;
@@ -145,10 +154,12 @@ pub mod database {
 
     /// Convert database timestamps safely
     pub fn convert_timestamp(timestamp: i64) -> Result<std::time::SystemTime> {
-        use std::time::{UNIX_EPOCH, Duration};
+        use std::time::{Duration, UNIX_EPOCH};
 
         if timestamp < 0 {
-            return Err(AppError::InvalidData("Timestamp cannot be negative".to_string()));
+            return Err(AppError::InvalidData(
+                "Timestamp cannot be negative".to_string(),
+            ));
         }
 
         let duration = Duration::from_secs(timestamp as u64);
@@ -169,15 +180,18 @@ pub mod ui {
         let builder = CastingBuilder::for_ui();
 
         if container_width <= 0.0 || item_min_width <= 0.0 {
-            return Err(AppError::InvalidData("Dimensions must be positive".to_string()));
+            return Err(AppError::InvalidData(
+                "Dimensions must be positive".to_string(),
+            ));
         }
 
         // Calculate how many items can fit
         let available_width = container_width - gap;
         let item_width_with_gap = item_min_width + gap;
-        
+
         let columns = (available_width / item_width_with_gap).floor().max(1.0);
-        let columns_usize = builder.float_to_int::<usize>(columns.into())
+        let columns_usize = builder
+            .float_to_int::<usize>(columns.into())
             .map_err(|e| AppError::Other(format!("Grid calculation failed: {e}")))?;
 
         // Calculate actual item width
@@ -200,14 +214,17 @@ pub mod ui {
         pub item_width: f32,
         /// Gap between grid items
         pub gap: f32,
-    }    /// Calculate animation progress with easing
+    }
+    /// Calculate animation progress with easing
     pub fn calculate_animation_progress(
         elapsed: f32,
         duration: f32,
         easing: EasingFunction,
     ) -> Result<f32> {
         if duration <= 0.0 {
-            return Err(AppError::InvalidData("Duration must be positive".to_string()));
+            return Err(AppError::InvalidData(
+                "Duration must be positive".to_string(),
+            ));
         }
 
         let linear_progress = (elapsed / duration).clamp(0.0, 1.0);
@@ -261,12 +278,15 @@ pub mod ui {
 /// File system utilities
 pub mod file {
     use super::*;
-    use std::path::Path;    /// Calculate safe file copy buffer size based on file size
+    use std::path::Path;
+    /// Calculate safe file copy buffer size based on file size
     pub fn calculate_copy_buffer_size(file_size: u64) -> Result<usize> {
         // Use different buffer sizes based on file size
-        let buffer_size = if file_size < 1024 * 1024 { // < 1MB
+        let buffer_size = if file_size < 1024 * 1024 {
+            // < 1MB
             8192 // 8KB
-        } else if file_size < 100 * 1024 * 1024 { // < 100MB
+        } else if file_size < 100 * 1024 * 1024 {
+            // < 100MB
             65536 // 64KB
         } else {
             1024 * 1024 // 1MB
@@ -278,10 +298,15 @@ pub mod file {
     /// Validate file path and return normalized version
     pub fn normalize_path<P: AsRef<Path>>(path: P) -> Result<std::path::PathBuf> {
         let path = path.as_ref();
-        
+
         // Convert to absolute path
-        let absolute = path.canonicalize()
-            .map_err(|e| AppError::Io(format!("Failed to canonicalize path {}: {}", path.display(), e)))?;
+        let absolute = path.canonicalize().map_err(|e| {
+            AppError::Io(format!(
+                "Failed to canonicalize path {}: {}",
+                path.display(),
+                e
+            ))
+        })?;
 
         Ok(absolute)
     }
@@ -296,10 +321,11 @@ pub mod file {
         }
 
         let mut total_size = 0u64;
-        
+
         fn visit_dir(dir: &Path, total: &mut u64) -> Result<()> {
-            let entries = fs::read_dir(dir)
-                .map_err(|e| AppError::Io(format!("Failed to read directory {}: {}", dir.display(), e)))?;
+            let entries = fs::read_dir(dir).map_err(|e| {
+                AppError::Io(format!("Failed to read directory {}: {}", dir.display(), e))
+            })?;
 
             for entry in entries {
                 let entry = entry
@@ -309,8 +335,13 @@ pub mod file {
                 if path.is_dir() {
                     visit_dir(&path, total)?;
                 } else {
-                    let metadata = entry.metadata()
-                        .map_err(|e| AppError::Io(format!("Failed to read metadata for {}: {}", path.display(), e)))?;
+                    let metadata = entry.metadata().map_err(|e| {
+                        AppError::Io(format!(
+                            "Failed to read metadata for {}: {}",
+                            path.display(),
+                            e
+                        ))
+                    })?;
                     *total = total.saturating_add(metadata.len());
                 }
             }
@@ -355,10 +386,12 @@ mod tests {
 
     #[test]
     fn test_ui_animation_progress() {
-        let progress = ui::calculate_animation_progress(0.5, 1.0, ui::EasingFunction::Linear).unwrap();
+        let progress =
+            ui::calculate_animation_progress(0.5, 1.0, ui::EasingFunction::Linear).unwrap();
         assert_eq!(progress, 0.5);
 
-        let progress = ui::calculate_animation_progress(0.5, 1.0, ui::EasingFunction::EaseIn).unwrap();
+        let progress =
+            ui::calculate_animation_progress(0.5, 1.0, ui::EasingFunction::EaseIn).unwrap();
         assert_eq!(progress, 0.25); // 0.5^2
     }
 

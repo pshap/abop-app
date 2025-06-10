@@ -44,8 +44,11 @@ impl LibraryScanner {
     /// Creates a new `LibraryScanner` for the given library
     #[must_use]
     pub fn new(db: Database, library: Library) -> Self {
-        log::warn!("🔍 LIBRARY SCANNER: Creating scanner for library '{}' with path: '{}'", 
-                   library.name, library.path.display());
+        log::warn!(
+            "🔍 LIBRARY SCANNER: Creating scanner for library '{}' with path: '{}'",
+            library.name,
+            library.path.display()
+        );
         Self {
             db: Arc::new(db),
             library,

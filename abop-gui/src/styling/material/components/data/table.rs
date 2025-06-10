@@ -198,5 +198,3 @@ impl MaterialDataTable {
         }
     }
 }
-
-
