@@ -1,16 +1,17 @@
 //! Material Design 3 Selection Component Styling System
 //!
 //! This module provides a centralized styling system for all selection components,
-//! eliminating code duplication across MaterialCheckbox, MaterialRadio, and MaterialChip.
+//! eliminating code duplication across MaterialCheckbox, MaterialRadio, MaterialSwitch, and MaterialChip.
 //!
 //! ## Design Goals
 //! - Centralized color logic for all selection states
 //! - Consistent Material Design 3 styling patterns  
-//! - Reduced code duplication from 32KB selection.rs file
+//! - Reduced code duplication
 //! - Type-safe styling with clear state management
 //! - Builder pattern support for fluent construction
+//! - Theme integration with Material Design 3 specifications
 
-use iced::{Background, Border, Color, Theme};
+use iced::{Background, Color, Theme};
 use serde::{Deserialize, Serialize};
 
 use crate::styling::color_utils::ColorUtils;
@@ -67,6 +68,17 @@ pub enum SelectionSize {
     Medium,
     /// Large size (24px) - for accessibility
     Large,
+}
+
+impl SelectionSize {
+    /// Get the touch target size in pixels
+    pub fn touch_target_size(&self) -> f32 {
+        match self {
+            Self::Small => 32.0,
+            Self::Medium => 40.0,
+            Self::Large => 48.0,
+        }
+    }
 }
 
 impl Default for SelectionSize {
@@ -296,10 +308,20 @@ impl SelectionColors {
 /// with all the appropriate state handling.
 #[derive(Debug, Clone)]
 pub struct SelectionStyleBuilder {
-    colors: SelectionColors,
-    #[allow(dead_code)]
+    /// The color scheme to use for styling
+    colors: MaterialColors,
+    /// The component variant being styled
     variant: SelectionVariant,
+    /// The size of the component
     size: SelectionSize,
+    /// Whether the component is in an error state
+    error: bool,
+    /// Whether the component is in a hover state
+    hover: bool,
+    /// Whether the component is in a pressed state
+    pressed: bool,
+    /// Whether the component is focused
+    focused: bool,
 }
 
 impl SelectionStyleBuilder {
@@ -307,9 +329,13 @@ impl SelectionStyleBuilder {
     #[must_use]
     pub fn new(colors: MaterialColors, variant: SelectionVariant) -> Self {
         Self {
-            colors: SelectionColors::new(colors),
+            colors,
             variant,
             size: SelectionSize::default(),
+            error: false,
+            hover: false,
+            pressed: false,
+            focused: false,
         }
     }
 
@@ -323,16 +349,38 @@ impl SelectionStyleBuilder {
     /// Enable error state for validation
     #[must_use]
     pub const fn error(mut self, error: bool) -> Self {
-        self.colors = self.colors.with_error(error);
+        self.error = error;
+        self
+    }
+
+    /// Enable hover state
+    #[must_use]
+    pub const fn hover(mut self, hover: bool) -> Self {
+        self.hover = hover;
+        self
+    }
+
+    /// Enable pressed state
+    #[must_use]
+    pub const fn pressed(mut self, pressed: bool) -> Self {
+        self.pressed = pressed;
+        self
+    }
+
+    /// Enable focused state
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
         self
     }
 
     /// Create checkbox styling function
     pub fn checkbox_style(
         self,
-    ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
+    ) -> impl Fn(&iced::Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
         let colors = self.colors;
         let size = self.size;
+        let error = self.error;
 
         move |_theme: &Theme, status: iced::widget::checkbox::Status| {
             let state = match status {
@@ -356,15 +404,15 @@ impl SelectionStyleBuilder {
                 }
             };
 
+            let colors = SelectionColors::new(colors.clone()).with_error(error);
+
             iced::widget::checkbox::Style {
-                background: colors
-                    .primary_color(state, SelectionVariant::Checkbox)
-                    .into(),
+                background: colors.primary_color(state, SelectionVariant::Checkbox).into(),
                 icon_color: colors.foreground_color(state, SelectionVariant::Checkbox),
-                border: Border {
-                    color: colors.border_color(state, SelectionVariant::Checkbox),
+                border: iced::Border {
+                    radius: 2.0.into(),
                     width: size.border_width(),
-                    radius: (2.0).into(),
+                    color: colors.border_color(state, SelectionVariant::Checkbox),
                 },
                 text_color: Some(colors.text_color(state)),
             }
@@ -374,9 +422,9 @@ impl SelectionStyleBuilder {
     /// Create radio button styling function
     pub fn radio_style(
         self,
-    ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style {
+    ) -> impl Fn(&iced::Theme, iced::widget::radio::Status) -> iced::widget::radio::Style {
         let colors = self.colors;
-        let size = self.size;
+        let error = self.error;
 
         move |_theme: &Theme, status: iced::widget::radio::Status| {
             let state = match status {
@@ -392,12 +440,15 @@ impl SelectionStyleBuilder {
                 iced::widget::radio::Status::Hovered { is_selected: false } => {
                     SelectionState::HoveredUnselected
                 }
+                // Note: radio::Status doesn't have a Disabled variant in current Iced API
             };
+
+            let colors = SelectionColors::new(colors.clone()).with_error(error);
 
             iced::widget::radio::Style {
                 background: colors.primary_color(state, SelectionVariant::Radio).into(),
                 dot_color: colors.foreground_color(state, SelectionVariant::Radio),
-                border_width: size.border_width(),
+                border_width: 1.0,
                 border_color: colors.border_color(state, SelectionVariant::Radio),
                 text_color: Some(colors.text_color(state)),
             }
@@ -408,32 +459,75 @@ impl SelectionStyleBuilder {
     pub fn chip_style(
         self,
         is_selected: bool,
-    ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+    ) -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
         let colors = self.colors;
+        let variant = self.variant;
 
         move |_theme: &Theme, status: iced::widget::button::Status| {
-            let state = match (status, is_selected) {
-                (iced::widget::button::Status::Active, true) => SelectionState::ActiveSelected,
-                (iced::widget::button::Status::Active, false) => SelectionState::ActiveUnselected,
-                (iced::widget::button::Status::Hovered, true) => SelectionState::HoveredSelected,
-                (iced::widget::button::Status::Hovered, false) => SelectionState::HoveredUnselected,
-                (iced::widget::button::Status::Pressed, true) => SelectionState::PressedSelected,
-                (iced::widget::button::Status::Pressed, false) => SelectionState::PressedUnselected,
-                (iced::widget::button::Status::Disabled, true) => SelectionState::DisabledSelected,
-                (iced::widget::button::Status::Disabled, false) => {
-                    SelectionState::DisabledUnselected
+            let state = if is_selected {
+                match status {
+                    iced::widget::button::Status::Active => SelectionState::ActiveSelected,
+                    iced::widget::button::Status::Hovered => SelectionState::HoveredSelected,
+                    iced::widget::button::Status::Pressed => SelectionState::PressedSelected,
+                    iced::widget::button::Status::Disabled => SelectionState::DisabledSelected,
+                }
+            } else {
+                match status {
+                    iced::widget::button::Status::Active => SelectionState::ActiveUnselected,
+                    iced::widget::button::Status::Hovered => SelectionState::HoveredUnselected,
+                    iced::widget::button::Status::Pressed => SelectionState::PressedUnselected,
+                    iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
                 }
             };
 
+            let selection_colors = SelectionColors::new(colors.clone());
+
             iced::widget::button::Style {
-                background: Some(Background::Color(
-                    colors.primary_color(state, SelectionVariant::Chip),
-                )),
-                text_color: colors.foreground_color(state, SelectionVariant::Chip),
-                border: Border {
-                    color: colors.border_color(state, SelectionVariant::Chip),
+                background: Some(Background::from(selection_colors.primary_color(state, variant))),
+                text_color: selection_colors.foreground_color(state, variant),
+                border: iced::Border {
+                    radius: 8.0.into(),
                     width: 1.0,
-                    radius: (8.0).into(), // Standard chip corner radius
+                    color: selection_colors.border_color(state, variant),
+                },
+                shadow: iced::Shadow::default(),
+            }
+        }
+    }
+    
+    /// Create switch styling function
+    pub fn switch_style(
+        self,
+        is_enabled: bool,
+    ) -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+        let colors = self.colors;
+        
+        move |_theme: &Theme, status: iced::widget::button::Status| {
+            let state = if is_enabled {
+                match status {
+                    iced::widget::button::Status::Active => SelectionState::ActiveSelected,
+                    iced::widget::button::Status::Hovered => SelectionState::HoveredSelected,
+                    iced::widget::button::Status::Pressed => SelectionState::PressedSelected,
+                    iced::widget::button::Status::Disabled => SelectionState::DisabledSelected,
+                }
+            } else {
+                match status {
+                    iced::widget::button::Status::Active => SelectionState::ActiveUnselected,
+                    iced::widget::button::Status::Hovered => SelectionState::HoveredUnselected,
+                    iced::widget::button::Status::Pressed => SelectionState::PressedUnselected,
+                    iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
+                }
+            };
+            
+            let selection_colors = SelectionColors::new(colors.clone());
+            
+            iced::widget::button::Style {
+                background: Some(Background::from(selection_colors.primary_color(state, SelectionVariant::Switch))),
+                text_color: selection_colors.foreground_color(state, SelectionVariant::Switch),
+                border: iced::Border {
+                    radius: 12.0.into(),
+                    width: 0.0,
+                    color: Color::TRANSPARENT,
                 },
                 shadow: iced::Shadow::default(),
             }
