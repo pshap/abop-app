@@ -316,8 +316,8 @@ pub fn switch_from_bool(enabled: bool) -> SwitchBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::builder::ComponentBuilder;
+    use super::*;
 
     #[test]
     fn test_switch_creation() {

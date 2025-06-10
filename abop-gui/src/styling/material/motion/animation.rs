@@ -369,6 +369,7 @@ impl AnimationBuilder {
 pub mod interpolation {
     /// Linear interpolation between two values
     #[must_use]
+    #[allow(dead_code)]
     pub fn lerp(start: f32, end: f32, progress: f32) -> f32 {
         (end - start).mul_add(progress, start)
     }
@@ -389,6 +390,7 @@ pub mod interpolation {
 
     /// Smooth step interpolation (smoother than linear)
     #[must_use]
+    #[allow(dead_code)]
     pub fn smooth_step(start: f32, end: f32, progress: f32) -> f32 {
         let smooth_progress = progress * progress * 2.0f32.mul_add(-progress, 3.0);
         (end - start).mul_add(smooth_progress, start)
@@ -396,6 +398,7 @@ pub mod interpolation {
 
     /// Smoother step interpolation (even smoother)
     #[must_use]
+    #[allow(dead_code)]
     pub fn smoother_step(start: f32, end: f32, progress: f32) -> f32 {
         let smooth_progress =
             progress * progress * progress * progress.mul_add(progress.mul_add(6.0, -15.0), 10.0);
@@ -409,6 +412,7 @@ pub mod helpers {
 
     /// Create a simple fade animation
     #[must_use]
+    #[allow(dead_code)]
     pub fn fade_animation(fade_in: bool) -> Animation {
         if fade_in {
             Animation::from_pattern(AnimationPattern::FadeInOut)
@@ -425,6 +429,7 @@ pub mod helpers {
 
     /// Create a slide animation for navigation
     #[must_use]
+    #[allow(dead_code)]
     pub fn navigation_slide_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::Slide)
     }

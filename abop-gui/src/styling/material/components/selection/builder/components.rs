@@ -21,7 +21,7 @@ use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 // ============================================================================
 
 /// Material Design 3 Checkbox component (modern implementation)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Checkbox {
     pub(crate) state: CheckboxState,
     pub(crate) props: ComponentProps,
@@ -95,7 +95,10 @@ impl Checkbox {
     /// Check if the checkbox is selected (checked or indeterminate)
     #[must_use]
     pub const fn is_selected(&self) -> bool {
-        matches!(self.state, CheckboxState::Checked | CheckboxState::Indeterminate)
+        matches!(
+            self.state,
+            CheckboxState::Checked | CheckboxState::Indeterminate
+        )
     }
 
     /// Check if the checkbox is checked
@@ -133,17 +136,6 @@ impl PartialEq for Checkbox {
 }
 
 impl Eq for Checkbox {}
-
-impl Default for Checkbox {
-    fn default() -> Self {
-        Self {
-            state: CheckboxState::default(),
-            props: ComponentProps::default(),
-            error_state: false,
-            animation_config: AnimationConfig::default(),
-        }
-    }
-}
 
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]
@@ -261,7 +253,7 @@ where
 impl<T> Eq for Radio<T> where T: Clone + PartialEq + Eq + std::hash::Hash {}
 
 /// Material Design 3 Switch component (modern implementation)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Switch {
     pub(crate) state: SwitchState,
     pub(crate) props: ComponentProps,
@@ -341,19 +333,8 @@ impl PartialEq for Switch {
 
 impl Eq for Switch {}
 
-impl Default for Switch {
-    fn default() -> Self {
-        Self {
-            state: SwitchState::default(),
-            props: ComponentProps::default(),
-            error_state: false,
-            animation_config: AnimationConfig::default(),
-        }
-    }
-}
-
 /// Material Design 3 Chip component (modern implementation)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Chip {
     pub(crate) label: String,
     pub(crate) state: ChipState,
@@ -460,19 +441,6 @@ impl PartialEq for Chip {
 }
 
 impl Eq for Chip {}
-
-impl Default for Chip {
-    fn default() -> Self {
-        Self {
-            label: String::new(),
-            state: ChipState::default(),
-            variant: ChipVariant::default(),
-            props: ComponentProps::default(),
-            error_state: false,
-            animation_config: AnimationConfig::default(),
-        }
-    }
-}
 
 // ============================================================================
 // Trait Implementations
