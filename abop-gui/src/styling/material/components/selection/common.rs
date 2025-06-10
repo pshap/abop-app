@@ -310,7 +310,7 @@ impl ComponentProps {
     /// # Examples
     /// ```rust
     /// use crate::styling::material::components::selection::common::*;
-    /// 
+    ///
     /// let props = ComponentProps::new()
     ///     .with_metadata(LEADING_ICON_KEY, "star")
     ///     .with_metadata(BADGE_KEY, "5");
@@ -320,13 +320,16 @@ impl ComponentProps {
         let key_string = key.into();
         // Validate known metadata keys to prevent typos
         match key_string.as_str() {
-            LEADING_ICON_KEY | TRAILING_ICON_KEY | BADGE_KEY | BADGE_COLOR_KEY | LAYOUT_KEY | SPACING_KEY => {
+            LEADING_ICON_KEY | TRAILING_ICON_KEY | BADGE_KEY | BADGE_COLOR_KEY | LAYOUT_KEY
+            | SPACING_KEY => {
                 self.metadata.insert(key_string, value.into());
             }
             _ => {
                 // Allow unknown keys for extensibility but warn in debug builds
                 #[cfg(debug_assertions)]
-                eprintln!("Warning: Unknown metadata key '{}'. Consider using predefined constants.", key_string);
+                eprintln!(
+                    "Warning: Unknown metadata key '{key_string}'. Consider using predefined constants."
+                );
                 self.metadata.insert(key_string, value.into());
             }
         }
@@ -718,10 +721,7 @@ mod tests {
             .with_metadata("badge_count", "5")
             .with_metadata("layout", "wrap");
 
-        assert_eq!(
-            props.get_metadata("leading_icon"),
-            Some("filter")
-        );
+        assert_eq!(props.get_metadata("leading_icon"), Some("filter"));
         assert_eq!(props.get_metadata("badge_count"), Some("5"));
         assert_eq!(props.get_metadata("layout"), Some("wrap"));
         assert_eq!(props.get_metadata("nonexistent"), None);

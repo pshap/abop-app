@@ -181,22 +181,22 @@ impl ChipCollection {
     }
 
     /// Toggle chip selection by index with mode-specific behavior
-    /// 
+    ///
     /// # Mode-Specific Behavior:
-    /// 
+    ///
     /// ## Single Selection Mode
     /// - If the chip is currently selected: deselects it (no chips selected)
     /// - If the chip is unselected: selects it and deselects all others
     /// - Always maintains at most one selected chip
-    /// 
+    ///
     /// ## Multiple Selection Mode  
     /// - Simply toggles the individual chip's selection state
     /// - Does not affect other chips in the collection
     /// - Allows any number of chips to be selected
-    /// 
+    ///
     /// ## No Selection Mode
     /// - Returns an error as selection is not allowed
-    /// 
+    ///
     /// # Returns
     /// The new state of the toggled chip, or an error if the operation is invalid
     pub fn toggle_chip(&mut self, index: usize) -> Result<ChipState, SelectionError> {
