@@ -153,7 +153,7 @@ where
     }
 
     fn context(self, context: &'static str) -> crate::error::Result<T> {
-        self.map_err(|e| crate::error::AppError::Other(format!("{}: {}", context, e)))
+        self.map_err(|e| crate::error::AppError::Other(format!("{context}: {e}")))
     }
 }
 

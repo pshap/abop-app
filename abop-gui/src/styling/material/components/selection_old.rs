@@ -1,6 +1,64 @@
-// Material Design 3 Selection Components
-// Implements Material Design checkboxes, radio buttons, switches, and chips
-// following Material Design 3 specifications with proper Iced integration
+//! Material Design 3 Selection Components
+//!
+//! This module implements Material Design 3 selection components (Checkbox, Radio, Switch, Chip)
+//! for the ABOP GUI application using the Iced framework.
+//!
+//! ## Design Principles
+//!
+//! - **Material Design 3 Compliance**: Follows official Material Design 3 specifications
+//! - **Iced Integration**: Proper integration with Iced widget system and message passing
+//! - **Accessibility**: Supports proper disabled states, error states, and sizing variants
+//! - **Type Safety**: Uses Rust's type system to prevent common UI state errors
+//! - **Performance**: Efficient styling system with minimal allocations
+//!
+//! ## Components
+//!
+//! - [`MaterialCheckbox`]: Three-state checkbox (checked, unchecked, indeterminate)
+//! - [`MaterialRadio`]: Radio buttons for mutually exclusive selections
+//! - [`MaterialSwitch`]: Toggle switches for on/off states
+//! - [`MaterialChip`]: Compact input/filter/action elements
+//!
+//! ## Usage Example
+//!
+//! ```rust
+//! use abop_gui::styling::material::components::selection::*;
+//! use abop_gui::styling::material::colors::MaterialColors;
+//!
+//! // Create a checkbox with label and error state
+//! let checkbox = MaterialCheckbox::new(false)
+//!     .with_label("Accept terms")
+//!     .error_state(true)
+//!     .size(SelectionSize::Large);
+//!
+//! // Create a radio button group
+//! let radio1 = MaterialRadio::new("option1")
+//!     .with_label("First Option")
+//!     .size(SelectionSize::Medium);
+//!
+//! // Create a filter chip
+//! let chip = MaterialChip::new("Category", MaterialChipVariant::Filter)
+//!     .selected(true)
+//!     .size(SelectionSize::Small);
+//! ```
+//!
+//! ## Architecture Notes
+//!
+//! ### Phase 1 Improvements Applied
+//! - ✅ Fixed disabled state handling across all components
+//! - ✅ Added typography helper functions for consistent text sizing
+//! - ✅ Enhanced test coverage with comprehensive validation
+//! - ✅ Improved error state management
+//!
+//! ### Known Limitations
+//! - Switch component currently implemented as styled checkbox (needs custom widget)
+//! - Radio disabled state handled through styling only (Iced API limitation)
+//! - Indeterminate checkbox state not visually implemented in view logic
+//!
+//! ### Future Improvements
+//! - Custom switch widget with proper Material Design 3 appearance
+//! - Animation support for state transitions
+//! - Enhanced accessibility features (ARIA attributes)
+//! - Touch target size validation
 
 use super::selection_style::{SelectionSize, SelectionStyleBuilder, SelectionVariant};
 use crate::styling::material::colors::MaterialColors;
@@ -162,13 +220,34 @@ impl MaterialCheckbox {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Gets the appropriate text size for this checkbox
+    }    /// Gets the appropriate text size for this checkbox
     #[must_use]
     pub const fn text_size(&self) -> f32 {
         get_text_size(self.size)
-    }/// Creates the Iced widget element for this checkbox
+    }
+
+    /// Validates the current checkbox state
+    ///
+    /// Performs logical validation of checkbox properties to ensure
+    /// the component is in a valid state for rendering.
+    ///
+    /// # Returns
+    /// `Ok(())` if state is valid, `Err(String)` with error description if invalid
+    pub fn validate_state(&self) -> Result<(), String> {
+        // Indeterminate and checked cannot both be true
+        if self.is_indeterminate && self.is_checked {
+            return Err("Checkbox cannot be both indeterminate and checked".to_string());
+        }
+        
+        // Label should not be excessively long
+        if let Some(ref label) = self.label {
+            if label.len() > 200 {
+                return Err("Checkbox label is too long (max 200 characters)".to_string());
+            }
+        }
+        
+        Ok(())
+    }    /// Creates the Iced widget element for this checkbox
     ///
     /// # Arguments
     /// * `on_toggle` - Callback function called when checkbox state changes
@@ -176,11 +255,21 @@ impl MaterialCheckbox {
     ///
     /// # Returns
     /// An Iced Element that can be added to the UI
+    ///
+    /// # Panics
+    /// Panics in debug builds if the checkbox state is invalid
     pub fn view<'a, Message: Clone + 'a>(
         &self,
         on_toggle: impl Fn(bool) -> Message + 'a,
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, theme::Theme, Renderer> {
+        // Validate state in debug builds
+        debug_assert!(
+            self.validate_state().is_ok(),
+            "Invalid checkbox state: {:?}",
+            self.validate_state().unwrap_err()
+        );
+
         let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Checkbox)
             .size(self.size)
             .error(self.error_state)
@@ -295,12 +384,25 @@ impl<T> MaterialRadio<T> {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Gets the appropriate text size for this radio button
+    }    /// Gets the appropriate text size for this radio button
     #[must_use]
     pub const fn text_size(&self) -> f32 {
         get_text_size(self.size)
+    }
+
+    /// Validates the current radio button state
+    ///
+    /// # Returns
+    /// `Ok(())` if state is valid, `Err(String)` with error description if invalid
+    pub fn validate_state(&self) -> Result<(), String> {
+        // Label should not be excessively long
+        if let Some(ref label) = self.label {
+            if label.len() > 200 {
+                return Err("Radio button label is too long (max 200 characters)".to_string());
+            }
+        }
+        
+        Ok(())
     }/// Creates the Iced widget element for this radio button
     ///
     /// # Arguments
@@ -451,13 +553,26 @@ impl MaterialSwitch {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Gets the appropriate text size for this switch
+    }    /// Gets the appropriate text size for this switch
     #[must_use]
     pub const fn text_size(&self) -> f32 {
         get_text_size(self.size)
-    }    /// Creates the Iced widget element for this switch
+    }
+
+    /// Validates the current switch state
+    ///
+    /// # Returns
+    /// `Ok(())` if state is valid, `Err(String)` with error description if invalid
+    pub fn validate_state(&self) -> Result<(), String> {
+        // Label should not be excessively long
+        if let Some(ref label) = self.label {
+            if label.len() > 200 {
+                return Err("Switch label is too long (max 200 characters)".to_string());
+            }
+        }
+        
+        Ok(())
+    }/// Creates the Iced widget element for this switch
     ///
     /// Note: This is currently implemented as a styled checkbox.
     /// In a full implementation, this would be a custom switch widget.
@@ -589,12 +704,27 @@ impl MaterialChip {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Gets the appropriate text size for this chip
+    }    /// Gets the appropriate text size for this chip
     #[must_use]
     pub const fn text_size(&self) -> f32 {
         get_text_size(self.size)
+    }
+
+    /// Validates the current chip state
+    ///
+    /// # Returns
+    /// `Ok(())` if state is valid, `Err(String)` with error description if invalid
+    pub fn validate_state(&self) -> Result<(), String> {
+        // Label should not be empty or excessively long
+        if self.label.is_empty() {
+            return Err("Chip label cannot be empty".to_string());
+        }
+        
+        if self.label.len() > 100 {
+            return Err("Chip label is too long (max 100 characters)".to_string());
+        }
+        
+        Ok(())
     }/// Creates the Iced widget element for this chip
     ///
     /// Note: This is currently implemented as a styled button.
@@ -647,27 +777,39 @@ impl SelectionComponent for MaterialChip {
 }
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (Phase 1 & 2 Improvements)
 // ============================================================================
 
 /// Create a Material Design checkbox
+///
+/// This is a convenience function that creates a new checkbox with default settings.
+/// For more control, use `MaterialCheckbox::new()` directly with builder pattern methods.
 #[must_use]
 pub fn material_checkbox(is_checked: bool) -> MaterialCheckbox {
     MaterialCheckbox::new(is_checked)
 }
 
 /// Create a Material Design radio button
+///
+/// This is a convenience function that creates a new radio button with default settings.
+/// For more control, use `MaterialRadio::new()` directly with builder pattern methods.
 pub const fn material_radio<T>(value: T) -> MaterialRadio<T> {
     MaterialRadio::new(value)
 }
 
 /// Create a Material Design switch
+///
+/// This is a convenience function that creates a new switch with default settings.
+/// For more control, use `MaterialSwitch::new()` directly with builder pattern methods.
 #[must_use]
 pub fn material_switch(is_enabled: bool) -> MaterialSwitch {
     MaterialSwitch::new(is_enabled)
 }
 
 /// Create a Material Design chip
+///
+/// This is a convenience function that creates a new chip with default settings.
+/// For more control, use `MaterialChip::new()` directly with builder pattern methods.
 pub fn material_chip<S: Into<String>>(label: S, variant: MaterialChipVariant) -> MaterialChip {
     MaterialChip::new(label, variant)
 }
@@ -907,8 +1049,70 @@ mod tests {
             let expected_text_size = get_text_size(size);
             assert_eq!(checkbox.text_size(), expected_text_size);
             assert_eq!(radio.text_size(), expected_text_size);
-            assert_eq!(switch.text_size(), expected_text_size);
-            assert_eq!(chip.text_size(), expected_text_size);
+            assert_eq!(switch.text_size(), expected_text_size);            assert_eq!(chip.text_size(), expected_text_size);
         }
+    }
+
+    #[test]
+    fn test_checkbox_validation() {
+        // Valid checkbox
+        let valid_checkbox = MaterialCheckbox::new(false)
+            .with_label("Valid Label");
+        assert!(valid_checkbox.validate_state().is_ok());
+
+        // Invalid: both checked and indeterminate
+        let invalid_checkbox = MaterialCheckbox::new(true)
+            .indeterminate(true);
+        assert!(invalid_checkbox.validate_state().is_err());
+
+        // Invalid: label too long
+        let long_label = "x".repeat(201);
+        let invalid_label_checkbox = MaterialCheckbox::new(false)
+            .with_label(long_label);
+        assert!(invalid_label_checkbox.validate_state().is_err());
+    }
+
+    #[test]
+    fn test_radio_validation() {
+        // Valid radio
+        let valid_radio = MaterialRadio::new("value")
+            .with_label("Valid Label");
+        assert!(valid_radio.validate_state().is_ok());
+
+        // Invalid: label too long
+        let long_label = "x".repeat(201);
+        let invalid_radio = MaterialRadio::new("value")
+            .with_label(long_label);
+        assert!(invalid_radio.validate_state().is_err());
+    }
+
+    #[test]
+    fn test_switch_validation() {
+        // Valid switch
+        let valid_switch = MaterialSwitch::new(true)
+            .with_label("Valid Label");
+        assert!(valid_switch.validate_state().is_ok());
+
+        // Invalid: label too long
+        let long_label = "x".repeat(201);
+        let invalid_switch = MaterialSwitch::new(false)
+            .with_label(long_label);
+        assert!(invalid_switch.validate_state().is_err());
+    }
+
+    #[test]
+    fn test_chip_validation() {
+        // Valid chip
+        let valid_chip = MaterialChip::new("Valid", MaterialChipVariant::Filter);
+        assert!(valid_chip.validate_state().is_ok());
+
+        // Invalid: empty label
+        let invalid_chip = MaterialChip::new("", MaterialChipVariant::Assist);
+        assert!(invalid_chip.validate_state().is_err());
+
+        // Invalid: label too long
+        let long_label = "x".repeat(101);
+        let invalid_long_chip = MaterialChip::new(long_label, MaterialChipVariant::Input);
+        assert!(invalid_long_chip.validate_state().is_err());
     }
 }

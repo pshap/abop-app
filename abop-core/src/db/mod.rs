@@ -540,7 +540,7 @@ impl Database {
         // Ensure the parent directory exists
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)
-                .map_err(|e| AppError::Config(format!("Failed to create database directory: {}", e)))?;
+                .map_err(|e| AppError::Config(format!("Failed to create database directory: {e}")))?;
         }
         
         info!("Using centralized database at: {}", db_path.display());

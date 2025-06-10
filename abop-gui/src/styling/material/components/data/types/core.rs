@@ -1,7 +1,7 @@
 //! Core enums and basic types for Material Design 3 data components
 
-use iced::Padding;
 use super::super::constants::density;
+use iced::Padding;
 
 /// Sort direction for table columns
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

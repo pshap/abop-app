@@ -1,7 +1,7 @@
 //! Data table configuration and builder methods
 
-use super::core::TableDensity;
 use super::super::constants::defaults;
+use super::core::TableDensity;
 
 /// Material Design 3 Data Table Configuration
 #[derive(Debug, Clone)]
