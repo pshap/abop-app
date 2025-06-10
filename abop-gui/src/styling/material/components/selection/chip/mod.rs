@@ -2,7 +2,7 @@
 //!
 //! This module provides a completely redesigned chip component system with:
 //! - State-based design using ChipState enum
-//! - Multiple chip variants (Assist, Filter, Input, Suggestion) 
+//! - Multiple chip variants (Assist, Filter, Input, Suggestion)
 //! - Built-in validation and error handling
 //! - Animation support for smooth transitions
 //! - Modern builder pattern with fluent API
@@ -17,10 +17,10 @@
 //! - `builder`: Enhanced builder patterns with improved ergonomics
 
 // Core submodules
-pub mod core;
-pub mod collection;
-pub mod view;
 pub mod builder;
+pub mod collection;
+pub mod core;
+pub mod view;
 
 // Re-export core types for backward compatibility
 pub use self::builder::{ChipBuilder, ChipCollectionBuilder};
@@ -32,7 +32,7 @@ pub use super::common::{ChipState, ChipVariant, ComponentSize, SelectionError};
 pub use self::builder::{filter_chip_collection, single_select_chip_collection};
 
 // Constants (moved to core)
-pub use self::core::{MAX_CHIP_LABEL_LENGTH, DEFAULT_ANIMATION_DURATION};
+pub use self::core::{DEFAULT_ANIMATION_DURATION, MAX_CHIP_LABEL_LENGTH};
 
 // ============================================================================
 // Module-level convenience functions for quick chip creation
