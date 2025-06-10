@@ -87,7 +87,7 @@ impl Chip {
     }
 
     /// Update the chip state with validation and transition feedback
-    /// 
+    ///
     /// Returns the previous state to allow callers to detect changes
     pub fn update_state(&mut self, new_state: ChipState) -> Result<ChipState, SelectionError> {
         validate_chip_state(new_state, self.variant, &self.props)?;
@@ -97,7 +97,7 @@ impl Chip {
     }
 
     /// Toggle the chip selection state with transition feedback
-    /// 
+    ///
     /// Returns both the previous and new states for complete transition tracking
     pub fn toggle(&mut self) -> Result<(ChipState, ChipState), SelectionError> {
         let previous_state = self.state;
@@ -107,14 +107,14 @@ impl Chip {
     }
 
     /// Set chip as selected with transition feedback
-    /// 
+    ///
     /// Returns the previous state to detect if the selection actually changed
     pub fn select(&mut self) -> Result<ChipState, SelectionError> {
         self.update_state(ChipState::Selected)
     }
 
     /// Set chip as unselected with transition feedback
-    /// 
+    ///
     /// Returns the previous state to detect if the selection actually changed
     pub fn unselect(&mut self) -> Result<ChipState, SelectionError> {
         self.update_state(ChipState::Unselected)
