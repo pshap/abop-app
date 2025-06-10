@@ -4,11 +4,29 @@
 //! including state definitions, error handling, validation, and shared behavior patterns.
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::time::Duration;
 use thiserror::Error;
 
 // Import the constant from chip module
 use super::chip::MAX_CHIP_LABEL_LENGTH;
+
+// ============================================================================
+// Metadata Constants
+// ============================================================================
+
+/// Metadata key for leading icon configuration
+pub const LEADING_ICON_KEY: &str = "leading_icon";
+/// Metadata key for trailing icon configuration
+pub const TRAILING_ICON_KEY: &str = "trailing_icon";
+/// Metadata key for badge configuration
+pub const BADGE_KEY: &str = "badge";
+/// Metadata key for badge color configuration
+pub const BADGE_COLOR_KEY: &str = "badge_color";
+/// Metadata key for layout configuration
+pub const LAYOUT_KEY: &str = "layout";
+/// Metadata key for spacing configuration
+pub const SPACING_KEY: &str = "spacing";
 
 // ============================================================================
 // Component States (Modern State-Based Design)
@@ -243,7 +261,7 @@ pub struct ComponentProps {
     /// The size variant of the component
     pub size: ComponentSize,
     /// Metadata storage for extended properties (icons, badges, layout, etc.)
-    pub metadata: std::collections::HashMap<String, String>,
+    pub metadata: HashMap<String, String>,
 }
 
 impl ComponentProps {
@@ -254,7 +272,7 @@ impl ComponentProps {
             label: None,
             disabled: false,
             size: ComponentSize::Medium,
-            metadata: std::collections::HashMap::new(),
+            metadata: HashMap::new(),
         }
     }
 
@@ -282,14 +300,36 @@ impl ComponentProps {
     /// Add metadata key-value pair (builder pattern)
     ///
     /// This method allows storing arbitrary metadata for enhanced features
-    /// like icons, badges, layout preferences, etc.
+    /// like icons, badges, layout preferences, etc. It validates that only
+    /// known metadata keys are used to prevent typos and maintain consistency.
     ///
     /// # Arguments
-    /// * `key` - The metadata key
-    /// * `value` - The metadata value
+    /// * `key` - The metadata key (should use predefined constants)
+    /// * `value` - The metadata value (automatically converted to String)
+    ///
+    /// # Examples
+    /// ```rust
+    /// use crate::styling::material::components::selection::common::*;
+    /// 
+    /// let props = ComponentProps::new()
+    ///     .with_metadata(LEADING_ICON_KEY, "star")
+    ///     .with_metadata(BADGE_KEY, "5");
+    /// ```
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
-        self.metadata.insert(key.into(), value.into());
+        let key_string = key.into();
+        // Validate known metadata keys to prevent typos
+        match key_string.as_str() {
+            LEADING_ICON_KEY | TRAILING_ICON_KEY | BADGE_KEY | BADGE_COLOR_KEY | LAYOUT_KEY | SPACING_KEY => {
+                self.metadata.insert(key_string, value.into());
+            }
+            _ => {
+                // Allow unknown keys for extensibility but warn in debug builds
+                #[cfg(debug_assertions)]
+                eprintln!("Warning: Unknown metadata key '{}'. Consider using predefined constants.", key_string);
+                self.metadata.insert(key_string, value.into());
+            }
+        }
         self
     }
 
@@ -299,10 +339,10 @@ impl ComponentProps {
     /// * `key` - The metadata key to look up
     ///
     /// # Returns
-    /// Optional reference to the metadata value
+    /// Optional reference to the metadata value as a string slice for better performance
     #[must_use]
-    pub fn get_metadata(&self, key: &str) -> Option<&String> {
-        self.metadata.get(key)
+    pub fn get_metadata(&self, key: &str) -> Option<&str> {
+        self.metadata.get(key).map(|s| s.as_str())
     }
 
     /// Check if metadata contains a specific key
@@ -680,10 +720,10 @@ mod tests {
 
         assert_eq!(
             props.get_metadata("leading_icon"),
-            Some(&"filter".to_string())
+            Some("filter")
         );
-        assert_eq!(props.get_metadata("badge_count"), Some(&"5".to_string()));
-        assert_eq!(props.get_metadata("layout"), Some(&"wrap".to_string()));
+        assert_eq!(props.get_metadata("badge_count"), Some("5"));
+        assert_eq!(props.get_metadata("layout"), Some("wrap"));
         assert_eq!(props.get_metadata("nonexistent"), None);
 
         assert!(props.has_metadata("leading_icon"));
