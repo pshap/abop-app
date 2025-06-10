@@ -8,9 +8,9 @@ use super::super::common::*;
 use crate::styling::material::colors::MaterialColors;
 
 use iced::{
-    Element, Renderer, Length,
+    Element, Length, Renderer,
     theme::Theme,
-    widget::{Row, Column, Container, Scrollable},
+    widget::{Column, Container, Row, Scrollable},
 };
 
 // ============================================================================
@@ -312,11 +312,11 @@ impl ChipCollection {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         let selected_indices = self.selected_indices();
-        
+
         self.view_collection(
             move |index, _state| {
                 let mut new_selection = selected_indices.clone();
-                
+
                 match self.selection_mode {
                     ChipSelectionMode::None => {
                         // No selection change for assist/suggestion chips
@@ -368,20 +368,18 @@ impl ChipCollection {
 
         match layout {
             ChipCollectionLayout::Row => {
-                let row = self.chips
-                    .iter()
-                    .enumerate()
-                    .fold(Row::new().spacing(spacing), |row, (index, chip)| {
-                        let chip_view = chip.view(
-                            Some(on_chip_press(index, chip.state())),
-                            color_scheme,
-                        );
+                let row = self.chips.iter().enumerate().fold(
+                    Row::new().spacing(spacing),
+                    |row, (index, chip)| {
+                        let chip_view =
+                            chip.view(Some(on_chip_press(index, chip.state())), color_scheme);
                         row.push(chip_view)
-                    });
+                    },
+                );
 
                 Scrollable::new(row)
                     .direction(iced::widget::scrollable::Direction::Horizontal(
-                        iced::widget::scrollable::Scrollbar::new()
+                        iced::widget::scrollable::Scrollbar::new(),
                     ))
                     .into()
             }
@@ -389,14 +387,14 @@ impl ChipCollection {
                 // For wrap layout, use a column of rows
                 // This is a simplified implementation - in a real app you might want
                 // a proper wrapping container
-                let column = self.chips
+                let column = self
+                    .chips
                     .chunks(6) // Wrap after 6 chips per row (adjust as needed)
                     .enumerate()
                     .fold(Column::new().spacing(spacing), |column, (_, chunk)| {
-                        let row = chunk
-                            .iter()
-                            .enumerate()
-                            .fold(Row::new().spacing(spacing), |row, (chunk_index, chip)| {
+                        let row = chunk.iter().enumerate().fold(
+                            Row::new().spacing(spacing),
+                            |row, (chunk_index, chip)| {
                                 // Calculate the actual index in the full collection
                                 let chip_index = chunk_index; // This needs proper calculation
                                 let chip_view = chip.view(
@@ -404,7 +402,8 @@ impl ChipCollection {
                                     color_scheme,
                                 );
                                 row.push(chip_view)
-                            });
+                            },
+                        );
                         column.push(row)
                     });
 
@@ -412,23 +411,23 @@ impl ChipCollection {
             }
             ChipCollectionLayout::Grid(columns) => {
                 // Grid layout with specified number of columns
-                let column = self.chips
-                    .chunks(columns as usize)
-                    .enumerate()
-                    .fold(Column::new().spacing(spacing), |column, (row_index, chunk)| {
-                        let row = chunk
-                            .iter()
-                            .enumerate()
-                            .fold(Row::new().spacing(spacing), |row, (col_index, chip)| {
+                let column = self.chips.chunks(columns as usize).enumerate().fold(
+                    Column::new().spacing(spacing),
+                    |column, (row_index, chunk)| {
+                        let row = chunk.iter().enumerate().fold(
+                            Row::new().spacing(spacing),
+                            |row, (col_index, chip)| {
                                 let chip_index = row_index * (columns as usize) + col_index;
                                 let chip_view = chip.view(
                                     Some(on_chip_press(chip_index, chip.state())),
                                     color_scheme,
                                 );
                                 row.push(chip_view)
-                            });
+                            },
+                        );
                         column.push(row)
-                    });
+                    },
+                );
 
                 column.into()
             }

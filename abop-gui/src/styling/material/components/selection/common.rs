@@ -678,7 +678,10 @@ mod tests {
             .with_metadata("badge_count", "5")
             .with_metadata("layout", "wrap");
 
-        assert_eq!(props.get_metadata("leading_icon"), Some(&"filter".to_string()));
+        assert_eq!(
+            props.get_metadata("leading_icon"),
+            Some(&"filter".to_string())
+        );
         assert_eq!(props.get_metadata("badge_count"), Some(&"5".to_string()));
         assert_eq!(props.get_metadata("layout"), Some(&"wrap".to_string()));
         assert_eq!(props.get_metadata("nonexistent"), None);
