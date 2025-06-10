@@ -56,50 +56,60 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
 
     // Create content without redundant toolbar (now integrated into main toolbar)
     // Create content with proper constraints
-    let content = column![
+    let mut content_items = vec![
         // Status display with fixed height
         container(status_display)
             .width(Length::Fill)
-            .height(Length::Shrink),
-        // Audio toolbar with fixed height
-        {
-            let mut toolbar = AudioToolbar::new();
-            toolbar.set_playing(matches!(
-                state.player_state,
-                abop_core::PlayerState::Playing
-            ));
+            .height(Length::Shrink)
+            .into(),
+    ];
 
+    // Only show audio toolbar when audiobooks are selected
+    if !state.selected_audiobooks.is_empty() {
+        let mut toolbar = AudioToolbar::new();
+        toolbar.set_playing(matches!(
+            state.player_state,
+            abop_core::PlayerState::Playing
+        ));
+
+        content_items.push(
             container(toolbar.view(&state.material_tokens))
                 .width(Length::Fill)
                 .height(Length::Fixed(state.material_tokens.sizing().toolbar_height)) // Use unified toolbar height
-        },
-        // Table content that will scroll - wrapped in a fixed height container
-        {
-            log::debug!("CREATING TABLE CONTAINER");
+                .into()
+        );
+    }
 
-            // Debug container with border and background
-            let debug_container = container(table_content)
-                .width(Length::Fill)
-                .height(Length::Fill);
+    // Add table content
+    content_items.push({
+        log::debug!("CREATING TABLE CONTAINER");
 
-            container(debug_container)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .style(|_theme: &iced::Theme| {
-                    MaterialSurface::new()
-                        .variant(SurfaceVariant::SurfaceContainerLow)
-                        .style(&state.material_tokens)
-                })
-                .padding(iced::Padding {
-                    top: 8.0,
-                    right: 8.0,
-                    bottom: 8.0,
-                    left: 8.0,
-                })
-        },
-        // Footer with fixed height (no need for additional container)
-        footer
-    ]
+        // Debug container with border and background
+        let debug_container = container(table_content)
+            .width(Length::Fill)
+            .height(Length::Fill);
+
+        container(debug_container)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme: &iced::Theme| {
+                MaterialSurface::new()
+                    .variant(SurfaceVariant::SurfaceContainerLow)
+                    .style(&state.material_tokens)
+            })
+            .padding(iced::Padding {
+                top: 8.0,
+                right: 8.0,
+                bottom: 8.0,
+                left: 8.0,
+            })
+            .into()
+    });
+
+    // Add footer
+    content_items.push(footer);
+
+    let content = column(content_items)
     .spacing(4) // MD3: minimal vertical spacing between toolbars
     .width(Length::Fill)
     .height(Length::Fill) // Fill available height
