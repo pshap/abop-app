@@ -12,7 +12,6 @@
 use super::super::common::*;
 use super::{
     checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
-    patterns::ComponentBuilder,
 };
 
 // ============================================================================
@@ -193,6 +192,7 @@ pub fn selected_filter_chip<S: Into<String>>(label: S) -> ChipBuilder {
 
 /// Create a chip with an icon
 #[must_use]
+#[allow(dead_code)] // Function is part of public API but may not be used internally yet
 pub fn icon_chip<S: Into<String>, I: Into<String>>(
     label: S,
     variant: ChipVariant,
@@ -207,8 +207,8 @@ pub fn icon_chip<S: Into<String>, I: Into<String>>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::patterns::ComponentBuilder;
+    use super::*;
 
     #[test]
     fn test_primary_factory_functions() {

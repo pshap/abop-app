@@ -17,17 +17,25 @@
 //! - **Performance**: O(1) lookups, accurate cubic Bezier sampling
 //! - **Type Safe**: Strong enum types prevent invalid configurations
 //! - **Clean API**: Focused, single-responsibility interfaces
+//!
+//! # Public API
+//!
+//! The module provides specific exports instead of glob imports for better clarity:
+//! - Animation types: [`Animation`], [`AnimationBuilder`], [`AnimationState`]
+//! - Easing: [`EasingType`], [`EasingCurve`], [`CubicBezier`]
+//! - Patterns: [`AnimationPattern`], [`PatternConfig`], [`PatternsByUseCase`], [`PatternSelector`]
+//! - Tokens: [`MotionTokens`], [`DurationCategory`], [`DurationLevel`]
 
 mod animation;
 mod easing;
 mod patterns;
 mod tokens;
 
-// Re-export public API
-pub use animation::*;
-pub use easing::*;
-pub use patterns::*;
-pub use tokens::*;
+// Re-export specific public API items instead of glob imports
+pub use animation::{Animation, AnimationBuilder, AnimationState};
+pub use easing::{CubicBezier, EasingCurve, EasingType};
+pub use patterns::{AnimationPattern, PatternConfig, PatternSelector, PatternsByUseCase};
+pub use tokens::{DurationCategory, DurationLevel, MotionTokens};
 
 // Convenience functions for quick access
 impl MotionTokens {

@@ -4,7 +4,7 @@
 //! custom widget preparation, and builder patterns.
 
 use super::super::builder::{ComponentBuilder, Switch};
-use super::super::common::{*, StatefulWidget};
+use super::super::common::{StatefulWidget, *};
 
 #[cfg(test)]
 mod switch_tests {

@@ -11,7 +11,7 @@ use iced::{Color, Element};
 use crate::components::main_toolbar::MainToolbar;
 use crate::messages::Message;
 use crate::state::UiState;
-use crate::styling::material::{DialogButton, MaterialDialog};
+use crate::styling::material::feedback::{DialogButton, MaterialDialog};
 
 pub use about::about_view;
 pub use audio_processing::audio_processing_view;

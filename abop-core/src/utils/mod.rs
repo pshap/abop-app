@@ -1,6 +1,15 @@
 //! Core utility modules for the application
 //!
 //! This module contains various utility functions and types used throughout the application.
+//!
+//! # Public API
+//!
+//! The module provides specific exports instead of glob imports for better clarity:
+//! - Casting utilities: [`CastingBuilder`], [`CastError`], [`CastResult`]
+//! - Enhanced utilities: [`audio`], [`database`], [`ui`], [`file`] modules
+//! - Size formatting: [`format_bytes`]
+//! - Time utilities: [`format_seconds`], [`format_duration`], [`TimeFormat`]
+//! - Timer: [`Timer`]
 
 pub mod casting;
 pub mod enhanced;
@@ -8,16 +17,17 @@ pub mod size;
 pub mod time;
 pub mod timer;
 
-// Re-export commonly used utilities
-pub use casting::*;
-pub use enhanced::*;
-pub use size::*;
-pub use time::*;
-pub use timer::*;
+// Re-export commonly used utilities (specific items)
+pub use casting::{CastError, CastResult, CastingBuilder};
+pub use enhanced::{audio, database, file, ui};
+pub use size::format_bytes;
+pub use time::{TimeFormat, format_duration, format_seconds};
+pub use timer::Timer;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::time::TimeFormat;
 
     #[test]
     fn test_format_seconds() {
