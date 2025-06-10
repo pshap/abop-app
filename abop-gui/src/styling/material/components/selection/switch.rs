@@ -7,7 +7,7 @@
 //! - Modern builder pattern with fluent API
 //! - Preparation for custom switch widget implementation (Phase 4)
 
-use super::builder::{ComponentBuilder, Switch, SwitchBuilder};
+use super::builder::{Switch, SwitchBuilder};
 use super::common::*;
 use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
@@ -50,67 +50,6 @@ impl Switch {
         SwitchBuilder::from_bool(enabled)
     }
 
-    /// Get the current switch state
-    #[must_use]
-    pub const fn state(&self) -> SwitchState {
-        self.state
-    }
-
-    /// Get the component properties
-    #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the switch is in error state
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration
-    #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    /// Update the switch state with validation
-    pub fn update_state(&mut self, new_state: SwitchState) -> Result<(), SelectionError> {
-        validate_switch_state(new_state, &self.props)?;
-        self.state = new_state;
-        Ok(())
-    }
-
-    /// Toggle the switch state
-    pub fn toggle(&mut self) -> Result<SwitchState, SelectionError> {
-        let new_state = self.state.toggle();
-        self.update_state(new_state)?;
-        Ok(new_state)
-    }
-
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
-    }
-
-    /// Convert to boolean value
-    #[must_use]
-    pub const fn to_bool(&self) -> bool {
-        self.state.to_bool()
-    }
-
-    /// Check if switch is on
-    #[must_use]
-    pub const fn is_on(&self) -> bool {
-        self.state.is_on()
-    }
-
-    /// Check if switch is off
-    #[must_use]
-    pub const fn is_off(&self) -> bool {
-        !self.is_on()
-    }
-
     /// Create the Iced widget element for this switch
     ///
     /// # Arguments
@@ -132,28 +71,32 @@ impl Switch {
         // For now, use styled checkbox as placeholder
 
         // Convert switch state to boolean for checkbox compatibility
-        let is_enabled = self.state.is_on();
+        let is_enabled = self.state().is_on();
 
         // Convert modern size to legacy size
-        let legacy_size = match self.props.size {
+        let legacy_size = match self.props().size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        }; // Create styling function (this will be replaced in Phase 4)
+        };
+
+        // Create styling function (this will be replaced in Phase 4)
         let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Switch)
             .size(legacy_size)
-            .error(self.error_state)
-            .checkbox_style(); // Use checkbox style since we're using checkbox widget temporarily        // Create the switch label
+            .error(self.has_error())
+            .checkbox_style(); // Use checkbox style since we're using checkbox widget temporarily
+
+        // Create the switch label
         let default_label = String::new();
-        let label = self.props.label.as_ref().unwrap_or(&default_label);
+        let label = self.props().label.as_ref().unwrap_or(&default_label);
 
         // Create checkbox widget as temporary switch implementation
         let mut switch_widget = IcedCheckbox::new(label, is_enabled).style(style_fn);
 
         // Only add on_toggle handler if the switch is not disabled
-        if !self.props.disabled {
+        if !self.props().disabled {
             // Convert boolean toggle to state-based toggle
-            let current_state = self.state;
+            let current_state = self.state();
             switch_widget =
                 switch_widget.on_toggle(move |_enabled| on_toggle(current_state.toggle()));
         }
@@ -338,62 +281,6 @@ impl CustomSwitchWidget {
 // 3. Animation state management
 // 4. Event handling for mouse/touch interaction
 // 5. Accessibility support
-
-// ============================================================================
-// Trait Implementations
-// ============================================================================
-
-impl SelectionWidget<SwitchState> for Switch {
-    type Message = SwitchState;
-    type Builder = SwitchBuilder;
-
-    fn new(state: SwitchState) -> Self::Builder {
-        SwitchBuilder::new(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        validate_switch_state(self.state, &self.props)
-    }
-
-    fn state(&self) -> SwitchState {
-        self.state
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl StatefulWidget<SwitchState> for Switch {
-    fn update_state(&mut self, new_state: SwitchState) -> Result<(), SelectionError> {
-        self.update_state(new_state)
-    }
-
-    fn transition_to(&mut self, new_state: SwitchState) -> Result<SwitchState, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state)
-    }
-}
-
-impl AnimatedWidget for Switch {
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
-    }
-}
-
-// ============================================================================
-// Default Implementation
-// ============================================================================
-
-impl Default for Switch {
-    fn default() -> Self {
-        SwitchBuilder::off().build_unchecked()
-    }
-}
 
 // ============================================================================
 // Convenience Functions
