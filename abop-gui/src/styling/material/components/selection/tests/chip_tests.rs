@@ -1,66 +1,53 @@
 //! Comprehensive tests for chip components
 //!
-//! Tests cover all chip variants (Assist, Filter, Input, Suggestion),
-//! chip collections, selection modes, state management, and builder patterns.
+//! This module has been refactored to use the new modular testing framework.
+//! Individual test modules are now organized in the same directory.
+//!
+//! ## New Test Organization
+//! - `basic_functionality` - Core chip behavior
+//! - `builder_patterns` - Builder API tests  
+//! - `collection_behavior` - Collection management
+//! - `validation_rules` - Validation testing
+//! - `integration_scenarios` - Real-world usage
+//! - `performance_benchmarks` - Performance tests
+//!
+//! ## Legacy Tests (Preserved for Compatibility)
+//! The original tests are maintained below to ensure no regression during migration.
+
+// Import legacy test helpers
+use super::chip_test_helpers::*;
+
+// Import new comprehensive test framework modules  
+use super::fixtures::*;
+
+use crate::styling::material::components::selection::{
+    ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
+    ChipVariant, ComponentSize, SelectionError,
+};
 
 #[cfg(test)]
-mod chip_tests {
-    // Import from the main selection module - available to all tests in this module
-    use crate::styling::material::components::selection::{
-        Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
-        ChipVariant, ComponentBuilder, ComponentSize, SelectionError, SelectionWidget,
-        StatefulWidget,
-    };
-
-    // Helper function to create a test chip
-    #[allow(dead_code)]
-    fn create_test_chip(label: &str, variant: ChipVariant) -> Chip {
-        ChipBuilder::new(label, variant)
-            .build()
-            .expect("Failed to build test chip")
-    }
-
-    // Helper function to create a test chip collection
-    #[allow(dead_code)]
-    fn create_test_chip_collection(selection_mode: ChipSelectionMode) -> ChipCollection {
-        ChipCollectionBuilder::new(selection_mode)
-            .build()
-            .expect("Failed to build test chip collection")
-    }
-
-    // Helper function to create a test chip builder
-    #[allow(dead_code)]
-    fn create_test_chip_builder(label: &str, variant: ChipVariant) -> ChipBuilder {
-        ChipBuilder::new(label, variant)
-    }
+mod chip_basic_tests {
+    use super::*;
 
     #[test]
     fn test_chip_creation() {
-        let chip = ChipBuilder::new("test-chip", ChipVariant::Assist)
-            .build()
-            .unwrap();
-        assert_eq!(chip.label(), "test-chip");
-        assert_eq!(chip.variant(), ChipVariant::Assist);
-        assert_eq!(chip.state(), ChipState::Unselected);
-        assert!(!chip.props().disabled);
+        let chip = test_chip("test-chip", ChipVariant::Assist);
+        assert_chip_basics(&chip, "test-chip", ChipVariant::Assist);
     }
 
     #[test]
     fn test_chip_with_label() {
-        let chip = ChipBuilder::new("Filter Chip", ChipVariant::Filter)
-            .build()
-            .unwrap();
+        let chip = test_chip("Filter Chip", ChipVariant::Filter);
         assert_eq!(chip.props().label, Some("Filter Chip".to_string()));
     }
 
     #[test]
     fn test_chip_state_changes() {
-        let chip = ChipBuilder::filter("test").build().unwrap();
-        assert_eq!(chip.state(), ChipState::Unselected);
+        let chip = test_chip("test", ChipVariant::Filter);
+        assert_chip_unselected(&chip);
 
-        let selected_chip = ChipBuilder::filter("test").selected(true).build().unwrap();
-        assert_eq!(selected_chip.state(), ChipState::Selected);
-        assert!(selected_chip.is_selected());
+        let selected_chip = selected_test_chip("test", ChipVariant::Filter);
+        assert_chip_selected(&selected_chip);
 
         let pressed_chip = ChipBuilder::filter("test")
             .with_state(ChipState::Pressed)
@@ -69,7 +56,7 @@ mod chip_tests {
         assert_eq!(pressed_chip.state(), ChipState::Pressed);
 
         let unselected_chip = ChipBuilder::filter("test").selected(false).build().unwrap();
-        assert!(!unselected_chip.is_selected());
+        assert_chip_unselected(&unselected_chip);
     }
 
     #[test]
@@ -88,15 +75,19 @@ mod chip_tests {
 
     #[test]
     fn test_chip_variants() {
-        let assist = ChipBuilder::assist("assist").build().unwrap();
-        let filter = ChipBuilder::filter("filter").build().unwrap();
-        let input = ChipBuilder::input("input").build().unwrap();
-        let suggestion = ChipBuilder::suggestion("suggestion").build().unwrap();
+        for variant in all_chip_variants() {
+            let chip = test_chip("test", variant);
+            assert_eq!(chip.variant(), variant);
+            assert_chip_unselected(&chip);
+        }
+    }
 
-        assert_eq!(assist.variant(), ChipVariant::Assist);
-        assert_eq!(filter.variant(), ChipVariant::Filter);
-        assert_eq!(input.variant(), ChipVariant::Input);
-        assert_eq!(suggestion.variant(), ChipVariant::Suggestion);
+    #[test]
+    fn test_chip_sizes() {
+        for size in all_component_sizes() {
+            let chip = sized_test_chip("test", ChipVariant::Assist, size);
+            assert_eq!(chip.props().size, size);
+        }
     }
 
     #[test]
@@ -105,15 +96,12 @@ mod chip_tests {
         assert!(valid_chip.is_ok());
 
         // Test max length
-        let long_label = "a".repeat(101);
+        let long_label = "a".repeat(MAX_LABEL_LENGTH + 1);
         let result = ChipBuilder::assist(&long_label).build();
-        assert!(matches!(
-            result,
-            Err(SelectionError::LabelTooLong { len: 101, max: 100 })
-        ));
+        assert_label_validation_error(result, MAX_LABEL_LENGTH + 1);
 
         // Test valid max length
-        let max_label = "a".repeat(100);
+        let max_label = "a".repeat(MAX_LABEL_LENGTH);
         let result = ChipBuilder::assist(&max_label).build();
         assert!(result.is_ok());
     }
@@ -158,64 +146,47 @@ mod chip_tests {
 
     #[test]
     fn test_chip_sizes() {
-        let small = ChipBuilder::assist("s")
-            .size(ComponentSize::Small)
-            .build()
-            .unwrap();
-
-        let medium = ChipBuilder::filter("m")
-            .size(ComponentSize::Medium)
-            .build()
-            .unwrap();
-
-        let large = ChipBuilder::input("l")
-            .size(ComponentSize::Large)
-            .build()
-            .unwrap();
-
-        assert_eq!(small.props().size, ComponentSize::Small);
-        assert_eq!(medium.props().size, ComponentSize::Medium);
-        assert_eq!(large.props().size, ComponentSize::Large);
+        for size in all_component_sizes() {
+            let chip = sized_test_chip("test", ChipVariant::Assist, size);
+            assert_eq!(chip.props().size, size);
+        }
     }
 }
 
 #[cfg(test)]
 mod chip_collection_tests {
+    use super::*;
     use crate::styling::material::components::selection::{
-        ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ComponentBuilder,
-        SelectionError,
+        ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode,
     };
 
     #[test]
     fn test_chip_collection_creation() {
-        let collection = ChipCollectionBuilder::new(ChipSelectionMode::Single)
-            .build()
-            .unwrap();
-        assert_eq!(collection.selection_mode(), ChipSelectionMode::Single);
-        assert_eq!(collection.len(), 0);
-        assert!(collection.selected_chips().is_empty());
+        for mode in all_selection_modes() {
+            let collection = test_collection(mode);
+            assert_eq!(collection.selection_mode(), mode);
+            assert_eq!(collection.len(), 0);
+            assert!(collection.selected_chips().is_empty());
+        }
     }
 
     #[test]
     fn test_chip_collection_add_chips() {
-        let mut collection = ChipCollectionBuilder::new(ChipSelectionMode::Multiple)
-            .build()
-            .unwrap();
+        let mut collection = test_collection(ChipSelectionMode::Multiple);
 
-        collection.add_chip(ChipBuilder::filter("Chip 1").build().unwrap());
-        collection.add_chip(ChipBuilder::filter("Chip 2").build().unwrap());
+        collection.add_chip(test_chip("Chip 1", ChipVariant::Filter));
+        collection.add_chip(test_chip("Chip 2", ChipVariant::Filter));
 
         assert_eq!(collection.len(), 2);
         assert!(collection.chips().iter().any(|c| c.label() == "Chip 1"));
         assert!(collection.chips().iter().any(|c| c.label() == "Chip 2"));
-        assert!(!collection.chips().iter().any(|c| c.label() == "Chip 3"));
 
         // Test selection in multiple selection mode
         assert!(collection.select_chip(0).is_ok());
         assert!(collection.select_chip(1).is_ok());
-        assert_eq!(collection.selected_chips().len(), 2);
-        assert!(collection.chips()[0].is_selected());
-        assert!(collection.chips()[1].is_selected());
+        assert_collection_selection(&collection, 2);
+        assert_chip_selected(&collection.chips()[0]);
+        assert_chip_selected(&collection.chips()[1]);
     }
 
     #[test]
