@@ -24,34 +24,28 @@
 //! # Quick Start
 //!
 //! ```rust
-//! use crate::styling::material::components::selection::*;
+//! use abop_gui::styling::material::components::selection::*;
 //!
 //! // Create a checkbox
-//! let checkbox = Checkbox::new("agree")
-//!     .with_label("I agree to the terms")
-//!     .checked()
-//!     .size(ComponentSize::Large);
-//!
-//! // Create a radio group
-//! let theme_group = RadioGroup::builder()
-//!     .option("light", "Light Theme")
-//!     .option("dark", "Dark Theme")
-//!     .option("auto", "Auto")
-//!     .selected("auto")
-//!     .build();
+//! let checkbox = CheckboxBuilder::checked()
+//!     .label("I agree to the terms")
+//!     .size(ComponentSize::Large)
+//!     .build()
+//!     .expect("Valid checkbox");
 //!
 //! // Create a switch
-//! let notifications = Switch::new()
-//!     .with_label("Enable notifications")
-//!     .on()
-//!     .size(ComponentSize::Medium);
+//! let notifications = SwitchBuilder::on()
+//!     .label("Enable notifications")
+//!     .size(ComponentSize::Medium)
+//!     .build()
+//!     .expect("Valid switch");
 //!
 //! // Create a chip collection
-//! let filters = ChipCollection::builder(SelectionMode::Multiple)
-//!     .chip(Chip::new("price", ChipVariant::Filter).with_label("Price"))
-//!     .chip(Chip::new("rating", ChipVariant::Filter).with_label("Rating"))
-//!     .selected(&["price"])
-//!     .build();
+//! let filters = ChipCollectionBuilder::new(ChipSelectionMode::Multiple)
+//!     .chip(ChipBuilder::filter("Price").build().unwrap())
+//!     .chip(ChipBuilder::filter("Rating").build().unwrap())
+//!     .build()
+//!     .expect("Valid chip collection");
 //! ```
 //!
 //! # Architecture
@@ -101,11 +95,19 @@ pub use common::{
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use switch::SwitchDimensions;
 
-// Convenience type aliases for common usage patterns
+/// A collection of filter chips supporting multiple selection
 pub type FilterChipCollection = ChipCollection;
+
+/// A collection of input chips (tags)
 pub type InputChipCollection = ChipCollection;
+
+/// Radio group for theme selection with static string references
 pub type ThemeRadioGroup = RadioGroupState<&'static str>;
+
+/// Switch component for settings toggles
 pub type SettingsSwitch = Switch;
+
+/// Checkbox component for agreement/consent dialogs
 pub type AgreementCheckbox = Checkbox;
 
 /// Convenient builder functions for quick component creation
@@ -329,6 +331,10 @@ pub mod constants {
 
 /// Version information for the selection module
 pub const VERSION: &str = "3.0.0";
+/// Current development phase of the selection components
+/// 
+/// This constant tracks the current architectural phase of the selection components.
+/// Phase 3+ indicates a modular architecture with future preparation for additional features.
 pub const PHASE: &str = "Phase 3+ - Modular Architecture with Future Preparation";
 
 #[cfg(test)]

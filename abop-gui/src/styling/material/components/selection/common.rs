@@ -313,15 +313,26 @@ pub struct ValidationRule {
 pub enum SelectionError {
     /// Invalid component state combination
     #[error("Invalid component state: {details}")]
-    InvalidState { details: String },
+    InvalidState { 
+        /// Detailed description of the invalid state
+        details: String 
+    },
 
     /// Label validation error
     #[error("Label validation failed: {reason}")]
-    InvalidLabel { reason: String },
+    InvalidLabel { 
+        /// Reason why the label is invalid
+        reason: String 
+    },
 
     /// Label too long
     #[error("Label too long: {len} characters (max {max})")]
-    LabelTooLong { len: usize, max: usize },
+    LabelTooLong { 
+        /// Actual length of the label
+        len: usize, 
+        /// Maximum allowed length
+        max: usize 
+    },
 
     /// Empty label when not allowed
     #[error("Label cannot be empty")]
@@ -329,11 +340,19 @@ pub enum SelectionError {
 
     /// Conflicting states
     #[error("Conflicting states: {details}")]
-    ConflictingStates { details: String },
+    ConflictingStates { 
+        /// Description of the state conflict
+        details: String 
+    },
 
     /// Custom validation rule failed
     #[error("Validation rule '{rule}' failed: {message}")]
-    CustomRule { rule: String, message: String },
+    CustomRule { 
+        /// Name of the validation rule that failed
+        rule: String, 
+        /// Error message describing the failure
+        message: String 
+    },
 
     /// General validation error
     #[error("Validation error: {0}")]

@@ -3,7 +3,7 @@
 use crate::styling::material::components::selection::{
     builder::{Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder},
     checkbox::{checked_checkbox, unchecked_checkbox, indeterminate_checkbox, checkbox_from_bool},
-    common::{CheckboxState, ComponentProps, ComponentSize, SelectionError, AnimationConfig, ValidationConfig, SelectionWidget},
+    common::{CheckboxState, ComponentSize, SelectionError, SelectionWidget},
 };
 
 #[test]
