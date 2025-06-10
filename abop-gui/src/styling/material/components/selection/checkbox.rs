@@ -212,8 +212,8 @@ impl CustomCheckboxWidget {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::builder::ComponentBuilder;
+    use super::*;
 
     #[test]
     fn test_checkbox_creation() {

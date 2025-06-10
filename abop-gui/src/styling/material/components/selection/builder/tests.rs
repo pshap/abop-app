@@ -4,9 +4,9 @@
 //! covering validation systems, builder patterns, individual builders,
 //! components, and factory functions.
 
-use super::*;
-use super::validation::*;
 use super::super::common::*;
+use super::validation::*;
+use super::*;
 
 // ============================================================================
 // Core Builder Tests

@@ -85,11 +85,7 @@ pub trait BatchBuilder<T>: ComponentBuilder<T> {
 /// Extended conditional builder with validation support
 pub trait AdvancedConditionalBuilder<T>: ConditionalBuilder<T> {
     /// Apply a configuration when a validation condition passes
-    fn when_validated<F, G>(
-        self,
-        validator: F,
-        config: G,
-    ) -> Result<Self, SelectionError>
+    fn when_validated<F, G>(self, validator: F, config: G) -> Result<Self, SelectionError>
     where
         Self: Sized,
         F: FnOnce(&Self) -> Result<(), SelectionError>,
@@ -100,20 +96,12 @@ pub trait AdvancedConditionalBuilder<T>: ConditionalBuilder<T> {
     }
 
     /// Apply a configuration with a fallible operation
-    fn try_when<F>(
-        self,
-        condition: bool,
-        config: F,
-    ) -> Result<Self, SelectionError>
+    fn try_when<F>(self, condition: bool, config: F) -> Result<Self, SelectionError>
     where
         Self: Sized,
         F: FnOnce(Self) -> Result<Self, SelectionError>,
     {
-        if condition {
-            config(self)
-        } else {
-            Ok(self)
-        }
+        if condition { config(self) } else { Ok(self) }
     }
 }
 
