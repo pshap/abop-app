@@ -5,6 +5,9 @@
 
 use super::common::*;
 
+// Import the constant from chip module
+use super::chip::DEFAULT_ANIMATION_DURATION;
+
 // ============================================================================
 // Builder Trait System
 // ============================================================================
@@ -515,7 +518,7 @@ impl ChipBuilder {
             props: ComponentProps::new().with_label(label),
             validation_config: validation_config_for_chips(),
             animation_config: AnimationConfig {
-                duration: std::time::Duration::from_millis(150),
+                duration: DEFAULT_ANIMATION_DURATION,
                 enabled: true,
                 respect_reduced_motion: true,
                 easing: EasingCurve::Standard,

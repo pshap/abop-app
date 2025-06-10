@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
 
+// Import the constant from chip module
+use super::chip::MAX_CHIP_LABEL_LENGTH;
+
 // ============================================================================
 // Component States (Modern State-Based Design)
 // ============================================================================
@@ -313,25 +316,25 @@ pub struct ValidationRule {
 pub enum SelectionError {
     /// Invalid component state combination
     #[error("Invalid component state: {details}")]
-    InvalidState { 
+    InvalidState {
         /// Detailed description of the invalid state
-        details: String 
+        details: String,
     },
 
     /// Label validation error
     #[error("Label validation failed: {reason}")]
-    InvalidLabel { 
+    InvalidLabel {
         /// Reason why the label is invalid
-        reason: String 
+        reason: String,
     },
 
     /// Label too long
     #[error("Label too long: {len} characters (max {max})")]
-    LabelTooLong { 
+    LabelTooLong {
         /// Actual length of the label
-        len: usize, 
+        len: usize,
         /// Maximum allowed length
-        max: usize 
+        max: usize,
     },
 
     /// Empty label when not allowed
@@ -340,18 +343,18 @@ pub enum SelectionError {
 
     /// Conflicting states
     #[error("Conflicting states: {details}")]
-    ConflictingStates { 
+    ConflictingStates {
         /// Description of the state conflict
-        details: String 
+        details: String,
     },
 
     /// Custom validation rule failed
     #[error("Validation rule '{rule}' failed: {message}")]
-    CustomRule { 
+    CustomRule {
         /// Name of the validation rule that failed
-        rule: String, 
+        rule: String,
         /// Error message describing the failure
-        message: String 
+        message: String,
     },
 
     /// General validation error
@@ -470,11 +473,11 @@ pub fn validate_chip_state(
 
     // Validate label length for chips (stricter than other components)
     if let Some(ref label) = props.label
-        && label.len() > 100
+        && label.len() > MAX_CHIP_LABEL_LENGTH
     {
         return Err(SelectionError::LabelTooLong {
             len: label.len(),
-            max: 100,
+            max: MAX_CHIP_LABEL_LENGTH,
         });
     }
 

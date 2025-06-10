@@ -198,6 +198,3 @@ impl MaterialDataTable {
         }
     }
 }
-
-// Backward compatibility re-exports
-pub use MaterialDataTable as DataTable;

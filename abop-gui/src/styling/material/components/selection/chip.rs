@@ -19,6 +19,20 @@ use iced::{
     theme::Theme,
     widget::{Text, button},
 };
+use std::time::Duration;
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/// Maximum allowed length for chip labels
+pub const MAX_CHIP_LABEL_LENGTH: usize = 100;
+
+/// Default animation duration for chip state transitions
+pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(150);
+
+/// Default chip label for placeholder implementations
+const DEFAULT_CHIP_LABEL: &str = "Default";
 
 // ============================================================================
 // Component Implementation
@@ -178,7 +192,8 @@ impl Chip {
     ) -> Element<'a, Message, Theme, Renderer> {
         let next_state = self.state.toggle();
         let dummy_message = on_toggle(next_state.clone());
-        self.view(Some(dummy_message), color_scheme).map(move |_| on_toggle(next_state))
+        self.view(Some(dummy_message), color_scheme)
+            .map(move |_| on_toggle(next_state))
     }
 
     /// Create a view for filter chips with selection state management
@@ -193,7 +208,8 @@ impl Chip {
         let is_selected = self.is_selected();
         let new_selection = !is_selected;
         let dummy_message = on_selection_change(new_selection);
-        self.view(Some(dummy_message), color_scheme).map(move |_| on_selection_change(new_selection))
+        self.view(Some(dummy_message), color_scheme)
+            .map(move |_| on_selection_change(new_selection))
     }
 }
 
@@ -226,6 +242,28 @@ pub enum ChipSelectionMode {
 }
 
 impl ChipCollection {
+    /// Validate index bounds for collection operations
+    fn validate_index(&self, index: usize) -> Result<(), SelectionError> {
+        if index >= self.chips.len() {
+            Err(SelectionError::InvalidState {
+                details: "Chip index out of bounds".to_string(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Check if selection operations are allowed for this collection
+    fn validate_selection_allowed(&self) -> Result<(), SelectionError> {
+        if self.selection_mode == ChipSelectionMode::None {
+            Err(SelectionError::InvalidState {
+                details: "Selection not allowed in this collection".to_string(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
     /// Create a new chip collection
     #[must_use]
     pub fn new(selection_mode: ChipSelectionMode) -> Self {
@@ -274,11 +312,7 @@ impl ChipCollection {
 
     /// Select a chip by index
     pub fn select_chip(&mut self, index: usize) -> Result<(), SelectionError> {
-        if index >= self.chips.len() {
-            return Err(SelectionError::InvalidState {
-                details: "Chip index out of bounds".to_string(),
-            });
-        }
+        self.validate_index(index)?;
 
         match self.selection_mode {
             ChipSelectionMode::None => {
@@ -306,28 +340,14 @@ impl ChipCollection {
 
     /// Deselect a chip by index
     pub fn deselect_chip(&mut self, index: usize) -> Result<(), SelectionError> {
-        if index >= self.chips.len() {
-            return Err(SelectionError::InvalidState {
-                details: "Chip index out of bounds".to_string(),
-            });
-        }
-
-        if self.selection_mode == ChipSelectionMode::None {
-            return Err(SelectionError::InvalidState {
-                details: "Selection not allowed in this collection".to_string(),
-            });
-        }
-
+        self.validate_index(index)?;
+        self.validate_selection_allowed()?;
         self.chips[index].unselect()
     }
 
     /// Toggle chip selection by index
     pub fn toggle_chip(&mut self, index: usize) -> Result<ChipState, SelectionError> {
-        if index >= self.chips.len() {
-            return Err(SelectionError::InvalidState {
-                details: "Chip index out of bounds".to_string(),
-            });
-        }
+        self.validate_index(index)?;
 
         match self.selection_mode {
             ChipSelectionMode::None => Err(SelectionError::InvalidState {
@@ -446,7 +466,7 @@ impl ChipCollectionBuilder {
             selection_mode,
             props: ComponentProps::new(),
             validation_config: ValidationConfig {
-                max_label_length: 100,
+                max_label_length: MAX_CHIP_LABEL_LENGTH,
                 allow_empty_label: false,
                 custom_rules: Vec::new(),
             },
@@ -548,7 +568,7 @@ impl SelectionWidget<ChipState> for Chip {
     type Builder = ChipBuilder;
     fn new(state: ChipState) -> Self::Builder {
         // Note: Chips require label and variant, so this is a placeholder
-        ChipBuilder::filter("Default").with_state(state)
+        ChipBuilder::filter(DEFAULT_CHIP_LABEL).with_state(state)
     }
 
     fn validate(&self) -> Result<(), SelectionError> {
@@ -588,42 +608,6 @@ impl AnimatedWidget for Chip {
 // ============================================================================
 // Convenience Functions
 // ============================================================================
-
-/// Create a new chip builder
-#[must_use]
-pub fn chip<S: Into<String>>(label: S, variant: ChipVariant) -> ChipBuilder {
-    ChipBuilder::new(label, variant)
-}
-
-/// Create a filter chip builder
-#[must_use]
-pub fn filter_chip<S: Into<String>>(label: S) -> ChipBuilder {
-    ChipBuilder::filter(label)
-}
-
-/// Create an assist chip builder
-#[must_use]
-pub fn assist_chip<S: Into<String>>(label: S) -> ChipBuilder {
-    ChipBuilder::assist(label)
-}
-
-/// Create an input chip builder
-#[must_use]
-pub fn input_chip<S: Into<String>>(label: S) -> ChipBuilder {
-    ChipBuilder::input(label)
-}
-
-/// Create a suggestion chip builder
-#[must_use]
-pub fn suggestion_chip<S: Into<String>>(label: S) -> ChipBuilder {
-    ChipBuilder::suggestion(label)
-}
-
-/// Create a new chip collection builder
-#[must_use]
-pub const fn chip_collection(selection_mode: ChipSelectionMode) -> ChipCollectionBuilder {
-    ChipCollectionBuilder::new(selection_mode)
-}
 
 /// Create a filter chip collection (multiple selection)
 #[must_use]
@@ -704,7 +688,7 @@ mod tests {
         assert!(invalid_chip.is_err());
 
         // Invalid chip - label too long
-        let long_label = "x".repeat(101);
+        let long_label = "x".repeat(MAX_CHIP_LABEL_LENGTH + 1);
         let invalid_chip = Chip::filter(long_label).build();
         assert!(invalid_chip.is_err());
     }
@@ -783,16 +767,6 @@ mod tests {
 
     #[test]
     fn test_convenience_functions() {
-        let cb1 = filter_chip("Filter").build().unwrap();
-        let cb2 = assist_chip("Assist").build().unwrap();
-        let cb3 = input_chip("Input").build().unwrap();
-        let cb4 = suggestion_chip("Suggestion").build().unwrap();
-
-        assert_eq!(cb1.variant(), ChipVariant::Filter);
-        assert_eq!(cb2.variant(), ChipVariant::Assist);
-        assert_eq!(cb3.variant(), ChipVariant::Input);
-        assert_eq!(cb4.variant(), ChipVariant::Suggestion);
-
         let collection = filter_chip_collection().filter("Test").build().unwrap();
         assert_eq!(collection.selection_mode(), ChipSelectionMode::Multiple);
     }

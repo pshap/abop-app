@@ -7,25 +7,61 @@ use crate::config::validation::{ConfigValidation, ValidationResult, validate_ran
 use serde::{Deserialize, Serialize};
 
 // Default value functions for serde
-fn default_initial_width() -> u32 { 1200 }
-fn default_initial_height() -> u32 { 800 }
-fn default_remember_position() -> bool { true }
-fn default_remember_size() -> bool { true }
-fn default_show_decorations() -> bool { true }
-fn default_resizable() -> bool { true }
-fn default_opacity() -> f32 { 1.0 }
+fn default_initial_width() -> u32 {
+    1200
+}
+fn default_initial_height() -> u32 {
+    800
+}
+fn default_remember_position() -> bool {
+    true
+}
+fn default_remember_size() -> bool {
+    true
+}
+fn default_show_decorations() -> bool {
+    true
+}
+fn default_resizable() -> bool {
+    true
+}
+fn default_opacity() -> f32 {
+    1.0
+}
 
-fn default_scale_factor() -> f32 { 1.0 }
-fn default_animation_speed() -> f32 { 1.0 }
-fn default_show_tooltips() -> bool { true }
-fn default_tooltip_delay() -> u32 { 500 }
-fn default_use_native_dialogs() -> bool { true }
-fn default_confirm_destructive_actions() -> bool { true }
-fn default_items_per_page() -> usize { 50 }
-fn default_show_progress_bars() -> bool { true }
-fn default_show_file_warnings() -> bool { true }
-fn default_continue_on_errors() -> bool { true }
-fn default_max_error_display() -> usize { 10 }
+fn default_scale_factor() -> f32 {
+    1.0
+}
+fn default_animation_speed() -> f32 {
+    1.0
+}
+fn default_show_tooltips() -> bool {
+    true
+}
+fn default_tooltip_delay() -> u32 {
+    500
+}
+fn default_use_native_dialogs() -> bool {
+    true
+}
+fn default_confirm_destructive_actions() -> bool {
+    true
+}
+fn default_items_per_page() -> usize {
+    50
+}
+fn default_show_progress_bars() -> bool {
+    true
+}
+fn default_show_file_warnings() -> bool {
+    true
+}
+fn default_continue_on_errors() -> bool {
+    true
+}
+fn default_max_error_display() -> usize {
+    10
+}
 
 /// Window appearance and behavior settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,11 +187,19 @@ impl ConfigValidation for WindowConfig {
 
         // Validate minimum dimensions
         if let Err(e) = validate_range(self.min_width, 400, 4000, "min_width") {
-            result.add_error("min_width", &e.to_string(), Some("Use a value between 400 and 4000"));
+            result.add_error(
+                "min_width",
+                &e.to_string(),
+                Some("Use a value between 400 and 4000"),
+            );
         }
 
         if let Err(e) = validate_range(self.min_height, 300, 3000, "min_height") {
-            result.add_error("min_height", &e.to_string(), Some("Use a value between 300 and 3000"));
+            result.add_error(
+                "min_height",
+                &e.to_string(),
+                Some("Use a value between 300 and 3000"),
+            );
         }
 
         // Validate initial dimensions
@@ -177,7 +221,11 @@ impl ConfigValidation for WindowConfig {
 
         // Validate opacity
         if let Err(e) = validate_range(self.opacity, 0.1, 1.0, "opacity") {
-            result.add_error("opacity", &e.to_string(), Some("Use a value between 0.1 and 1.0"));
+            result.add_error(
+                "opacity",
+                &e.to_string(),
+                Some("Use a value between 0.1 and 1.0"),
+            );
         }
 
         result
@@ -189,11 +237,19 @@ impl ConfigValidation for WindowConfig {
         // Auto-fix minimum dimensions
         if self.min_width < 400 {
             self.min_width = 400;
-            result.add_warning("min_width", "Automatically increased min_width to 400", None);
+            result.add_warning(
+                "min_width",
+                "Automatically increased min_width to 400",
+                None,
+            );
         }
         if self.min_height < 300 {
             self.min_height = 300;
-            result.add_warning("min_height", "Automatically increased min_height to 300", None);
+            result.add_warning(
+                "min_height",
+                "Automatically increased min_height to 300",
+                None,
+            );
         }
 
         // Auto-fix initial dimensions
@@ -234,12 +290,20 @@ impl ConfigValidation for UiConfig {
 
         // Validate scale factor
         if let Err(e) = validate_range(self.scale_factor, 0.5, 4.0, "scale_factor") {
-            result.add_error("scale_factor", &e.to_string(), Some("Use a value between 0.5 and 4.0"));
+            result.add_error(
+                "scale_factor",
+                &e.to_string(),
+                Some("Use a value between 0.5 and 4.0"),
+            );
         }
 
         // Validate animation speed
         if let Err(e) = validate_range(self.animation_speed, 0.0, 3.0, "animation_speed") {
-            result.add_error("animation_speed", &e.to_string(), Some("Use a value between 0.0 and 3.0"));
+            result.add_error(
+                "animation_speed",
+                &e.to_string(),
+                Some("Use a value between 0.0 and 3.0"),
+            );
         }
 
         // Validate tooltip delay
@@ -269,34 +333,62 @@ impl ConfigValidation for UiConfig {
         // Auto-fix scale factor
         if self.scale_factor < 0.5 {
             self.scale_factor = 0.5;
-            result.add_warning("scale_factor", "Automatically increased scale_factor to 0.5", None);
+            result.add_warning(
+                "scale_factor",
+                "Automatically increased scale_factor to 0.5",
+                None,
+            );
         } else if self.scale_factor > 4.0 {
             self.scale_factor = 4.0;
-            result.add_warning("scale_factor", "Automatically decreased scale_factor to 4.0", None);
+            result.add_warning(
+                "scale_factor",
+                "Automatically decreased scale_factor to 4.0",
+                None,
+            );
         }
 
         // Auto-fix animation speed
         if self.animation_speed < 0.0 {
             self.animation_speed = 0.0;
-            result.add_warning("animation_speed", "Automatically increased animation_speed to 0.0", None);
+            result.add_warning(
+                "animation_speed",
+                "Automatically increased animation_speed to 0.0",
+                None,
+            );
         } else if self.animation_speed > 3.0 {
             self.animation_speed = 3.0;
-            result.add_warning("animation_speed", "Automatically decreased animation_speed to 3.0", None);
+            result.add_warning(
+                "animation_speed",
+                "Automatically decreased animation_speed to 3.0",
+                None,
+            );
         }
 
         // Auto-fix tooltip delay (if extremely high)
         if self.tooltip_delay > 10000 {
             self.tooltip_delay = 2000;
-            result.add_warning("tooltip_delay", "Automatically reduced tooltip_delay to 2000ms", None);
+            result.add_warning(
+                "tooltip_delay",
+                "Automatically reduced tooltip_delay to 2000ms",
+                None,
+            );
         }
 
         // Auto-fix items per page (if extremely high)
         if self.items_per_page > 1000 {
             self.items_per_page = 100;
-            result.add_warning("items_per_page", "Automatically reduced items_per_page to 100", None);
+            result.add_warning(
+                "items_per_page",
+                "Automatically reduced items_per_page to 100",
+                None,
+            );
         } else if self.items_per_page == 0 {
             self.items_per_page = 50;
-            result.add_warning("items_per_page", "Automatically set items_per_page to 50", None);
+            result.add_warning(
+                "items_per_page",
+                "Automatically set items_per_page to 50",
+                None,
+            );
         }
 
         result
@@ -325,7 +417,11 @@ impl ConfigValidation for ScannerConfig {
         // Auto-fix max error display (if zero or invalid)
         if self.max_error_display == 0 {
             self.max_error_display = 10;
-            result.add_warning("max_error_display", "Automatically set max_error_display to 10", None);
+            result.add_warning(
+                "max_error_display",
+                "Automatically set max_error_display to 10",
+                None,
+            );
         }
 
         result

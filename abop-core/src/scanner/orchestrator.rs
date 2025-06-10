@@ -109,8 +109,12 @@ impl ScanOrchestrator {
 
     /// Performs a complete scan operation (synchronous)
     pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
-        log::warn!("🔍 SCAN ORCHESTRATOR: Starting scan for library '{}' with path: '{}', library ID: '{}'", 
-                   self.library.name, self.library.path.display(), self.library.id);
+        log::warn!(
+            "🔍 SCAN ORCHESTRATOR: Starting scan for library '{}' with path: '{}', library ID: '{}'",
+            self.library.name,
+            self.library.path.display(),
+            self.library.id
+        );
         let start_time = Instant::now();
 
         // Discover all audio files
@@ -171,9 +175,14 @@ impl ScanOrchestrator {
                     Err(e) => {
                         // Categorize errors for better logging
                         let error_msg = e.to_string();
-                        if error_msg.contains("end of stream") || 
-                           error_msg.contains("Failed to probe audio format") {
-                            warn!("Skipping file with unreadable format {}: {}", path.display(), e);
+                        if error_msg.contains("end of stream")
+                            || error_msg.contains("Failed to probe audio format")
+                        {
+                            warn!(
+                                "Skipping file with unreadable format {}: {}",
+                                path.display(),
+                                e
+                            );
                         } else {
                             error!("Error processing file {}: {}", path.display(), e);
                         }

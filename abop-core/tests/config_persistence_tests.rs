@@ -1,6 +1,6 @@
 // Tests for config file persistence and recovery.
 
-use abop_core::config::{Config, AppConfig, UiConfig, WindowConfig};
+use abop_core::config::{AppConfig, Config, UiConfig, WindowConfig};
 use abop_core::models::ui::ThemeConfig;
 use std::fs;
 use std::path::PathBuf;
