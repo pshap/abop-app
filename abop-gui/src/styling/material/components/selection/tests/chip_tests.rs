@@ -180,7 +180,6 @@ mod chip_tests {
 
 #[cfg(test)]
 mod chip_collection_tests {
-    use crate::styling::material::components::selection::chip::chip_collection;
     use crate::styling::material::components::selection::{
         ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ComponentBuilder,
         SelectionError,
@@ -220,7 +219,7 @@ mod chip_collection_tests {
 
     #[test]
     fn test_chip_collection_single_selection() {
-        let mut collection = chip_collection(ChipSelectionMode::Single)
+        let mut collection = ChipCollectionBuilder::new(ChipSelectionMode::Single)
             .chip(ChipBuilder::filter("A").build().unwrap())
             .chip(ChipBuilder::filter("B").build().unwrap())
             .chip(ChipBuilder::filter("C").build().unwrap())
@@ -242,7 +241,7 @@ mod chip_collection_tests {
 
     #[test]
     fn test_chip_collection_multiple_selection() {
-        let mut collection = chip_collection(ChipSelectionMode::Multiple)
+        let mut collection = ChipCollectionBuilder::new(ChipSelectionMode::Multiple)
             .chip(ChipBuilder::filter("One").build().unwrap())
             .chip(ChipBuilder::filter("Two").build().unwrap())
             .chip(ChipBuilder::filter("Three").build().unwrap())
