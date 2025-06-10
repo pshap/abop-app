@@ -11,19 +11,18 @@
 //! All types are re-exported from this module for backward compatibility.
 
 // Module declarations
-mod core;
 mod column;
 mod config;
+mod core;
 mod typed;
 
 // Re-export all types for backward compatibility
-pub use core::{SortDirection, TableDensity, TextAlignment, ColumnDataType, ColumnWidth, SortState};
 pub use column::TableColumn;
 pub use config::DataTableConfig;
+pub use core::{
+    ColumnDataType, ColumnWidth, SortDirection, SortState, TableDensity, TextAlignment,
+};
 pub use typed::{
-    TypedDataTableConfig,
-    ReadOnlyTableConfig,
-    InteractiveTableConfig,
+    DisplayTableConfig, InteractiveTableConfig, ReadOnlyTableConfig, TypedDataTableConfig,
     VirtualTableConfig,
-    DisplayTableConfig,
 };

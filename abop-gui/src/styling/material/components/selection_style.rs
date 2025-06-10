@@ -377,7 +377,8 @@ impl SelectionStyleBuilder {
     /// Create checkbox styling function
     pub fn checkbox_style(
         self,
-    ) -> impl Fn(&iced::Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
+    ) -> impl Fn(&iced::Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style
+    {
         let colors = self.colors;
         let size = self.size;
         let error = self.error;
@@ -407,7 +408,9 @@ impl SelectionStyleBuilder {
             let colors = SelectionColors::new(colors.clone()).with_error(error);
 
             iced::widget::checkbox::Style {
-                background: colors.primary_color(state, SelectionVariant::Checkbox).into(),
+                background: colors
+                    .primary_color(state, SelectionVariant::Checkbox)
+                    .into(),
                 icon_color: colors.foreground_color(state, SelectionVariant::Checkbox),
                 border: iced::Border {
                     radius: 2.0.into(),
@@ -439,8 +442,7 @@ impl SelectionStyleBuilder {
                 }
                 iced::widget::radio::Status::Hovered { is_selected: false } => {
                     SelectionState::HoveredUnselected
-                }
-                // Note: radio::Status doesn't have a Disabled variant in current Iced API
+                } // Note: radio::Status doesn't have a Disabled variant in current Iced API
             };
 
             let colors = SelectionColors::new(colors.clone()).with_error(error);
@@ -483,7 +485,9 @@ impl SelectionStyleBuilder {
             let selection_colors = SelectionColors::new(colors.clone());
 
             iced::widget::button::Style {
-                background: Some(Background::from(selection_colors.primary_color(state, variant))),
+                background: Some(Background::from(
+                    selection_colors.primary_color(state, variant),
+                )),
                 text_color: selection_colors.foreground_color(state, variant),
                 border: iced::Border {
                     radius: 8.0.into(),
@@ -494,14 +498,14 @@ impl SelectionStyleBuilder {
             }
         }
     }
-    
+
     /// Create switch styling function
     pub fn switch_style(
         self,
         is_enabled: bool,
     ) -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
         let colors = self.colors;
-        
+
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = if is_enabled {
                 match status {
@@ -518,11 +522,13 @@ impl SelectionStyleBuilder {
                     iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
                 }
             };
-            
+
             let selection_colors = SelectionColors::new(colors.clone());
-            
+
             iced::widget::button::Style {
-                background: Some(Background::from(selection_colors.primary_color(state, SelectionVariant::Switch))),
+                background: Some(Background::from(
+                    selection_colors.primary_color(state, SelectionVariant::Switch),
+                )),
                 text_color: selection_colors.foreground_color(state, SelectionVariant::Switch),
                 border: iced::Border {
                     radius: 12.0.into(),

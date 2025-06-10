@@ -57,7 +57,7 @@ impl<const SORTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<true, SORTA
     pub fn select_rows(&self, indices: &[usize]) {
         // Implementation would interact with table state
         // This is a compile-time safe method
-        println!("Selecting rows: {:?}", indices);
+        println!("Selecting rows: {indices:?}");
     }
 
     /// Get currently selected rows (only available for selectable tables)
@@ -86,7 +86,7 @@ impl<const SELECTABLE: bool, const VIRTUAL: bool> TypedDataTableConfig<SELECTABL
     pub fn sort_by_column(&self, column_id: &str, direction: super::core::SortDirection) {
         // Implementation would interact with table sorting
         // This is a compile-time safe method
-        println!("Sorting by column '{}' in direction {:?}", column_id, direction);
+        println!("Sorting by column '{column_id}' in direction {direction:?}");
     }
 
     /// Get current sort state (only available for sortable tables)
@@ -116,7 +116,7 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     pub fn scroll_to_row(&self, row_index: usize) {
         // Implementation would handle virtual scrolling
         // This is a compile-time safe method
-        println!("Scrolling to row {}", row_index);
+        println!("Scrolling to row {row_index}");
     }
 
     /// Get visible row range (only available for virtual scrolling tables)
@@ -143,7 +143,7 @@ impl<const SELECTABLE: bool, const SORTABLE: bool>
     pub fn set_viewport(&self, start_index: usize, visible_count: usize) {
         // Implementation would update virtual scrolling viewport
         // This is a compile-time safe method
-        println!("Setting viewport: start={}, count={}", start_index, visible_count);
+        println!("Setting viewport: start={start_index}, count={visible_count}");
     }
 }
 
@@ -162,14 +162,14 @@ pub type DisplayTableConfig = TypedDataTableConfig<false, true, false>;
 
 #[cfg(test)]
 mod tests {
+    use super::super::core::{SortDirection, TableDensity};
     use super::*;
-    use super::super::core::{TableDensity, SortDirection};
 
     #[test]
     fn test_typed_config_creation() {
         let base_config = DataTableConfig::new();
         let typed_config: ReadOnlyTableConfig = TypedDataTableConfig::new(base_config);
-        
+
         assert!(typed_config.config().density == TableDensity::Standard);
     }
 
@@ -177,7 +177,7 @@ mod tests {
     fn test_selectable_methods() {
         let base_config = DataTableConfig::new().with_selection();
         let selectable_config: InteractiveTableConfig = TypedDataTableConfig::new(base_config);
-        
+
         // These methods should compile since SELECTABLE = true
         selectable_config.select_rows(&[0, 1, 2]);
         let _selected = selectable_config.selected_rows();
@@ -187,7 +187,7 @@ mod tests {
     fn test_sortable_methods() {
         let base_config = DataTableConfig::new().with_sorting();
         let sortable_config: InteractiveTableConfig = TypedDataTableConfig::new(base_config);
-        
+
         // These methods should compile since SORTABLE = true
         sortable_config.sort_by_column("name", SortDirection::Ascending);
         let _sort_state = sortable_config.sort_state();
@@ -197,7 +197,7 @@ mod tests {
     fn test_virtual_methods() {
         let base_config = DataTableConfig::new().with_virtual_scrolling(Some(100));
         let virtual_config: VirtualTableConfig = TypedDataTableConfig::new(base_config);
-        
+
         // These methods should compile since VIRTUAL = true
         virtual_config.scroll_to_row(50);
         let _range = virtual_config.visible_range();
@@ -210,10 +210,11 @@ mod tests {
             .with_selection()
             .with_sorting()
             .compact();
-        
-        let typed_config: InteractiveTableConfig = TypedDataTableConfig::new(original_config.clone());
+
+        let typed_config: InteractiveTableConfig =
+            TypedDataTableConfig::new(original_config.clone());
         let recovered_config = typed_config.into_config();
-        
+
         assert!(recovered_config.selectable == original_config.selectable);
         assert!(recovered_config.sortable == original_config.sortable);
         assert!(recovered_config.density == original_config.density);

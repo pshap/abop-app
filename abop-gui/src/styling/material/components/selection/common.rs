@@ -1,0 +1,610 @@
+//! Common types, traits, and utilities for Material Design 3 selection components
+//!
+//! This module provides the foundational building blocks for all selection components,
+//! including state definitions, error handling, validation, and shared behavior patterns.
+
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
+use thiserror::Error;
+
+// ============================================================================
+// Component States (Modern State-Based Design)
+// ============================================================================
+
+/// Checkbox state enum for type-safe state management
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CheckboxState {
+    /// Checkbox is unchecked
+    Unchecked,
+    /// Checkbox is checked
+    Checked,
+    /// Checkbox is in indeterminate state (partially checked)
+    Indeterminate,
+}
+
+impl Default for CheckboxState {
+    fn default() -> Self {
+        Self::Unchecked
+    }
+}
+
+impl CheckboxState {
+    /// Check if the checkbox is in a selected state (checked or indeterminate)
+    #[must_use]
+    pub const fn is_selected(self) -> bool {
+        matches!(self, Self::Checked | Self::Indeterminate)
+    }
+
+    /// Toggle between checked and unchecked (indeterminate goes to checked)
+    #[must_use]
+    pub const fn toggle(self) -> Self {
+        match self {
+            Self::Unchecked => Self::Checked,
+            Self::Checked => Self::Unchecked,
+            Self::Indeterminate => Self::Checked,
+        }
+    }
+
+    /// Convert to boolean (true if checked, false otherwise)
+    #[must_use]
+    pub const fn to_bool(self) -> bool {
+        matches!(self, Self::Checked)
+    }
+
+    /// Create from boolean value
+    #[must_use]
+    pub const fn from_bool(checked: bool) -> Self {
+        if checked {
+            Self::Checked
+        } else {
+            Self::Unchecked
+        }
+    }
+}
+
+/// Switch state enum for on/off toggles
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SwitchState {
+    /// Switch is off/disabled
+    Off,
+    /// Switch is on/enabled
+    On,
+}
+
+impl Default for SwitchState {
+    fn default() -> Self {
+        Self::Off
+    }
+}
+
+impl SwitchState {
+    /// Toggle between on and off
+    #[must_use]
+    pub const fn toggle(self) -> Self {
+        match self {
+            Self::Off => Self::On,
+            Self::On => Self::Off,
+        }
+    }
+
+    /// Check if switch is on
+    #[must_use]
+    pub const fn is_on(self) -> bool {
+        matches!(self, Self::On)
+    }
+
+    /// Convert to boolean
+    #[must_use]
+    pub const fn to_bool(self) -> bool {
+        self.is_on()
+    }
+
+    /// Create from boolean value
+    #[must_use]
+    pub const fn from_bool(enabled: bool) -> Self {
+        if enabled { Self::On } else { Self::Off }
+    }
+}
+
+/// Chip state enum for selection state with animation support
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ChipState {
+    /// Chip is unselected
+    Unselected,
+    /// Chip is selected
+    Selected,
+    /// Chip is being pressed (for animation support)
+    Pressed,
+}
+
+impl Default for ChipState {
+    fn default() -> Self {
+        Self::Unselected
+    }
+}
+
+impl ChipState {
+    /// Check if chip is selected
+    #[must_use]
+    pub const fn is_selected(self) -> bool {
+        matches!(self, Self::Selected | Self::Pressed)
+    }
+
+    /// Toggle between selected and unselected
+    #[must_use]
+    pub const fn toggle(self) -> Self {
+        match self {
+            Self::Unselected => Self::Selected,
+            Self::Selected | Self::Pressed => Self::Unselected,
+        }
+    }
+}
+
+// ============================================================================
+// Component Size System
+// ============================================================================
+
+/// Size variants for consistent sizing across all selection components
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum ComponentSize {
+    /// Small size (16px) - for dense layouts and compact spaces
+    Small,
+    /// Medium size (20px) - default size for most use cases
+    Medium,
+    /// Large size (24px) - for accessibility and prominent placement
+    Large,
+}
+
+impl Default for ComponentSize {
+    fn default() -> Self {
+        Self::Medium
+    }
+}
+
+impl ComponentSize {
+    /// Get the pixel size for the selection component
+    #[must_use]
+    pub const fn size_px(self) -> f32 {
+        match self {
+            Self::Small => 16.0,
+            Self::Medium => 20.0,
+            Self::Large => 24.0,
+        }
+    }
+
+    /// Get the appropriate touch target size (Material Design minimum 48px)
+    #[must_use]
+    pub const fn touch_target_size(self) -> f32 {
+        match self {
+            Self::Small => 32.0,  // Compact but still accessible
+            Self::Medium => 40.0, // Standard touch target
+            Self::Large => 48.0,  // Full Material Design touch target
+        }
+    }
+
+    /// Get the appropriate border width for the size
+    #[must_use]
+    pub const fn border_width(self) -> f32 {
+        match self {
+            Self::Small => 1.5,
+            Self::Medium => 2.0,
+            Self::Large => 2.5,
+        }
+    }
+
+    /// Get the appropriate text size for labels
+    #[must_use]
+    pub const fn text_size(self) -> f32 {
+        match self {
+            Self::Small => 12.0,
+            Self::Medium => 14.0,
+            Self::Large => 16.0,
+        }
+    }
+}
+
+// ============================================================================
+// Chip Variants
+// ============================================================================
+
+/// Material Design 3 chip variants for different use cases
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ChipVariant {
+    /// Action chips for common tasks and quick actions
+    Assist,
+    /// Filter chips for filtering content and making selections  
+    Filter,
+    /// Input chips for user-generated content and tags
+    Input,
+    /// Suggestion chips for suggested actions or completions
+    Suggestion,
+}
+
+impl Default for ChipVariant {
+    fn default() -> Self {
+        Self::Filter
+    }
+}
+
+// ============================================================================
+// Component Properties
+// ============================================================================
+
+/// Common properties shared across selection components
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ComponentProps {
+    /// Optional text label displayed with the component
+    pub label: Option<String>,
+    /// Whether the component is disabled (non-interactive)
+    pub disabled: bool,
+    /// The size variant of the component
+    pub size: ComponentSize,
+}
+
+impl ComponentProps {
+    /// Create new component properties
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            label: None,
+            disabled: false,
+            size: ComponentSize::Medium,
+        }
+    }
+
+    /// Set the label (builder pattern)
+    #[must_use]
+    pub fn with_label<S: Into<String>>(mut self, label: S) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// Set disabled state (builder pattern)
+    #[must_use]
+    pub const fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    /// Set size (builder pattern)
+    #[must_use]
+    pub const fn size(mut self, size: ComponentSize) -> Self {
+        self.size = size;
+        self
+    }
+}
+
+// ============================================================================
+// Validation System
+// ============================================================================
+
+/// Validation configuration for components
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidationConfig {
+    /// Maximum label length (characters)
+    pub max_label_length: usize,
+    /// Whether empty labels are allowed
+    pub allow_empty_label: bool,
+    /// Custom validation rules
+    pub custom_rules: Vec<ValidationRule>,
+}
+
+impl Default for ValidationConfig {
+    fn default() -> Self {
+        Self {
+            max_label_length: 200,
+            allow_empty_label: true,
+            custom_rules: Vec::new(),
+        }
+    }
+}
+
+/// Custom validation rule
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidationRule {
+    /// Rule name for error reporting
+    pub name: String,
+    /// Error message if rule fails
+    pub error_message: String,
+}
+
+/// Validation errors for selection components
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SelectionError {
+    /// Invalid component state combination
+    #[error("Invalid component state: {details}")]
+    InvalidState { details: String },
+
+    /// Label validation error
+    #[error("Label validation failed: {reason}")]
+    InvalidLabel { reason: String },
+
+    /// Label too long
+    #[error("Label too long: {len} characters (max {max})")]
+    LabelTooLong { len: usize, max: usize },
+
+    /// Empty label when not allowed
+    #[error("Label cannot be empty")]
+    EmptyLabel,
+
+    /// Conflicting states
+    #[error("Conflicting states: {details}")]
+    ConflictingStates { details: String },
+
+    /// Custom validation rule failed
+    #[error("Validation rule '{rule}' failed: {message}")]
+    CustomRule { rule: String, message: String },
+
+    /// General validation error
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+}
+
+// ============================================================================
+// Animation Configuration
+// ============================================================================
+
+/// Animation configuration for selection components
+#[derive(Debug, Clone, PartialEq)]
+pub struct AnimationConfig {
+    /// Animation duration
+    pub duration: Duration,
+    /// Whether animations are enabled
+    pub enabled: bool,
+    /// Respect system reduced motion preferences
+    pub respect_reduced_motion: bool,
+    /// Easing curve type
+    pub easing: EasingCurve,
+}
+
+impl Default for AnimationConfig {
+    fn default() -> Self {
+        Self {
+            duration: Duration::from_millis(200),
+            enabled: true,
+            respect_reduced_motion: true,
+            easing: EasingCurve::Standard,
+        }
+    }
+}
+
+/// Material Design 3 easing curves
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EasingCurve {
+    /// Standard easing for common transitions
+    Standard,
+    /// Emphasized easing for important transitions
+    Emphasized,
+    /// Decelerated easing for entering elements
+    Decelerated,
+    /// Accelerated easing for exiting elements
+    Accelerated,
+}
+
+// ============================================================================
+// Common Validation Functions
+// ============================================================================
+
+/// Validate component properties
+pub fn validate_props(
+    props: &ComponentProps,
+    config: &ValidationConfig,
+) -> Result<(), SelectionError> {
+    if let Some(ref label) = props.label {
+        validate_label(label, config)?;
+    }
+    Ok(())
+}
+
+/// Validate a label string
+pub fn validate_label(label: &str, config: &ValidationConfig) -> Result<(), SelectionError> {
+    if label.is_empty() && !config.allow_empty_label {
+        return Err(SelectionError::EmptyLabel);
+    }
+
+    if label.len() > config.max_label_length {
+        return Err(SelectionError::LabelTooLong {
+            len: label.len(),
+            max: config.max_label_length,
+        });
+    }
+
+    Ok(())
+}
+
+/// Validate checkbox state consistency
+pub fn validate_checkbox_state(
+    _state: CheckboxState,
+    props: &ComponentProps,
+) -> Result<(), SelectionError> {
+    validate_props(props, &ValidationConfig::default())?;
+
+    // No conflicting states for checkbox - all combinations are valid
+    Ok(())
+}
+
+/// Validate switch state consistency
+pub fn validate_switch_state(
+    _state: SwitchState,
+    props: &ComponentProps,
+) -> Result<(), SelectionError> {
+    validate_props(props, &ValidationConfig::default())?;
+
+    // No conflicting states for switch - all combinations are valid
+    Ok(())
+}
+
+/// Validate chip state and configuration
+pub fn validate_chip_state(
+    _state: ChipState,
+    _variant: ChipVariant,
+    props: &ComponentProps,
+) -> Result<(), SelectionError> {
+    validate_props(props, &ValidationConfig::default())?;
+
+    // Check chip-specific requirements
+    if props.label.is_none() {
+        return Err(SelectionError::InvalidLabel {
+            reason: "Chips must have a label".to_string(),
+        });
+    }
+
+    // Validate label length for chips (stricter than other components)
+    if let Some(ref label) = props.label
+        && label.len() > 100
+    {
+        return Err(SelectionError::LabelTooLong {
+            len: label.len(),
+            max: 100,
+        });
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// Component Trait System
+// ============================================================================
+
+/// Common interface for all selection components
+pub trait SelectionWidget<State> {
+    /// The message type this widget produces
+    type Message;
+
+    /// Builder type for this widget
+    type Builder;
+
+    /// Create a new widget with the given state
+    fn new(state: State) -> Self::Builder;
+
+    /// Validate the current widget state
+    fn validate(&self) -> Result<(), SelectionError>;
+
+    /// Get the current state
+    fn state(&self) -> State;
+
+    /// Get the component properties
+    fn props(&self) -> &ComponentProps;
+}
+
+/// Trait for widgets that support state changes
+pub trait StatefulWidget<State>: SelectionWidget<State> {
+    /// Update the widget state
+    fn update_state(&mut self, new_state: State) -> Result<(), SelectionError>;
+
+    /// Handle state transition with validation
+    fn transition_to(&mut self, new_state: State) -> Result<State, SelectionError> {
+        self.update_state(new_state)?;
+        Ok(self.state())
+    }
+}
+
+/// Trait for widgets that support animation
+pub trait AnimatedWidget {
+    /// Get animation configuration
+    fn animation_config(&self) -> &AnimationConfig;
+
+    /// Set animation configuration
+    fn set_animation_config(&mut self, config: AnimationConfig);
+
+    /// Check if animations are enabled and should be respected
+    fn should_animate(&self) -> bool {
+        self.animation_config().enabled
+            && (!self.animation_config().respect_reduced_motion || !system_has_reduced_motion())
+    }
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/// Check if the system has reduced motion enabled (placeholder implementation)
+/// In a real implementation, this would check OS accessibility settings
+pub fn system_has_reduced_motion() -> bool {
+    // TODO: Implement actual system check
+    false
+}
+
+/// Helper function to create validation config for specific use cases
+#[must_use]
+pub fn validation_config_for_chips() -> ValidationConfig {
+    ValidationConfig {
+        max_label_length: 100,
+        allow_empty_label: false,
+        custom_rules: Vec::new(),
+    }
+}
+
+/// Helper function to create validation config for checkbox/radio/switch
+#[must_use]
+pub fn validation_config_for_toggles() -> ValidationConfig {
+    ValidationConfig {
+        max_label_length: 200,
+        allow_empty_label: true,
+        custom_rules: Vec::new(),
+    }
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_checkbox_state_transitions() {
+        assert_eq!(CheckboxState::Unchecked.toggle(), CheckboxState::Checked);
+        assert_eq!(CheckboxState::Checked.toggle(), CheckboxState::Unchecked);
+        assert_eq!(
+            CheckboxState::Indeterminate.toggle(),
+            CheckboxState::Checked
+        );
+
+        assert!(CheckboxState::Checked.is_selected());
+        assert!(CheckboxState::Indeterminate.is_selected());
+        assert!(!CheckboxState::Unchecked.is_selected());
+    }
+
+    #[test]
+    fn test_switch_state_transitions() {
+        assert_eq!(SwitchState::Off.toggle(), SwitchState::On);
+        assert_eq!(SwitchState::On.toggle(), SwitchState::Off);
+
+        assert!(SwitchState::On.is_on());
+        assert!(!SwitchState::Off.is_on());
+    }
+
+    #[test]
+    fn test_component_size_properties() {
+        assert_eq!(ComponentSize::Small.size_px(), 16.0);
+        assert_eq!(ComponentSize::Medium.size_px(), 20.0);
+        assert_eq!(ComponentSize::Large.size_px(), 24.0);
+
+        assert!(ComponentSize::Small.touch_target_size() >= 32.0);
+        assert!(ComponentSize::Large.touch_target_size() >= 48.0);
+    }
+
+    #[test]
+    fn test_validation() {
+        let props = ComponentProps::new().with_label("Valid label");
+        assert!(validate_props(&props, &ValidationConfig::default()).is_ok());
+
+        let long_label = "x".repeat(201);
+        let invalid_props = ComponentProps::new().with_label(long_label);
+        assert!(validate_props(&invalid_props, &ValidationConfig::default()).is_err());
+    }
+
+    #[test]
+    fn test_component_props_builder() {
+        let props = ComponentProps::new()
+            .with_label("Test Label")
+            .disabled(true)
+            .size(ComponentSize::Large);
+
+        assert_eq!(props.label, Some("Test Label".to_string()));
+        assert!(props.disabled);
+        assert_eq!(props.size, ComponentSize::Large);
+    }
+}
