@@ -25,6 +25,20 @@ mod typography {
 }
 
 // ============================================================================
+// Typography Helper Functions (Phase 1 Improvement)
+// ============================================================================
+
+/// Get text size based on selection component size
+#[must_use]
+pub const fn get_text_size(size: SelectionSize) -> f32 {
+    match size {
+        SelectionSize::Small => typography::SMALL_TEXT,
+        SelectionSize::Medium => typography::MEDIUM_TEXT,
+        SelectionSize::Large => typography::LARGE_TEXT,
+    }
+}
+
+// ============================================================================
 // Common Trait Interface (Phase 1 Improvement)
 // ============================================================================
 
@@ -140,9 +154,7 @@ impl MaterialCheckbox {
     pub const fn error_state(mut self, error: bool) -> Self {
         self.error_state = error;
         self
-    }
-
-    /// Sets the size of the checkbox (builder pattern)
+    }    /// Sets the size of the checkbox (builder pattern)
     ///
     /// # Arguments
     /// * `size` - The size variant to use
@@ -150,7 +162,13 @@ impl MaterialCheckbox {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }    /// Creates the Iced widget element for this checkbox
+    }
+
+    /// Gets the appropriate text size for this checkbox
+    #[must_use]
+    pub const fn text_size(&self) -> f32 {
+        get_text_size(self.size)
+    }/// Creates the Iced widget element for this checkbox
     ///
     /// # Arguments
     /// * `on_toggle` - Callback function called when checkbox state changes
@@ -168,12 +186,16 @@ impl MaterialCheckbox {
             .error(self.error_state)
             .checkbox_style();
 
-        let checkbox = Checkbox::new(
+        let mut checkbox = Checkbox::new(
             self.label.as_ref().unwrap_or(&String::new()),
             self.is_checked,
         )
-        .on_toggle(on_toggle)
         .style(style_fn);
+
+        // Only add on_toggle handler if the checkbox is not disabled
+        if !self.is_disabled {
+            checkbox = checkbox.on_toggle(on_toggle);
+        }
 
         checkbox.into()
     }
@@ -265,9 +287,7 @@ impl<T> MaterialRadio<T> {
     pub const fn error_state(mut self, error: bool) -> Self {
         self.error_state = error;
         self
-    }
-
-    /// Sets the size of the radio button (builder pattern)
+    }    /// Sets the size of the radio button (builder pattern)
     ///
     /// # Arguments
     /// * `size` - The size variant to use
@@ -275,7 +295,13 @@ impl<T> MaterialRadio<T> {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }    /// Creates the Iced widget element for this radio button
+    }
+
+    /// Gets the appropriate text size for this radio button
+    #[must_use]
+    pub const fn text_size(&self) -> f32 {
+        get_text_size(self.size)
+    }/// Creates the Iced widget element for this radio button
     ///
     /// # Arguments
     /// * `selected_value` - The currently selected value in the radio group
@@ -305,6 +331,9 @@ impl<T> MaterialRadio<T> {
             on_select,
         )
         .style(style_fn);
+
+        // Note: Radio widget always requires on_select callback in Iced API
+        // Disabled state is handled through styling and visual appearance only
 
         radio.into()
     }
@@ -414,9 +443,7 @@ impl MaterialSwitch {
     pub const fn error_state(mut self, error: bool) -> Self {
         self.error_state = error;
         self
-    }
-
-    /// Sets the size of the switch (builder pattern)
+    }    /// Sets the size of the switch (builder pattern)
     ///
     /// # Arguments
     /// * `size` - The size variant to use
@@ -424,6 +451,12 @@ impl MaterialSwitch {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
+    }
+
+    /// Gets the appropriate text size for this switch
+    #[must_use]
+    pub const fn text_size(&self) -> f32 {
+        get_text_size(self.size)
     }    /// Creates the Iced widget element for this switch
     ///
     /// Note: This is currently implemented as a styled checkbox.
@@ -440,7 +473,7 @@ impl MaterialSwitch {
         on_toggle: impl Fn(bool) -> Message + 'a,
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, theme::Theme, Renderer> {
-        // For now, implement switch as a styled checkbox
+        // For now, implement switch as a styled checkbox with proper disabled handling
         // In a full implementation, this would be a custom switch widget
         MaterialCheckbox {
             is_checked: self.is_enabled,
@@ -548,9 +581,7 @@ impl MaterialChip {
     pub const fn disabled(mut self, disabled: bool) -> Self {
         self.is_disabled = disabled;
         self
-    }
-
-    /// Sets the size of the chip (builder pattern)
+    }    /// Sets the size of the chip (builder pattern)
     ///
     /// # Arguments
     /// * `size` - The size variant to use
@@ -558,7 +589,13 @@ impl MaterialChip {
     pub const fn size(mut self, size: SelectionSize) -> Self {
         self.size = size;
         self
-    }    /// Creates the Iced widget element for this chip
+    }
+
+    /// Gets the appropriate text size for this chip
+    #[must_use]
+    pub const fn text_size(&self) -> f32 {
+        get_text_size(self.size)
+    }/// Creates the Iced widget element for this chip
     ///
     /// Note: This is currently implemented as a styled button.
     /// In a full implementation, this would be a custom chip widget.
@@ -577,21 +614,18 @@ impl MaterialChip {
 
         let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Chip)
             .size(self.size)
-            .chip_style(self.is_selected);
+            .chip_style(self.is_selected);        let content = Text::new(&self.label).size(get_text_size(self.size));
 
-        let content = Text::new(&self.label).size(match self.size {
-            SelectionSize::Small => typography::SMALL_TEXT,
-            SelectionSize::Medium => typography::MEDIUM_TEXT,
-            SelectionSize::Large => typography::LARGE_TEXT,
-        });
+        let mut chip_button = button(content).style(style_fn);
 
-        let chip_button = button(content).style(style_fn);
-
-        if let Some(message) = on_press {
-            chip_button.on_press(message).into()
-        } else {
-            chip_button.into()
+        // Only add on_press handler if the chip is not disabled and callback is provided
+        if !self.is_disabled {
+            if let Some(message) = on_press {
+                chip_button = chip_button.on_press(message);
+            }
         }
+
+        chip_button.into()
     }
 }
 
@@ -793,9 +827,7 @@ mod tests {
         assert_eq!(radio.value, "value");
         assert_eq!(switch.is_enabled, false);
         assert_eq!(chip.label, "Test");
-    }
-
-    #[test]
+    }    #[test]
     fn test_typography_constants() {
         // Test that typography constants are reasonable values
         assert_eq!(typography::SMALL_TEXT, 12.0);
@@ -805,5 +837,78 @@ mod tests {
         // Test relative sizes
         assert!(typography::SMALL_TEXT < typography::MEDIUM_TEXT);
         assert!(typography::MEDIUM_TEXT < typography::LARGE_TEXT);
+
+        // Test helper function
+        assert_eq!(get_text_size(SelectionSize::Small), typography::SMALL_TEXT);
+        assert_eq!(get_text_size(SelectionSize::Medium), typography::MEDIUM_TEXT);
+        assert_eq!(get_text_size(SelectionSize::Large), typography::LARGE_TEXT);
+    }
+
+    #[test]
+    fn test_text_size_methods() {
+        // Test that all components have consistent text sizing
+        let checkbox = MaterialCheckbox::new(false).size(SelectionSize::Large);
+        let radio = MaterialRadio::new(1).size(SelectionSize::Small);
+        let switch = MaterialSwitch::new(true).size(SelectionSize::Medium);
+        let chip = MaterialChip::new("Test", MaterialChipVariant::Filter).size(SelectionSize::Large);
+
+        assert_eq!(checkbox.text_size(), typography::LARGE_TEXT);
+        assert_eq!(radio.text_size(), typography::SMALL_TEXT);
+        assert_eq!(switch.text_size(), typography::MEDIUM_TEXT);
+        assert_eq!(chip.text_size(), typography::LARGE_TEXT);
+    }
+
+    #[test]
+    fn test_disabled_state_consistency() {
+        // Test that disabled state is properly maintained across all components
+        let disabled_checkbox = MaterialCheckbox::new(true).disabled(true);
+        let disabled_radio = MaterialRadio::new("value").disabled(true);
+        let disabled_switch = MaterialSwitch::new(false).disabled(true);
+        let disabled_chip = MaterialChip::new("Test", MaterialChipVariant::Filter).disabled(true);
+
+        assert!(disabled_checkbox.is_disabled);
+        assert!(disabled_radio.is_disabled);
+        assert!(disabled_switch.is_disabled);
+        assert!(disabled_chip.is_disabled);
+    }
+
+    #[test]
+    fn test_error_state_handling() {
+        // Test error state handling across components
+        let error_checkbox = MaterialCheckbox::new(false).error_state(true);
+        let error_radio = MaterialRadio::new(42).error_state(true);
+        let error_switch = MaterialSwitch::new(true).error_state(true);
+        let error_chip = MaterialChip::new("Test", MaterialChipVariant::Filter).error_state(true);
+
+        assert!(error_checkbox.error_state);
+        assert!(error_radio.error_state);
+        assert!(error_switch.error_state);
+        // Note: chips don't have error states in Material Design, so it should be a no-op
+        assert!(!error_chip.is_disabled); // Should not affect disabled state
+    }
+
+    #[test]
+    fn test_size_consistency() {
+        // Test that size changes are applied consistently
+        let sizes = [SelectionSize::Small, SelectionSize::Medium, SelectionSize::Large];
+        
+        for &size in &sizes {
+            let checkbox = MaterialCheckbox::new(false).size(size);
+            let radio = MaterialRadio::new("test").size(size);
+            let switch = MaterialSwitch::new(true).size(size);
+            let chip = MaterialChip::new("Test", MaterialChipVariant::Filter).size(size);
+
+            assert_eq!(checkbox.size, size);
+            assert_eq!(radio.size, size);
+            assert_eq!(switch.size, size);
+            assert_eq!(chip.size, size);
+            
+            // Test that text sizes are consistent
+            let expected_text_size = get_text_size(size);
+            assert_eq!(checkbox.text_size(), expected_text_size);
+            assert_eq!(radio.text_size(), expected_text_size);
+            assert_eq!(switch.text_size(), expected_text_size);
+            assert_eq!(chip.text_size(), expected_text_size);
+        }
     }
 }
