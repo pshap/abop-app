@@ -45,6 +45,3 @@ pub use list::MaterialList;
 pub use table::MaterialDataTable;
 pub use tree::MaterialTreeView;
 pub use types::*;
-
-// Legacy re-exports to maintain backward compatibility
-pub use table::DataTable;
