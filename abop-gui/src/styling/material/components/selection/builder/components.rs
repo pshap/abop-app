@@ -64,9 +64,62 @@ impl Checkbox {
         self.error_state = error;
     }
 
+    /// Check the checkbox
+    pub fn check(&mut self) -> Result<CheckboxState, SelectionError> {
+        let previous_state = self.state;
+        self.state = CheckboxState::Checked;
+        Ok(previous_state)
+    }
+
+    /// Uncheck the checkbox
+    pub fn uncheck(&mut self) -> Result<CheckboxState, SelectionError> {
+        let previous_state = self.state;
+        self.state = CheckboxState::Unchecked;
+        Ok(previous_state)
+    }
+
+    /// Set checkbox to indeterminate state
+    pub fn set_indeterminate(&mut self) -> Result<CheckboxState, SelectionError> {
+        let previous_state = self.state;
+        self.state = CheckboxState::Indeterminate;
+        Ok(previous_state)
+    }
+
     /// Toggle the checkbox state
-    pub fn toggle(&mut self) {
+    pub fn toggle(&mut self) -> Result<(CheckboxState, CheckboxState), SelectionError> {
+        let previous_state = self.state;
         self.state = self.state.toggle();
+        Ok((previous_state, self.state))
+    }
+
+    /// Check if the checkbox is selected (checked or indeterminate)
+    #[must_use]
+    pub const fn is_selected(&self) -> bool {
+        matches!(self.state, CheckboxState::Checked | CheckboxState::Indeterminate)
+    }
+
+    /// Check if the checkbox is checked
+    #[must_use]
+    pub const fn is_checked(&self) -> bool {
+        matches!(self.state, CheckboxState::Checked)
+    }
+
+    /// Check if the checkbox is unchecked
+    #[must_use]
+    pub const fn is_unchecked(&self) -> bool {
+        matches!(self.state, CheckboxState::Unchecked)
+    }
+
+    /// Check if the checkbox is in indeterminate state
+    #[must_use]
+    pub const fn is_indeterminate(&self) -> bool {
+        matches!(self.state, CheckboxState::Indeterminate)
+    }
+
+    /// Convert checkbox state to boolean (checked = true, others = false)
+    #[must_use]
+    pub const fn to_bool(&self) -> bool {
+        matches!(self.state, CheckboxState::Checked)
     }
 }
 
@@ -80,6 +133,17 @@ impl PartialEq for Checkbox {
 }
 
 impl Eq for Checkbox {}
+
+impl Default for Checkbox {
+    fn default() -> Self {
+        Self {
+            state: CheckboxState::default(),
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+}
 
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]
@@ -241,8 +305,10 @@ impl Switch {
     }
 
     /// Toggle the switch state
-    pub fn toggle(&mut self) {
+    pub fn toggle(&mut self) -> Result<(SwitchState, SwitchState), SelectionError> {
+        let previous_state = self.state;
         self.state = self.state.toggle();
+        Ok((previous_state, self.state))
     }
 
     /// Check if the switch is on
@@ -256,6 +322,12 @@ impl Switch {
     pub const fn is_off(&self) -> bool {
         matches!(self.state, SwitchState::Off)
     }
+
+    /// Convert switch state to boolean (on = true, off = false)
+    #[must_use]
+    pub const fn to_bool(&self) -> bool {
+        matches!(self.state, SwitchState::On)
+    }
 }
 
 impl PartialEq for Switch {
@@ -268,6 +340,17 @@ impl PartialEq for Switch {
 }
 
 impl Eq for Switch {}
+
+impl Default for Switch {
+    fn default() -> Self {
+        Self {
+            state: SwitchState::default(),
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+}
 
 /// Material Design 3 Chip component (modern implementation)
 #[derive(Debug, Clone)]
@@ -377,6 +460,19 @@ impl PartialEq for Chip {
 }
 
 impl Eq for Chip {}
+
+impl Default for Chip {
+    fn default() -> Self {
+        Self {
+            label: String::new(),
+            state: ChipState::default(),
+            variant: ChipVariant::default(),
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+}
 
 // ============================================================================
 // Trait Implementations

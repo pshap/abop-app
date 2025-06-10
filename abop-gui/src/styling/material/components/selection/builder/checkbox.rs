@@ -111,7 +111,7 @@ impl CheckboxBuilder {
     #[must_use]
     pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
         let label_str = label.into();
-        validate_label(&label_str, &self.validation_config)?;
+        validate_label(label_str.as_str(), &self.validation_config)?;
         self.props.label = Some(label_str);
         Ok(self)
     }

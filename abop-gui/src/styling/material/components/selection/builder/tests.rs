@@ -5,6 +5,8 @@
 //! components, and factory functions.
 
 use super::*;
+use super::validation::*;
+use super::super::common::*;
 
 // ============================================================================
 // Core Builder Tests
@@ -475,7 +477,7 @@ mod integration_tests {
             .label("Integration Test")
             .size(ComponentSize::Large)
             .with_system_preferences()
-            .validate_and_build()
+            .build()
             .expect("Should build with validation");
 
         assert_eq!(checkbox.state(), CheckboxState::Unchecked);
