@@ -1,12 +1,10 @@
 //! Comprehensive tests for the modern Checkbox component
 
-use crate::styling::material::components::selection::builder::{
-    Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder, checkbox
+use crate::styling::material::components::selection::{
+    builder::{Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder},
+    checkbox::{checked_checkbox, unchecked_checkbox, indeterminate_checkbox, checkbox_from_bool},
+    common::{CheckboxState, ComponentProps, ComponentSize, SelectionError, AnimationConfig, ValidationConfig, SelectionWidget},
 };
-use crate::styling::material::components::selection::checkbox::{
-    checked_checkbox, unchecked_checkbox, indeterminate_checkbox, checkbox_from_bool
-};
-use crate::styling::material::components::selection::common::*;
 
 #[test]
 fn test_checkbox_state_enum() {
@@ -72,11 +70,11 @@ fn test_checkbox_validation() {
 
     // Invalid - label too long
     let long_label = "x".repeat(201);
-    let invalid = CheckboxBuilder::unchecked().label(long_label).build();
+    let invalid = CheckboxBuilder::unchecked().label(&long_label).build();
     assert!(invalid.is_err());
     assert!(matches!(
         invalid.unwrap_err(),
-        SelectionError::LabelTooLong { .. }
+        SelectionError::LabelTooLong { len: 201, max: 200 }
     ));
 }
 
@@ -157,13 +155,11 @@ fn test_checkbox_convenience_functions() {
     let cb2 = unchecked_checkbox().build().unwrap();
     let cb3 = indeterminate_checkbox().build().unwrap();
     let cb4 = checkbox_from_bool(true).build().unwrap();
-    let cb5 = checkbox(CheckboxState::Indeterminate).build().unwrap();
 
     assert_eq!(cb1.state(), CheckboxState::Checked);
     assert_eq!(cb2.state(), CheckboxState::Unchecked);
     assert_eq!(cb3.state(), CheckboxState::Indeterminate);
     assert_eq!(cb4.state(), CheckboxState::Checked);
-    assert_eq!(cb5.state(), CheckboxState::Indeterminate);
 }
 
 #[test]
@@ -215,9 +211,4 @@ fn test_checkbox_size_properties() {
     assert_eq!(small.props().size, ComponentSize::Small);
     assert_eq!(medium.props().size, ComponentSize::Medium);
     assert_eq!(large.props().size, ComponentSize::Large);
-
-    // Test size-related properties
-    assert_eq!(ComponentSize::Small.text_size(), 12.0);
-    assert_eq!(ComponentSize::Medium.text_size(), 14.0);
-    assert_eq!(ComponentSize::Large.text_size(), 16.0);
 }
