@@ -7,7 +7,7 @@
 //! - Indeterminate state visual rendering
 //! - Modern builder pattern with fluent API
 
-use super::builder::{Checkbox, CheckboxBuilder, ComponentBuilder};
+use super::builder::{Checkbox, CheckboxBuilder};
 use super::common::*;
 use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
@@ -51,61 +51,6 @@ impl Checkbox {
         CheckboxBuilder::from_bool(checked)
     }
 
-    /// Get the current checkbox state
-    #[must_use]
-    pub const fn state(&self) -> CheckboxState {
-        self.state
-    }
-
-    /// Get the component properties
-    #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the checkbox is in error state
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration
-    #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    /// Update the checkbox state with validation
-    pub fn update_state(&mut self, new_state: CheckboxState) -> Result<(), SelectionError> {
-        validate_checkbox_state(new_state, &self.props)?;
-        self.state = new_state;
-        Ok(())
-    }
-
-    /// Toggle the checkbox state
-    pub fn toggle(&mut self) -> Result<CheckboxState, SelectionError> {
-        let new_state = self.state.toggle();
-        self.update_state(new_state)?;
-        Ok(new_state)
-    }
-
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
-    }
-
-    /// Convert to boolean value (true if checked, false otherwise)
-    #[must_use]
-    pub const fn to_bool(&self) -> bool {
-        self.state.to_bool()
-    }
-
-    /// Check if checkbox is selected (checked or indeterminate)
-    #[must_use]
-    pub const fn is_selected(&self) -> bool {
-        self.state.is_selected()
-    }
-
     /// Create the Iced widget element for this checkbox
     ///
     /// # Arguments
@@ -120,14 +65,14 @@ impl Checkbox {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         // Convert modern state to legacy boolean for Iced compatibility
-        let is_checked = match self.state {
+        let is_checked = match self.state() {
             CheckboxState::Unchecked => false,
             CheckboxState::Checked => true,
             CheckboxState::Indeterminate => false, // Special handling needed
         };
 
         // Convert modern size to legacy size
-        let legacy_size = match self.props.size {
+        let legacy_size = match self.props().size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
@@ -136,18 +81,20 @@ impl Checkbox {
         // Create styling function
         let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Checkbox)
             .size(legacy_size)
-            .error(self.error_state)
-            .checkbox_style(); // Create the checkbox label
+            .error(self.has_error())
+            .checkbox_style();
+
+        // Create the checkbox label
         let default_label = String::new();
-        let label = self.props.label.as_ref().unwrap_or(&default_label);
+        let label = self.props().label.as_ref().unwrap_or(&default_label);
 
         // Create checkbox widget
         let mut checkbox = IcedCheckbox::new(label, is_checked).style(style_fn);
 
         // Only add on_toggle handler if the checkbox is not disabled
-        if !self.props.disabled {
+        if !self.props().disabled {
             // Convert boolean toggle to state-based toggle
-            let current_state = self.state;
+            let current_state = self.state();
             checkbox = checkbox.on_toggle(move |_checked| on_toggle(current_state.toggle()));
         }
 
@@ -167,62 +114,6 @@ impl Checkbox {
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         self.view(on_change, color_scheme)
-    }
-}
-
-// ============================================================================
-// Trait Implementations
-// ============================================================================
-
-impl SelectionWidget<CheckboxState> for Checkbox {
-    type Message = CheckboxState;
-    type Builder = CheckboxBuilder;
-
-    fn new(state: CheckboxState) -> Self::Builder {
-        CheckboxBuilder::new(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        validate_checkbox_state(self.state, &self.props)
-    }
-
-    fn state(&self) -> CheckboxState {
-        self.state
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl StatefulWidget<CheckboxState> for Checkbox {
-    fn update_state(&mut self, new_state: CheckboxState) -> Result<(), SelectionError> {
-        self.update_state(new_state)
-    }
-
-    fn transition_to(&mut self, new_state: CheckboxState) -> Result<CheckboxState, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state)
-    }
-}
-
-impl AnimatedWidget for Checkbox {
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
-    }
-}
-
-// ============================================================================
-// Default Implementation
-// ============================================================================
-
-impl Default for Checkbox {
-    fn default() -> Self {
-        CheckboxBuilder::unchecked().build_unchecked()
     }
 }
 
@@ -322,6 +213,7 @@ impl CustomCheckboxWidget {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::builder::ComponentBuilder;
 
     #[test]
     fn test_checkbox_creation() {
@@ -348,13 +240,15 @@ mod tests {
         assert!(!checkbox.is_selected());
 
         // Toggle to checked
-        let new_state = checkbox.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = checkbox.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, CheckboxState::Unchecked);
         assert_eq!(new_state, CheckboxState::Checked);
         assert_eq!(checkbox.state(), CheckboxState::Checked);
         assert!(checkbox.is_selected());
 
         // Toggle back to unchecked
-        let new_state = checkbox.toggle().expect("Should toggle successfully");
+        let (previous_state, new_state) = checkbox.toggle().expect("Should toggle successfully");
+        assert_eq!(previous_state, CheckboxState::Checked);
         assert_eq!(new_state, CheckboxState::Unchecked);
         assert_eq!(checkbox.state(), CheckboxState::Unchecked);
         assert!(!checkbox.is_selected());

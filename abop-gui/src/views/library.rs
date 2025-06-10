@@ -76,7 +76,7 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
             container(toolbar.view(&state.material_tokens))
                 .width(Length::Fill)
                 .height(Length::Fixed(state.material_tokens.sizing().toolbar_height)) // Use unified toolbar height
-                .into()
+                .into(),
         );
     }
 
@@ -110,10 +110,10 @@ pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
     content_items.push(footer);
 
     let content = column(content_items)
-    .spacing(4) // MD3: minimal vertical spacing between toolbars
-    .width(Length::Fill)
-    .height(Length::Fill) // Fill available height
-    .padding(state.material_tokens.spacing.md); // Add some padding around the content
+        .spacing(4) // MD3: minimal vertical spacing between toolbars
+        .width(Length::Fill)
+        .height(Length::Fill) // Fill available height
+        .padding(state.material_tokens.spacing.md); // Add some padding around the content
 
     container(content)
         .width(Length::Fill)

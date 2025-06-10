@@ -75,22 +75,22 @@ pub mod builder;
 pub mod checkbox;
 pub mod chip;
 pub mod common;
+pub mod defaults;
 pub mod radio;
 pub mod switch;
 
 #[cfg(test)]
 pub mod tests;
 
-// Re-export core types and traits (but not convenience functions)
+// Re-export core types and traits from builder module only
 pub use builder::{
-    BatchBuilder, Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder, Radio,
-    RadioBuilder, Switch, SwitchBuilder,
+    BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
+    ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder,
 };
-// Updated chip exports to use the new modular structure
+// Re-export additional chip collection types from chip module
 pub use chip::{
-    Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode,
-    DEFAULT_ANIMATION_DURATION, MAX_CHIP_LABEL_LENGTH, filter_chip_collection,
-    single_select_chip_collection,
+    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, DEFAULT_ANIMATION_DURATION,
+    MAX_CHIP_LABEL_LENGTH, filter_chip_collection, single_select_chip_collection,
 };
 pub use common::{
     AnimatedWidget, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,

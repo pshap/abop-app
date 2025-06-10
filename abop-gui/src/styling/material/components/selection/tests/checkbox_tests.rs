@@ -3,7 +3,7 @@
 use crate::styling::material::components::selection::{
     builder::{Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder},
     checkbox::{checkbox_from_bool, checked_checkbox, indeterminate_checkbox, unchecked_checkbox},
-    common::{CheckboxState, ComponentSize, SelectionError, SelectionWidget},
+    common::{CheckboxState, ComponentSize, SelectionError, SelectionWidget, StatefulWidget},
 };
 
 #[test]
@@ -90,7 +90,7 @@ fn test_checkbox_state_management() {
     assert!(!checkbox.to_bool());
 
     // Toggle to checked
-    let new_state = checkbox.toggle().expect("Should toggle successfully");
+    let (_prev_state, new_state) = checkbox.toggle().expect("Should toggle successfully");
     assert_eq!(new_state, CheckboxState::Checked);
     assert_eq!(checkbox.state(), CheckboxState::Checked);
     assert!(checkbox.is_selected());
