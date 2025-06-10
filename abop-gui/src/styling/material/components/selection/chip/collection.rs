@@ -176,10 +176,29 @@ impl ChipCollection {
     pub fn deselect_chip(&mut self, index: usize) -> Result<(), SelectionError> {
         self.validate_index(index)?;
         self.validate_selection_allowed()?;
-        self.chips[index].unselect()
+        self.chips[index].unselect()?;
+        Ok(())
     }
 
-    /// Toggle chip selection by index
+    /// Toggle chip selection by index with mode-specific behavior
+    /// 
+    /// # Mode-Specific Behavior:
+    /// 
+    /// ## Single Selection Mode
+    /// - If the chip is currently selected: deselects it (no chips selected)
+    /// - If the chip is unselected: selects it and deselects all others
+    /// - Always maintains at most one selected chip
+    /// 
+    /// ## Multiple Selection Mode  
+    /// - Simply toggles the individual chip's selection state
+    /// - Does not affect other chips in the collection
+    /// - Allows any number of chips to be selected
+    /// 
+    /// ## No Selection Mode
+    /// - Returns an error as selection is not allowed
+    /// 
+    /// # Returns
+    /// The new state of the toggled chip, or an error if the operation is invalid
     pub fn toggle_chip(&mut self, index: usize) -> Result<ChipState, SelectionError> {
         self.validate_index(index)?;
         self.validate_selection_allowed()?;
@@ -188,13 +207,17 @@ impl ChipCollection {
             ChipSelectionMode::Single => {
                 // In single mode, selecting toggles off others
                 if self.chips[index].is_selected() {
-                    self.chips[index].unselect()?;
+                    let _previous_state = self.chips[index].unselect()?;
+                    Ok(self.chips[index].state())
                 } else {
                     self.select_chip(index)?;
+                    Ok(self.chips[index].state())
                 }
-                Ok(self.chips[index].state())
             }
-            ChipSelectionMode::Multiple => self.chips[index].toggle(),
+            ChipSelectionMode::Multiple => {
+                let (_previous, new_state) = self.chips[index].toggle()?;
+                Ok(new_state)
+            }
             ChipSelectionMode::None => Err(SelectionError::InvalidState {
                 details: "Selection not allowed in this collection".to_string(),
             }),
