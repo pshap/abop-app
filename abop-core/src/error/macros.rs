@@ -165,9 +165,7 @@ pub struct ErrorChain {
 impl ErrorChain {
     /// Create a new error chain
     pub fn new() -> Self {
-        Self {
-            errors: Vec::new(),
-        }
+        Self { errors: Vec::new() }
     }
 
     /// Add an error to the chain
@@ -223,14 +221,22 @@ mod tests {
 
         let with_context = result.context("Failed to read config file");
         assert!(with_context.is_err());
-        assert!(with_context.unwrap_err().to_string().contains("Failed to read config file"));
+        assert!(
+            with_context
+                .unwrap_err()
+                .to_string()
+                .contains("Failed to read config file")
+        );
     }
 
     #[test]
     fn test_error_chain() {
         let chain = ErrorChain::new()
             .context("Loading configuration")
-            .add(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
+            .add(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "file not found",
+            ))
             .context("Failed to initialize application");
 
         let error = chain.into_error();
@@ -255,7 +261,11 @@ mod tests {
     fn test_timeout_error_macro() {
         let err = timeout_error!("scan operation", 5000, 7500);
         match err {
-            AppError::Timeout { operation, timeout_ms, elapsed_ms } => {
+            AppError::Timeout {
+                operation,
+                timeout_ms,
+                elapsed_ms,
+            } => {
                 assert_eq!(operation, "scan operation");
                 assert_eq!(timeout_ms, 5000);
                 assert_eq!(elapsed_ms, 7500);

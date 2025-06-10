@@ -3,9 +3,9 @@
 //! Tests cover switch state management, Material Design 3 compliance,
 //! custom widget preparation, and builder patterns.
 
+use super::super::builder::{ComponentBuilder, Switch};
 use super::super::common::*;
 use super::super::switch::*;
-use super::super::builder::{Switch, ComponentBuilder};
 
 #[cfg(test)]
 mod switch_tests {
@@ -21,7 +21,9 @@ mod switch_tests {
 
     #[test]
     fn test_switch_with_label() {
-        let switch = Switch::off().label("Enable notifications").build_unchecked();
+        let switch = Switch::off()
+            .label("Enable notifications")
+            .build_unchecked();
         assert_eq!(
             switch.props().label,
             Some("Enable notifications".to_string())
@@ -84,7 +86,7 @@ mod switch_tests {
     fn test_switch_trait_implementations() {
         let switch = Switch::on().build_unchecked();
 
-        // Test SelectionWidget trait  
+        // Test SelectionWidget trait
         assert!(switch.validate().is_ok());
         assert_eq!(switch.state(), SwitchState::On);
 
@@ -154,10 +156,10 @@ mod switch_dimensions_tests {
 
         // Track radius should be half the height for rounded ends
         assert_eq!(dimensions.track_radius, dimensions.track_height / 2.0);
-        
+
         // Thumb should fit within track height
         assert!(dimensions.thumb_diameter <= dimensions.track_height);
-        
+
         // Track width should be sufficient for thumb travel
         assert!(dimensions.track_width > dimensions.thumb_diameter);
     }
@@ -177,14 +179,14 @@ mod switch_dimensions_tests {
             // Track should be able to contain thumb
             assert!(dimensions.track_width >= dimensions.thumb_diameter);
             assert!(dimensions.track_height >= dimensions.thumb_diameter);
-            
+
             // Thumb should have proper elevation
             assert!(dimensions.thumb_elevation > 0.0);
         }
     }
 }
 
-// NOTE: CustomSwitchWidget tests are commented out because CustomSwitchWidget 
+// NOTE: CustomSwitchWidget tests are commented out because CustomSwitchWidget
 // is a private implementation detail for Phase 4 and not part of the public API
 /*
 #[cfg(test)]
@@ -245,7 +247,7 @@ mod integration_tests {
         // and that dimensions are calculated correctly
         let large_dimensions = SwitchDimensions::for_size(ComponentSize::Large);
         let medium_dimensions = SwitchDimensions::for_size(ComponentSize::Medium);
-        
+
         // Verify dimensions are different for different sizes
         assert!(large_dimensions.track_width > medium_dimensions.track_width);
         assert!(large_dimensions.track_height > medium_dimensions.track_height);
@@ -278,7 +280,7 @@ mod integration_tests {
             // Test that dimensions match Material Design 3 specifications
             assert_eq!(dimensions.track_radius, dimensions.track_height / 2.0);
             assert!(dimensions.thumb_diameter <= dimensions.track_height);
-            
+
             // Test that switch validates correctly
             assert!(switch.validate().is_ok());
         }

@@ -315,7 +315,6 @@ impl Database {
 
         // Process each library's audiobooks
         for (library_id, audiobooks_for_library) in library_groups {
-
             self.operations.execute_transaction(move |tx| {
                 let mut stmt = tx.prepare(
                     "INSERT OR REPLACE INTO audiobooks 
@@ -531,18 +530,19 @@ impl Database {
     }
 
     /// Opens the centralized application database
-    /// 
+    ///
     /// This creates a single database file in the app's data directory,
     /// avoiding the need for separate databases per library.
     pub fn open_app_database() -> Result<Self> {
         let db_path = Self::get_app_database_path()?;
-        
+
         // Ensure the parent directory exists
         if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| AppError::Config(format!("Failed to create database directory: {e}")))?;
+            std::fs::create_dir_all(parent).map_err(|e| {
+                AppError::Config(format!("Failed to create database directory: {e}"))
+            })?;
         }
-        
+
         info!("Using centralized database at: {}", db_path.display());
         Self::open(&db_path)
     }

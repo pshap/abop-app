@@ -4,10 +4,10 @@
 //! work correctly and provide good developer experience.
 
 use abop_core::{
+    audio_error, bail, config_error, database_error, ensure,
     error::AppError,
-    config_error, audio_error, database_error, validation_error, 
-    invalid_data, bail, ensure, with_context, timeout_error,
-    error::{ErrorContext, ErrorChain},
+    error::{ErrorChain, ErrorContext},
+    invalid_data, timeout_error, validation_error, with_context,
 };
 
 #[test]
@@ -52,7 +52,11 @@ fn test_error_macros() {
 fn test_timeout_error_macro() {
     let err = timeout_error!("database query", 5000, 7500);
     match err {
-        AppError::Timeout { operation, timeout_ms, elapsed_ms } => {
+        AppError::Timeout {
+            operation,
+            timeout_ms,
+            elapsed_ms,
+        } => {
             assert_eq!(operation, "database query");
             assert_eq!(timeout_ms, 5000);
             assert_eq!(elapsed_ms, 7500);
@@ -72,7 +76,7 @@ fn test_bail_macro() {
 
     assert!(test_function(5).is_ok());
     assert_eq!(test_function(5).unwrap(), 10);
-    
+
     let err = test_function(-1).unwrap_err();
     match err {
         AppError::Other(msg) => assert_eq!(msg, "Negative values not allowed: -1"),
@@ -83,13 +87,16 @@ fn test_bail_macro() {
 #[test]
 fn test_ensure_macro() {
     fn test_function(value: i32) -> Result<i32, AppError> {
-        ensure!(value > 0, AppError::InvalidData("Value must be positive".to_string()));
+        ensure!(
+            value > 0,
+            AppError::InvalidData("Value must be positive".to_string())
+        );
         ensure!(value < 100, "Value {} is too large", value);
         Ok(value)
     }
 
     assert!(test_function(50).is_ok());
-    
+
     let err = test_function(-1).unwrap_err();
     match err {
         AppError::InvalidData(msg) => assert_eq!(msg, "Value must be positive"),
@@ -106,12 +113,15 @@ fn test_ensure_macro() {
 #[test]
 fn test_with_context_macro() {
     fn failing_operation() -> Result<(), std::io::Error> {
-        Err(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "file not found",
+        ))
     }
 
     let result = with_context!(failing_operation(), "Failed to load configuration");
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     match err {
         AppError::Other(msg) => {
@@ -124,7 +134,7 @@ fn test_with_context_macro() {
     // Test formatted context
     let result = with_context!(failing_operation(), "Failed to load file {}", "config.toml");
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     match err {
         AppError::Other(msg) => {
@@ -137,13 +147,16 @@ fn test_with_context_macro() {
 #[test]
 fn test_error_context_trait() {
     fn io_operation() -> Result<String, std::io::Error> {
-        Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied"))
+        Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "access denied",
+        ))
     }
 
     // Test context method
     let result = io_operation().context("Reading config file");
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     match err {
         AppError::Other(msg) => {
@@ -156,7 +169,7 @@ fn test_error_context_trait() {
     // Test with_context method
     let result = io_operation().with_context(|| "Dynamic context message".to_string());
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     match err {
         AppError::Other(msg) => {
@@ -170,13 +183,16 @@ fn test_error_context_trait() {
 fn test_error_chain() {
     let chain = ErrorChain::new()
         .context("Loading application")
-        .add(std::io::Error::new(std::io::ErrorKind::NotFound, "config.toml not found"))
+        .add(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "config.toml not found",
+        ))
         .context("Configuration initialization failed")
         .add("Database connection error");
 
     let error = chain.into_error();
     let error_string = error.to_string();
-    
+
     assert!(error_string.contains("Loading application"));
     assert!(error_string.contains("config.toml not found"));
     assert!(error_string.contains("Configuration initialization failed"));
@@ -188,17 +204,17 @@ fn test_error_chain() {
 fn test_complex_error_scenario() {
     fn complex_operation() -> Result<String, AppError> {
         // Simulate a complex operation with multiple potential failure points
-        
+
         // Validation step
         let input = -1;
         ensure!(input >= 0, validation_error!("Input must be non-negative"));
-        
+
         // File operation step
         let file_result: Result<String, std::io::Error> = Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            "file missing"
+            "file missing",
         ));
-        
+
         let _content = file_result
             .context("Reading configuration file")
             .map_err(|e| {
@@ -214,7 +230,7 @@ fn test_complex_error_scenario() {
 
     let result = complex_operation();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     let error_string = err.to_string();
     assert!(error_string.contains("Input must be non-negative"));
@@ -236,7 +252,7 @@ fn test_error_propagation() {
 
     let result = level_1();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     let error_string = err.to_string();
     assert!(error_string.contains("Level 1 context"));
@@ -248,14 +264,12 @@ fn test_error_propagation() {
 fn test_database_error_macro() {
     let err = database_error!("Connection timeout after {}ms", 5000);
     match err {
-        AppError::Database(db_err) => {
-            match db_err {
-                abop_core::db::error::DatabaseError::ExecutionFailed { message } => {
-                    assert_eq!(message, "Connection timeout after 5000ms");
-                }
-                _ => panic!("Wrong database error type"),
+        AppError::Database(db_err) => match db_err {
+            abop_core::db::error::DatabaseError::ExecutionFailed { message } => {
+                assert_eq!(message, "Connection timeout after 5000ms");
             }
-        }
+            _ => panic!("Wrong database error type"),
+        },
         _ => panic!("Wrong error type"),
     }
 }
@@ -273,7 +287,7 @@ fn test_error_display_formatting() {
         let display_string = error.to_string();
         assert!(!display_string.is_empty());
         assert!(display_string.len() > 10); // Should have meaningful content
-        
+
         // All errors should have proper formatting
         match error {
             AppError::Config(_) => assert!(display_string.contains("Configuration error")),

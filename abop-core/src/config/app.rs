@@ -8,17 +8,29 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 // Default value functions for serde
-fn default_app_name() -> String { "ABOP Iced".to_string() }
-fn default_version() -> String { env!("CARGO_PKG_VERSION").to_string() }
+fn default_app_name() -> String {
+    "ABOP Iced".to_string()
+}
+fn default_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
 fn default_data_dir() -> PathBuf {
     dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("./data"))
         .join("abop-iced")
 }
-fn default_debug_mode() -> bool { cfg!(debug_assertions) }
-fn default_max_recent_files() -> usize { 10 }
-fn default_auto_save_interval() -> u64 { 300 }
-fn default_crash_reporting() -> bool { true }
+fn default_debug_mode() -> bool {
+    cfg!(debug_assertions)
+}
+fn default_max_recent_files() -> usize {
+    10
+}
+fn default_auto_save_interval() -> u64 {
+    300
+}
+fn default_crash_reporting() -> bool {
+    true
+}
 
 /// Application-level configuration settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,8 +79,14 @@ impl ConfigValidation for AppConfig {
         let mut result = ValidationResult::new();
 
         // Validate data directory
-        if let Err(e) = crate::config::validation::validate_or_create_directory(&self.data_dir, "data_dir") {
-            result.add_error("data_dir", &e.to_string(), Some("Ensure the path is writable"));
+        if let Err(e) =
+            crate::config::validation::validate_or_create_directory(&self.data_dir, "data_dir")
+        {
+            result.add_error(
+                "data_dir",
+                &e.to_string(),
+                Some("Ensure the path is writable"),
+            );
         }
 
         // Validate max_recent_files range

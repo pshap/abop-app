@@ -43,7 +43,10 @@ impl CoreScanner {
 
     /// Discovers all audio files in a directory (synchronous)
     pub fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
-        log::warn!("🔍 CORE SCANNER: discover_files called with path: '{}'", path.display());
+        log::warn!(
+            "🔍 CORE SCANNER: discover_files called with path: '{}'",
+            path.display()
+        );
         let extensions = &self.config.extensions;
 
         // Verify the path exists before scanning
@@ -155,10 +158,15 @@ impl CoreScanner {
             Err(e) => {
                 // Check if this is a common expected error that shouldn't be treated as fatal
                 let error_msg = e.to_string();
-                if error_msg.contains("end of stream") || 
-                   error_msg.contains("Failed to probe audio format") ||
-                   error_msg.contains("unsupported format") {
-                    warn!("Unable to extract metadata from {}, using filename fallback: {}", path.display(), e);
+                if error_msg.contains("end of stream")
+                    || error_msg.contains("Failed to probe audio format")
+                    || error_msg.contains("unsupported format")
+                {
+                    warn!(
+                        "Unable to extract metadata from {}, using filename fallback: {}",
+                        path.display(),
+                        e
+                    );
                     None // Use fallback instead of failing
                 } else {
                     // For other errors, still fail as these might indicate real issues
@@ -169,7 +177,7 @@ impl CoreScanner {
         };
 
         let mut audiobook = Audiobook::new(library_id, path);
-        
+
         // Extract title - prefer metadata, fall back to filename
         audiobook.title = Some(
             metadata
@@ -180,9 +188,9 @@ impl CoreScanner {
                         .and_then(|s| s.to_str())
                         .unwrap_or("Unknown Title")
                         .to_string()
-                })
+                }),
         );
-        
+
         // Set other metadata fields if available
         if let Some(ref meta) = metadata {
             audiobook.author = meta.artist.clone();

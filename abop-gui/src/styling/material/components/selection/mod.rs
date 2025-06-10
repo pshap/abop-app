@@ -332,7 +332,7 @@ pub mod constants {
 /// Version information for the selection module
 pub const VERSION: &str = "3.0.0";
 /// Current development phase of the selection components
-/// 
+///
 /// This constant tracks the current architectural phase of the selection components.
 /// Phase 3+ indicates a modular architecture with future preparation for additional features.
 pub const PHASE: &str = "Phase 3+ - Modular Architecture with Future Preparation";
@@ -364,8 +364,14 @@ mod module_tests {
     #[test]
     fn test_validation_utilities() {
         let checkboxes = vec![
-            Checkbox::new(CheckboxState::Unchecked).label("Valid").build().unwrap(),
-            Checkbox::new(CheckboxState::Unchecked).label("Also Valid").build().unwrap(),
+            Checkbox::new(CheckboxState::Unchecked)
+                .label("Valid")
+                .build()
+                .unwrap(),
+            Checkbox::new(CheckboxState::Unchecked)
+                .label("Also Valid")
+                .build()
+                .unwrap(),
         ];
 
         assert!(validation::validate_checkboxes(&checkboxes).is_ok());
