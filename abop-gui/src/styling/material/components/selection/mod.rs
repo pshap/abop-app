@@ -82,6 +82,9 @@ pub mod switch;
 #[cfg(test)]
 pub mod tests;
 
+// Import traits for method resolution
+use common::SelectionComponent;
+
 // Re-export core types and traits from builder module only
 pub use builder::{
     BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
@@ -93,8 +96,8 @@ pub use chip::{
     MAX_CHIP_LABEL_LENGTH, filter_chip_collection, single_select_chip_collection,
 };
 pub use common::{
-    AnimatedWidget, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-    ComponentSize, EasingCurve, SelectionError, SelectionWidget, StatefulWidget, SwitchState,
+    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
+    ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState,
     ValidationConfig, ValidationRule,
 };
 pub use radio::{RadioGroupBuilder, RadioGroupState};
@@ -118,31 +121,36 @@ pub type AgreementCheckbox = Checkbox;
 /// Convenient builder functions for quick component creation
 pub mod builders {
     use super::*;
+    
     /// Create a checkbox with common settings
     pub fn checkbox() -> CheckboxBuilder {
-        Checkbox::new(CheckboxState::Unchecked)
+        CheckboxBuilder::new(CheckboxState::Unchecked)
     }
 
     /// Create a labeled checkbox
+    pub fn checkbox_with_label<S: Into<String>>(label: S) -> CheckboxBuilder {
+        CheckboxBuilder::new(CheckboxState::Unchecked).label(label)
+    }
     pub fn labeled_checkbox(label: &str) -> CheckboxBuilder {
-        Checkbox::new(CheckboxState::Unchecked).label(label)
+        CheckboxBuilder::new(CheckboxState::Unchecked).label(label)
     }
     /// Create a radio group builder
     pub fn radio_group<T>() -> RadioGroupBuilder<T>
     where
-        T: Clone + PartialEq + Eq + std::hash::Hash + std::fmt::Debug,
+        T: Clone + PartialEq + Eq + std::hash::Hash + std::fmt::Debug + Copy,
     {
         RadioGroupBuilder::new()
     }
     /// Create a switch with common settings
     pub fn switch() -> SwitchBuilder {
-        Switch::new(SwitchState::Off)
+        SwitchBuilder::new(SwitchState::Off)
     }
 
     /// Create a labeled switch
     pub fn labeled_switch(label: &str) -> SwitchBuilder {
-        Switch::new(SwitchState::Off).label(label)
+        SwitchBuilder::new(SwitchState::Off).label(label)
     }
+    
     /// Create a filter chip collection
     pub fn filter_chips() -> ChipCollection {
         ChipCollection::new(chip::ChipSelectionMode::Multiple)
@@ -247,7 +255,7 @@ pub mod state_utils {
     /// Get all selected values from a radio group
     pub fn radio_group_selection<T>(group: &RadioGroupState<T>) -> Option<T>
     where
-        T: Clone + PartialEq + Eq + std::hash::Hash,
+        T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
     {
         group.selected_value()
     }
@@ -369,11 +377,11 @@ mod module_tests {
     #[test]
     fn test_validation_utilities() {
         let checkboxes = vec![
-            Checkbox::new(CheckboxState::Unchecked)
+            CheckboxBuilder::new(CheckboxState::Unchecked)
                 .label("Valid")
                 .build()
                 .unwrap(),
-            Checkbox::new(CheckboxState::Unchecked)
+            CheckboxBuilder::new(CheckboxState::Unchecked)
                 .label("Also Valid")
                 .build()
                 .unwrap(),
