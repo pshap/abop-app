@@ -94,14 +94,17 @@
 //!
 //! ## Collection Layout and Rendering
 //!
-//! ```rust
-//! use crate::styling::material::components::selection::chip::*;
+//! ```rust,no_run
+//! use abop_gui::styling::material::components::selection::chip::*;
+//! use abop_gui::styling::material::theme::ColorScheme;
 //!
 //! let collection = filter_chip_collection(vec![
 //!     filter_chip("Technology").build(),
 //!     filter_chip("Science").build(),
 //!     filter_chip("Art").build(),
 //! ]);
+//!
+//! let color_scheme = ColorScheme::default();
 //!
 //! // Render with different layouts
 //! let row_view = collection.view_with_layout(
