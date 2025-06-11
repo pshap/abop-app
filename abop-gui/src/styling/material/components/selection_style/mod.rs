@@ -5,6 +5,12 @@
 
 mod lib;
 pub mod strategy;
+pub mod variants;
+pub mod constants;
+pub mod state;
+pub mod colors;
+pub mod builder;
+pub mod functions;
 
 // Re-export core types from lib
 pub use lib::{
@@ -15,6 +21,10 @@ pub use lib::{
 
 // Re-export strategy types
 pub use strategy::{
-    CheckboxStrategy, ChipStrategy, RadioStrategy, SelectionStyleContext, SelectionStyleStrategy,
-    SwitchStrategy, create_strategy,
+    SelectionStyleContext, SelectionStyleStrategy, create_strategy,
+};
+
+// Re-export variant implementations
+pub use variants::{
+    CheckboxStrategy, ChipStrategy, RadioStrategy, SwitchStrategy,
 };
