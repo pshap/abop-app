@@ -14,6 +14,7 @@ use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
+use crate::styling::material::tokens::core::MaterialTokens;
 use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 
 // ============================================================================
@@ -30,12 +31,34 @@ pub struct Checkbox {
 }
 
 // ============================================================================
-// Phase 1: Enhanced Trait Implementations for Checkbox
+// Phase 1: Core Trait Implementations for Checkbox
 // ============================================================================
 
-impl ErrorState for Checkbox {
+impl SelectionComponent for Checkbox {
+    type State = CheckboxState;
+    type Message = CheckboxState;
+
+    fn state(&self) -> Self::State {
+        self.state
+    }
+
+    fn props(&self) -> &ComponentProps {
+        &self.props
+    }
+
+    fn validate(&self) -> Result<(), SelectionError> {
+        super::super::common::validate_checkbox_state(self.state, &self.props)
+    }
+
     fn has_error(&self) -> bool {
         self.error_state
+    }
+}
+
+impl StatefulComponent for Checkbox {
+    fn set_state(&mut self, new_state: Self::State) -> Result<(), SelectionError> {
+        self.state = new_state;
+        Ok(())
     }
 
     fn set_error(&mut self, error: bool) {
@@ -43,7 +66,7 @@ impl ErrorState for Checkbox {
     }
 }
 
-impl AnimatedWidget for Checkbox {
+impl AnimatedComponent for Checkbox {
     fn animation_config(&self) -> &AnimationConfig {
         &self.animation_config
     }
@@ -53,19 +76,18 @@ impl AnimatedWidget for Checkbox {
     }
 }
 
-impl EnhancedSelectionWidget<CheckboxState> for Checkbox {
-    fn set_state(&mut self, state: CheckboxState) {
-        self.state = state;
-    }
-
-    fn toggle_if_binary(&mut self) -> Option<CheckboxState> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
-        Some(previous_state)
-    }
-}
-
 impl Checkbox {
+    /// Create a new checkbox with the specified state
+    #[must_use]
+    pub fn new(state: CheckboxState) -> Self {
+        Self {
+            state,
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+
     /// Check the checkbox
     pub fn check(&mut self) -> Result<CheckboxState, SelectionError> {
         let previous_state = self.state;
@@ -87,9 +109,10 @@ impl Checkbox {
         Ok(previous_state)
     }
 
-    /// Toggle the checkbox state (enhanced version)
+    /// Toggle the checkbox state
     pub fn toggle(&mut self) -> Result<(CheckboxState, CheckboxState), SelectionError> {
-        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
+        let previous_state = self.state;
+        self.state = self.state.toggle();
         Ok((previous_state, self.state))
     }
 
@@ -139,12 +162,34 @@ impl PartialEq for Checkbox {
 impl Eq for Checkbox {}
 
 // ============================================================================
-// Phase 1: Enhanced Trait Implementations for Switch
+// Phase 1: Core Trait Implementations for Switch
 // ============================================================================
 
-impl ErrorState for Switch {
+impl SelectionComponent for Switch {
+    type State = SwitchState;
+    type Message = SwitchState;
+
+    fn state(&self) -> Self::State {
+        self.state
+    }
+
+    fn props(&self) -> &ComponentProps {
+        &self.props
+    }
+
+    fn validate(&self) -> Result<(), SelectionError> {
+        super::super::common::validate_switch_state(self.state, &self.props)
+    }
+
     fn has_error(&self) -> bool {
         self.error_state
+    }
+}
+
+impl StatefulComponent for Switch {
+    fn set_state(&mut self, new_state: Self::State) -> Result<(), SelectionError> {
+        self.state = new_state;
+        Ok(())
     }
 
     fn set_error(&mut self, error: bool) {
@@ -152,7 +197,7 @@ impl ErrorState for Switch {
     }
 }
 
-impl AnimatedWidget for Switch {
+impl AnimatedComponent for Switch {
     fn animation_config(&self) -> &AnimationConfig {
         &self.animation_config
     }
@@ -162,23 +207,11 @@ impl AnimatedWidget for Switch {
     }
 }
 
-impl EnhancedSelectionWidget<SwitchState> for Switch {
-    fn set_state(&mut self, state: SwitchState) {
-        self.state = state;
-    }
-
-    fn toggle_if_binary(&mut self) -> Option<SwitchState> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
-        Some(previous_state)
-    }
-}
-
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]
 pub struct Radio<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     pub(crate) value: T,
     pub(crate) props: ComponentProps,
@@ -188,8 +221,19 @@ where
 
 impl<T> Radio<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
+    /// Create a new radio button with the specified value
+    #[must_use]
+    pub fn new(value: T) -> Self {
+        Self {
+            value,
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+
     /// Create a new radio button with the specified value
     #[must_use]
     pub fn builder(value: T) -> super::RadioBuilder<T> {
@@ -255,8 +299,11 @@ where
             ComponentSize::Large => LegacySelectionSize::Large,
         };
 
+        // Create MaterialTokens from MaterialColors
+        let tokens = MaterialTokens::default().with_colors(color_scheme.clone());
+
         // Create styling function
-        let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Radio)
+        let style_fn = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
             .size(legacy_size)
             .error(self.error_state)
             .radio_style();
@@ -277,7 +324,7 @@ where
 
 impl<T> PartialEq for Radio<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
@@ -287,18 +334,44 @@ where
     }
 }
 
-impl<T> Eq for Radio<T> where T: Clone + PartialEq + Eq + std::hash::Hash {}
+impl<T> Eq for Radio<T> where T: Clone + PartialEq + Eq + std::hash::Hash + Copy {}
 
 // ============================================================================
-// Phase 1: Enhanced Trait Implementations for Radio
+// Phase 1: Core Trait Implementations for Radio
 // ============================================================================
 
-impl<T> ErrorState for Radio<T>
+impl<T> SelectionComponent for Radio<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
+    type State = T;
+    type Message = T;
+
+    fn state(&self) -> Self::State {
+        self.value
+    }
+
+    fn props(&self) -> &ComponentProps {
+        &self.props
+    }
+
+    fn validate(&self) -> Result<(), SelectionError> {
+        // Radio validation would go here
+        Ok(())
+    }
+
     fn has_error(&self) -> bool {
         self.error_state
+    }
+}
+
+impl<T> StatefulComponent for Radio<T>
+where
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
+{
+    fn set_state(&mut self, new_state: Self::State) -> Result<(), SelectionError> {
+        self.value = new_state;
+        Ok(())
     }
 
     fn set_error(&mut self, error: bool) {
@@ -306,9 +379,9 @@ where
     }
 }
 
-impl<T> AnimatedWidget for Radio<T>
+impl<T> AnimatedComponent for Radio<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn animation_config(&self) -> &AnimationConfig {
         &self.animation_config
@@ -316,21 +389,6 @@ where
 
     fn set_animation_config(&mut self, config: AnimationConfig) {
         self.animation_config = config;
-    }
-}
-
-impl<T> EnhancedSelectionWidget<T> for Radio<T>
-where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
-{
-    fn set_state(&mut self, state: T) {
-        self.value = state;
-    }
-
-    fn toggle_if_binary(&mut self) -> Option<T> {
-        // Radio buttons don't toggle like binary states
-        // They are selected based on group selection
-        None
     }
 }
 
@@ -344,9 +402,21 @@ pub struct Switch {
 }
 
 impl Switch {
-    /// Toggle the switch state (enhanced version)
+    /// Create a new switch with the specified state
+    #[must_use]
+    pub fn new(state: SwitchState) -> Self {
+        Self {
+            state,
+            props: ComponentProps::default(),
+            error_state: false,
+            animation_config: AnimationConfig::default(),
+        }
+    }
+
+    /// Toggle the switch state
     pub fn toggle(&mut self) -> Result<(SwitchState, SwitchState), SelectionError> {
-        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
+        let previous_state = self.state;
+        self.state = self.state.toggle();
         Ok((previous_state, self.state))
     }
 
@@ -381,12 +451,34 @@ impl PartialEq for Switch {
 impl Eq for Switch {}
 
 // ============================================================================
-// Phase 1: Enhanced Trait Implementations for Chip
+// Phase 1: Core Trait Implementations for Chip
 // ============================================================================
 
-impl ErrorState for Chip {
+impl SelectionComponent for Chip {
+    type State = ChipState;
+    type Message = ChipState;
+
+    fn state(&self) -> Self::State {
+        self.state
+    }
+
+    fn props(&self) -> &ComponentProps {
+        &self.props
+    }
+
+    fn validate(&self) -> Result<(), SelectionError> {
+        validate_props(&self.props, &ValidationConfig::default())
+    }
+
     fn has_error(&self) -> bool {
         self.error_state
+    }
+}
+
+impl StatefulComponent for Chip {
+    fn set_state(&mut self, state: ChipState) -> Result<(), SelectionError> {
+        self.state = state;
+        Ok(())
     }
 
     fn set_error(&mut self, error: bool) {
@@ -394,25 +486,13 @@ impl ErrorState for Chip {
     }
 }
 
-impl AnimatedWidget for Chip {
+impl AnimatedComponent for Chip {
     fn animation_config(&self) -> &AnimationConfig {
         &self.animation_config
     }
 
     fn set_animation_config(&mut self, config: AnimationConfig) {
         self.animation_config = config;
-    }
-}
-
-impl EnhancedSelectionWidget<ChipState> for Chip {
-    fn set_state(&mut self, state: ChipState) {
-        self.state = state;
-    }
-
-    fn toggle_if_binary(&mut self) -> Option<ChipState> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
-        Some(previous_state)
     }
 }
 
@@ -454,9 +534,10 @@ impl Chip {
         Ok(previous_state)
     }
 
-    /// Toggle the chip selection state (enhanced version)
+    /// Toggle the chip selection state
     pub fn toggle(&mut self) -> Result<(ChipState, ChipState), SelectionError> {
-        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
+        let previous_state = self.state;
+        self.state = self.state.toggle();
         Ok((previous_state, self.state))
     }
 
@@ -490,134 +571,6 @@ impl PartialEq for Chip {
 }
 
 impl Eq for Chip {}
-
-// ============================================================================
-// Trait Implementations
-// ============================================================================
-
-impl SelectionWidget<CheckboxState> for Checkbox {
-    type Message = CheckboxState;
-    type Builder = super::CheckboxBuilder;
-
-    fn new(state: CheckboxState) -> Self::Builder {
-        super::CheckboxBuilder::new(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        super::super::common::validate_checkbox_state(self.state, &self.props)
-    }
-
-    fn state(&self) -> CheckboxState {
-        self.state
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl StatefulWidget<CheckboxState> for Checkbox {
-    fn update_state(&mut self, new_state: CheckboxState) -> Result<(), SelectionError> {
-        self.set_state(new_state);
-        Ok(())
-    }
-
-    fn transition_to(&mut self, new_state: CheckboxState) -> Result<CheckboxState, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state())
-    }
-}
-
-impl SelectionWidget<SwitchState> for Switch {
-    type Message = SwitchState;
-    type Builder = super::SwitchBuilder;
-
-    fn new(state: SwitchState) -> Self::Builder {
-        super::SwitchBuilder::new(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        super::super::common::validate_switch_state(self.state, &self.props)
-    }
-
-    fn state(&self) -> SwitchState {
-        self.state
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl StatefulWidget<SwitchState> for Switch {
-    fn update_state(&mut self, new_state: SwitchState) -> Result<(), SelectionError> {
-        self.set_state(new_state);
-        Ok(())
-    }
-
-    fn transition_to(&mut self, new_state: SwitchState) -> Result<SwitchState, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state())
-    }
-}
-
-impl<T> SelectionWidget<T> for Radio<T>
-where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
-{
-    type Message = T;
-    type Builder = super::RadioBuilder<T>;
-
-    fn new(state: T) -> Self::Builder {
-        super::RadioBuilder::new(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        // Radio validation would go here
-        Ok(())
-    }
-
-    fn state(&self) -> T {
-        self.value.clone()
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl SelectionWidget<ChipState> for Chip {
-    type Message = ChipState;
-    type Builder = super::ChipBuilder;
-
-    fn new(state: ChipState) -> Self::Builder {
-        super::ChipBuilder::filter("Default").with_state(state)
-    }
-
-    fn validate(&self) -> Result<(), SelectionError> {
-        super::super::common::validate_chip_state(self.state, self.variant, &self.props)
-    }
-
-    fn state(&self) -> ChipState {
-        self.state
-    }
-
-    fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-}
-
-impl StatefulWidget<ChipState> for Chip {
-    fn update_state(&mut self, new_state: ChipState) -> Result<(), SelectionError> {
-        self.set_state(new_state);
-        Ok(())
-    }
-
-    fn transition_to(&mut self, new_state: ChipState) -> Result<ChipState, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state())
-    }
-}
 
 // ============================================================================
 // Tests

@@ -25,7 +25,7 @@ use super::common::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Currently selected value
     selected: Option<T>,
@@ -39,7 +39,7 @@ where
 
 impl<T> RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Create a new radio group state
     #[must_use]
@@ -60,7 +60,7 @@ where
     /// Get the currently selected value
     #[must_use]
     pub fn selected_value(&self) -> Option<T> {
-        self.selected.clone()
+        self.selected
     }
 
     /// Set the selected value
@@ -146,7 +146,7 @@ where
 
 impl<T> Default for RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn default() -> Self {
         Self::new()
@@ -161,7 +161,7 @@ where
 #[derive(Debug, Clone)]
 pub struct RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     radios: Vec<Radio<T>>,
     selected: Option<T>,
@@ -171,7 +171,7 @@ where
 
 impl<T> RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Create a new radio group builder
     #[must_use]
@@ -263,7 +263,7 @@ where
 
 impl<T> Default for RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn default() -> Self {
         Self::new()
@@ -284,7 +284,7 @@ where
 #[must_use]
 pub fn radio<T>(value: T) -> RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     RadioBuilder::new(value)
 }
@@ -293,7 +293,7 @@ where
 #[must_use]
 pub fn radio_group<T>() -> RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     RadioGroupBuilder::new()
 }
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_radio_creation() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .label("Option A")
             .size(ComponentSize::Large)
             .build()
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_radio_selection() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .build()
             .expect("Should create valid radio");
 
@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_radio_error_state() {
-        let mut radio = Radio::new(TestOption::A)
+        let mut radio = radio(TestOption::A)
             .error(true)
             .build()
             .expect("Should create radio with error state");
@@ -402,11 +402,11 @@ mod tests {
 
     #[test]
     fn test_radio_traits() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .build()
             .expect("Should create valid radio");
 
-        // Test SelectionWidget trait
+        // Test SelectionComponent trait
         assert_eq!(radio.state(), TestOption::A);
         assert!(radio.validate().is_ok());
 
@@ -429,8 +429,8 @@ mod tests {
     #[test]
     fn test_radio_group_duplicate_values() {
         // This should fail due to duplicate values
-        let radio1 = Radio::new(TestOption::A).build().unwrap();
-        let radio2 = Radio::new(TestOption::A).build().unwrap(); // Duplicate!
+        let radio1 = radio(TestOption::A).build().unwrap();
+        let radio2 = radio(TestOption::A).build().unwrap(); // Duplicate!
 
         let mut group = RadioGroupState::new();
         group.add_radio(radio1);

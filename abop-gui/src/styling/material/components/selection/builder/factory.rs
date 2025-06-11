@@ -55,7 +55,7 @@ pub fn checkbox(state: CheckboxState) -> CheckboxBuilder {
 #[must_use]
 pub fn radio<T>(value: T) -> RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     RadioBuilder::new(value)
 }

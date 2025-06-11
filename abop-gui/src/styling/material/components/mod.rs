@@ -68,8 +68,7 @@ pub use navigation::{
 pub use selection::{
     Checkbox, CheckboxBuilder, CheckboxState, Chip, ChipBuilder, ChipCollection, ChipSelectionMode,
     ChipState, ChipVariant, ComponentBuilder, ComponentSize, Radio, RadioBuilder,
-    RadioGroupBuilder, RadioGroupState, SelectionError, SelectionWidget, StatefulWidget, Switch,
-    SwitchBuilder, SwitchState,
+    RadioGroupBuilder, RadioGroupState, SelectionError, Switch, SwitchBuilder, SwitchState,
 };
 
 pub use selection_style::{

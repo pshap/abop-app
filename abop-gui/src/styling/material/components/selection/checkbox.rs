@@ -13,6 +13,7 @@ use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
+use crate::styling::material::tokens::MaterialTokens;
 
 use iced::{Element, Renderer, theme::Theme, widget::Checkbox as IcedCheckbox};
 
@@ -79,10 +80,13 @@ impl Checkbox {
         };
 
         // Create styling function
-        let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Checkbox)
-            .size(legacy_size)
-            .error(self.has_error())
-            .checkbox_style();
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Checkbox,
+        )
+        .size(legacy_size)
+        .error(self.has_error())
+        .checkbox_style();
 
         // Create the checkbox label
         let default_label = String::new();

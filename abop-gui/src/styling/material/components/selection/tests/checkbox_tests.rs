@@ -1,10 +1,12 @@
 //! Comprehensive tests for the modern Checkbox component
 
-use crate::styling::material::components::selection::common::{AnimatedWidget, ErrorState};
+use crate::styling::material::components::selection::common::{
+    AnimatedComponent, SelectionComponent, StatefulComponent,
+};
 use crate::styling::material::components::selection::{
     builder::{Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder},
     checkbox::{checkbox_from_bool, checked_checkbox, indeterminate_checkbox, unchecked_checkbox},
-    common::{CheckboxState, ComponentSize, SelectionError, SelectionWidget, StatefulWidget},
+    common::{CheckboxState, ComponentSize, SelectionError},
 };
 
 #[test]
@@ -99,7 +101,7 @@ fn test_checkbox_state_management() {
 
     // Update state directly
     checkbox
-        .update_state(CheckboxState::Indeterminate)
+        .set_state(CheckboxState::Indeterminate)
         .expect("Should update state");
     assert_eq!(checkbox.state(), CheckboxState::Indeterminate);
     assert!(checkbox.is_selected());
@@ -126,7 +128,7 @@ fn test_checkbox_trait_implementations() {
         .build()
         .expect("Should create valid checkbox");
 
-    // Test SelectionWidget trait
+    // Test SelectionComponent trait
     assert_eq!(checkbox.state(), CheckboxState::Checked);
     assert!(checkbox.validate().is_ok());
 

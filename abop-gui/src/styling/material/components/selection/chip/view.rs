@@ -5,11 +5,12 @@
 //! use cases such as basic view, toggle view, and filter chip view.
 
 use super::super::builder::Chip;
-use super::super::common::{ChipState, ComponentSize, SelectionWidget};
+use super::super::common::{ChipState, ComponentSize, SelectionComponent};
 use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
+use crate::styling::material::tokens::MaterialTokens;
 
 use iced::{
     Color, Element, Padding, Renderer,
@@ -78,9 +79,12 @@ impl Chip {
         };
 
         // Create styling function (avoid cloning color_scheme)
-        let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Chip)
-            .size(legacy_size)
-            .chip_style(self.is_selected());
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Chip,
+        )
+        .size(legacy_size)
+        .chip_style(self.is_selected());
 
         // Create chip content
         let content = Text::new(self.label()).size(self.props().size.text_size());
@@ -214,9 +218,12 @@ impl Chip {
         };
 
         // Create styling function
-        let style_fn = SelectionStyleBuilder::new(color_scheme.clone(), SelectionVariant::Chip)
-            .size(legacy_size)
-            .chip_style(self.is_selected());
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Chip,
+        )
+        .size(legacy_size)
+        .chip_style(self.is_selected());
 
         // Build content with icons and text
         let mut content_row = Row::new().spacing(4.0);
