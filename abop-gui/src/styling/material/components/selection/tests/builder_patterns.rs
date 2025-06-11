@@ -222,7 +222,7 @@ mod builder_performance_tests {
         assert_within_time_limit(
             || {
                 for i in 0..100 {
-                    let _builder = ChipBuilder::filter(&format!("Chip {}", i));
+                    let _builder = ChipBuilder::filter(format!("Chip {i}"));
                 }
             },
             50, // 50ms for 100 builders
@@ -235,7 +235,7 @@ mod builder_performance_tests {
         assert_within_time_limit(
             || {
                 for i in 0..100 {
-                    let _chip = ChipBuilder::filter(&format!("Chip {}", i))
+                    let _chip = ChipBuilder::filter(format!("Chip {i}"))
                         .selected(i % 2 == 0)
                         .size(ALL_COMPONENT_SIZES[i % ALL_COMPONENT_SIZES.len()])
                         .disabled(i % 10 == 0)
@@ -271,13 +271,13 @@ mod builder_advanced_features_tests {
         let icons = ["star", "heart", "home", "user", "settings", "search"];
 
         for (i, &icon) in icons.iter().enumerate() {
-            let chip = ChipBuilder::filter(&format!("Icon Test {}", i))
+            let chip = ChipBuilder::filter(format!("Icon Test {i}"))
                 .with_leading_icon(icon)
                 .build()
                 .unwrap();
             assert_chip_has_metadata(&chip, "leading_icon", icon);
 
-            let chip2 = ChipBuilder::filter(&format!("Trailing Test {}", i))
+            let chip2 = ChipBuilder::filter(format!("Trailing Test {i}"))
                 .with_trailing_icon(icon)
                 .build()
                 .unwrap();
@@ -291,7 +291,7 @@ mod builder_advanced_features_tests {
         let badge_values = [0, 1, 5, 10, 99, 999, 9999];
 
         for &count in &badge_values {
-            let chip = ChipBuilder::filter(&format!("Badge {}", count))
+            let chip = ChipBuilder::filter(format!("Badge {count}"))
                 .with_badge(count)
                 .build()
                 .unwrap();

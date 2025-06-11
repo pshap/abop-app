@@ -40,7 +40,7 @@ fn main() -> Result<()> {
 
     // Create library
     let library_id = db.add_library_with_path("Test Library", test_path.clone())?;
-    println!("✅ Created library with ID: {}", library_id);
+    println!("✅ Created library with ID: {library_id}");
 
     // Query all libraries to see what's stored
     let all_libraries = db.get_libraries()?;
@@ -118,11 +118,11 @@ fn main() -> Result<()> {
 
     for row in rows {
         let (id, name, path_str) = row?;
-        println!("  DB: ID={}, Name={}, Path='{}'", id, name, path_str);
+        println!("  DB: ID={id}, Name={name}, Path='{path_str}'");
 
         // Compare with our test path
         let our_path_str = test_path.to_string_lossy();
-        println!("  Our path string: '{}'", our_path_str);
+        println!("  Our path string: '{our_path_str}'");
         println!("  Paths equal: {}", path_str == our_path_str);
         println!(
             "  Paths equal (case insensitive): {}",

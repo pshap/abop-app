@@ -21,8 +21,7 @@ mod validation_tests {
             let result = ChipBuilder::filter(label).build();
             assert!(
                 result.is_ok(),
-                "Valid label '{}' should pass validation",
-                label
+                "Valid label '{label}' should pass validation"
             );
         }
 
@@ -50,15 +49,13 @@ mod validation_tests {
             let valid_result = ChipBuilder::new("Valid", variant).build();
             assert!(
                 valid_result.is_ok(),
-                "Variant {:?} should accept valid labels",
-                variant
+                "Variant {variant:?} should accept valid labels"
             );
 
-            let invalid_result = ChipBuilder::new(&oversized_label(), variant).build();
+            let invalid_result = ChipBuilder::new(oversized_label(), variant).build();
             assert!(
                 invalid_result.is_err(),
-                "Variant {:?} should reject oversized labels",
-                variant
+                "Variant {variant:?} should reject oversized labels"
             );
         }
     }
@@ -72,7 +69,7 @@ mod validation_tests {
             .build();
 
         assert!(result.is_ok(), "Valid builder chain should succeed"); // Test that invalid label fails even with other valid settings
-        let result = ChipBuilder::filter(&oversized_label())
+        let result = ChipBuilder::filter(oversized_label())
             .selected(true)
             .disabled(false)
             .build();
@@ -113,7 +110,7 @@ mod validation_tests {
         ] {
             let result = ChipBuilder::filter("Test").with_state(state).build();
 
-            assert!(result.is_ok(), "State {:?} should be valid", state);
+            assert!(result.is_ok(), "State {state:?} should be valid");
         }
     }
 }

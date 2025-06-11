@@ -144,7 +144,7 @@ mod integration_tests {
     #[test]
     fn test_switch_state_transitions() {
         let mut switch = Switch::off().build_unchecked();
-        let states = vec![SwitchState::Off, SwitchState::On, SwitchState::Off];
+        let states = [SwitchState::Off, SwitchState::On, SwitchState::Off];
 
         for (i, expected_state) in states.iter().enumerate() {
             if i > 0 {

@@ -117,7 +117,7 @@ fn test_database_operations() -> Result<()> {
                 )
                 .unwrap_or(0);
 
-            println!("Applied migrations count: {}", migration_count);
+            println!("Applied migrations count: {migration_count}");
         }
 
         return Err(anyhow::anyhow!("Database schema not properly initialized"));
@@ -173,7 +173,7 @@ fn test_library_operations() -> Result<()> {
                 .add_library_with_path("Validation Test Library", test_path.clone())
                 .context("Failed to create test library")?;
 
-            println!("✅ Created library with ID: {}", library_id);
+            println!("✅ Created library with ID: {library_id}");
             // Debug: Show what's actually in the database
             println!("🔍 Debugging path matching...");
             let all_libraries = db.get_libraries()?;
@@ -214,7 +214,7 @@ fn test_library_operations() -> Result<()> {
                 })
                 .optional()?;
 
-            println!("🔍 Direct SQL query result: {:?}", found_via_sql);
+            println!("🔍 Direct SQL query result: {found_via_sql:?}");
 
             // Verify we can find it
             let created_library = db

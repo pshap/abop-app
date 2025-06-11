@@ -18,7 +18,7 @@ mod integration_tests {
     #[test]
     fn test_large_collection_performance() {
         // Test performance with a large number of chips
-        let labels: Vec<String> = (0..1000).map(|i| format!("Chip {}", i)).collect();
+        let labels: Vec<String> = (0..1000).map(|i| format!("Chip {i}")).collect();
         let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
 
         let start = std::time::Instant::now();
