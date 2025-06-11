@@ -162,7 +162,7 @@ impl MaterialDataTable {
         )
     }
 
-    /// Style for header cell (backward compatibility)
+    /// Style for header cell
     pub fn header_cell(
         tokens: &MaterialTokens,
         _sortable: bool,
@@ -179,7 +179,7 @@ impl MaterialDataTable {
         }
     }
 
-    /// Style for table row (backward compatibility)
+    /// Style for table row
     pub fn table_row(
         tokens: &MaterialTokens,
         index: usize,

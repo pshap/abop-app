@@ -4,7 +4,6 @@
 //! audiobook metadata and library information.
 
 pub mod connection;
-pub mod connection_adapter;
 pub mod datetime_serde;
 pub mod error;
 pub mod health;
@@ -25,7 +24,6 @@ use std::sync::{Arc, Mutex};
 use tracing::{debug, info, instrument};
 
 pub use self::connection::{ConnectionConfig, EnhancedConnection};
-pub use self::connection_adapter::ConnectionAdapter;
 pub use self::error::{DatabaseError, DbResult};
 pub use self::health::ConnectionHealth;
 pub use self::helpers::{

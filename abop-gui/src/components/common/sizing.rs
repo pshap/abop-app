@@ -24,7 +24,7 @@ pub mod constants {
     pub const PROMINENT_HEIGHT: f32 = 48.0;
 }
 
-// Re-export constants at the module level for backward compatibility
+// Re-export constants at the module level
 pub use constants::*;
 
 /// Convert ButtonSize enum to pixel dimensions for regular buttons
