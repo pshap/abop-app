@@ -91,7 +91,7 @@ impl SwitchBuilder {
     // ========================================================================
 
     /// Set label with validation
-    /// 
+    ///
     /// Validates the label according to the current validation configuration
     /// before applying it to the switch component.
     #[must_use]

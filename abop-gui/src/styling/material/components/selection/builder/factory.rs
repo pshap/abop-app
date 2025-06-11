@@ -192,7 +192,7 @@ pub fn selected_filter_chip<S: Into<String>>(label: S) -> ChipBuilder {
 
 /// Create a chip with an icon
 #[must_use]
-#[allow(dead_code)] // Function is part of public API but may not be used internally yet
+#[allow(dead_code)] // Public API function - may not be used internally yet
 pub fn icon_chip<S: Into<String>, I: Into<String>>(
     label: S,
     variant: ChipVariant,

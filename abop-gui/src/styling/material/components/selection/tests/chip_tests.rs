@@ -14,15 +14,25 @@
 //! ## Legacy Tests (Preserved for Compatibility)
 //! The original tests are maintained below to ensure no regression during migration.
 
-// Import legacy test helpers
-use super::chip_test_helpers::*;
+// Import legacy test helpers with specific imports to avoid ambiguity
+use super::chip_test_helpers::{
+    MAX_LABEL_LENGTH, all_selection_modes, assert_chip_basics, assert_chip_selected,
+    assert_chip_unselected, assert_collection_selection, assert_label_validation_error,
+    selected_test_chip, sized_test_chip, test_chip, test_collection,
+};
 
-// Import new comprehensive test framework modules  
-use super::fixtures::*;
+// Import test data constants
+use super::fixtures::test_data::{ALL_CHIP_VARIANTS, ALL_COMPONENT_SIZES};
 
+use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::{
-    ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
-    ChipVariant, ComponentSize, SelectionError,
+    ChipBuilder,
+    ChipState,
+    ChipVariant,
+    ComponentSize,
+    SelectionError,
+    SelectionWidget,
+    StatefulWidget, // Add the required traits
 };
 
 #[cfg(test)]
@@ -75,7 +85,7 @@ mod chip_basic_tests {
 
     #[test]
     fn test_chip_variants() {
-        for variant in all_chip_variants() {
+        for &variant in ALL_CHIP_VARIANTS {
             let chip = test_chip("test", variant);
             assert_eq!(chip.variant(), variant);
             assert_chip_unselected(&chip);
@@ -84,7 +94,7 @@ mod chip_basic_tests {
 
     #[test]
     fn test_chip_sizes() {
-        for size in all_component_sizes() {
+        for &size in ALL_COMPONENT_SIZES {
             let chip = sized_test_chip("test", ChipVariant::Assist, size);
             assert_eq!(chip.props().size, size);
         }
@@ -145,8 +155,8 @@ mod chip_basic_tests {
     }
 
     #[test]
-    fn test_chip_sizes() {
-        for size in all_component_sizes() {
+    fn test_chip_sizes_variants() {
+        for &size in ALL_COMPONENT_SIZES {
             let chip = sized_test_chip("test", ChipVariant::Assist, size);
             assert_eq!(chip.props().size, size);
         }
