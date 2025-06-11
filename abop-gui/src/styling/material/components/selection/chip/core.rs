@@ -23,9 +23,9 @@ pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(150);
 // ============================================================================
 
 impl Chip {
-    /// Create a new chip with the specified label and variant
+    /// Create a new chip builder with the specified label and variant
     #[must_use]
-    pub fn new<S: Into<String>>(label: S, variant: ChipVariant) -> ChipBuilder {
+    pub fn builder<S: Into<String>>(label: S, variant: ChipVariant) -> ChipBuilder {
         ChipBuilder::new(label, variant)
     }
 

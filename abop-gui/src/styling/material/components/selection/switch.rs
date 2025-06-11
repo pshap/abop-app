@@ -26,9 +26,9 @@ use iced::{
 // ============================================================================
 
 impl Switch {
-    /// Create a new switch with the specified state
+    /// Create a new switch builder with the specified state
     #[must_use]
-    pub fn new(state: SwitchState) -> SwitchBuilder {
+    pub fn builder(state: SwitchState) -> SwitchBuilder {
         SwitchBuilder::new(state)
     }
 

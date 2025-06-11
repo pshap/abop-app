@@ -126,7 +126,6 @@ where
     ///
     /// Validates the label according to the current validation configuration
     /// before applying it to the radio button.
-    #[must_use]
     pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
         let label_str: String = label.into();
         validate_label(&label_str, &self.validation_config)?;
@@ -135,7 +134,6 @@ where
     }
 
     /// Set value with validation
-    #[must_use]
     pub fn value_validated(mut self, value: T) -> Result<Self, SelectionError> {
         // No specific validation needed for radio values by default
         self.value = value;

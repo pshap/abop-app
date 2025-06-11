@@ -7,7 +7,7 @@ use super::super::builder::{ComponentBuilder, Switch};
 use super::super::common::{StatefulWidget, *};
 
 #[cfg(test)]
-mod switch_tests {
+mod switch_unit_tests {
     use super::*;
 
     #[test]
