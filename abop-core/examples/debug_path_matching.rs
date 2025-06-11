@@ -75,7 +75,7 @@ fn main() -> Result<()> {
             // Try different path variations
             println!("\n🔄 Trying path variations:");
 
-            let variations = vec![
+            let variations = [
                 test_path.clone(),
                 test_path
                     .canonicalize()

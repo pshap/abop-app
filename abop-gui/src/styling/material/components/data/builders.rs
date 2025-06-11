@@ -234,8 +234,8 @@ pub struct TableLayout {
 }
 
 impl TableLayout {
-    /// Create a new table layout
-    pub fn new() -> TableLayoutBuilder {
+    /// Create a new table layout builder
+    pub fn builder() -> TableLayoutBuilder {
         TableLayoutBuilder::new()
     }
 

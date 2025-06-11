@@ -159,22 +159,22 @@ pub mod builders {
     }
     /// Create an assist chip
     pub fn assist_chip(label: &str) -> ChipBuilder {
-        Chip::new(label, ChipVariant::Assist)
+        Chip::builder(label, ChipVariant::Assist)
     }
 
     /// Create a filter chip
     pub fn filter_chip(label: &str) -> ChipBuilder {
-        Chip::new(label, ChipVariant::Filter)
+        Chip::builder(label, ChipVariant::Filter)
     }
 
     /// Create an input chip
     pub fn input_chip(label: &str) -> ChipBuilder {
-        Chip::new(label, ChipVariant::Input)
+        Chip::builder(label, ChipVariant::Input)
     }
 
     /// Create a suggestion chip
     pub fn suggestion_chip(label: &str) -> ChipBuilder {
-        Chip::new(label, ChipVariant::Suggestion)
+        Chip::builder(label, ChipVariant::Suggestion)
     }
 }
 
@@ -349,10 +349,10 @@ mod module_tests {
     #[test]
     fn test_module_exports() {
         // Test that all major types are accessible
-        let _checkbox = Checkbox::new(CheckboxState::Unchecked);
-        let _switch = Switch::new(SwitchState::Off);
+        let _checkbox = Checkbox::builder(CheckboxState::Unchecked);
+        let _switch = Switch::builder(SwitchState::Off);
         let _radio_group = RadioGroupState::<&str>::new();
-        let _chip = Chip::new("test", ChipVariant::Assist);
+        let _chip = Chip::builder("test", ChipVariant::Assist);
         let _collection = ChipCollection::new(ChipSelectionMode::Single);
     }
 
@@ -401,7 +401,8 @@ mod module_tests {
     fn test_constants() {
         assert_eq!(constants::MIN_TOUCH_TARGET_SIZE, 48.0);
         assert_eq!(constants::MAX_LABEL_LENGTH, 200);
-        assert!(constants::DEFAULT_ANIMATION_DURATION_MS > 0);
+        // Verify animation duration is positive
+        assert_ne!(constants::DEFAULT_ANIMATION_DURATION_MS, 0);
         assert_eq!(constants::REDUCED_MOTION_DURATION_MS, 0);
     }
 }

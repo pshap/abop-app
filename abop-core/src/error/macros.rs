@@ -169,9 +169,14 @@ impl ErrorChain {
     }
 
     /// Add an error to the chain
-    pub fn add<E: std::fmt::Display>(mut self, error: E) -> Self {
+    pub fn push_error<E: std::fmt::Display>(mut self, error: E) -> Self {
         self.errors.push(error.to_string());
         self
+    }
+
+    /// Add an error to the chain (alias for push_error to maintain compatibility)
+    pub fn add<E: std::fmt::Display>(mut self, error: E) -> Self {
+        self.push_error(error)
     }
 
     /// Add a context message to the chain
