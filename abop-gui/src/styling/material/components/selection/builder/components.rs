@@ -301,7 +301,7 @@ where
 
         // Create MaterialTokens from MaterialColors
         let tokens = MaterialTokens::default().with_colors(color_scheme.clone());
-        
+
         // Create styling function
         let style_fn = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
             .size(legacy_size)

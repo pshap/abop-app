@@ -60,7 +60,7 @@ where
     /// Get the currently selected value
     #[must_use]
     pub fn selected_value(&self) -> Option<T> {
-        self.selected.clone()
+        self.selected
     }
 
     /// Set the selected value

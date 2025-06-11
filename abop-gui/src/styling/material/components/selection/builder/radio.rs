@@ -257,13 +257,16 @@ where
     }
 
     fn apply_state_validated(mut self, value: T) -> Result<Self, SelectionError> {
-        self.validate_state_transition(value.clone())?;
+        self.validate_state_transition(value)?;
         self.value = value;
         Ok(self)
     }
 }
 
-impl<T> ConditionalBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash + Copy {}
+impl<T> ConditionalBuilder<T> for RadioBuilder<T> where
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy
+{
+}
 impl<T> BatchBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash + Copy {}
 
 // ============================================================================
