@@ -29,39 +29,68 @@ pub struct Checkbox {
     pub(crate) animation_config: AnimationConfig,
 }
 
-impl Checkbox {
-    /// Get the checkbox state
-    #[must_use]
-    pub const fn state(&self) -> CheckboxState {
-        self.state
-    }
+// ============================================================================
+// Phase 1: Enhanced Trait Implementations for Checkbox
+// ============================================================================
 
-    /// Get the component properties
-    #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the checkbox is in error state
-    #[must_use]
-    pub const fn has_error(&self) -> bool {
+impl ErrorState for Checkbox {
+    fn has_error(&self) -> bool {
         self.error_state
     }
 
-    /// Get the animation configuration
-    #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
+    fn set_error(&mut self, error: bool) {
+        self.error_state = error;
+    }
+}
+
+impl AnimatedWidget for Checkbox {
+    fn animation_config(&self) -> &AnimationConfig {
         &self.animation_config
     }
 
-    /// Set the checkbox state
-    pub fn set_state(&mut self, state: CheckboxState) {
+    fn set_animation_config(&mut self, config: AnimationConfig) {
+        self.animation_config = config;
+    }
+}
+
+impl EnhancedSelectionWidget<CheckboxState> for Checkbox {
+    fn set_state(&mut self, state: CheckboxState) {
         self.state = state;
     }
 
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
+    fn toggle_if_binary(&mut self) -> Option<CheckboxState> {
+        let previous_state = self.state;
+        self.state = self.state.toggle();
+        Some(previous_state)
+    }
+}
+
+impl Checkbox {
+    // Note: Basic accessors now provided by traits
+    // Keeping const versions for backwards compatibility
+
+    /// Get the checkbox state (const version)
+    #[must_use]
+    pub const fn state_const(&self) -> CheckboxState {
+        self.state
+    }
+
+    /// Get the component properties (const version)
+    #[must_use]
+    pub const fn props_const(&self) -> &ComponentProps {
+        &self.props
+    }
+
+    /// Check if the checkbox is in error state (const version)
+    #[must_use]
+    pub const fn has_error_const(&self) -> bool {
+        self.error_state
+    }
+
+    /// Get the animation configuration (const version)
+    #[must_use]
+    pub const fn animation_config_const(&self) -> &AnimationConfig {
+        &self.animation_config
     }
 
     /// Check the checkbox
@@ -85,10 +114,9 @@ impl Checkbox {
         Ok(previous_state)
     }
 
-    /// Toggle the checkbox state
+    /// Toggle the checkbox state (enhanced version)
     pub fn toggle(&mut self) -> Result<(CheckboxState, CheckboxState), SelectionError> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
+        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
         Ok((previous_state, self.state))
     }
 
@@ -136,6 +164,42 @@ impl PartialEq for Checkbox {
 }
 
 impl Eq for Checkbox {}
+
+// ============================================================================
+// Phase 1: Enhanced Trait Implementations for Switch
+// ============================================================================
+
+impl ErrorState for Switch {
+    fn has_error(&self) -> bool {
+        self.error_state
+    }
+
+    fn set_error(&mut self, error: bool) {
+        self.error_state = error;
+    }
+}
+
+impl AnimatedWidget for Switch {
+    fn animation_config(&self) -> &AnimationConfig {
+        &self.animation_config
+    }
+
+    fn set_animation_config(&mut self, config: AnimationConfig) {
+        self.animation_config = config;
+    }
+}
+
+impl EnhancedSelectionWidget<SwitchState> for Switch {
+    fn set_state(&mut self, state: SwitchState) {
+        self.state = state;
+    }
+
+    fn toggle_if_binary(&mut self) -> Option<SwitchState> {
+        let previous_state = self.state;
+        self.state = self.state.toggle();
+        Some(previous_state)
+    }
+}
 
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]
@@ -252,6 +316,51 @@ where
 
 impl<T> Eq for Radio<T> where T: Clone + PartialEq + Eq + std::hash::Hash {}
 
+// ============================================================================
+// Phase 1: Enhanced Trait Implementations for Radio
+// ============================================================================
+
+impl<T> ErrorState for Radio<T>
+where
+    T: Clone + PartialEq + Eq + std::hash::Hash,
+{
+    fn has_error(&self) -> bool {
+        self.error_state
+    }
+
+    fn set_error(&mut self, error: bool) {
+        self.error_state = error;
+    }
+}
+
+impl<T> AnimatedWidget for Radio<T>
+where
+    T: Clone + PartialEq + Eq + std::hash::Hash,
+{
+    fn animation_config(&self) -> &AnimationConfig {
+        &self.animation_config
+    }
+
+    fn set_animation_config(&mut self, config: AnimationConfig) {
+        self.animation_config = config;
+    }
+}
+
+impl<T> EnhancedSelectionWidget<T> for Radio<T>
+where
+    T: Clone + PartialEq + Eq + std::hash::Hash,
+{
+    fn set_state(&mut self, state: T) {
+        self.value = state;
+    }
+
+    fn toggle_if_binary(&mut self) -> Option<T> {
+        // Radio buttons don't toggle like binary states
+        // They are selected based on group selection
+        None
+    }
+}
+
 /// Material Design 3 Switch component (modern implementation)
 #[derive(Debug, Clone, Default)]
 pub struct Switch {
@@ -262,44 +371,36 @@ pub struct Switch {
 }
 
 impl Switch {
-    /// Get the switch state
+    // Note: Basic accessors now provided by traits
+    // Keeping const versions for backwards compatibility
+
+    /// Get the switch state (const version)
     #[must_use]
-    pub const fn state(&self) -> SwitchState {
+    pub const fn state_const(&self) -> SwitchState {
         self.state
     }
 
-    /// Get the component properties
+    /// Get the component properties (const version)
     #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
+    pub const fn props_const(&self) -> &ComponentProps {
         &self.props
     }
 
-    /// Check if the switch is in error state
+    /// Check if the switch is in error state (const version)
     #[must_use]
-    pub const fn has_error(&self) -> bool {
+    pub const fn has_error_const(&self) -> bool {
         self.error_state
     }
 
-    /// Get the animation configuration
+    /// Get the animation configuration (const version)
     #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
+    pub const fn animation_config_const(&self) -> &AnimationConfig {
         &self.animation_config
     }
 
-    /// Set the switch state
-    pub fn set_state(&mut self, state: SwitchState) {
-        self.state = state;
-    }
-
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
-    }
-
-    /// Toggle the switch state
+    /// Toggle the switch state (enhanced version)
     pub fn toggle(&mut self) -> Result<(SwitchState, SwitchState), SelectionError> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
+        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
         Ok((previous_state, self.state))
     }
 
@@ -333,6 +434,42 @@ impl PartialEq for Switch {
 
 impl Eq for Switch {}
 
+// ============================================================================
+// Phase 1: Enhanced Trait Implementations for Chip
+// ============================================================================
+
+impl ErrorState for Chip {
+    fn has_error(&self) -> bool {
+        self.error_state
+    }
+
+    fn set_error(&mut self, error: bool) {
+        self.error_state = error;
+    }
+}
+
+impl AnimatedWidget for Chip {
+    fn animation_config(&self) -> &AnimationConfig {
+        &self.animation_config
+    }
+
+    fn set_animation_config(&mut self, config: AnimationConfig) {
+        self.animation_config = config;
+    }
+}
+
+impl EnhancedSelectionWidget<ChipState> for Chip {
+    fn set_state(&mut self, state: ChipState) {
+        self.state = state;
+    }
+
+    fn toggle_if_binary(&mut self) -> Option<ChipState> {
+        let previous_state = self.state;
+        self.state = self.state.toggle();
+        Some(previous_state)
+    }
+}
+
 /// Material Design 3 Chip component (modern implementation)
 #[derive(Debug, Clone, Default)]
 pub struct Chip {
@@ -345,15 +482,18 @@ pub struct Chip {
 }
 
 impl Chip {
+    // Note: Basic accessors now provided by traits
+    // Keeping const versions for backwards compatibility
+
     /// Get the chip label
     #[must_use]
     pub fn label(&self) -> &str {
         &self.label
     }
 
-    /// Get the chip state
+    /// Get the chip state (const version)
     #[must_use]
-    pub const fn state(&self) -> ChipState {
+    pub const fn state_const(&self) -> ChipState {
         self.state
     }
 
@@ -363,31 +503,22 @@ impl Chip {
         self.variant
     }
 
-    /// Get the component properties
+    /// Get the component properties (const version)
     #[must_use]
-    pub const fn props(&self) -> &ComponentProps {
+    pub const fn props_const(&self) -> &ComponentProps {
         &self.props
     }
 
-    /// Check if the chip is in error state
+    /// Check if the chip is in error state (const version)
     #[must_use]
-    pub const fn has_error(&self) -> bool {
+    pub const fn has_error_const(&self) -> bool {
         self.error_state
     }
 
-    /// Get the animation configuration
+    /// Get the animation configuration (const version)
     #[must_use]
-    pub const fn animation_config(&self) -> &AnimationConfig {
+    pub const fn animation_config_const(&self) -> &AnimationConfig {
         &self.animation_config
-    }
-
-    /// Set the chip state
-    pub fn set_state(&mut self, state: ChipState) {
-        self.state = state;
-    }
-    /// Set error state
-    pub fn set_error(&mut self, error: bool) {
-        self.error_state = error;
     }
 
     /// Select the chip
@@ -404,10 +535,9 @@ impl Chip {
         Ok(previous_state)
     }
 
-    /// Toggle the chip selection state
+    /// Toggle the chip selection state (enhanced version)
     pub fn toggle(&mut self) -> Result<(ChipState, ChipState), SelectionError> {
-        let previous_state = self.state;
-        self.state = self.state.toggle();
+        let previous_state = self.toggle_if_binary().unwrap_or(self.state);
         Ok((previous_state, self.state))
     }
 
@@ -432,8 +562,8 @@ impl Chip {
 impl PartialEq for Chip {
     fn eq(&self, other: &Self) -> bool {
         self.label == other.label
-            && self.state == other.state
             && self.variant == other.variant
+            && self.state == other.state
             && self.props == other.props
             && self.error_state == other.error_state
         // Note: animation_config is excluded from equality comparison
@@ -469,23 +599,13 @@ impl SelectionWidget<CheckboxState> for Checkbox {
 
 impl StatefulWidget<CheckboxState> for Checkbox {
     fn update_state(&mut self, new_state: CheckboxState) -> Result<(), SelectionError> {
-        self.state = new_state;
+        self.set_state(new_state);
         Ok(())
     }
 
     fn transition_to(&mut self, new_state: CheckboxState) -> Result<CheckboxState, SelectionError> {
-        self.state = new_state;
-        Ok(self.state)
-    }
-}
-
-impl AnimatedWidget for Checkbox {
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
+        self.update_state(new_state)?;
+        Ok(self.state())
     }
 }
 
@@ -512,23 +632,13 @@ impl SelectionWidget<SwitchState> for Switch {
 
 impl StatefulWidget<SwitchState> for Switch {
     fn update_state(&mut self, new_state: SwitchState) -> Result<(), SelectionError> {
-        self.state = new_state;
+        self.set_state(new_state);
         Ok(())
     }
 
     fn transition_to(&mut self, new_state: SwitchState) -> Result<SwitchState, SelectionError> {
-        self.state = new_state;
-        Ok(self.state)
-    }
-}
-
-impl AnimatedWidget for Switch {
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
+        self.update_state(new_state)?;
+        Ok(self.state())
     }
 }
 
@@ -580,23 +690,13 @@ impl SelectionWidget<ChipState> for Chip {
 
 impl StatefulWidget<ChipState> for Chip {
     fn update_state(&mut self, new_state: ChipState) -> Result<(), SelectionError> {
-        self.state = new_state;
+        self.set_state(new_state);
         Ok(())
     }
 
     fn transition_to(&mut self, new_state: ChipState) -> Result<ChipState, SelectionError> {
-        self.state = new_state;
-        Ok(self.state)
-    }
-}
-
-impl AnimatedWidget for Chip {
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
+        self.update_state(new_state)?;
+        Ok(self.state())
     }
 }
 

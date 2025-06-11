@@ -274,19 +274,7 @@ where
 // Trait Implementations
 // ============================================================================
 // Note: SelectionWidget implementation is in builder/components.rs to avoid conflicts
-
-impl<T> AnimatedWidget for Radio<T>
-where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
-{
-    fn animation_config(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
-    fn set_animation_config(&mut self, config: AnimationConfig) {
-        self.animation_config = config;
-    }
-}
+// Note: AnimatedWidget implementation is provided via EnhancedSelectionWidget trait
 
 // ============================================================================
 // Convenience Functions

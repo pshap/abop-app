@@ -5,7 +5,7 @@
 //! use cases such as basic view, toggle view, and filter chip view.
 
 use super::super::builder::Chip;
-use super::super::common::{ChipState, ComponentSize};
+use super::super::common::{ChipState, ComponentSize, SelectionWidget};
 use crate::styling::material::colors::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,

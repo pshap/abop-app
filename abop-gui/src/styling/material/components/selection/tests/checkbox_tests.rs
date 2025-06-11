@@ -1,5 +1,6 @@
 //! Comprehensive tests for the modern Checkbox component
 
+use crate::styling::material::components::selection::common::{AnimatedWidget, ErrorState};
 use crate::styling::material::components::selection::{
     builder::{Checkbox, CheckboxBuilder, ComponentBuilder, ConditionalBuilder},
     checkbox::{checkbox_from_bool, checked_checkbox, indeterminate_checkbox, unchecked_checkbox},

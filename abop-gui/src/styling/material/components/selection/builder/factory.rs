@@ -23,6 +23,7 @@ use super::{
 /// # Examples
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::checkbox;
+/// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::CheckboxState;
 /// use abop_gui::styling::material::components::selection::common::ComponentSize;
 ///
@@ -42,6 +43,7 @@ pub fn checkbox(state: CheckboxState) -> CheckboxBuilder {
 /// # Examples
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::radio;
+/// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::common::ComponentSize;
 ///
 /// let rb = radio("option_a")
@@ -63,6 +65,7 @@ where
 /// # Examples
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::switch;
+/// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::SwitchState;
 /// use abop_gui::styling::material::components::selection::common::ComponentSize;
 ///
@@ -82,6 +85,7 @@ pub fn switch(state: SwitchState) -> SwitchBuilder {
 /// # Examples
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::chip;
+/// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::ChipVariant;
 ///
 /// let ch = chip("Category", ChipVariant::Filter)
