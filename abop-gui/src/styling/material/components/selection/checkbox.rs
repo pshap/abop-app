@@ -80,10 +80,13 @@ impl Checkbox {
         };
 
         // Create styling function
-        let style_fn = SelectionStyleBuilder::new(MaterialTokens::default().with_colors(color_scheme.clone()), SelectionVariant::Checkbox)
-            .size(legacy_size)
-            .error(self.has_error())
-            .checkbox_style();
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Checkbox,
+        )
+        .size(legacy_size)
+        .error(self.has_error())
+        .checkbox_style();
 
         // Create the checkbox label
         let default_label = String::new();

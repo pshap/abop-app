@@ -167,7 +167,7 @@ mod integration_tests {
 
         // Test that we can recreate switch with same state
         let recreated = Switch::new(state);
-        
+
         assert_eq!(recreated.state(), switch.state());
     }
 }

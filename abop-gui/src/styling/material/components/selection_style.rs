@@ -23,9 +23,7 @@ use std::fmt;
 use thiserror::Error;
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::{
-    tokens::core::MaterialTokens,
-};
+use crate::styling::material::tokens::core::MaterialTokens;
 
 // ============================================================================
 // Component State System (Material Design 3 Compliant)
@@ -136,7 +134,7 @@ impl fmt::Display for SelectionState {
         let state_str = match self {
             Self::DefaultSelected => "default-selected",
             Self::DefaultUnselected => "default-unselected",
-            Self::HoveredSelected => "hovered-selected", 
+            Self::HoveredSelected => "hovered-selected",
             Self::HoveredUnselected => "hovered-unselected",
             Self::PressedSelected => "pressed-selected",
             Self::PressedUnselected => "pressed-unselected",
@@ -307,7 +305,7 @@ impl fmt::Display for SelectionSize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size_str = match self {
             Self::Small => "small",
-            Self::Medium => "medium", 
+            Self::Medium => "medium",
             Self::Large => "large",
         };
         write!(f, "{size_str}")
@@ -327,7 +325,7 @@ pub enum SelectionStyleError {
         /// Details about the invalid state
         details: String,
     },
-    
+
     /// Unsupported variant configuration
     #[error("Unsupported variant configuration for {variant}: {reason}")]
     UnsupportedVariant {
@@ -336,14 +334,14 @@ pub enum SelectionStyleError {
         /// Reason why it's unsupported
         reason: String,
     },
-    
+
     /// Token system integration error
     #[error("Token system error: {message}")]
     TokenError {
         /// Error message from token system
         message: String,
     },
-    
+
     /// Color calculation error
     #[error("Color calculation failed: {context}")]
     ColorError {
@@ -482,7 +480,7 @@ impl SelectionColors {
     #[must_use]
     pub fn primary_color(&self, state: SelectionState) -> Color {
         let colors = &self.tokens.colors;
-        
+
         match (state, self.error_state, self.variant) {
             // Error states take precedence
             (state, true, _) if state.is_selected() => colors.error.base,
@@ -535,25 +533,25 @@ impl SelectionColors {
     #[must_use]
     pub fn border_color(&self, state: SelectionState) -> Color {
         let colors = &self.tokens.colors;
-        
+
         match (state, self.error_state) {
             // Error states
             (_, true) => colors.error.base,
-            
+
             // Selected states
             (state, false) if state.is_selected() => {
                 if state.is_disabled() {
                     ColorUtils::with_alpha(colors.on_surface, 0.38)
                 } else {
                     match self.variant {
-                        SelectionVariant::Checkbox | SelectionVariant::Radio | SelectionVariant::Switch => {
-                            colors.primary.base
-                        }
+                        SelectionVariant::Checkbox
+                        | SelectionVariant::Radio
+                        | SelectionVariant::Switch => colors.primary.base,
                         SelectionVariant::Chip => colors.secondary_container,
                     }
                 }
             }
-            
+
             // Unselected states
             (state, false) if !state.is_selected() => {
                 if state.is_disabled() {
@@ -562,7 +560,7 @@ impl SelectionColors {
                     colors.outline
                 }
             }
-            
+
             // Fallback
             _ => colors.outline,
         }
@@ -572,7 +570,7 @@ impl SelectionColors {
     #[must_use]
     pub fn foreground_color(&self, state: SelectionState) -> Color {
         let colors = &self.tokens.colors;
-        
+
         match (state, self.error_state, self.variant) {
             // Error states
             (state, true, SelectionVariant::Checkbox) if state.is_selected() => colors.on_error,
@@ -610,13 +608,7 @@ impl SelectionColors {
             }
 
             // Normal unselected states
-            (state, false, _) if !state.is_selected() => {
-                if state.is_disabled() {
-                    Color::TRANSPARENT
-                } else {
-                    Color::TRANSPARENT
-                }
-            }
+            (state, false, _) if !state.is_selected() => Color::TRANSPARENT,
 
             // Fallback
             _ => colors.on_surface,
@@ -627,7 +619,7 @@ impl SelectionColors {
     #[must_use]
     pub fn text_color(&self, state: SelectionState) -> Color {
         let colors = &self.tokens.colors;
-        
+
         if state.is_disabled() {
             ColorUtils::with_alpha(colors.on_surface, 0.38)
         } else {
@@ -640,11 +632,11 @@ impl SelectionColors {
     pub fn state_layer_color(&self, state: SelectionState) -> Option<Color> {
         let colors = &self.tokens.colors;
         let opacity = &self.tokens.states.opacity;
-        
+
         if state.is_disabled() {
             return None;
         }
-        
+
         let base_color = if self.error_state {
             colors.error.base
         } else if state.is_selected() {
@@ -652,7 +644,7 @@ impl SelectionColors {
         } else {
             colors.on_surface
         };
-        
+
         let layer_opacity = if state.is_pressed() {
             opacity.pressed
         } else if state.is_focused() {
@@ -662,12 +654,12 @@ impl SelectionColors {
         } else {
             return None;
         };
-        
+
         Some(ColorUtils::with_alpha(base_color, layer_opacity))
     }
 
     /// Get border configuration for the component
-    #[must_use] 
+    #[must_use]
     pub fn border(&self, state: SelectionState) -> Border {
         Border {
             color: self.border_color(state),

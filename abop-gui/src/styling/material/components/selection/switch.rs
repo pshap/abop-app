@@ -82,10 +82,13 @@ impl Switch {
         };
 
         // Create styling function (this will be replaced in Phase 4)
-        let style_fn = SelectionStyleBuilder::new(MaterialTokens::default().with_colors(color_scheme.clone()), SelectionVariant::Switch)
-            .size(legacy_size)
-            .error(self.has_error())
-            .checkbox_style(); // Use checkbox style since we're using checkbox widget temporarily
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Switch,
+        )
+        .size(legacy_size)
+        .error(self.has_error())
+        .checkbox_style(); // Use checkbox style since we're using checkbox widget temporarily
 
         // Create the switch label
         let default_label = String::new();

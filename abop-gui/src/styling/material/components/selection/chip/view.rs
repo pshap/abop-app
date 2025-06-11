@@ -79,9 +79,12 @@ impl Chip {
         };
 
         // Create styling function (avoid cloning color_scheme)
-        let style_fn = SelectionStyleBuilder::new(MaterialTokens::default().with_colors(color_scheme.clone()), SelectionVariant::Chip)
-            .size(legacy_size)
-            .chip_style(self.is_selected());
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Chip,
+        )
+        .size(legacy_size)
+        .chip_style(self.is_selected());
 
         // Create chip content
         let content = Text::new(self.label()).size(self.props().size.text_size());
@@ -215,9 +218,12 @@ impl Chip {
         };
 
         // Create styling function
-        let style_fn = SelectionStyleBuilder::new(MaterialTokens::default().with_colors(color_scheme.clone()), SelectionVariant::Chip)
-            .size(legacy_size)
-            .chip_style(self.is_selected());
+        let style_fn = SelectionStyleBuilder::new(
+            MaterialTokens::default().with_colors(color_scheme.clone()),
+            SelectionVariant::Chip,
+        )
+        .size(legacy_size)
+        .chip_style(self.is_selected());
 
         // Build content with icons and text
         let mut content_row = Row::new().spacing(4.0);

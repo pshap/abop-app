@@ -25,15 +25,10 @@ use super::chip_test_helpers::{
 use super::fixtures::test_data::{ALL_CHIP_VARIANTS, ALL_COMPONENT_SIZES};
 
 use crate::styling::material::components::selection::builder::ComponentBuilder;
-use crate::styling::material::components::selection::{
-    ChipBuilder,
-    ChipState,
-    ChipVariant,
-    ComponentSize,
-    SelectionError,
-    SelectionComponent,
-};
 use crate::styling::material::components::selection::common::StatefulComponent;
+use crate::styling::material::components::selection::{
+    ChipBuilder, ChipState, ChipVariant, ComponentSize, SelectionComponent, SelectionError,
+};
 
 #[cfg(test)]
 mod chip_basic_tests {

@@ -97,8 +97,8 @@ pub use chip::{
 };
 pub use common::{
     AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-    ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState,
-    ValidationConfig, ValidationRule,
+    ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState, ValidationConfig,
+    ValidationRule,
 };
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use switch::SwitchDimensions;
@@ -121,7 +121,7 @@ pub type AgreementCheckbox = Checkbox;
 /// Convenient builder functions for quick component creation
 pub mod builders {
     use super::*;
-    
+
     /// Create a checkbox with common settings
     pub fn checkbox() -> CheckboxBuilder {
         CheckboxBuilder::new(CheckboxState::Unchecked)
@@ -151,7 +151,7 @@ pub mod builders {
     pub fn labeled_switch(label: &str) -> SwitchBuilder {
         SwitchBuilder::new(SwitchState::Off).label(label)
     }
-    
+
     /// Create a filter chip collection
     pub fn filter_chips() -> ChipCollection {
         ChipCollection::new(chip::ChipSelectionMode::Multiple)

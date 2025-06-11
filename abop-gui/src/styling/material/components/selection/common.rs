@@ -244,13 +244,13 @@ impl ComponentSize {
             Self::Large => 16.0,
         }
     }
-    
+
     /// Get all available sizes
     #[must_use]
     pub const fn all() -> [Self; 3] {
         [Self::Small, Self::Medium, Self::Large]
     }
-    
+
     /// Check if this size meets Material Design touch target requirements
     #[must_use]
     pub const fn meets_touch_target_requirements(self) -> bool {
@@ -352,10 +352,10 @@ impl ComponentProps {
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         let key_string = key.into();
-        
+
         // Use const lookup for better performance in release builds
         let is_known_key = SUPPORTED_METADATA_KEYS.iter().any(|&k| k == key_string);
-        
+
         if is_known_key {
             self.metadata.insert(key_string, value.into());
         } else {
@@ -600,13 +600,13 @@ pub fn validate_chip_state(
 // ============================================================================
 
 /// Core interface for selection components with validation
-/// 
+///
 /// This trait focuses on the essential operations that all selection components need.
 /// It avoids complex generics and provides clear, focused functionality.
 pub trait SelectionComponent {
     /// The state type for this component
     type State: Copy + PartialEq;
-    
+
     /// The message type produced by this component
     type Message;
 
@@ -680,8 +680,6 @@ pub const fn validation_config_for_toggles() -> ValidationConfig {
     }
 }
 
-
-
 // ============================================================================
 // Common Constants
 // ============================================================================
@@ -693,17 +691,16 @@ pub mod constants {
 
     /// Default animation duration for state transitions (matches Material Design 3)
     pub const DEFAULT_ANIMATION_DURATION_MS: u64 = 200;
-    
+
     /// Minimum touch target size per Material Design guidelines
     pub const MIN_TOUCH_TARGET_SIZE: f32 = 48.0;
-    
+
     /// Maximum recommended label length for accessibility
     pub const MAX_LABEL_LENGTH: usize = 200;
-    
+
     /// Maximum label length for chip components (stricter requirement)
     pub const MAX_CHIP_LABEL_LENGTH: usize = 100;
 }
-
 
 // ============================================================================
 // Tests
