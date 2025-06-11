@@ -45,7 +45,7 @@ mod constants {
         #[allow(dead_code)]
         pub const DISABLED_SURFACE: f32 = 0.12;
     }
-    
+
     /// Border radius values for different component variants
     pub mod border_radius {
         /// Checkbox border radius
@@ -57,7 +57,7 @@ mod constants {
         /// Switch border radius
         pub const SWITCH: f32 = 16.0;
     }
-    
+
     /// Size constants for components
     pub mod size {
         /// Small component size in pixels
@@ -66,7 +66,7 @@ mod constants {
         pub const MEDIUM_PX: f32 = 20.0;
         /// Large component size in pixels
         pub const LARGE_PX: f32 = 24.0;
-        
+
         /// Touch target sizes
         #[allow(dead_code)]
         pub const SMALL_TOUCH: f32 = 32.0;
@@ -74,23 +74,23 @@ mod constants {
         pub const MEDIUM_TOUCH: f32 = 40.0;
         #[allow(dead_code)]
         pub const LARGE_TOUCH: f32 = 48.0;
-        
+
         /// Border widths
         pub const SMALL_BORDER: f32 = 1.5;
         pub const MEDIUM_BORDER: f32 = 2.0;
         pub const LARGE_BORDER: f32 = 2.5;
-        
+
         /// Text sizes
         pub const SMALL_TEXT: f32 = 12.0;
         pub const MEDIUM_TEXT: f32 = 14.0;
         pub const LARGE_TEXT: f32 = 16.0;
-        
+
         /// Padding values
         pub const SMALL_PADDING: f32 = 4.0;
         pub const MEDIUM_PADDING: f32 = 8.0;
         pub const LARGE_PADDING: f32 = 12.0;
     }
-    
+
     /// Color modifier constants
     pub mod color {
         /// Darken amount for pressed chip states
@@ -477,7 +477,7 @@ impl SelectionColors {
             error_state: false,
         }
     }
-    
+
     /// Create selection colors with borrowed tokens (optimized)
     #[must_use]
     pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
@@ -488,7 +488,7 @@ impl SelectionColors {
             error_state: false,
         }
     }
-    
+
     /// Get error state color if applicable
     #[must_use]
     #[allow(dead_code)]
@@ -496,7 +496,7 @@ impl SelectionColors {
         if !self.error_state {
             return None;
         }
-        
+
         let colors = &self.tokens.colors;
         Some(if state.is_selected() {
             colors.error.base
@@ -504,7 +504,7 @@ impl SelectionColors {
             Color::TRANSPARENT
         })
     }
-    
+
     /// Get disabled state opacity for the given variant
     #[must_use]
     #[allow(dead_code)]
@@ -551,10 +551,7 @@ impl SelectionColors {
         // Handle disabled state
         if state.is_disabled() {
             if state.is_selected() {
-                return ColorUtils::with_alpha(
-                    colors.on_surface,
-                    constants::opacity::DISABLED,
-                );
+                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
             }
             return Color::TRANSPARENT;
         }
@@ -613,10 +610,7 @@ impl SelectionColors {
         // Handle disabled state
         if state.is_disabled() {
             if state.is_selected() {
-                return ColorUtils::with_alpha(
-                    colors.on_surface,
-                    constants::opacity::DISABLED,
-                );
+                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
             }
             return Color::TRANSPARENT;
         }
@@ -684,26 +678,26 @@ impl SelectionColors {
     #[allow(dead_code)]
     #[must_use]
     pub fn state_layer_color(&self, state: SelectionState) -> Option<Color> {
-        use constants::opacity::{HOVER, FOCUS, PRESSED};
-        
+        use constants::opacity::{FOCUS, HOVER, PRESSED};
+
         if state.is_disabled() {
             return None;
         }
 
         let colors = &self.tokens.colors;
-        
+
         if state.is_pressed() {
             return Some(ColorUtils::with_alpha(colors.on_surface, PRESSED));
         }
-        
+
         if state.is_hovered() {
             return Some(ColorUtils::with_alpha(colors.on_surface, HOVER));
         }
-        
+
         if state.is_focused() {
             return Some(ColorUtils::with_alpha(colors.primary.base, FOCUS));
         }
-        
+
         None
     }
 
@@ -761,7 +755,7 @@ impl SelectionStyleBuilder {
             error: false,
         }
     }
-    
+
     /// Create a new selection style builder with borrowed tokens (optimized)
     pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
         Self {
@@ -827,7 +821,7 @@ impl SelectionStyleBuilder {
                 background: styling.background,
                 icon_color: styling.foreground_color,
                 border: iced::Border {
-                    radius: styling.border.radius.into(),
+                    radius: styling.border.radius,
                     width: styling.border.width,
                     color: styling.border.color,
                 },

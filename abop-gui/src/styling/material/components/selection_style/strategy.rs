@@ -6,8 +6,8 @@
 use crate::styling::material::tokens::core::MaterialTokens;
 
 use super::{
-    SelectionSize, SelectionState, SelectionStyling, SelectionVariant,
-    SelectionColors, SelectionStyleError,
+    SelectionColors, SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
+    SelectionVariant,
 };
 
 /// Strategy trait for selection component styling following Material Design 3
