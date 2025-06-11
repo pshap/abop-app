@@ -165,9 +165,12 @@ mod integration_tests {
         let state = switch.state();
         assert_eq!(state, SwitchState::On);
 
-        // Test that we can recreate switch with same state
+        // Test that we can recreate switch with same configuration
+        // (Note: Switch::new only preserves state, not label/size)
         let recreated = Switch::new(state);
 
         assert_eq!(recreated.state(), switch.state());
+        // Note: The recreated switch will have default properties (no label, medium size)
+        // This is expected behavior for Switch::new() - use SwitchBuilder for full config
     }
 }
