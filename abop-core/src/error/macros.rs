@@ -175,11 +175,14 @@ impl ErrorChain {
     }
 
     /// Add an error to the chain (alias for push_error to maintain compatibility)
-    /// 
+    ///
     /// # Deprecated
     /// This method is deprecated in favor of `push_error()` to avoid confusion
     /// with the `std::ops::Add` trait. Use `push_error()` instead.
-    #[deprecated(since = "0.1.0", note = "Use `push_error()` instead to avoid trait confusion")]
+    #[deprecated(
+        since = "0.1.0",
+        note = "Use `push_error()` instead to avoid trait confusion"
+    )]
     pub fn add<E: std::fmt::Display>(self, error: E) -> Self {
         self.push_error(error)
     }

@@ -10,7 +10,7 @@ use super::super::common::*;
 
 // Type aliases for complex function types
 /// Type alias for configuration functions used in builder patterns
-/// 
+///
 /// This reduces complexity and improves readability of function signatures
 /// that accept configuration callbacks for builder customization.
 pub type ConfigurationFn<B> = Box<dyn Fn(B) -> Result<B, SelectionError>>;
