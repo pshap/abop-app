@@ -19,8 +19,9 @@ use super::fixtures::{
 };
 use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::{
-    ChipBuilder, ChipState, ChipVariant, ComponentSize, SelectionWidget,
+ ChipBuilder, ChipState, ChipVariant, ComponentSize,
 };
+use crate::styling::material::components::selection::common::{SelectionWidget, EnhancedSelectionWidget};
 
 #[cfg(test)]
 mod chip_creation_tests {

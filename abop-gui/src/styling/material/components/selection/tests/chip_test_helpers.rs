@@ -6,6 +6,7 @@
 use super::fixtures::test_data::ALL_CHIP_VARIANTS;
 use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::chip::core::MAX_CHIP_LABEL_LENGTH;
+use crate::styling::material::components::selection::common::SelectionWidget;
 use crate::styling::material::components::selection::{
     Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
     ChipVariant, ComponentSize, SelectionError,
