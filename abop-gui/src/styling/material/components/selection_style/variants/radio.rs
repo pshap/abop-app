@@ -13,7 +13,7 @@ use super::super::{
     SelectionSize, SelectionState, SelectionVariant, SelectionStyleStrategy,
 };
 
-/// Radio button strategy implementation  
+/// Radio button strategy implementation
 pub struct RadioStrategy;
 
 impl SelectionStyleStrategy for RadioStrategy {
@@ -40,10 +40,14 @@ impl SelectionStyleStrategy for RadioStrategy {
 
         // Radio buttons have transparent background, only the dot is colored
         Color::TRANSPARENT
-    }
-
-    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, _error_state: bool) -> Color {
+    }    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
         let colors = &tokens.colors;
+        
+        // Handle error state first
+        if error_state {
+            return colors.error.base;
+        }
+        
         if state.is_disabled() {
             return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
         }
@@ -54,13 +58,8 @@ impl SelectionStyleStrategy for RadioStrategy {
         let colors = &tokens.colors;        let border_color = if error_state && !state.is_selected() {
             colors.error.base
         } else if state.is_disabled() {
-            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
-        } else if state.is_focused() {
-            if state.is_selected() {
-                colors.on_secondary_container
-            } else {
-                colors.primary.base
-            }
+            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)        } else if state.is_focused() {
+            colors.primary.base
         } else if state.is_selected() {
             colors.primary.base
         } else {

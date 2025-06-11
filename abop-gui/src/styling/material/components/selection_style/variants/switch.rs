@@ -43,27 +43,9 @@ impl SelectionStyleStrategy for SwitchStrategy {
             colors.primary.base
         } else {
             Color::TRANSPARENT
-        };
-
-        // Apply interaction state effects for switch
-        if state.is_pressed() {
-            if state.is_selected() {
-                colors.secondary.container
-            } else {
-                Color::TRANSPARENT
-            }
-        } else if state.is_hovered() {
-            if state.is_selected() {
-                colors.secondary.container
-            } else {
-                Color::TRANSPARENT
-            }
-        } else if state.is_focused() {
-            if state.is_selected() {
-                colors.secondary.container
-            } else {
-                Color::TRANSPARENT
-            }
+        };        // Apply interaction state effects for switch
+        if state.is_selected() && (state.is_pressed() || state.is_hovered() || state.is_focused()) {
+            colors.secondary.container
         } else {
             base_color
         }

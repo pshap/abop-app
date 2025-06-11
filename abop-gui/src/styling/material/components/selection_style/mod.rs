@@ -24,7 +24,7 @@ pub use strategy::{
     SelectionStyleContext, SelectionStyleStrategy, create_strategy,
 };
 
-// Re-export variant implementations
+// Export variant implementations
 pub use variants::{
     CheckboxStrategy, ChipStrategy, RadioStrategy, SwitchStrategy,
 };

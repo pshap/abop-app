@@ -47,27 +47,11 @@ impl SelectionStyleStrategy for ChipStrategy {
             colors.primary.base
         } else {
             Color::TRANSPARENT
-        };
-
-        // Apply interaction state effects specific to chips
-        if state.is_pressed() {
-            if state.is_selected() {
-                ColorUtils::darken(colors.secondary.container, constants::color::CHIP_PRESSED_DARKEN)
-            } else {
-                Color::TRANSPARENT
-            }
-        } else if state.is_hovered() {
-            if state.is_selected() {
-                colors.secondary.container
-            } else {
-                Color::TRANSPARENT
-            }
-        } else if state.is_focused() {
-            if state.is_selected() {
-                colors.secondary.container
-            } else {
-                Color::TRANSPARENT
-            }
+        };        // Apply interaction state effects specific to chips
+        if state.is_pressed() && state.is_selected() {
+            ColorUtils::darken(colors.secondary.container, constants::color::CHIP_PRESSED_DARKEN)
+        } else if state.is_selected() && (state.is_hovered() || state.is_focused()) {
+            colors.secondary.container
         } else {
             base_color
         }
