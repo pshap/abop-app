@@ -42,6 +42,7 @@ mod constants {
         /// Focus state opacity for state layers
         pub const FOCUS: f32 = 0.12;
         /// Surface overlay opacity for disabled backgrounds
+        #[allow(dead_code)]
         pub const DISABLED_SURFACE: f32 = 0.12;
     }
     
@@ -67,8 +68,11 @@ mod constants {
         pub const LARGE_PX: f32 = 24.0;
         
         /// Touch target sizes
+        #[allow(dead_code)]
         pub const SMALL_TOUCH: f32 = 32.0;
+        #[allow(dead_code)]
         pub const MEDIUM_TOUCH: f32 = 40.0;
+        #[allow(dead_code)]
         pub const LARGE_TOUCH: f32 = 48.0;
         
         /// Border widths
@@ -486,6 +490,7 @@ impl SelectionColors {
     
     /// Get error state color if applicable
     #[must_use]
+    #[allow(dead_code)]
     fn error_color(&self, state: SelectionState) -> Option<Color> {
         if !self.error_state {
             return None;
@@ -501,6 +506,7 @@ impl SelectionColors {
     
     /// Get disabled state opacity for the given variant
     #[must_use]
+    #[allow(dead_code)]
     fn disabled_opacity(&self, for_surface: bool) -> f32 {
         if for_surface {
             constants::opacity::DISABLED_SURFACE
