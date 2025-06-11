@@ -21,33 +21,26 @@ use super::state_traits::{ComponentState, InteractiveState, MultiLevelState};
 
 /// Convenient re-exports for component traits and types
 pub mod prelude {
+    // Core component types and states
     pub use super::{
         AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-        ComponentSize, SelectionComponent, SelectionError, StatefulComponent, SwitchState,
+        ComponentSize, SelectionError, StatefulComponent, SwitchState,
     };
-    // Phase 1: Include new state traits in prelude
-    pub use super::super::state_traits::{ComponentState, InteractiveState, MultiLevelState};
+    
+    // Unified state traits
+    pub use super::super::state_traits::{
+        AnimatableState, ComponentState, InteractiveState, MultiLevelState
+    };
+    
+    // Validation types
+    pub use super::{ValidationConfig, ValidationRule, EasingCurve};
+    
+    // Constants access
+    pub use super::super::constants;
 }
 
-// ============================================================================
-// Metadata Constants (Phase 1: Using centralized constants)
-// ============================================================================
-
-/// Metadata key for leading icon configuration
-pub const LEADING_ICON_KEY: &str = constants::metadata_keys::LEADING_ICON;
-/// Metadata key for trailing icon configuration
-pub const TRAILING_ICON_KEY: &str = constants::metadata_keys::TRAILING_ICON;
-/// Metadata key for badge configuration
-pub const BADGE_KEY: &str = constants::metadata_keys::BADGE;
-/// Metadata key for badge color configuration
-pub const BADGE_COLOR_KEY: &str = constants::metadata_keys::BADGE_COLOR;
-/// Metadata key for layout configuration
-pub const LAYOUT_KEY: &str = constants::metadata_keys::LAYOUT;
-/// Metadata key for spacing configuration
-pub const SPACING_KEY: &str = constants::metadata_keys::SPACING;
-
-/// All supported metadata keys for validation
-pub const SUPPORTED_METADATA_KEYS: &[&str] = constants::metadata_keys::ALL_SUPPORTED;
+// Note: Metadata keys are now centralized in the constants module
+// Access them via: constants::metadata_keys::LEADING_ICON, etc.
 
 // ============================================================================
 // Component States (Modern State-Based Design)
@@ -423,9 +416,7 @@ impl ComponentProps {
     pub fn size(mut self, size: ComponentSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Add metadata key-value pair (builder pattern)
+    }    /// Add metadata key-value pair (builder pattern)
     ///
     /// This method allows storing arbitrary metadata for enhanced features
     /// like icons, badges, layout preferences, etc. It validates that only
@@ -438,17 +429,18 @@ impl ComponentProps {
     /// # Examples
     /// ```rust,no_run
     /// use abop_gui::styling::material::components::selection::common::*;
+    /// use abop_gui::styling::material::components::selection::constants;
     ///
     /// let props = ComponentProps::new()
-    ///     .with_metadata(LEADING_ICON_KEY, "star")
-    ///     .with_metadata(BADGE_KEY, "5");
+    ///     .with_metadata(constants::metadata_keys::LEADING_ICON, "star")
+    ///     .with_metadata(constants::metadata_keys::BADGE, "5");
     /// ```
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         let key_string = key.into();
 
         // Use const lookup for better performance in release builds
-        let is_known_key = SUPPORTED_METADATA_KEYS.iter().any(|&k| k == key_string);
+        let is_known_key = constants::metadata_keys::ALL_SUPPORTED.iter().any(|&k| k == key_string);
 
         if is_known_key {
             self.metadata.insert(key_string, value.into());
@@ -775,22 +767,8 @@ pub const fn validation_config_for_toggles() -> ValidationConfig {
     }
 }
 
-// ============================================================================
-// Common Constants (Phase 1: Re-export from constants module)
-// ============================================================================
-
-/// Common constants to avoid duplication - now centralized in constants module
-pub mod constants {
-    // Re-export the organized constants for backward compatibility
-    pub use super::super::constants::ui::*;
-    pub use super::super::constants::animation::*;
-    pub use super::super::constants::chips::MAX_LABEL_LENGTH as MAX_CHIP_LABEL_LENGTH;
-    
-    // Keep the specific names that the old API expected
-    pub const DEFAULT_ANIMATION_DURATION_MS: u64 = super::super::constants::animation::DEFAULT_DURATION_MS;
-    pub const MIN_TOUCH_TARGET_SIZE: f32 = super::super::constants::ui::MIN_TOUCH_TARGET_SIZE;
-    pub const MAX_LABEL_LENGTH: usize = super::super::constants::ui::MAX_LABEL_LENGTH;
-}
+// Constants are now centralized in the `constants` module.
+// Use: `use super::constants` to access all organized constants.
 
 // ============================================================================
 // Tests
@@ -953,17 +931,16 @@ mod tests {
         let still_unselected = unselected.to_pressed();
         assert_eq!(still_unselected, ChipState::Unselected);
     }
-    
-    #[test]
-    fn test_constants_migration() {
-        // Test that new constants work correctly
-        assert_eq!(constants::DEFAULT_ANIMATION_DURATION_MS, 200);
-        assert_eq!(constants::MIN_TOUCH_TARGET_SIZE, 48.0);
-        assert_eq!(constants::MAX_LABEL_LENGTH, 200);
-        assert_eq!(constants::MAX_CHIP_LABEL_LENGTH, 100);
+      #[test]
+    fn test_constants_access() {
+        // Test that constants are properly accessible
+        assert_eq!(constants::animation::DEFAULT_DURATION_MS, 200);
+        assert_eq!(constants::ui::MIN_TOUCH_TARGET_SIZE, 48.0);
+        assert_eq!(constants::ui::MAX_LABEL_LENGTH, 200);
+        assert_eq!(constants::chips::MAX_LABEL_LENGTH, 100);
         
         // Test that component sizes use constants correctly
-        assert_eq!(ComponentSize::Large.touch_target_size(), super::super::constants::sizes::touch_targets::LARGE);
-        assert_eq!(ComponentSize::Medium.size_px(), super::super::constants::sizes::MEDIUM_SIZE_PX);
+        assert_eq!(ComponentSize::Large.touch_target_size(), constants::sizes::touch_targets::LARGE);
+        assert_eq!(ComponentSize::Medium.size_px(), constants::sizes::MEDIUM_SIZE_PX);
     }
 }
