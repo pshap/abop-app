@@ -7,14 +7,11 @@ use crate::styling::material::tokens::core::MaterialTokens;
 use iced::{Background, Border, Color};
 
 use super::{
-    SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
-    SelectionVariant,
+    SelectionSize, SelectionState, SelectionStyleError, SelectionStyling, SelectionVariant,
 };
 
 // Import strategy implementations from variants module
-use super::variants::{
-    CheckboxStrategy, RadioStrategy, ChipStrategy, SwitchStrategy,
-};
+use super::variants::{CheckboxStrategy, ChipStrategy, RadioStrategy, SwitchStrategy};
 
 /// Strategy trait for selection component styling following Material Design 3
 pub trait SelectionStyleStrategy {
@@ -55,19 +52,44 @@ pub trait SelectionStyleStrategy {
     }
 
     /// Calculate the background color for this variant and state
-    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
-    
+    fn calculate_background_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color;
+
     /// Calculate the text color for this variant and state
-    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
-    
+    fn calculate_text_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color;
+
     /// Calculate the border for this variant and state
-    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border;
-    
+    fn calculate_border(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        size: SelectionSize,
+        error_state: bool,
+    ) -> Border;
+
     /// Calculate the foreground color (icon/dot) for this variant and state
-    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
-    
+    fn calculate_foreground_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color;
+
     /// Calculate the state layer color for interactions
-    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color>;
+    fn calculate_state_layer_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+    ) -> Option<Color>;
 
     /// Get the variant name for debugging and logging
     fn variant_name(&self) -> &'static str {
@@ -109,7 +131,9 @@ pub struct SelectionStyleContext {
 }
 
 /// Factory function to create strategy instances
-pub fn create_strategy(variant: SelectionVariant) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
+pub fn create_strategy(
+    variant: SelectionVariant,
+) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
     match variant {
         SelectionVariant::Checkbox => Ok(Box::new(CheckboxStrategy)),
         SelectionVariant::Radio => Ok(Box::new(RadioStrategy)),

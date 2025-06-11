@@ -8,8 +8,12 @@ use std::collections::HashMap;
 use std::time::Duration;
 use thiserror::Error;
 
-// Import the constant from chip module
-use super::chip::MAX_CHIP_LABEL_LENGTH;
+// Import constants from the new constants module
+use super::constants;
+use super::state_traits::{ComponentState, InteractiveState, MultiLevelState};
+
+// Remove hardcoded dependency - use constants instead
+// Note: This will require updating chip module to use constants as well
 
 // ============================================================================
 // Prelude - Import this for convenient access to all traits
@@ -17,38 +21,26 @@ use super::chip::MAX_CHIP_LABEL_LENGTH;
 
 /// Convenient re-exports for component traits and types
 pub mod prelude {
+    // Core component types and states
     pub use super::{
         AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-        ComponentSize, SelectionComponent, SelectionError, StatefulComponent, SwitchState,
+        ComponentSize, SelectionError, StatefulComponent, SwitchState,
     };
+    
+    // Unified state traits
+    pub use super::super::state_traits::{
+        AnimatableState, ComponentState, InteractiveState, MultiLevelState
+    };
+    
+    // Validation types
+    pub use super::{ValidationConfig, ValidationRule, EasingCurve};
+    
+    // Constants access
+    pub use super::super::constants;
 }
 
-// ============================================================================
-// Metadata Constants
-// ============================================================================
-
-/// Metadata key for leading icon configuration
-pub const LEADING_ICON_KEY: &str = "leading_icon";
-/// Metadata key for trailing icon configuration
-pub const TRAILING_ICON_KEY: &str = "trailing_icon";
-/// Metadata key for badge configuration
-pub const BADGE_KEY: &str = "badge";
-/// Metadata key for badge color configuration
-pub const BADGE_COLOR_KEY: &str = "badge_color";
-/// Metadata key for layout configuration
-pub const LAYOUT_KEY: &str = "layout";
-/// Metadata key for spacing configuration
-pub const SPACING_KEY: &str = "spacing";
-
-/// All supported metadata keys for validation
-pub const SUPPORTED_METADATA_KEYS: &[&str] = &[
-    LEADING_ICON_KEY,
-    TRAILING_ICON_KEY,
-    BADGE_KEY,
-    BADGE_COLOR_KEY,
-    LAYOUT_KEY,
-    SPACING_KEY,
-];
+// Note: Metadata keys are now centralized in the constants module
+// Access them via: constants::metadata_keys::LEADING_ICON, etc.
 
 // ============================================================================
 // Component States (Modern State-Based Design)
@@ -105,6 +97,43 @@ impl CheckboxState {
     }
 }
 
+// Phase 1: Implement unified state traits for CheckboxState
+impl ComponentState for CheckboxState {
+    fn toggle(self) -> Self {
+        self.toggle()
+    }
+    
+    fn is_active(self) -> bool {
+        self.is_selected()
+    }
+    
+    fn to_bool(self) -> bool {
+        self.to_bool()
+    }
+    
+    fn from_bool(value: bool) -> Self {
+        Self::from_bool(value)
+    }
+}
+
+impl MultiLevelState for CheckboxState {
+    fn is_intermediate(self) -> bool {
+        matches!(self, Self::Indeterminate)
+    }
+    
+    fn all_states() -> &'static [Self] {
+        &[Self::Unchecked, Self::Checked, Self::Indeterminate]
+    }
+    
+    fn next_state(self) -> Self {
+        match self {
+            Self::Unchecked => Self::Checked,
+            Self::Checked => Self::Indeterminate,
+            Self::Indeterminate => Self::Unchecked,
+        }
+    }
+}
+
 /// Switch state enum for on/off toggles
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SwitchState {
@@ -149,6 +178,25 @@ impl SwitchState {
     }
 }
 
+// Phase 1: Implement unified state traits for SwitchState
+impl ComponentState for SwitchState {
+    fn toggle(self) -> Self {
+        self.toggle()
+    }
+    
+    fn is_active(self) -> bool {
+        self.is_on()
+    }
+    
+    fn to_bool(self) -> bool {
+        self.to_bool()
+    }
+    
+    fn from_bool(value: bool) -> Self {
+        Self::from_bool(value)
+    }
+}
+
 /// Chip state enum for selection state with animation support
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ChipState {
@@ -183,6 +231,45 @@ impl ChipState {
     }
 }
 
+// Phase 1: Implement unified state traits for ChipState
+impl ComponentState for ChipState {
+    fn toggle(self) -> Self {
+        self.toggle()
+    }
+    
+    fn is_active(self) -> bool {
+        self.is_selected()
+    }
+    
+    fn to_bool(self) -> bool {
+        matches!(self, Self::Selected)
+    }
+    
+    fn from_bool(value: bool) -> Self {
+        if value { Self::Selected } else { Self::Unselected }
+    }
+}
+
+impl InteractiveState for ChipState {
+    fn is_pressed(self) -> bool {
+        matches!(self, Self::Pressed)
+    }
+    
+    fn to_pressed(self) -> Self {
+        match self {
+            Self::Selected => Self::Pressed,
+            other => other,
+        }
+    }
+    
+    fn to_unpressed(self) -> Self {
+        match self {
+            Self::Pressed => Self::Selected,
+            other => other,
+        }
+    }
+}
+
 // ============================================================================
 // Component Size System
 // ============================================================================
@@ -209,9 +296,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn size_px(self) -> f32 {
         match self {
-            Self::Small => 16.0,
-            Self::Medium => 20.0,
-            Self::Large => 24.0,
+            Self::Small => constants::sizes::SMALL_SIZE_PX,
+            Self::Medium => constants::sizes::MEDIUM_SIZE_PX,
+            Self::Large => constants::sizes::LARGE_SIZE_PX,
         }
     }
 
@@ -219,9 +306,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn touch_target_size(self) -> f32 {
         match self {
-            Self::Small => 32.0,  // Compact but still accessible
-            Self::Medium => 40.0, // Standard touch target
-            Self::Large => 48.0,  // Full Material Design touch target
+            Self::Small => constants::sizes::touch_targets::SMALL,
+            Self::Medium => constants::sizes::touch_targets::MEDIUM,
+            Self::Large => constants::sizes::touch_targets::LARGE,
         }
     }
 
@@ -229,9 +316,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn border_width(self) -> f32 {
         match self {
-            Self::Small => 1.5,
-            Self::Medium => 2.0,
-            Self::Large => 2.5,
+            Self::Small => constants::sizes::borders::SMALL,
+            Self::Medium => constants::sizes::borders::MEDIUM,
+            Self::Large => constants::sizes::borders::LARGE,
         }
     }
 
@@ -239,9 +326,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn text_size(self) -> f32 {
         match self {
-            Self::Small => 12.0,
-            Self::Medium => 14.0,
-            Self::Large => 16.0,
+            Self::Small => constants::sizes::text::SMALL,
+            Self::Medium => constants::sizes::text::MEDIUM,
+            Self::Large => constants::sizes::text::LARGE,
         }
     }
 
@@ -254,7 +341,7 @@ impl ComponentSize {
     /// Check if this size meets Material Design touch target requirements
     #[must_use]
     pub const fn meets_touch_target_requirements(self) -> bool {
-        self.touch_target_size() >= constants::MIN_TOUCH_TARGET_SIZE
+        self.touch_target_size() >= constants::ui::MIN_TOUCH_TARGET_SIZE
     }
 }
 
@@ -329,9 +416,7 @@ impl ComponentProps {
     pub fn size(mut self, size: ComponentSize) -> Self {
         self.size = size;
         self
-    }
-
-    /// Add metadata key-value pair (builder pattern)
+    }    /// Add metadata key-value pair (builder pattern)
     ///
     /// This method allows storing arbitrary metadata for enhanced features
     /// like icons, badges, layout preferences, etc. It validates that only
@@ -344,17 +429,18 @@ impl ComponentProps {
     /// # Examples
     /// ```rust,no_run
     /// use abop_gui::styling::material::components::selection::common::*;
+    /// use abop_gui::styling::material::components::selection::constants;
     ///
     /// let props = ComponentProps::new()
-    ///     .with_metadata(LEADING_ICON_KEY, "star")
-    ///     .with_metadata(BADGE_KEY, "5");
+    ///     .with_metadata(constants::metadata_keys::LEADING_ICON, "star")
+    ///     .with_metadata(constants::metadata_keys::BADGE, "5");
     /// ```
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         let key_string = key.into();
 
         // Use const lookup for better performance in release builds
-        let is_known_key = SUPPORTED_METADATA_KEYS.iter().any(|&k| k == key_string);
+        let is_known_key = constants::metadata_keys::ALL_SUPPORTED.iter().any(|&k| k == key_string);
 
         if is_known_key {
             self.metadata.insert(key_string, value.into());
@@ -413,7 +499,7 @@ pub struct ValidationConfig {
 impl Default for ValidationConfig {
     fn default() -> Self {
         Self {
-            max_label_length: constants::MAX_LABEL_LENGTH,
+            max_label_length: constants::ui::MAX_LABEL_LENGTH,
             allow_empty_label: true,
             custom_rules: Vec::new(),
         }
@@ -500,7 +586,7 @@ pub struct AnimationConfig {
 impl Default for AnimationConfig {
     fn default() -> Self {
         Self {
-            duration: Duration::from_millis(constants::DEFAULT_ANIMATION_DURATION_MS),
+            duration: Duration::from_millis(constants::animation::DEFAULT_DURATION_MS),
             enabled: true,
             respect_reduced_motion: true,
             easing: EasingCurve::Standard,
@@ -585,11 +671,11 @@ pub fn validate_chip_state(
 
     // Validate label length for chips (stricter than other components)
     if let Some(ref label) = props.label
-        && label.len() > MAX_CHIP_LABEL_LENGTH
+        && label.len() > constants::chips::MAX_LABEL_LENGTH
     {
         return Err(SelectionError::LabelTooLong {
             len: label.len(),
-            max: MAX_CHIP_LABEL_LENGTH,
+            max: constants::chips::MAX_LABEL_LENGTH,
         });
     }
 
@@ -665,7 +751,7 @@ pub fn system_has_reduced_motion() -> bool {
 #[must_use]
 pub const fn validation_config_for_chips() -> ValidationConfig {
     ValidationConfig {
-        max_label_length: constants::MAX_CHIP_LABEL_LENGTH,
+        max_label_length: constants::chips::MAX_LABEL_LENGTH,
         allow_empty_label: false,
         custom_rules: Vec::new(),
     }
@@ -675,33 +761,14 @@ pub const fn validation_config_for_chips() -> ValidationConfig {
 #[must_use]
 pub const fn validation_config_for_toggles() -> ValidationConfig {
     ValidationConfig {
-        max_label_length: constants::MAX_LABEL_LENGTH,
+        max_label_length: constants::ui::MAX_LABEL_LENGTH,
         allow_empty_label: true,
         custom_rules: Vec::new(),
     }
 }
 
-// ============================================================================
-// Common Constants
-// ============================================================================
-
-/// Common constants to avoid duplication
-pub mod constants {
-    /// Default empty label for components that don't require labels
-    pub const DEFAULT_LABEL: &str = "";
-
-    /// Default animation duration for state transitions (matches Material Design 3)
-    pub const DEFAULT_ANIMATION_DURATION_MS: u64 = 200;
-
-    /// Minimum touch target size per Material Design guidelines
-    pub const MIN_TOUCH_TARGET_SIZE: f32 = 48.0;
-
-    /// Maximum recommended label length for accessibility
-    pub const MAX_LABEL_LENGTH: usize = 200;
-
-    /// Maximum label length for chip components (stricter requirement)
-    pub const MAX_CHIP_LABEL_LENGTH: usize = 100;
-}
+// Constants are now centralized in the `constants` module.
+// Use: `use super::constants` to access all organized constants.
 
 // ============================================================================
 // Tests
@@ -764,9 +831,7 @@ mod tests {
         assert_eq!(props.label, Some("Test Label".to_string()));
         assert!(props.disabled);
         assert_eq!(props.size, ComponentSize::Large);
-    }
-
-    #[test]
+    }    #[test]
     fn test_component_props_metadata() {
         let props = ComponentProps::new()
             .with_metadata("leading_icon", "filter")
@@ -781,5 +846,101 @@ mod tests {
         assert!(props.has_metadata("leading_icon"));
         assert!(props.has_metadata("badge_count"));
         assert!(!props.has_metadata("nonexistent"));
+    }
+
+    // Phase 1: Tests for unified state traits
+    #[test]
+    fn test_component_state_trait_consistency() {
+        use super::super::state_traits::ComponentState;
+        
+        // Test CheckboxState implements ComponentState
+        let checkbox = CheckboxState::Unchecked;
+        assert!(!checkbox.is_active());
+        assert!(!checkbox.to_bool());
+        
+        let toggled = checkbox.toggle();
+        assert_eq!(toggled, CheckboxState::Checked);
+        assert!(toggled.is_active());
+        assert!(toggled.to_bool());
+        
+        // Test SwitchState implements ComponentState
+        let switch = SwitchState::Off;
+        assert!(!switch.is_active());
+        assert!(!switch.to_bool());
+        
+        let toggled = switch.toggle();
+        assert_eq!(toggled, SwitchState::On);
+        assert!(toggled.is_active());
+        assert!(toggled.to_bool());
+        
+        // Test ChipState implements ComponentState
+        let chip = ChipState::Unselected;
+        assert!(!chip.is_active());
+        assert!(!chip.to_bool());
+        
+        let toggled = chip.toggle();
+        assert_eq!(toggled, ChipState::Selected);
+        assert!(toggled.is_active());
+        assert!(toggled.to_bool());
+    }
+    
+    #[test]
+    fn test_multi_level_state_trait() {
+        use super::super::state_traits::MultiLevelState;
+        
+        // Test CheckboxState MultiLevelState implementation
+        assert!(!CheckboxState::Checked.is_intermediate());
+        assert!(CheckboxState::Indeterminate.is_intermediate());
+        assert!(!CheckboxState::Unchecked.is_intermediate());
+        
+        let all_states = CheckboxState::all_states();
+        assert_eq!(all_states.len(), 3);
+        assert!(all_states.contains(&CheckboxState::Unchecked));
+        assert!(all_states.contains(&CheckboxState::Checked));
+        assert!(all_states.contains(&CheckboxState::Indeterminate));
+        
+        // Test state cycling
+        let unchecked = CheckboxState::Unchecked;
+        let checked = unchecked.next_state();
+        let indeterminate = checked.next_state();
+        let back_to_unchecked = indeterminate.next_state();
+        
+        assert_eq!(checked, CheckboxState::Checked);
+        assert_eq!(indeterminate, CheckboxState::Indeterminate);
+        assert_eq!(back_to_unchecked, CheckboxState::Unchecked);
+    }
+    
+    #[test]
+    fn test_interactive_state_trait() {
+        use super::super::state_traits::InteractiveState;
+        
+        // Test ChipState InteractiveState implementation
+        let selected = ChipState::Selected;
+        assert!(!selected.is_pressed());
+        
+        let pressed = selected.to_pressed();
+        assert_eq!(pressed, ChipState::Pressed);
+        assert!(pressed.is_pressed());
+        
+        let unpressed = pressed.to_unpressed();
+        assert_eq!(unpressed, ChipState::Selected);
+        assert!(!unpressed.is_pressed());
+        
+        // Test that unselected doesn't become pressed
+        let unselected = ChipState::Unselected;
+        let still_unselected = unselected.to_pressed();
+        assert_eq!(still_unselected, ChipState::Unselected);
+    }
+      #[test]
+    fn test_constants_access() {
+        // Test that constants are properly accessible
+        assert_eq!(constants::animation::DEFAULT_DURATION_MS, 200);
+        assert_eq!(constants::ui::MIN_TOUCH_TARGET_SIZE, 48.0);
+        assert_eq!(constants::ui::MAX_LABEL_LENGTH, 200);
+        assert_eq!(constants::chips::MAX_LABEL_LENGTH, 100);
+        
+        // Test that component sizes use constants correctly
+        assert_eq!(ComponentSize::Large.touch_target_size(), constants::sizes::touch_targets::LARGE);
+        assert_eq!(ComponentSize::Medium.size_px(), constants::sizes::MEDIUM_SIZE_PX);
     }
 }

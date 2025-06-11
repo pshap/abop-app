@@ -5,13 +5,11 @@
 //! one position to another to indicate on/off states.
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::tokens::core::MaterialTokens;
 use crate::styling::material::components::selection_style::lib::constants;
+use crate::styling::material::tokens::core::MaterialTokens;
 use iced::{Border, Color};
 
-use super::super::{
-    SelectionSize, SelectionState, SelectionVariant, SelectionStyleStrategy,
-};
+use super::super::{SelectionSize, SelectionState, SelectionStyleStrategy, SelectionVariant};
 
 /// Switch strategy implementation
 pub struct SwitchStrategy;
@@ -21,12 +19,21 @@ impl SelectionStyleStrategy for SwitchStrategy {
         SelectionVariant::Switch
     }
 
-    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+    fn calculate_background_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
 
         // Handle error state first
         if error_state {
-            return if state.is_selected() { colors.error.base } else { Color::TRANSPARENT };
+            return if state.is_selected() {
+                colors.error.base
+            } else {
+                Color::TRANSPARENT
+            };
         }
 
         // Handle disabled state
@@ -43,7 +50,7 @@ impl SelectionStyleStrategy for SwitchStrategy {
             colors.primary.base
         } else {
             Color::TRANSPARENT
-        };        // Apply interaction state effects for switch
+        }; // Apply interaction state effects for switch
         if state.is_selected() && (state.is_pressed() || state.is_hovered() || state.is_focused()) {
             colors.secondary.container
         } else {
@@ -51,7 +58,12 @@ impl SelectionStyleStrategy for SwitchStrategy {
         }
     }
 
-    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, _error_state: bool) -> Color {
+    fn calculate_text_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        _error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
         if state.is_disabled() {
             return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
@@ -59,8 +71,15 @@ impl SelectionStyleStrategy for SwitchStrategy {
         colors.on_surface
     }
 
-    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
-        let colors = &tokens.colors;        let border_color = if error_state && !state.is_selected() {
+    fn calculate_border(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        size: SelectionSize,
+        error_state: bool,
+    ) -> Border {
+        let colors = &tokens.colors;
+        let border_color = if error_state && !state.is_selected() {
             colors.error.base
         } else if state.is_disabled() {
             // Both selected and unselected disabled states use the same color
@@ -84,7 +103,12 @@ impl SelectionStyleStrategy for SwitchStrategy {
         }
     }
 
-    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+    fn calculate_foreground_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
 
         // Error state takes highest priority
@@ -109,7 +133,11 @@ impl SelectionStyleStrategy for SwitchStrategy {
         }
     }
 
-    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color> {
+    fn calculate_state_layer_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+    ) -> Option<Color> {
         use constants::opacity::{FOCUS, HOVER, PRESSED};
 
         if state.is_disabled() {

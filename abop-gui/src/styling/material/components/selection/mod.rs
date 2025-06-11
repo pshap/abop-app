@@ -75,32 +75,32 @@ pub mod builder;
 pub mod checkbox;
 pub mod chip;
 pub mod common;
+pub mod constants;
 pub mod defaults;
 pub mod radio;
+pub mod state_traits;
 pub mod switch;
 
 #[cfg(test)]
 pub mod tests;
 
-// Import traits for method resolution
-use common::SelectionComponent;
-
-// Re-export core types and traits from builder module only
+// Re-export core types and traits - modern, clean API
 pub use builder::{
     BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
     ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder,
 };
-// Re-export additional chip collection types from chip module
 pub use chip::{
-    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, DEFAULT_ANIMATION_DURATION,
-    MAX_CHIP_LABEL_LENGTH, filter_chip_collection, single_select_chip_collection,
+    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection, 
+    single_select_chip_collection,
 };
 pub use common::{
     AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
     ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState, ValidationConfig,
     ValidationRule,
 };
+pub use constants; // Direct access to all constants
 pub use radio::{RadioGroupBuilder, RadioGroupState};
+pub use state_traits::{AnimatableState, ComponentState, InteractiveState, MultiLevelState};
 pub use switch::SwitchDimensions;
 
 /// A collection of filter chips supporting multiple selection

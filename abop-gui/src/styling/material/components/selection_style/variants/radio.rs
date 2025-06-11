@@ -5,13 +5,11 @@
 //! when selected and maintain transparent backgrounds.
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::tokens::core::MaterialTokens;
 use crate::styling::material::components::selection_style::lib::constants;
+use crate::styling::material::tokens::core::MaterialTokens;
 use iced::{Border, Color};
 
-use super::super::{
-    SelectionSize, SelectionState, SelectionVariant, SelectionStyleStrategy,
-};
+use super::super::{SelectionSize, SelectionState, SelectionStyleStrategy, SelectionVariant};
 
 /// Radio button strategy implementation
 pub struct RadioStrategy;
@@ -21,12 +19,21 @@ impl SelectionStyleStrategy for RadioStrategy {
         SelectionVariant::Radio
     }
 
-    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+    fn calculate_background_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
 
         // Handle error state first
         if error_state {
-            return if state.is_selected() { colors.error.base } else { Color::TRANSPARENT };
+            return if state.is_selected() {
+                colors.error.base
+            } else {
+                Color::TRANSPARENT
+            };
         }
 
         // Handle disabled state
@@ -40,25 +47,39 @@ impl SelectionStyleStrategy for RadioStrategy {
 
         // Radio buttons have transparent background, only the dot is colored
         Color::TRANSPARENT
-    }    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+    }
+    fn calculate_text_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
-        
+
         // Handle error state first
         if error_state {
             return colors.error.base;
         }
-        
+
         if state.is_disabled() {
             return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
         }
         colors.on_surface
     }
 
-    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
-        let colors = &tokens.colors;        let border_color = if error_state && !state.is_selected() {
+    fn calculate_border(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        size: SelectionSize,
+        error_state: bool,
+    ) -> Border {
+        let colors = &tokens.colors;
+        let border_color = if error_state && !state.is_selected() {
             colors.error.base
         } else if state.is_disabled() {
-            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)        } else if state.is_focused() {
+            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+        } else if state.is_focused() {
             colors.primary.base
         } else if state.is_selected() {
             colors.primary.base
@@ -73,7 +94,12 @@ impl SelectionStyleStrategy for RadioStrategy {
         }
     }
 
-    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+    fn calculate_foreground_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+        error_state: bool,
+    ) -> Color {
         let colors = &tokens.colors;
 
         // Error state takes highest priority
@@ -98,7 +124,11 @@ impl SelectionStyleStrategy for RadioStrategy {
         }
     }
 
-    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color> {
+    fn calculate_state_layer_color(
+        &self,
+        state: SelectionState,
+        tokens: &MaterialTokens,
+    ) -> Option<Color> {
         use constants::opacity::{FOCUS, HOVER, PRESSED};
 
         if state.is_disabled() {
