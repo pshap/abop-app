@@ -2,7 +2,7 @@
 
 use crate::models::{AppState, Audiobook, Library, Progress};
 use crate::validation::{
-    FileValidator, IntegrityValidator, MetadataValidator, SchemaValidator,
+    FileValidator, IntegrityValidator, MetadataValidator,
     error::{ValidationError, ValidationResult},
 };
 
@@ -15,8 +15,6 @@ pub struct ValidationConfig {
     pub check_metadata_consistency: bool,
     /// Whether to validate database referential integrity
     pub check_referential_integrity: bool,
-    /// Whether to validate schema version compatibility
-    pub check_schema_version: bool,
     /// Maximum file size to consider valid (in bytes)
     pub max_file_size: Option<u64>,
     /// Whether to perform deep validation (slower but more thorough)
@@ -31,7 +29,6 @@ impl Default for ValidationConfig {
             check_file_existence: true,
             check_metadata_consistency: true,
             check_referential_integrity: true,
-            check_schema_version: true,
             max_file_size: Some(10 * 1024 * 1024 * 1024), // 10GB
             deep_validation: false,
             check_audio_formats: true,
@@ -47,7 +44,6 @@ impl ValidationConfig {
             check_file_existence: false,
             check_metadata_consistency: true,
             check_referential_integrity: true,
-            check_schema_version: true,
             max_file_size: None,
             deep_validation: false,
             check_audio_formats: false,
@@ -61,7 +57,6 @@ impl ValidationConfig {
             check_file_existence: true,
             check_metadata_consistency: true,
             check_referential_integrity: true,
-            check_schema_version: true,
             max_file_size: Some(10 * 1024 * 1024 * 1024), // 10GB
             deep_validation: true,
             check_audio_formats: true,
@@ -76,7 +71,6 @@ pub struct StateValidator {
     file_validator: FileValidator,
     metadata_validator: MetadataValidator,
     integrity_validator: IntegrityValidator,
-    schema_validator: SchemaValidator,
 }
 
 impl StateValidator {
@@ -87,7 +81,6 @@ impl StateValidator {
             file_validator: FileValidator::new(&config),
             metadata_validator: MetadataValidator::new(&config),
             integrity_validator: IntegrityValidator::new(&config),
-            schema_validator: SchemaValidator::new(&config),
             config,
         }
     }
@@ -96,12 +89,6 @@ impl StateValidator {
     #[must_use]
     pub fn validate(&self, state: &AppState) -> ValidationResult {
         let mut result = ValidationResult::new();
-
-        // Schema version validation (always first)
-        if self.config.check_schema_version {
-            self.schema_validator
-                .validate_schema_version(state, &mut result);
-        }
 
         // Validate libraries
         for library in &state.app_data.libraries {

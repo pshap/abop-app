@@ -8,7 +8,7 @@
 //! - `config`: Data table configuration and builder methods
 //! - `typed`: Type-safe configurations with compile-time guarantees
 //!
-//! All types are re-exported from this module for backward compatibility.
+//! All types are re-exported from this module.
 
 // Module declarations
 mod column;
@@ -16,7 +16,7 @@ mod config;
 mod core;
 mod typed;
 
-// Re-export all types for backward compatibility
+// Re-export all types
 pub use column::TableColumn;
 pub use config::DataTableConfig;
 pub use core::{
