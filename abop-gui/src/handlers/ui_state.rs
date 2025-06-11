@@ -18,6 +18,10 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
         Message::CloseSettings => handle_close_settings(state),
         Message::ShowRecentDirectories => handle_show_recent_directories(state),
         Message::SetTheme(theme_mode) => handle_set_theme(state, theme_mode),
+        Message::ToggleTheme => handle_toggle_theme(state),
+        Message::ToggleSelectAll => handle_toggle_select_all(state),        Message::ToggleAutoSaveLibrary => handle_toggle_auto_save_library(state),
+        Message::ToggleScanSubdirectories => handle_toggle_scan_subdirectories(state),
+        Message::ToggleAudiobookSelection(audiobook_id) => handle_toggle_audiobook_selection(state, audiobook_id),
         Message::SelectRecentDirectory(path) => handle_select_recent_directory(state, path),
         Message::PlayPause => handle_play_pause(state),
         Message::Stop => handle_stop(state),
@@ -238,9 +242,7 @@ fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message
     }
 
     // Apply the sort to the audiobooks
-    crate::utils::sort_audiobooks(state);
-
-    log::info!(
+    crate::utils::sort_audiobooks(state);    log::info!(
         "Sorted by {} ({})",
         state.table_state.sort_column,
         if state.table_state.sort_ascending {
@@ -250,5 +252,52 @@ fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message
         }
     );
 
+    Some(Task::none())
+}
+
+fn handle_toggle_theme(state: &mut UiState) -> Option<Task<Message>> {
+    state.theme_mode = match state.theme_mode {
+        ThemeMode::Light => ThemeMode::Dark,
+        ThemeMode::Dark => ThemeMode::Light,
+        // For other modes, default to Light
+        _ => ThemeMode::Light,
+    };
+    log::info!("Theme toggled to: {:?}", state.theme_mode);
+    Some(Task::none())
+}
+
+fn handle_toggle_select_all(state: &mut UiState) -> Option<Task<Message>> {
+    if state.selected_audiobooks.len() == state.audiobooks.len() {
+        // All are selected, so deselect all
+        state.selected_audiobooks.clear();
+        log::info!("Deselected all audiobooks");
+    } else {
+        // Not all are selected, so select all
+        state.selected_audiobooks = state.audiobooks.iter().map(|ab| ab.id.clone()).collect();
+        log::info!("Selected all {} audiobooks", state.audiobooks.len());
+    }
+    Some(Task::none())
+}
+
+fn handle_toggle_auto_save_library(state: &mut UiState) -> Option<Task<Message>> {
+    state.auto_save_library = !state.auto_save_library;
+    log::info!("Auto-save library toggled to: {}", state.auto_save_library);
+    Some(Task::none())
+}
+
+fn handle_toggle_scan_subdirectories(state: &mut UiState) -> Option<Task<Message>> {
+    state.scan_subdirectories = !state.scan_subdirectories;
+    log::info!("Scan subdirectories toggled to: {}", state.scan_subdirectories);
+    Some(Task::none())
+}
+
+fn handle_toggle_audiobook_selection(state: &mut UiState, audiobook_id: String) -> Option<Task<Message>> {
+    if state.selected_audiobooks.contains(&audiobook_id) {
+        state.selected_audiobooks.remove(&audiobook_id);
+        log::info!("Deselected audiobook: {}", audiobook_id);
+    } else {
+        state.selected_audiobooks.insert(audiobook_id.clone());
+        log::info!("Selected audiobook: {}", audiobook_id);
+    }
     Some(Task::none())
 }

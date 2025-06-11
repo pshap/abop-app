@@ -1,7 +1,8 @@
-// Table header component with Material Design 3 styling
+// Table header component with Material Design 3 styling and selection support
 
-use iced::widget::{button, container, row, text};
+use iced::widget::{button, checkbox, container, row, text};
 use iced::{Background, Color, Element, Length, Padding};
+use std::collections::HashSet;
 
 use crate::messages::Message;
 use crate::state::TableState;
@@ -11,21 +12,55 @@ use crate::styling::material::components::data;
 /// Component for creating table headers with Material Design styling
 pub struct TableHeader;
 
-impl TableHeader {
-    /// Create a header element from columns and state
+impl TableHeader {    /// Create a header element from columns and state with selection support
     #[must_use]
     pub fn create<'a>(
         columns: &[data::TableColumn],
         state: &TableState,
         tokens: &'a MaterialTokens,
+        selected_items: &HashSet<String>,
+        total_items: usize,
     ) -> Element<'a, Message> {
-        let header_row = columns
+        let mut header_cells = vec![];
+        
+        // Add select-all checkbox as the first column
+        let all_selected = !selected_items.is_empty() && selected_items.len() == total_items;
+        let some_selected = !selected_items.is_empty() && selected_items.len() < total_items;
+        
+        let select_all_checkbox = checkbox("", all_selected)
+            .on_toggle(|_| Message::ToggleSelectAll)
+            .size(20)            .style(move |_theme, _status| {                // Use Material Design styling for checkbox
+                iced::widget::checkbox::Style {
+                    background: Background::Color(Color::TRANSPARENT),
+                    icon_color: tokens.colors.primary.base,
+                    border: iced::Border {
+                        color: if some_selected { tokens.colors.primary.base } else { tokens.colors.outline },
+                        width: 2.0,
+                        radius: 4.0.into(),
+                    },
+                    text_color: Some(tokens.colors.on_surface),
+                }
+            });
+            
+        let select_cell = container(select_all_checkbox)
+            .width(Length::Fixed(48.0))
+            .height(Length::Fill)
+            .padding(Padding::from([8.0, 8.0]))
+            .align_x(iced::Alignment::Center)
+            .align_y(iced::Alignment::Center);
+        
+        header_cells.push(select_cell.into());
+
+        // Add the regular column headers
+        let column_headers = columns
             .iter()
             .enumerate()
             .map(|(index, column)| Self::create_header_cell(column, index, state, tokens));
+        
+        header_cells.extend(column_headers);
 
         container(
-            row(header_row)
+            row(header_cells)
                 .height(Length::Fixed(48.0)) // Standard header height
                 .width(Length::Fill)
                 .align_y(iced::Alignment::Center),

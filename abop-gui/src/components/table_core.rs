@@ -76,11 +76,10 @@ impl AudiobookTable {
             "Rendering table with {} audiobooks, {} selected",
             audiobooks.len(),
             selected.len()
-        );
-        let config = Self::default_config();
+        );        let config = Self::default_config();
         let columns = Self::define_columns(); // Create the main table content
-        let mut table = column![]; // Create header
-        let header = TableHeader::create(&columns, table_state, material_tokens);
+        let mut table = column![]; // Create header with selection support
+        let header = TableHeader::create(&columns, table_state, material_tokens, selected, audiobooks.len());
         table = table.push(header);
         log::debug!(
             "Table header created, audiobooks count: {}",

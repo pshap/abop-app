@@ -11,7 +11,6 @@ use iced::{Color, Element};
 use crate::components::main_toolbar::MainToolbar;
 use crate::messages::Message;
 use crate::state::UiState;
-use crate::styling::material::feedback::{DialogButton, MaterialDialog};
 
 pub use about::about_view;
 pub use audio_processing::audio_processing_view;
@@ -58,26 +57,11 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
 
     let main_content = column![toolbar, content]
         .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)
-
-    // If settings dialog is open, show it as a modal overlay
+        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)    // If settings dialog is open, show it as a modal overlay
     if state.settings_open {
-        // Create the content with styled text for better contrast
-        let content_text = "Configure ABOP preferences and options.";
-
         modal(
             main_content,
-            MaterialDialog::form()
-                .title("Settings")
-                .content(content_text)
-                .secondary_button(DialogButton::Text, "Cancel")
-                .dismissible(true)
-                .view(
-                    &state.material_tokens,
-                    None,                         // No primary action
-                    Some(Message::CloseSettings), // Secondary (Cancel) closes dialog
-                    None,                         // No custom close button in header
-                ),
+            settings_view(state),
             Message::CloseSettings,
         )
     } else {

@@ -70,9 +70,12 @@ pub struct UiState {
     /// Current theme mode for the GUI (light or dark)
     pub theme_mode: ThemeMode,
     /// Whether the settings dialog is currently open
-    pub settings_open: bool,
-    /// Whether the recent directories dropdown is currently open
+    pub settings_open: bool,    /// Whether the recent directories dropdown is currently open
     pub recent_directories_open: bool,
+    /// Whether to automatically save library state after scanning  
+    pub auto_save_library: bool,
+    /// Whether to include subdirectories when scanning
+    pub scan_subdirectories: bool,
     /// State of the audiobook table (sorting, selection, etc.)
     pub table_state: TableState,
     /// Path to the currently loaded audiobook library
@@ -126,14 +129,14 @@ impl UiState {
     #[must_use]
     pub fn from_core_state(core_state: AppState) -> Self {
         let theme_mode = ThemeMode::Dark;
-        let material_tokens = MaterialTokens::new();
-
-        Self {
+        let material_tokens = MaterialTokens::new();        Self {
             core_state: core_state.clone(), // Clone core_state first
             theme_mode,
             material_tokens,
             settings_open: false,
             recent_directories_open: false,
+            auto_save_library: true,   // Default to enabled
+            scan_subdirectories: true, // Default to enabled
             table_state: TableState::default(),
             selected_audiobooks: HashSet::new(),
             scanning: false,
