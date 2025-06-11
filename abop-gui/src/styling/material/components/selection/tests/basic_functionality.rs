@@ -71,7 +71,7 @@ mod chip_creation_tests {
         assert_within_time_limit(
             || {
                 for i in 0..1000 {
-                    let _chip = test_chip(&format!("Chip {}", i), ChipVariant::Filter);
+                    let _chip = test_chip(&format!("Chip {i}"), ChipVariant::Filter);
                 }
             },
             100, // 100ms for 1000 chips
@@ -410,7 +410,7 @@ mod chip_trait_implementations_tests {
     #[test]
     fn test_debug_implementation() {
         let chip = test_chip("Debug Test", ChipVariant::Filter);
-        let debug_string = format!("{:?}", chip);
+        let debug_string = format!("{chip:?}");
 
         // Debug output should contain key information
         assert!(debug_string.contains("Debug Test"));

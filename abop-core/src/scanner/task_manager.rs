@@ -181,11 +181,7 @@ mod tests {
                 audiobooks.push(audiobook);
 
                 reporter
-                    .report_file_processed(
-                        index + 1,
-                        total_files,
-                        format!("test_file_{}.mp3", index),
-                    )
+                    .report_file_processed(index + 1, total_files, format!("test_file_{index}.mp3"))
                     .await;
             }
 

@@ -187,7 +187,7 @@ pub fn assert_collection_not_empty(collection: &ChipCollection) {
         "Expected collection to not be empty"
     );
     assert!(
-        collection.len() > 0,
+        !collection.is_empty(),
         "Expected collection length to be > 0, got {}",
         collection.len()
     );
@@ -223,9 +223,7 @@ pub fn assert_chips_selected_by_index(collection: &ChipCollection, expected_indi
     for &expected_index in expected_indices {
         assert!(
             selected_indices.contains(&expected_index),
-            "Expected chip at index {} to be selected, but it wasn't. Selected indices: {:?}",
-            expected_index,
-            selected_indices
+            "Expected chip at index {expected_index} to be selected, but it wasn't. Selected indices: {selected_indices:?}"
         );
 
         if expected_index < collection.len() {
@@ -254,14 +252,12 @@ pub fn assert_label_validation_error(result: Result<Chip, SelectionError>, expec
         Err(SelectionError::LabelTooLong { len, max: _ }) => {
             assert_eq!(
                 len, expected_len,
-                "Expected error length {} but got {}",
-                expected_len, len
+                "Expected error length {expected_len} but got {len}"
             );
         }
         Err(other_error) => {
             panic!(
-                "Expected LabelTooLong error with length {}, but got: {:?}",
-                expected_len, other_error
+                "Expected LabelTooLong error with length {expected_len}, but got: {other_error:?}"
             );
         }
         Ok(chip) => {
@@ -285,12 +281,11 @@ pub fn assert_empty_label_error(result: Result<Chip, SelectionError>) {
                 reason.contains("empty")
                     || reason.contains("must have")
                     || reason.contains("required"),
-                "Expected empty label error, but got InvalidLabel with reason: '{}'",
-                reason
+                "Expected empty label error, but got InvalidLabel with reason: '{reason}'"
             );
         }
         Err(other_error) => {
-            panic!("Expected empty label error, but got: {:?}", other_error);
+            panic!("Expected empty label error, but got: {other_error:?}");
         }
         Ok(chip) => {
             panic!(
@@ -310,21 +305,17 @@ pub fn assert_invalid_state_error(
         Err(SelectionError::InvalidState { details }) => {
             assert!(
                 details.contains(expected_details_pattern),
-                "Expected invalid state error containing '{}', but got details: '{}'",
-                expected_details_pattern,
-                details
+                "Expected invalid state error containing '{expected_details_pattern}', but got details: '{details}'"
             );
         }
         Err(other_error) => {
             panic!(
-                "Expected InvalidState error containing '{}', but got: {:?}",
-                expected_details_pattern, other_error
+                "Expected InvalidState error containing '{expected_details_pattern}', but got: {other_error:?}"
             );
         }
         Ok(()) => {
             panic!(
-                "Expected InvalidState error containing '{}', but operation succeeded",
-                expected_details_pattern
+                "Expected InvalidState error containing '{expected_details_pattern}', but operation succeeded"
             );
         }
     }
@@ -448,11 +439,7 @@ pub fn assert_md3_spacing_compliance(spacing: f32) {
 
     assert!(
         valid_spacings.contains(&spacing) || spacing >= MD3_CHIP_SPACING_COMPACT,
-        "Spacing {:.1}dp does not meet MD3 recommendations. Use {:.1}dp (compact), {:.1}dp (standard), or {:.1}dp (comfortable)",
-        spacing,
-        MD3_CHIP_SPACING_COMPACT,
-        MD3_CHIP_SPACING_STANDARD,
-        MD3_CHIP_SPACING_COMFORTABLE
+        "Spacing {spacing:.1}dp does not meet MD3 recommendations. Use {MD3_CHIP_SPACING_COMPACT:.1}dp (compact), {MD3_CHIP_SPACING_STANDARD:.1}dp (standard), or {MD3_CHIP_SPACING_COMFORTABLE:.1}dp (comfortable)"
     );
 }
 
@@ -471,10 +458,7 @@ where
 
     assert!(
         elapsed <= limit_ms,
-        "{} took {}ms, which exceeds the limit of {}ms",
-        operation_name,
-        elapsed,
-        limit_ms
+        "{operation_name} took {elapsed}ms, which exceeds the limit of {limit_ms}ms"
     );
 }
 
@@ -488,8 +472,7 @@ pub fn assert_reasonable_memory_usage(collection: &ChipCollection) {
         // For large collections, just ensure it's not completely unreasonable
         assert!(
             collection_size < 100_000,
-            "Collection size {} is unreasonably large for testing",
-            collection_size
+            "Collection size {collection_size} is unreasonably large for testing"
         );
     }
 }

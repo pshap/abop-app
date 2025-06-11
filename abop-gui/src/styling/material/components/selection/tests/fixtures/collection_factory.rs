@@ -206,7 +206,7 @@ pub fn max_selected_collection(mode: ChipSelectionMode) -> ChipCollection {
 /// Create small collection for performance testing
 pub fn small_performance_collection() -> ChipCollection {
     let labels: Vec<String> = (0..SMALL_COLLECTION_SIZE)
-        .map(|i| format!("Chip {}", i))
+        .map(|i| format!("Chip {i}"))
         .collect();
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     filter_collection(&label_refs)
@@ -215,7 +215,7 @@ pub fn small_performance_collection() -> ChipCollection {
 /// Create medium collection for performance testing
 pub fn medium_performance_collection() -> ChipCollection {
     let labels: Vec<String> = (0..MEDIUM_COLLECTION_SIZE)
-        .map(|i| format!("Chip {}", i))
+        .map(|i| format!("Chip {i}"))
         .collect();
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     filter_collection(&label_refs)
@@ -224,7 +224,7 @@ pub fn medium_performance_collection() -> ChipCollection {
 /// Create large collection for performance testing
 pub fn large_performance_collection() -> ChipCollection {
     let labels: Vec<String> = (0..LARGE_COLLECTION_SIZE)
-        .map(|i| format!("Chip {}", i))
+        .map(|i| format!("Chip {i}"))
         .collect();
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     filter_collection(&label_refs)
@@ -233,7 +233,7 @@ pub fn large_performance_collection() -> ChipCollection {
 /// Create stress test collection
 pub fn stress_test_collection() -> ChipCollection {
     let labels: Vec<String> = (0..STRESS_TEST_COLLECTION_SIZE)
-        .map(|i| format!("Chip {}", i))
+        .map(|i| format!("Chip {i}"))
         .collect();
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     filter_collection(&label_refs)
@@ -322,7 +322,6 @@ pub fn invalid_collection() -> Result<ChipCollection, SelectionError> {
 pub fn random_collection() -> ChipCollection {
     let mode = random_selection_mode();
     let size = (1..=20)
-        .into_iter()
         .nth(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

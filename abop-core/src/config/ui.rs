@@ -443,9 +443,11 @@ mod tests {
 
     #[test]
     fn test_window_config_validation() {
-        let mut config = WindowConfig::default();
-        config.min_width = 200; // Too small
-        config.opacity = 2.0; // Invalid
+        let config = WindowConfig {
+            min_width: 200, // Too small
+            opacity: 2.0, // Invalid
+            ..Default::default()
+        };
 
         let result = config.validate();
         assert!(result.has_errors());
@@ -462,9 +464,11 @@ mod tests {
 
     #[test]
     fn test_ui_config_validation() {
-        let mut config = UiConfig::default();
-        config.scale_factor = 5.0; // Too large
-        config.tooltip_delay = 10000; // Very long
+        let config = UiConfig {
+            scale_factor: 5.0, // Too large
+            tooltip_delay: 10000, // Very long
+            ..Default::default()
+        };
 
         let result = config.validate();
         assert!(result.has_errors() || result.has_warnings());
@@ -472,9 +476,11 @@ mod tests {
 
     #[test]
     fn test_window_config_validate_and_fix() {
-        let mut config = WindowConfig::default();
-        config.min_width = 200; // Too small
-        config.opacity = 2.0; // Too high
+        let mut config = WindowConfig {
+            min_width: 200, // Too small
+            opacity: 2.0, // Too high
+            ..Default::default()
+        };
 
         let result = config.validate_and_fix();
         assert!(result.has_warnings());
@@ -484,10 +490,12 @@ mod tests {
 
     #[test]
     fn test_ui_config_validate_and_fix() {
-        let mut config = UiConfig::default();
-        config.scale_factor = 5.0; // Too large
-        config.animation_speed = -1.0; // Too small
-        config.items_per_page = 0; // Invalid
+        let mut config = UiConfig {
+            scale_factor: 5.0, // Too large
+            animation_speed: -1.0, // Too small
+            items_per_page: 0, // Invalid
+            ..Default::default()
+        };
 
         let result = config.validate_and_fix();
         assert!(result.has_warnings());
@@ -506,8 +514,10 @@ mod tests {
 
     #[test]
     fn test_scanner_config_validation() {
-        let mut config = ScannerConfig::default();
-        config.max_error_display = 0; // Invalid
+        let config = ScannerConfig {
+            max_error_display: 0, // Invalid
+            ..Default::default()
+        };
 
         let result = config.validate();
         assert!(result.has_warnings());
@@ -516,8 +526,10 @@ mod tests {
 
     #[test]
     fn test_scanner_config_validate_and_fix() {
-        let mut config = ScannerConfig::default();
-        config.max_error_display = 0; // Invalid
+        let mut config = ScannerConfig {
+            max_error_display: 0, // Invalid
+            ..Default::default()
+        };
 
         let result = config.validate_and_fix();
         assert!(result.has_warnings());

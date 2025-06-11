@@ -148,8 +148,7 @@ impl ThemeLoader {
         for override_config in &config.component_overrides {
             override_config.validate().map_err(|e| {
                 ThemeLoadError::ValidationError(format!(
-                    "Component override validation failed: {}",
-                    e
+                    "Component override validation failed: {e}"
                 ))
             })?;
         }
