@@ -25,7 +25,7 @@ use super::common::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Currently selected value
     selected: Option<T>,
@@ -39,7 +39,7 @@ where
 
 impl<T> RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Create a new radio group state
     #[must_use]
@@ -146,7 +146,7 @@ where
 
 impl<T> Default for RadioGroupState<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn default() -> Self {
         Self::new()
@@ -161,7 +161,7 @@ where
 #[derive(Debug, Clone)]
 pub struct RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     radios: Vec<Radio<T>>,
     selected: Option<T>,
@@ -171,7 +171,7 @@ where
 
 impl<T> RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Create a new radio group builder
     #[must_use]
@@ -263,7 +263,7 @@ where
 
 impl<T> Default for RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn default() -> Self {
         Self::new()
@@ -284,7 +284,7 @@ where
 #[must_use]
 pub fn radio<T>(value: T) -> RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     RadioBuilder::new(value)
 }
@@ -293,7 +293,7 @@ where
 #[must_use]
 pub fn radio_group<T>() -> RadioGroupBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     RadioGroupBuilder::new()
 }

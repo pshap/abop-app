@@ -24,7 +24,7 @@ use super::validation::*;
 #[derive(Debug, Clone)]
 pub struct RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     value: T,
     props: ComponentProps,
@@ -35,7 +35,7 @@ where
 
 impl<T> RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     /// Create a new radio builder with the specified value
     #[must_use]
@@ -181,7 +181,7 @@ where
 
 impl<T> ComponentBuilder<T> for RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     type Component = Radio<T>;
     type Error = SelectionError;
@@ -211,7 +211,7 @@ where
 // Phase 2: Enhanced RadioBuilder Trait Implementations
 impl<T> BuilderValidation for RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn validate_detailed(&self) -> ValidationResult {
         let context = ValidationContext::new("RadioBuilder".to_string(), "validation".to_string());
@@ -242,13 +242,13 @@ where
 }
 
 impl<T> AdvancedConditionalBuilder<T> for RadioBuilder<T> where
-    T: Clone + PartialEq + Eq + std::hash::Hash
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy
 {
 }
 
 impl<T> StatefulBuilder<T> for RadioBuilder<T>
 where
-    T: Clone + PartialEq + Eq + std::hash::Hash,
+    T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
     fn validate_state_transition(&self, new_value: T) -> Result<(), SelectionError> {
         // All value changes are valid for radio buttons
@@ -263,8 +263,8 @@ where
     }
 }
 
-impl<T> ConditionalBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash {}
-impl<T> BatchBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash {}
+impl<T> ConditionalBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash + Copy {}
+impl<T> BatchBuilder<T> for RadioBuilder<T> where T: Clone + PartialEq + Eq + std::hash::Hash + Copy {}
 
 // ============================================================================
 // Tests

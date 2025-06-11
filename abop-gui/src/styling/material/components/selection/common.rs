@@ -18,9 +18,8 @@ use super::chip::MAX_CHIP_LABEL_LENGTH;
 /// Convenient re-exports for component traits and types
 pub mod prelude {
     pub use super::{
-        AnimatedWidget, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-        ComponentSize, EnhancedSelectionWidget, ErrorState, SelectionError, SelectionWidget,
-        StatefulWidget, SwitchState,
+        AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
+        ComponentSize, SelectionComponent, SelectionError, StatefulComponent, SwitchState,
     };
 }
 
@@ -40,6 +39,16 @@ pub const BADGE_COLOR_KEY: &str = "badge_color";
 pub const LAYOUT_KEY: &str = "layout";
 /// Metadata key for spacing configuration
 pub const SPACING_KEY: &str = "spacing";
+
+/// All supported metadata keys for validation
+pub const SUPPORTED_METADATA_KEYS: &[&str] = &[
+    LEADING_ICON_KEY,
+    TRAILING_ICON_KEY,
+    BADGE_KEY,
+    BADGE_COLOR_KEY,
+    LAYOUT_KEY,
+    SPACING_KEY,
+];
 
 // ============================================================================
 // Component States (Modern State-Based Design)
@@ -235,6 +244,18 @@ impl ComponentSize {
             Self::Large => 16.0,
         }
     }
+    
+    /// Get all available sizes
+    #[must_use]
+    pub const fn all() -> [Self; 3] {
+        [Self::Small, Self::Medium, Self::Large]
+    }
+    
+    /// Check if this size meets Material Design touch target requirements
+    #[must_use]
+    pub const fn meets_touch_target_requirements(self) -> bool {
+        self.touch_target_size() >= constants::MIN_TOUCH_TARGET_SIZE
+    }
 }
 
 // ============================================================================
@@ -331,20 +352,19 @@ impl ComponentProps {
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         let key_string = key.into();
-        // Validate known metadata keys to prevent typos
-        match key_string.as_str() {
-            LEADING_ICON_KEY | TRAILING_ICON_KEY | BADGE_KEY | BADGE_COLOR_KEY | LAYOUT_KEY
-            | SPACING_KEY => {
-                self.metadata.insert(key_string, value.into());
-            }
-            _ => {
-                // Allow unknown keys for extensibility but warn in debug builds
-                #[cfg(debug_assertions)]
-                eprintln!(
-                    "Warning: Unknown metadata key '{key_string}'. Consider using predefined constants."
-                );
-                self.metadata.insert(key_string, value.into());
-            }
+        
+        // Use const lookup for better performance in release builds
+        let is_known_key = SUPPORTED_METADATA_KEYS.iter().any(|&k| k == key_string);
+        
+        if is_known_key {
+            self.metadata.insert(key_string, value.into());
+        } else {
+            // Allow unknown keys for extensibility but warn in debug builds
+            #[cfg(debug_assertions)]
+            eprintln!(
+                "Warning: Unknown metadata key '{key_string}'. Consider using predefined constants."
+            );
+            self.metadata.insert(key_string, value.into());
         }
         self
     }
@@ -392,7 +412,7 @@ pub struct ValidationConfig {
 impl Default for ValidationConfig {
     fn default() -> Self {
         Self {
-            max_label_length: 200,
+            max_label_length: constants::MAX_LABEL_LENGTH,
             allow_empty_label: true,
             custom_rules: Vec::new(),
         }
@@ -479,7 +499,7 @@ pub struct AnimationConfig {
 impl Default for AnimationConfig {
     fn default() -> Self {
         Self {
-            duration: Duration::from_millis(200),
+            duration: Duration::from_millis(constants::DEFAULT_ANIMATION_DURATION_MS),
             enabled: true,
             respect_reduced_motion: true,
             easing: EasingCurve::Standard,
@@ -536,10 +556,7 @@ pub fn validate_checkbox_state(
     _state: CheckboxState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())?;
-
-    // No conflicting states for checkbox - all combinations are valid
-    Ok(())
+    validate_props(props, &ValidationConfig::default())
 }
 
 /// Validate switch state consistency
@@ -547,10 +564,7 @@ pub fn validate_switch_state(
     _state: SwitchState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())?;
-
-    // No conflicting states for switch - all combinations are valid
-    Ok(())
+    validate_props(props, &ValidationConfig::default())
 }
 
 /// Validate chip state and configuration
@@ -582,95 +596,55 @@ pub fn validate_chip_state(
 }
 
 // ============================================================================
-// Component Trait System
+// Core Selection Component Traits (Simplified and Focused)
 // ============================================================================
 
-/// Common interface for all selection components
-pub trait SelectionWidget<State> {
-    /// The message type this widget produces
+/// Core interface for selection components with validation
+/// 
+/// This trait focuses on the essential operations that all selection components need.
+/// It avoids complex generics and provides clear, focused functionality.
+pub trait SelectionComponent {
+    /// The state type for this component
+    type State: Copy + PartialEq;
+    
+    /// The message type produced by this component
     type Message;
 
-    /// Builder type for this widget
-    type Builder;
+    /// Get the current state
+    fn state(&self) -> Self::State;
 
-    /// Create a new widget with the given state
-    fn new(state: State) -> Self::Builder;
+    /// Get the component properties
+    fn props(&self) -> &ComponentProps;
 
     /// Validate the current widget state
     fn validate(&self) -> Result<(), SelectionError>;
 
-    /// Get the current state
-    fn state(&self) -> State;
-
-    /// Get the component properties
-    fn props(&self) -> &ComponentProps;
+    /// Check if the component has validation errors
+    fn has_error(&self) -> bool;
 }
 
-/// Trait for widgets that support state changes
-pub trait StatefulWidget<State>: SelectionWidget<State> {
-    /// Update the widget state
-    fn update_state(&mut self, new_state: State) -> Result<(), SelectionError>;
+/// Trait for components that can change state
+pub trait StatefulComponent: SelectionComponent {
+    /// Update the component state with validation
+    fn set_state(&mut self, new_state: Self::State) -> Result<(), SelectionError>;
 
-    /// Handle state transition with validation
-    fn transition_to(&mut self, new_state: State) -> Result<State, SelectionError> {
-        self.update_state(new_state)?;
-        Ok(self.state())
-    }
+    /// Set error state
+    fn set_error(&mut self, error: bool);
 }
 
-/// Trait for widgets that support animation
-pub trait AnimatedWidget {
+/// Trait for components that support animation
+pub trait AnimatedComponent {
     /// Get animation configuration
     fn animation_config(&self) -> &AnimationConfig;
 
     /// Set animation configuration
     fn set_animation_config(&mut self, config: AnimationConfig);
 
-    /// Check if animations are enabled and should be respected
+    /// Check if animations should be used
+    #[must_use]
     fn should_animate(&self) -> bool {
-        self.animation_config().enabled
-            && (!self.animation_config().respect_reduced_motion || !system_has_reduced_motion())
-    }
-}
-
-// ============================================================================
-// Enhanced Component Trait System (Phase 1 Improvements)
-// ============================================================================
-
-/// Common interface for error state management
-pub trait ErrorState {
-    /// Check if the component is in error state
-    fn has_error(&self) -> bool;
-
-    /// Set error state
-    fn set_error(&mut self, error: bool);
-}
-
-/// Enhanced SelectionWidget trait that includes error and animation support
-pub trait EnhancedSelectionWidget<State>:
-    SelectionWidget<State> + ErrorState + AnimatedWidget
-{
-    /// Set the component state (extends SelectionWidget)
-    fn set_state(&mut self, state: State);
-
-    /// Generic toggle method for binary states
-    fn toggle_if_binary(&mut self) -> Option<State>
-    where
-        State: Copy + PartialEq,
-    {
-        // Default implementation - components can override for specific behavior
-        None
-    }
-
-    /// Common equality check excluding animation config
-    fn eq_excluding_animation(&self, other: &Self) -> bool
-    where
-        State: PartialEq,
-        ComponentProps: PartialEq,
-    {
-        self.state() == other.state()
-            && self.props() == other.props()
-            && self.has_error() == other.has_error()
+        let config = self.animation_config();
+        config.enabled && (!config.respect_reduced_motion || !system_has_reduced_motion())
     }
 }
 
@@ -680,6 +654,7 @@ pub trait EnhancedSelectionWidget<State>:
 
 /// Check if the system has reduced motion enabled (placeholder implementation)
 /// In a real implementation, this would check OS accessibility settings
+#[must_use]
 pub fn system_has_reduced_motion() -> bool {
     // TODO: Implement actual system check
     false
@@ -687,9 +662,9 @@ pub fn system_has_reduced_motion() -> bool {
 
 /// Helper function to create validation config for specific use cases
 #[must_use]
-pub fn validation_config_for_chips() -> ValidationConfig {
+pub const fn validation_config_for_chips() -> ValidationConfig {
     ValidationConfig {
-        max_label_length: 100,
+        max_label_length: constants::MAX_CHIP_LABEL_LENGTH,
         allow_empty_label: false,
         custom_rules: Vec::new(),
     }
@@ -697,13 +672,19 @@ pub fn validation_config_for_chips() -> ValidationConfig {
 
 /// Helper function to create validation config for checkbox/radio/switch
 #[must_use]
-pub fn validation_config_for_toggles() -> ValidationConfig {
+pub const fn validation_config_for_toggles() -> ValidationConfig {
     ValidationConfig {
-        max_label_length: 200,
+        max_label_length: constants::MAX_LABEL_LENGTH,
         allow_empty_label: true,
         custom_rules: Vec::new(),
     }
 }
+
+
+
+// ============================================================================
+// Common Constants
+// ============================================================================
 
 /// Common constants to avoid duplication
 pub mod constants {
@@ -712,7 +693,17 @@ pub mod constants {
 
     /// Default animation duration for state transitions (matches Material Design 3)
     pub const DEFAULT_ANIMATION_DURATION_MS: u64 = 200;
+    
+    /// Minimum touch target size per Material Design guidelines
+    pub const MIN_TOUCH_TARGET_SIZE: f32 = 48.0;
+    
+    /// Maximum recommended label length for accessibility
+    pub const MAX_LABEL_LENGTH: usize = 200;
+    
+    /// Maximum label length for chip components (stricter requirement)
+    pub const MAX_CHIP_LABEL_LENGTH: usize = 100;
 }
+
 
 // ============================================================================
 // Tests
