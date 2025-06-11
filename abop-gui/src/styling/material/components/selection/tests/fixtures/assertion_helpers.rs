@@ -4,7 +4,7 @@
 //! chip testing more expressive and provide better error messages.
 
 use super::test_data::*;
-use crate::styling::material::components::selection::common::{SelectionWidget, SelectionError};
+use crate::styling::material::components::selection::common::{SelectionError, SelectionWidget};
 use crate::styling::material::components::selection::{
     Chip, ChipCollection, ChipSelectionMode, ChipState, ChipVariant, ComponentSize,
 };

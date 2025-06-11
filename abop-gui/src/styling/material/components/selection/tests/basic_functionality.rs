@@ -18,10 +18,12 @@ use super::fixtures::{
     test_data::{ALL_CHIP_VARIANTS, ALL_COMPONENT_SIZES},
 };
 use crate::styling::material::components::selection::builder::ComponentBuilder;
-use crate::styling::material::components::selection::{
- ChipBuilder, ChipState, ChipVariant, ComponentSize,
+use crate::styling::material::components::selection::common::{
+    EnhancedSelectionWidget, SelectionWidget,
 };
-use crate::styling::material::components::selection::common::{SelectionWidget, EnhancedSelectionWidget};
+use crate::styling::material::components::selection::{
+    ChipBuilder, ChipState, ChipVariant, ComponentSize,
+};
 
 #[cfg(test)]
 mod chip_creation_tests {
