@@ -131,6 +131,7 @@ pub mod builders {
     pub fn checkbox_with_label<S: Into<String>>(label: S) -> CheckboxBuilder {
         CheckboxBuilder::new(CheckboxState::Unchecked).label(label)
     }
+    /// Create a checkbox with a label starting in unchecked state
     pub fn labeled_checkbox(label: &str) -> CheckboxBuilder {
         CheckboxBuilder::new(CheckboxState::Unchecked).label(label)
     }

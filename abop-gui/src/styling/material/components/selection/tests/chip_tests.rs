@@ -31,9 +31,9 @@ use crate::styling::material::components::selection::{
     ChipVariant,
     ComponentSize,
     SelectionError,
-    SelectionWidget,
-    StatefulWidget, // Add the required traits
+    SelectionComponent,
 };
+use crate::styling::material::components::selection::common::StatefulComponent;
 
 #[cfg(test)]
 mod chip_basic_tests {
@@ -147,10 +147,10 @@ mod chip_basic_tests {
         let mut chip = ChipBuilder::filter("test").build().unwrap();
         assert!(!chip.is_selected());
 
-        chip.update_state(ChipState::Selected).unwrap();
+        chip.set_state(ChipState::Selected).unwrap();
         assert!(chip.is_selected());
 
-        chip.update_state(ChipState::Unselected).unwrap();
+        chip.set_state(ChipState::Unselected).unwrap();
         assert!(!chip.is_selected());
     }
 
