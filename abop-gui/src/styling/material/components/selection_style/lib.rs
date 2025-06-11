@@ -30,7 +30,7 @@ use crate::styling::material::tokens::core::MaterialTokens;
 // ============================================================================
 
 /// Material Design 3 constants for selection components
-mod constants {
+pub mod constants {
     /// Consolidated Material Design 3 constants
     pub struct SelectionConstants {
         pub opacity: OpacityConstants,
@@ -967,16 +967,23 @@ impl SelectionStyleBuilder {
     pub fn error(mut self, error: bool) -> Self {
         self.error = error;
         self
-    }
-
-    /// Create a color calculator for this configuration
+    }    /// Create a color calculator for this configuration
     pub fn colors(&self) -> SelectionColors {
         SelectionColors::new(self.tokens.clone(), self.variant)
             .with_size(self.size)
             .with_error(self.error)
     }
 
-    /// Create checkbox styling function
+    /// Get the strategy for this variant
+    fn get_strategy(&self) -> Box<dyn crate::styling::material::components::selection_style::strategy::SelectionStyleStrategy> {
+        crate::styling::material::components::selection_style::strategy::create_strategy(self.variant)
+    }
+
+    /// Get styling using the strategy pattern
+    fn get_styling(&self, state: SelectionState) -> Result<SelectionStyling, SelectionStyleError> {
+        let strategy = self.get_strategy();
+        strategy.get_styling(state, &self.tokens, self.size, self.error)
+    }    /// Create checkbox styling function
     ///
     /// Returns a function that can be used with Iced's checkbox styling system.
     pub fn checkbox_style(
@@ -985,8 +992,17 @@ impl SelectionStyleBuilder {
         move |_theme: &Theme, status| {
             let state = CheckboxStatusMapper.map_status(status, false);
 
-            let colors = self.colors();
-            let styling = colors.create_styling(state);
+            let styling = self.get_styling(state).unwrap_or_else(|_| {
+                // Fallback to basic styling if strategy fails
+                SelectionStyling {
+                    background: Background::Color(Color::TRANSPARENT),
+                    text_color: Color::BLACK,
+                    border: Border::default(),
+                    shadow: None,
+                    foreground_color: Color::BLACK,
+                    state_layer: None,
+                }
+            });
 
             iced::widget::checkbox::Style {
                 background: styling.background,
@@ -999,9 +1015,7 @@ impl SelectionStyleBuilder {
                 text_color: Some(styling.text_color),
             }
         }
-    }
-
-    /// Create radio button styling function
+    }    /// Create radio button styling function
     ///
     /// Returns a function that can be used with Iced's radio styling system.
     pub fn radio_style(
@@ -1010,8 +1024,17 @@ impl SelectionStyleBuilder {
         move |_theme: &Theme, status: iced::widget::radio::Status| {
             let state = RadioStatusMapper.map_status(status, false);
 
-            let colors = self.colors();
-            let styling = colors.create_styling(state);
+            let styling = self.get_styling(state).unwrap_or_else(|_| {
+                // Fallback to basic styling if strategy fails
+                SelectionStyling {
+                    background: Background::Color(Color::TRANSPARENT),
+                    text_color: Color::BLACK,
+                    border: Border::default(),
+                    shadow: None,
+                    foreground_color: Color::BLACK,
+                    state_layer: None,
+                }
+            });
 
             iced::widget::radio::Style {
                 background: styling.background,
@@ -1021,9 +1044,7 @@ impl SelectionStyleBuilder {
                 text_color: Some(styling.text_color),
             }
         }
-    }
-
-    /// Create chip button styling function
+    }    /// Create chip button styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for chips.
     pub fn chip_style(
@@ -1033,8 +1054,17 @@ impl SelectionStyleBuilder {
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_selected);
 
-            let colors = self.colors();
-            let styling = colors.create_styling(state);
+            let styling = self.get_styling(state).unwrap_or_else(|_| {
+                // Fallback to basic styling if strategy fails
+                SelectionStyling {
+                    background: Background::Color(Color::TRANSPARENT),
+                    text_color: Color::BLACK,
+                    border: Border::default(),
+                    shadow: None,
+                    foreground_color: Color::BLACK,
+                    state_layer: None,
+                }
+            });
 
             iced::widget::button::Style {
                 background: Some(styling.background),
@@ -1043,9 +1073,7 @@ impl SelectionStyleBuilder {
                 shadow: styling.shadow.unwrap_or_default(),
             }
         }
-    }
-
-    /// Create switch styling function
+    }    /// Create switch styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for switches.
     pub fn switch_style(
@@ -1055,8 +1083,17 @@ impl SelectionStyleBuilder {
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_enabled);
 
-            let colors = self.colors();
-            let styling = colors.create_styling(state);
+            let styling = self.get_styling(state).unwrap_or_else(|_| {
+                // Fallback to basic styling if strategy fails
+                SelectionStyling {
+                    background: Background::Color(Color::TRANSPARENT),
+                    text_color: Color::BLACK,
+                    border: Border::default(),
+                    shadow: None,
+                    foreground_color: Color::BLACK,
+                    state_layer: None,
+                }
+            });
 
             iced::widget::button::Style {
                 background: Some(styling.background),
