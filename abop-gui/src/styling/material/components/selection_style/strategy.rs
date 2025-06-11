@@ -1,13 +1,19 @@
 //! Strategy pattern implementation for selection component styling
 //!
-//! This module provides the strategy implementations for different selection
+//! This module provides the strategy trait and factory for different selection
 //! component variants (Checkbox, Radio, Switch, Chip) following Material Design 3.
 
 use crate::styling::material::tokens::core::MaterialTokens;
+use iced::{Background, Border, Color};
 
 use super::{
-    SelectionColors, SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
+    SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
     SelectionVariant,
+};
+
+// Import strategy implementations from variants module
+use super::variants::{
+    CheckboxStrategy, RadioStrategy, ChipStrategy, SwitchStrategy,
 };
 
 /// Strategy trait for selection component styling following Material Design 3
@@ -32,11 +38,36 @@ pub trait SelectionStyleStrategy {
         size: SelectionSize,
         error_state: bool,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, self.variant())
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
+        let background = self.calculate_background_color(state, tokens, error_state);
+        let text_color = self.calculate_text_color(state, tokens, error_state);
+        let border = self.calculate_border(state, tokens, size, error_state);
+        let foreground_color = self.calculate_foreground_color(state, tokens, error_state);
+        let state_layer = self.calculate_state_layer_color(state, tokens);
+
+        Ok(SelectionStyling {
+            background: Background::Color(background),
+            text_color,
+            border,
+            shadow: None, // Selection components typically don't use shadows
+            foreground_color,
+            state_layer,
+        })
     }
+
+    /// Calculate the background color for this variant and state
+    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the text color for this variant and state
+    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the border for this variant and state
+    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border;
+    
+    /// Calculate the foreground color (icon/dot) for this variant and state
+    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the state layer color for interactions
+    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color>;
 
     /// Get the variant name for debugging and logging
     fn variant_name(&self) -> &'static str {
@@ -77,56 +108,17 @@ pub struct SelectionStyleContext {
     pub is_part_of_group: bool,
 }
 
-/// Checkbox strategy implementation
-pub struct CheckboxStrategy;
-
-impl SelectionStyleStrategy for CheckboxStrategy {
-    fn variant(&self) -> SelectionVariant {
-        SelectionVariant::Checkbox
-    }
-
-    fn supports_indeterminate(&self) -> bool {
-        true
-    }
-}
-
-/// Radio button strategy implementation  
-pub struct RadioStrategy;
-
-impl SelectionStyleStrategy for RadioStrategy {
-    fn variant(&self) -> SelectionVariant {
-        SelectionVariant::Radio
-    }
-}
-
-/// Chip strategy implementation
-pub struct ChipStrategy;
-
-impl SelectionStyleStrategy for ChipStrategy {
-    fn variant(&self) -> SelectionVariant {
-        SelectionVariant::Chip
-    }
-
-    fn supports_icons(&self) -> bool {
-        true
-    }
-}
-
-/// Switch strategy implementation
-pub struct SwitchStrategy;
-
-impl SelectionStyleStrategy for SwitchStrategy {
-    fn variant(&self) -> SelectionVariant {
-        SelectionVariant::Switch
-    }
-}
-
 /// Factory function to create strategy instances
-pub fn create_strategy(variant: SelectionVariant) -> Box<dyn SelectionStyleStrategy> {
+pub fn create_strategy(variant: SelectionVariant) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
     match variant {
-        SelectionVariant::Checkbox => Box::new(CheckboxStrategy),
-        SelectionVariant::Radio => Box::new(RadioStrategy),
-        SelectionVariant::Chip => Box::new(ChipStrategy),
-        SelectionVariant::Switch => Box::new(SwitchStrategy),
+        SelectionVariant::Checkbox => Ok(Box::new(CheckboxStrategy)),
+        SelectionVariant::Radio => Ok(Box::new(RadioStrategy)),
+        SelectionVariant::Chip => Ok(Box::new(ChipStrategy)),
+        SelectionVariant::Switch => Ok(Box::new(SwitchStrategy)),
     }
+}
+
+/// Factory function for backward compatibility - panics on error
+pub fn create_strategy_unchecked(variant: SelectionVariant) -> Box<dyn SelectionStyleStrategy> {
+    create_strategy(variant).expect("Failed to create strategy")
 }
