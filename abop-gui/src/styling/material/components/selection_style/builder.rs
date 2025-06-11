@@ -3,7 +3,7 @@
 //! This module provides the builder pattern implementation and widget status mappers
 //! for integrating with Iced widgets.
 
-use iced::{Background, Border, Color, Shadow, Theme};
+use iced::{Background, Border, Color, Theme};
 
 use crate::styling::material::tokens::core::MaterialTokens;
 
@@ -97,9 +97,9 @@ impl StatusMapper<iced::widget::button::Status> for ButtonStatusMapper {
 /// Provides a fluent interface for creating Material Design selection styles
 /// with comprehensive state handling.
 #[derive(Debug)]
-pub struct SelectionStyleBuilder {
+pub struct SelectionStyleBuilder<'a> {
     /// The token system to use for styling
-    tokens: MaterialTokens,
+    tokens: &'a MaterialTokens,
     /// The component variant being styled
     variant: SelectionVariant,
     /// The size of the component
@@ -108,21 +108,11 @@ pub struct SelectionStyleBuilder {
     error: bool,
 }
 
-impl SelectionStyleBuilder {
-    /// Create a new selection style builder
-    pub fn new(tokens: MaterialTokens, variant: SelectionVariant) -> Self {
+impl<'a> SelectionStyleBuilder<'a> {
+    /// Create a new selection style builder with borrowed tokens (optimized)
+    pub fn new(tokens: &'a MaterialTokens, variant: SelectionVariant) -> Self {
         Self {
             tokens,
-            variant,
-            size: SelectionSize::Medium,
-            error: false,
-        }
-    }
-
-    /// Create a new selection style builder with borrowed tokens (optimized)
-    pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
-        Self {
-            tokens: tokens.clone(), // Only clone when necessary
             variant,
             size: SelectionSize::Medium,
             error: false,
@@ -144,20 +134,16 @@ impl SelectionStyleBuilder {
 
     /// Create a color calculator for this configuration
     pub fn colors(&self) -> SelectionColors {
-        SelectionColors::new(self.tokens.clone(), self.variant)
+        SelectionColors::with_tokens(self.tokens, self.variant)
             .with_size(self.size)
             .with_error(self.error)
-    }
-
-    /// Get the strategy for this variant
-    fn get_strategy(&self) -> Box<dyn SelectionStyleStrategy> {
+    }/// Get the strategy for this variant
+    fn get_strategy(&self) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
         super::strategy::create_strategy(self.variant)
-    }
-
-    /// Get styling using the strategy pattern
+    }    /// Get styling using the strategy pattern
     fn get_styling(&self, state: SelectionState) -> Result<SelectionStyling, SelectionStyleError> {
-        let strategy = self.get_strategy();
-        strategy.get_styling(state, &self.tokens, self.size, self.error)
+        let strategy = self.get_strategy()?;
+        strategy.get_styling(state, self.tokens, self.size, self.error)
     }
 
     /// Create checkbox styling function

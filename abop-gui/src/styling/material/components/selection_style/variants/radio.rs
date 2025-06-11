@@ -51,9 +51,7 @@ impl SelectionStyleStrategy for RadioStrategy {
     }
 
     fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
-        let colors = &tokens.colors;
-
-        let border_color = if error_state && !state.is_selected() {
+        let colors = &tokens.colors;        let border_color = if error_state && !state.is_selected() {
             colors.error.base
         } else if state.is_disabled() {
             ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)

@@ -9,24 +9,24 @@ use super::{builder::SelectionStyleBuilder, state::SelectionVariant};
 
 /// Create a selection style builder for checkbox components
 #[must_use]
-pub fn checkbox_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
-    SelectionStyleBuilder::with_tokens(tokens, SelectionVariant::Checkbox)
+pub fn checkbox_style(tokens: &MaterialTokens) -> SelectionStyleBuilder<'_> {
+    SelectionStyleBuilder::new(tokens, SelectionVariant::Checkbox)
 }
 
 /// Create a selection style builder for radio button components
 #[must_use]
-pub fn radio_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
-    SelectionStyleBuilder::with_tokens(tokens, SelectionVariant::Radio)
+pub fn radio_style(tokens: &MaterialTokens) -> SelectionStyleBuilder<'_> {
+    SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
 }
 
 /// Create a selection style builder for chip components
 #[must_use]
-pub fn chip_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
-    SelectionStyleBuilder::with_tokens(tokens, SelectionVariant::Chip)
+pub fn chip_style(tokens: &MaterialTokens) -> SelectionStyleBuilder<'_> {
+    SelectionStyleBuilder::new(tokens, SelectionVariant::Chip)
 }
 
 /// Create a selection style builder for switch components
 #[must_use]
-pub fn switch_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
-    SelectionStyleBuilder::with_tokens(tokens, SelectionVariant::Switch)
+pub fn switch_style(tokens: &MaterialTokens) -> SelectionStyleBuilder<'_> {
+    SelectionStyleBuilder::new(tokens, SelectionVariant::Switch)
 }

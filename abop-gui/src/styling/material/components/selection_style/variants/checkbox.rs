@@ -47,14 +47,8 @@ impl SelectionStyleStrategy for CheckboxStrategy {
             colors.primary.base
         } else {
             Color::TRANSPARENT
-        };
-
-        // Apply interaction state effects for checkbox
-        if state.is_pressed() && state.is_selected() {
-            colors.secondary.container
-        } else if state.is_hovered() && state.is_selected() {
-            colors.secondary.container
-        } else if state.is_focused() && state.is_selected() {
+        };        // Apply interaction state effects for checkbox
+        if state.is_selected() && (state.is_pressed() || state.is_hovered() || state.is_focused()) {
             colors.secondary.container
         } else {
             base_color
@@ -70,16 +64,11 @@ impl SelectionStyleStrategy for CheckboxStrategy {
     }
 
     fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
-        let colors = &tokens.colors;
-
-        let border_color = if error_state && !state.is_selected() {
+        let colors = &tokens.colors;        let border_color = if error_state && !state.is_selected() {
             colors.error.base
         } else if state.is_disabled() {
-            if state.is_selected() {
-                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
-            } else {
-                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
-            }
+            // Both selected and unselected disabled states use the same color
+            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
         } else if state.is_focused() {
             if state.is_selected() {
                 colors.on_secondary_container

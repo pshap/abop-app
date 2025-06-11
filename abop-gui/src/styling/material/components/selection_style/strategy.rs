@@ -109,11 +109,16 @@ pub struct SelectionStyleContext {
 }
 
 /// Factory function to create strategy instances
-pub fn create_strategy(variant: SelectionVariant) -> Box<dyn SelectionStyleStrategy> {
+pub fn create_strategy(variant: SelectionVariant) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
     match variant {
-        SelectionVariant::Checkbox => Box::new(CheckboxStrategy),
-        SelectionVariant::Radio => Box::new(RadioStrategy),
-        SelectionVariant::Chip => Box::new(ChipStrategy),
-        SelectionVariant::Switch => Box::new(SwitchStrategy),
+        SelectionVariant::Checkbox => Ok(Box::new(CheckboxStrategy)),
+        SelectionVariant::Radio => Ok(Box::new(RadioStrategy)),
+        SelectionVariant::Chip => Ok(Box::new(ChipStrategy)),
+        SelectionVariant::Switch => Ok(Box::new(SwitchStrategy)),
     }
+}
+
+/// Factory function for backward compatibility - panics on error
+pub fn create_strategy_unchecked(variant: SelectionVariant) -> Box<dyn SelectionStyleStrategy> {
+    create_strategy(variant).expect("Failed to create strategy")
 }

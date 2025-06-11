@@ -25,7 +25,6 @@ pub use super::builder;
 pub use super::functions;
 
 // Re-export commonly used types
-pub use constants::*;
 pub use state::{
     BaseSelectionState, InteractionState, SelectionSize, SelectionState,
     SelectionStyleError, SelectionStyling, SelectionVariant,
