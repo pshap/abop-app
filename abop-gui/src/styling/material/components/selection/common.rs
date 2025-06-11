@@ -12,6 +12,20 @@ use thiserror::Error;
 use super::chip::MAX_CHIP_LABEL_LENGTH;
 
 // ============================================================================
+// Prelude - Import this for convenient access to all traits
+// ============================================================================
+
+/// Convenient re-exports for component traits and types
+pub mod prelude {
+    pub use super::{
+        SelectionWidget, StatefulWidget, AnimatedWidget, ErrorState, EnhancedSelectionWidget,
+        ComponentProps, ComponentSize, AnimationConfig,
+        CheckboxState, SwitchState, ChipState, ChipVariant,
+        SelectionError,
+    };
+}
+
+// ============================================================================
 // Metadata Constants
 // ============================================================================
 
@@ -621,6 +635,45 @@ pub trait AnimatedWidget {
 }
 
 // ============================================================================
+// Enhanced Component Trait System (Phase 1 Improvements)
+// ============================================================================
+
+/// Common interface for error state management
+pub trait ErrorState {
+    /// Check if the component is in error state
+    fn has_error(&self) -> bool;
+    
+    /// Set error state
+    fn set_error(&mut self, error: bool);
+}
+
+/// Enhanced SelectionWidget trait that includes error and animation support
+pub trait EnhancedSelectionWidget<State>: SelectionWidget<State> + ErrorState + AnimatedWidget {
+    /// Set the component state (extends SelectionWidget)
+    fn set_state(&mut self, state: State);
+    
+    /// Generic toggle method for binary states
+    fn toggle_if_binary(&mut self) -> Option<State> 
+    where 
+        State: Copy + PartialEq,
+    {
+        // Default implementation - components can override for specific behavior
+        None
+    }
+    
+    /// Common equality check excluding animation config
+    fn eq_excluding_animation(&self, other: &Self) -> bool
+    where
+        State: PartialEq,
+        ComponentProps: PartialEq,
+    {
+        self.state() == other.state() 
+            && self.props() == other.props()
+            && self.has_error() == other.has_error()
+    }
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
@@ -629,6 +682,16 @@ pub trait AnimatedWidget {
 pub fn system_has_reduced_motion() -> bool {
     // TODO: Implement actual system check
     false
+}
+
+/// Convert modern ComponentSize to legacy SelectionSize
+/// This eliminates duplication across component view methods
+pub fn legacy_size_from_modern(size: ComponentSize) -> crate::styling::material::components::selection_style::SelectionSize {
+    match size {
+        ComponentSize::Small => crate::styling::material::components::selection_style::SelectionSize::Small,
+        ComponentSize::Medium => crate::styling::material::components::selection_style::SelectionSize::Medium,
+        ComponentSize::Large => crate::styling::material::components::selection_style::SelectionSize::Large,
+    }
 }
 
 /// Helper function to create validation config for specific use cases
@@ -649,6 +712,15 @@ pub fn validation_config_for_toggles() -> ValidationConfig {
         allow_empty_label: true,
         custom_rules: Vec::new(),
     }
+}
+
+/// Common constants to avoid duplication
+pub mod constants {
+    /// Default empty label for components that don't require labels
+    pub const DEFAULT_LABEL: &str = "";
+    
+    /// Default animation duration for state transitions (matches Material Design 3)
+    pub const DEFAULT_ANIMATION_DURATION_MS: u64 = 200;
 }
 
 // ============================================================================

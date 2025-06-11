@@ -183,12 +183,12 @@ fn test_error_context_trait() {
 fn test_error_chain() {
     let chain = ErrorChain::new()
         .context("Loading application")
-        .add(std::io::Error::new(
+        .push_error(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "config.toml not found",
         ))
         .context("Configuration initialization failed")
-        .add("Database connection error");
+        .push_error("Database connection error");
 
     let error = chain.into_error();
     let error_string = error.to_string();
@@ -220,7 +220,7 @@ fn test_complex_error_scenario() {
             .map_err(|e| {
                 ErrorChain::new()
                     .context("Configuration loading")
-                    .add(e)
+                    .push_error(e)
                     .context("Application initialization failed")
                     .into_error()
             })?;

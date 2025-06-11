@@ -8,7 +8,9 @@ use crate::styling::material::components::selection::builder::patterns::Componen
 use crate::styling::material::components::selection::{
     ChipBuilder, ChipState, ChipVariant, ComponentSize,
 };
-
+use crate::styling::material::components::selection::common::{
+    SelectionWidget
+};
 #[cfg(test)]
 mod builder_api_tests {
     use super::*;
