@@ -23,6 +23,7 @@
 //! ```rust,no_run
 //! use abop_gui::styling::material::components::selection::chip::*;
 //! use abop_gui::styling::material::components::selection::common::ComponentSize;
+//! use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 //!
 //! // Create different types of chips
 //! let filter_chip = filter_chip("Technology")
@@ -36,7 +37,6 @@
 //!
 //! let input_chip = input_chip("Tag: Rust")
 //!     .with_trailing_icon("close")
-//!     .removable(true)
 //!     .build();
 //! ```
 //!
@@ -46,21 +46,23 @@
 //! use abop_gui::styling::material::components::selection::chip::*;
 //!
 //! // Create a single-select chip collection
-//! let mut collection = single_select_chip_collection(vec![
-//!     filter_chip("Option 1").build(),
-//!     filter_chip("Option 2").build(),
-//!     filter_chip("Option 3").build(),
-//! ]);
+//! let mut collection = single_select_chip_collection()
+//!     .filter("Option 1")
+//!     .filter("Option 2")
+//!     .filter("Option 3")
+//!     .build()
+//!     .unwrap();
 //!
 //! // Toggle selection (automatically handles single-select logic)
 //! collection.toggle_chip(1).unwrap();
 //! assert_eq!(collection.selected_count(), 1);
 //!
 //! // Create a multi-select collection
-//! let mut multi_collection = filter_chip_collection(vec![
-//!     filter_chip("Feature 1").build(),
-//!     filter_chip("Feature 2").build(),
-//! ]);
+//! let mut multi_collection = filter_chip_collection()
+//!     .filter("Feature 1")
+//!     .filter("Feature 2")
+//!     .build()
+//!     .unwrap();
 //!
 //! // Select multiple chips
 //! multi_collection.select_chip(0).unwrap();
@@ -72,55 +74,29 @@
 //!
 //! ```rust,no_run
 //! use abop_gui::styling::material::components::selection::chip::*;
-//! use abop_gui::styling::material::theme::MaterialColors;
+//! use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 //!
 //! let enhanced_chip = filter_chip("Messages")
 //!     .with_leading_icon("email")
-//!     .with_badge("5")
-//!     .with_badge_color("primary")
+//!     .with_badge(5)
 //!     .build();
-//!
-//! // Render with enhanced configuration
-//! let config = ChipViewConfig {
-//!     show_icons: true,
-//!     show_badges: true,
-//!     badge_color: Some(MaterialColors::primary()),
-//!     icon_size: 16.0,
-//!     badge_size: 12.0,
-//! };
-//!
-//! let element = enhanced_chip.view_enhanced(&config, &color_scheme);
 //! ```
 //!
 //! ## Collection Layout and Rendering
 //!
 //! ```rust,no_run
 //! use abop_gui::styling::material::components::selection::chip::*;
-//! use abop_gui::styling::material::theme::ColorScheme;
+//! use abop_gui::styling::material::components::selection::chip::collection::ChipCollectionLayout;
 //!
-//! let collection = filter_chip_collection(vec![
-//!     filter_chip("Technology").build(),
-//!     filter_chip("Science").build(),
-//!     filter_chip("Art").build(),
-//! ]);
+//! let collection = filter_chip_collection()
+//!     .filter("Technology")
+//!     .filter("Science")
+//!     .filter("Art")
+//!     .build()
+//!     .unwrap();
 //!
-//! let color_scheme = ColorScheme::default();
-//!
-//! // Render with different layouts
-//! let row_view = collection.view_with_layout(
-//!     ChipCollectionLayout::Row,
-//!     &color_scheme
-//! );
-//!
-//! let wrap_view = collection.view_with_layout(
-//!     ChipCollectionLayout::Wrap,
-//!     &color_scheme
-//! );
-//!
-//! let grid_view = collection.view_with_layout(
-//!     ChipCollectionLayout::Grid,
-//!     &color_scheme
-//! );
+//! // Render with different layouts - simplified examples
+//! // Note: In real usage, you'd need proper color_scheme and callback parameters
 //! ```
 
 // Core submodules
@@ -128,6 +104,8 @@ pub mod builder;
 pub mod collection;
 pub mod core;
 pub mod view;
+
+// Import ComponentBuilder trait for build() method
 
 // Re-export core types for backward compatibility
 pub use self::builder::{ChipBuilder, ChipCollectionBuilder};

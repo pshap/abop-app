@@ -5,11 +5,9 @@
 
 use super::fixtures::{assertion_helpers::*, chip_factory::*, test_data::*};
 use crate::styling::material::components::selection::builder::patterns::ComponentBuilder;
+use crate::styling::material::components::selection::common::SelectionWidget;
 use crate::styling::material::components::selection::{
     ChipBuilder, ChipState, ChipVariant, ComponentSize,
-};
-use crate::styling::material::components::selection::common::{
-    SelectionWidget
 };
 #[cfg(test)]
 mod builder_api_tests {
