@@ -376,6 +376,7 @@ pub mod interpolation {
 
     /// Linear interpolation for colors (RGB)
     #[must_use]
+    #[allow(dead_code)]
     pub fn lerp_color(
         start: (f32, f32, f32),
         end: (f32, f32, f32),
@@ -423,6 +424,7 @@ pub mod helpers {
 
     /// Create a scale animation for button press
     #[must_use]
+    #[allow(dead_code)]
     pub fn button_press_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::Scale).with_speed_factor(1.5) // Faster for responsiveness
     }
@@ -436,24 +438,28 @@ pub mod helpers {
 
     /// Create a loading animation that loops
     #[must_use]
+    #[allow(dead_code)]
     pub fn loading_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::Loading).with_reduced_motion_respect(false) // Always animate loading
     }
 
     /// Create hover state animation
     #[must_use]
+    #[allow(dead_code)]
     pub fn hover_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::SimpleStateChange).with_speed_factor(1.2) // Slightly faster for responsiveness
     }
 
     /// Create modal/dialog appearance animation
     #[must_use]
+    #[allow(dead_code)]
     pub fn modal_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::ContainerTransform)
     }
 
     /// Create toast/notification animation
     #[must_use]
+    #[allow(dead_code)]
     pub fn toast_animation() -> Animation {
         Animation::from_pattern(AnimationPattern::Slide).with_speed_factor(1.3)
     }

@@ -172,7 +172,12 @@ impl ChipBuilder {
 
     // ========================================================================
     // Phase 2: Advanced Chip Builder Methods
-    // ========================================================================    /// Set label with validation
+    // ========================================================================
+
+    /// Set label with validation
+    ///
+    /// Validates the label according to the current validation configuration
+    /// before applying it to the chip component.
     #[must_use]
     pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
         let label_str: String = label.into();

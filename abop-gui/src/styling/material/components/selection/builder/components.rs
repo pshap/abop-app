@@ -630,10 +630,10 @@ mod tests {
             animation_config: AnimationConfig::default(),
         };
 
-        checkbox.toggle();
+        let _ = checkbox.toggle();
         assert_eq!(checkbox.state(), CheckboxState::Checked);
 
-        checkbox.toggle();
+        let _ = checkbox.toggle();
         assert_eq!(checkbox.state(), CheckboxState::Unchecked);
     }
 
@@ -676,10 +676,10 @@ mod tests {
             animation_config: AnimationConfig::default(),
         };
 
-        switch.toggle();
+        let _ = switch.toggle();
         assert_eq!(switch.state(), SwitchState::On);
 
-        switch.toggle();
+        let _ = switch.toggle();
         assert_eq!(switch.state(), SwitchState::Off);
     }
 
@@ -713,10 +713,10 @@ mod tests {
             animation_config: AnimationConfig::default(),
         };
 
-        chip.toggle();
+        let _ = chip.toggle();
         assert_eq!(chip.state(), ChipState::Selected);
 
-        chip.toggle();
+        let _ = chip.toggle();
         assert_eq!(chip.state(), ChipState::Unselected);
     }
 
