@@ -3,11 +3,11 @@
 //! This module provides comprehensive factory functions for creating chips
 //! in different states and configurations for testing purposes.
 
-use crate::styling::material::components::selection::{
-    Chip, ChipBuilder, ChipVariant, ChipState, ComponentSize, SelectionError,
-};
-use crate::styling::material::components::selection::builder::ComponentBuilder;
 use super::test_data::*;
+use crate::styling::material::components::selection::builder::ComponentBuilder;
+use crate::styling::material::components::selection::{
+    Chip, ChipBuilder, ChipState, ChipVariant, ComponentSize, SelectionError,
+};
 
 // ============================================================================
 // Basic Chip Factories
@@ -126,19 +126,19 @@ pub fn enhanced_chip(
     badge_count: Option<u32>,
 ) -> Chip {
     let mut builder = ChipBuilder::new(label, variant);
-    
+
     if let Some(icon) = leading_icon {
         builder = builder.with_leading_icon(icon);
     }
-    
+
     if let Some(icon) = trailing_icon {
         builder = builder.with_trailing_icon(icon);
     }
-    
+
     if let Some(count) = badge_count {
         builder = builder.with_badge(count);
     }
-    
+
     builder.build().expect("Failed to build enhanced chip")
 }
 
@@ -264,7 +264,7 @@ pub fn random_configured_chip() -> Chip {
     let label = random_valid_label();
     let variant = random_chip_variant();
     let size = random_component_size();
-    
+
     ChipBuilder::new(label, variant)
         .size(size)
         .build()
@@ -275,14 +275,21 @@ pub fn random_configured_chip() -> Chip {
 // Stress Testing Factories
 // ============================================================================
 
+/// Create a set of test chips with sequential labels
+pub fn test_chip_set(count: usize) -> Vec<Chip> {
+    (0..count)
+        .map(|i| test_chip(&format!("Test Chip {}", i), ChipVariant::Filter))
+        .collect()
+}
+
 /// Create chips for memory usage testing
 pub fn memory_test_chips() -> Vec<Chip> {
     // Create chips with varying amounts of data to test memory efficiency
     let mut chips = Vec::new();
-    
+
     // Simple chips
     chips.extend(performance_chips(ChipVariant::Filter, 100));
-    
+
     // Complex chips with metadata
     for i in 0..100 {
         let chip = ChipBuilder::filter(&format!("Complex Chip {}", i))
@@ -293,7 +300,7 @@ pub fn memory_test_chips() -> Vec<Chip> {
             .expect("Failed to build complex chip");
         chips.push(chip);
     }
-    
+
     chips
 }
 
@@ -304,7 +311,7 @@ pub fn concurrent_test_chips() -> Vec<Chip> {
         .map(|i| {
             test_chip(
                 &format!("Thread Safe Chip {}", i),
-                ALL_CHIP_VARIANTS[i % ALL_CHIP_VARIANTS.len()]
+                ALL_CHIP_VARIANTS[i % ALL_CHIP_VARIANTS.len()],
             )
         })
         .collect()

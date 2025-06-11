@@ -3,17 +3,28 @@
 //! This module tests the core functionality of chip components including
 //! creation, state management, and basic property validation.
 
-use crate::styling::material::components::selection::{
-    ChipBuilder, ChipVariant, ChipState, ComponentSize,
+use super::chip_test_helpers::{
+    ALL_CHIP_STATES, MAX_LABEL_LENGTH, VALID_LABELS, all_state_chips, all_variant_chips,
+    assert_chip_basics, assert_chip_disabled, assert_chip_enabled, assert_chip_has_metadata,
+    assert_chip_pressed, assert_chip_selected, assert_chip_size, assert_chip_unselected,
+    assert_md3_height_compliance, assert_md3_touch_target_compliance, assert_within_time_limit,
+    max_length_label, selected_filter_chip, test_chip,
+};
+use super::fixtures::{
+    chip_factory::{
+        assist_chip, deletable_input_chip, disabled_chip, filter_chip, input_chip, pressed_chip,
+        selected_chip, sized_chip, suggestion_chip,
+    },
+    test_data::{ALL_CHIP_VARIANTS, ALL_COMPONENT_SIZES},
 };
 use crate::styling::material::components::selection::builder::ComponentBuilder;
-use super::chip_test_helpers::*;  // Use legacy helpers for now
-use super::fixtures::test_data::*;
+use crate::styling::material::components::selection::{
+    ChipBuilder, ChipState, ChipVariant, ComponentSize, SelectionWidget,
+};
 
 #[cfg(test)]
 mod chip_creation_tests {
     use super::*;
-
     #[test]
     fn test_basic_chip_creation() {
         for &variant in ALL_CHIP_VARIANTS {
@@ -33,13 +44,13 @@ mod chip_creation_tests {
     fn test_variant_specific_creation() {
         let filter = filter_chip("Filter");
         assert_eq!(filter.variant(), ChipVariant::Filter);
-        
+
         let assist = assist_chip("Assist");
         assert_eq!(assist.variant(), ChipVariant::Assist);
-        
+
         let input = input_chip("Input");
         assert_eq!(input.variant(), ChipVariant::Input);
-        
+
         let suggestion = suggestion_chip("Suggestion");
         assert_eq!(suggestion.variant(), ChipVariant::Suggestion);
     }
@@ -55,7 +66,6 @@ mod chip_creation_tests {
             }
         }
     }
-
     #[test]
     fn test_chip_creation_performance() {
         assert_within_time_limit(
@@ -65,7 +75,7 @@ mod chip_creation_tests {
                 }
             },
             100, // 100ms for 1000 chips
-            "Creating 1000 chips"
+            "Creating 1000 chips",
         );
     }
 }
@@ -73,7 +83,6 @@ mod chip_creation_tests {
 #[cfg(test)]
 mod chip_state_tests {
     use super::*;
-
     #[test]
     fn test_default_state() {
         for &variant in ALL_CHIP_VARIANTS {
@@ -120,9 +129,9 @@ mod chip_state_tests {
     fn test_all_state_combinations() {
         for &variant in ALL_CHIP_VARIANTS {
             let chips = all_state_chips("State Test", variant);
-            
+
             assert_eq!(chips.len(), ALL_CHIP_STATES.len());
-            
+
             for (chip, &expected_state) in chips.iter().zip(ALL_CHIP_STATES.iter()) {
                 assert_eq!(chip.state(), expected_state);
             }
@@ -136,12 +145,12 @@ mod chip_state_tests {
             let unselected = test_chip("Unselected", variant);
             assert!(!unselected.is_selected());
             assert_eq!(unselected.state(), ChipState::Unselected);
-            
+
             // Test selected
             let selected = selected_chip("Selected", variant);
             assert!(selected.is_selected());
             assert_eq!(selected.state(), ChipState::Selected);
-            
+
             // Test pressed (should not be considered selected)
             let pressed = pressed_chip("Pressed", variant);
             assert!(!pressed.is_selected());
@@ -203,9 +212,7 @@ mod chip_builder_tests {
         assert_chip_selected(&chip2);
 
         // Test unselected by default
-        let chip3 = ChipBuilder::assist("Default State")
-            .build()
-            .unwrap();
+        let chip3 = ChipBuilder::assist("Default State").build().unwrap();
         assert_chip_unselected(&chip3);
     }
 
@@ -244,7 +251,7 @@ mod chip_builder_tests {
             .disabled(false)
             .size(ComponentSize::Medium)
             .with_state(ChipState::Selected);
-        
+
         // If this compiles, method chaining works
     }
 }
@@ -257,9 +264,9 @@ mod chip_variant_tests {
     fn test_all_variants_have_unique_behavior() {
         // Each variant should be distinct
         let variants = all_variant_chips("Variant Test");
-        
+
         assert_eq!(variants.len(), ALL_CHIP_VARIANTS.len());
-        
+
         for (chip, &expected_variant) in variants.iter().zip(ALL_CHIP_VARIANTS.iter()) {
             assert_eq!(chip.variant(), expected_variant);
             assert_eq!(chip.label(), "Variant Test");
@@ -270,13 +277,13 @@ mod chip_variant_tests {
     fn test_variant_default_behaviors() {
         for &variant in ALL_CHIP_VARIANTS {
             let chip = test_chip("Behavior Test", variant);
-            
+
             // All variants start unselected by default
             assert_chip_unselected(&chip);
-            
+
             // All variants start enabled by default
             assert_chip_enabled(&chip);
-            
+
             // All variants have medium size by default
             assert_chip_size(&chip, ComponentSize::Medium);
         }
@@ -286,7 +293,7 @@ mod chip_variant_tests {
     fn test_filter_chip_behavior() {
         let chip = filter_chip("Filter Test");
         assert_eq!(chip.variant(), ChipVariant::Filter);
-        
+
         // Filter chips should be selectable
         let selected_filter = selected_filter_chip("Selected Filter");
         assert_chip_selected(&selected_filter);
@@ -296,7 +303,7 @@ mod chip_variant_tests {
     fn test_input_chip_behavior() {
         let chip = input_chip("Input Test");
         assert_eq!(chip.variant(), ChipVariant::Input);
-        
+
         // Test deletable input chip
         let deletable = deletable_input_chip("Deletable");
         assert_chip_has_metadata(&deletable, "trailing_icon", "times");
@@ -306,7 +313,7 @@ mod chip_variant_tests {
     fn test_assist_chip_behavior() {
         let chip = assist_chip("Assist Test");
         assert_eq!(chip.variant(), ChipVariant::Assist);
-        
+
         // Assist chips are typically not selectable in most implementations
         assert_chip_unselected(&chip);
     }
@@ -315,7 +322,7 @@ mod chip_variant_tests {
     fn test_suggestion_chip_behavior() {
         let chip = suggestion_chip("Suggestion Test");
         assert_eq!(chip.variant(), ChipVariant::Suggestion);
-        
+
         // Suggestion chips are typically used for single actions
         assert_chip_unselected(&chip);
     }
@@ -330,10 +337,10 @@ mod chip_properties_tests {
         for &size in ALL_COMPONENT_SIZES {
             for &variant in ALL_CHIP_VARIANTS {
                 let chip = sized_chip("Size Test", variant, size);
-                
+
                 // Test size property
                 assert_chip_size(&chip, size);
-                
+
                 // Test Material Design compliance
                 assert_md3_height_compliance(&chip);
                 assert_md3_touch_target_compliance(&chip);
@@ -345,7 +352,7 @@ mod chip_properties_tests {
     fn test_disabled_property() {
         let enabled_chip = test_chip("Enabled", ChipVariant::Filter);
         assert_chip_enabled(&enabled_chip);
-        
+
         let disabled_chip = disabled_chip("Disabled", ChipVariant::Filter);
         assert_chip_disabled(&disabled_chip);
     }
@@ -404,7 +411,7 @@ mod chip_trait_implementations_tests {
     fn test_debug_implementation() {
         let chip = test_chip("Debug Test", ChipVariant::Filter);
         let debug_string = format!("{:?}", chip);
-        
+
         // Debug output should contain key information
         assert!(debug_string.contains("Debug Test"));
         // Note: Exact format depends on implementation
@@ -415,7 +422,7 @@ mod chip_trait_implementations_tests {
         for &variant in ALL_CHIP_VARIANTS {
             let unselected = test_chip("Trait Test", variant);
             assert!(!unselected.is_selected());
-            
+
             let selected = selected_chip("Trait Test", variant);
             assert!(selected.is_selected());
         }
@@ -446,7 +453,7 @@ mod chip_edge_cases_tests {
         let max_label = max_length_label();
         let result = ChipBuilder::filter(&max_label).build();
         assert!(result.is_ok());
-        
+
         let chip = result.unwrap();
         assert_eq!(chip.label(), max_label);
         assert_eq!(chip.label().len(), MAX_LABEL_LENGTH);
@@ -454,13 +461,7 @@ mod chip_edge_cases_tests {
 
     #[test]
     fn test_unicode_labels() {
-        let unicode_labels = [
-            "🚀 Rocket",
-            "测试标签",
-            "Пример",
-            "テスト",
-            "مثال",
-        ];
+        let unicode_labels = ["🚀 Rocket", "测试标签", "Пример", "テスト", "مثال"];
 
         for label in &unicode_labels {
             if label.len() <= MAX_LABEL_LENGTH {
@@ -495,14 +496,14 @@ mod chip_edge_cases_tests {
     fn test_state_edge_cases() {
         // Test rapid state changes
         let mut chip = test_chip("State Changes", ChipVariant::Filter);
-        
+
         for _ in 0..100 {
             chip.set_state(ChipState::Selected);
             assert_chip_selected(&chip);
-            
+
             chip.set_state(ChipState::Unselected);
             assert_chip_unselected(&chip);
-            
+
             chip.set_state(ChipState::Pressed);
             assert_chip_pressed(&chip);
         }

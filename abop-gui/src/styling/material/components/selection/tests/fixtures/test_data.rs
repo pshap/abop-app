@@ -3,10 +3,10 @@
 //! This module provides all the static test data, constants, and reference
 //! values used throughout the chip testing framework.
 
-use crate::styling::material::components::selection::{
-    ChipVariant, ComponentSize, ChipSelectionMode, ChipState
-};
 use crate::styling::material::components::selection::chip::core::MAX_CHIP_LABEL_LENGTH;
+use crate::styling::material::components::selection::{
+    ChipSelectionMode, ChipState, ChipVariant, ComponentSize,
+};
 
 // ============================================================================
 // Validation Constants
@@ -42,23 +42,23 @@ pub const VALID_LABELS: &[&str] = &[
 
 /// Edge case labels for boundary testing  
 pub const EDGE_CASE_LABELS: &[&str] = &[
-    "A",                    // Minimum length
-    "AB",                   // Two characters
-    "😀",                   // Unicode emoji
-    "Test 123",             // Mixed alphanumeric
-    "Spec-ial_Chars",       // Special characters
-    "Multi\nLine",          // Newline (should be handled)
-    "Spaced  Out",          // Multiple spaces
-    "   Padded   ",         // Leading/trailing spaces
+    "A",              // Minimum length
+    "AB",             // Two characters
+    "😀",             // Unicode emoji
+    "Test 123",       // Mixed alphanumeric
+    "Spec-ial_Chars", // Special characters
+    "Multi\nLine",    // Newline (should be handled)
+    "Spaced  Out",    // Multiple spaces
+    "   Padded   ",   // Leading/trailing spaces
 ];
 
 /// Invalid labels for error testing
 pub const INVALID_LABELS: &[&str] = &[
-    "",                     // Empty string
-    " ",                    // Whitespace only
-    "    ",                 // Multiple whitespace
-    "\t",                   // Tab character
-    "\n",                   // Newline only
+    "",     // Empty string
+    " ",    // Whitespace only
+    "    ", // Multiple whitespace
+    "\t",   // Tab character
+    "\n",   // Newline only
 ];
 
 /// Performance test labels with varying lengths
@@ -124,7 +124,7 @@ pub const ALL_SELECTION_MODES: &[ChipSelectionMode] = &[
 /// Real-world filter chip labels (e.g., for search interfaces)
 pub const FILTER_CHIP_LABELS: &[&str] = &[
     "Category",
-    "Price Range",  
+    "Price Range",
     "Rating",
     "In Stock",
     "Brand",
@@ -203,13 +203,19 @@ pub const MAX_COLLECTION_OPERATION_TIME_MS: u128 = 50;
 pub const MD3_MIN_TOUCH_TARGET_SIZE: f32 = 48.0;
 
 /// Material Design 3 chip height specifications (dp)
+/// Material Design 3 chip height for small size (dp)
 pub const MD3_CHIP_HEIGHT_SMALL: f32 = 32.0;
+/// Material Design 3 chip height for medium size (dp)
 pub const MD3_CHIP_HEIGHT_MEDIUM: f32 = 40.0;
+/// Material Design 3 chip height for large size (dp)
 pub const MD3_CHIP_HEIGHT_LARGE: f32 = 48.0;
 
 /// Material Design 3 spacing recommendations (dp)
+/// Compact spacing between chips (4dp)
 pub const MD3_CHIP_SPACING_COMPACT: f32 = 4.0;
+/// Standard spacing between chips (8dp)
 pub const MD3_CHIP_SPACING_STANDARD: f32 = 8.0;
+/// Comfortable spacing between chips (16dp)
 pub const MD3_CHIP_SPACING_COMFORTABLE: f32 = 16.0;
 
 // ============================================================================
@@ -230,31 +236,14 @@ pub const ERROR_PATTERNS: &[&str] = &[
 // Property-Based Testing Generators (if fake/rand deps available)
 // ============================================================================
 
-#[cfg(feature = "fake")]
-/// Generate random valid label within constraints
-pub fn random_valid_label() -> String {
-    use fake::{Fake, faker::lorem::en::*};
-    
-    // Generate word between 1-3 words, 2-MAX_LABEL_LENGTH chars total
-    let words: Vec<String> = (1..=3).fake::<Vec<usize>>()
-        .into_iter()
-        .map(|_| Word().fake::<String>())
-        .collect();
-    
-    let label = words.join(" ");
-    
-    // Truncate if too long
-    if label.len() > MAX_LABEL_LENGTH {
-        label.chars().take(MAX_LABEL_LENGTH).collect()
-    } else if label.is_empty() {
-        "Test".to_string() // Fallback for empty generated strings
-    } else {
-        label
-    }
-}
+// ============================================================================
+// Property-Based Testing Generators
+// ============================================================================
 
-#[cfg(not(feature = "fake"))]
-/// Generate deterministic valid label for testing (fallback)
+// Note: These functions provide deterministic "random" generation for testing
+// In the future, if the 'fake' crate is added as a dependency, these can be enhanced
+
+/// Generate deterministic valid label for testing
 pub fn random_valid_label() -> String {
     "Generated Test Label".to_string()
 }
@@ -263,7 +252,7 @@ pub fn random_valid_label() -> String {
 pub fn random_chip_variant() -> ChipVariant {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     // Simple deterministic "random" selection based on current time
     let mut hasher = DefaultHasher::new();
     std::time::SystemTime::now().hash(&mut hasher);
@@ -275,7 +264,7 @@ pub fn random_chip_variant() -> ChipVariant {
 pub fn random_component_size() -> ComponentSize {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     std::time::SystemTime::now().hash(&mut hasher);
     let index = (hasher.finish() as usize) % ALL_COMPONENT_SIZES.len();
@@ -286,7 +275,7 @@ pub fn random_component_size() -> ComponentSize {
 pub fn random_selection_mode() -> ChipSelectionMode {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     std::time::SystemTime::now().hash(&mut hasher);
     let index = (hasher.finish() as usize) % ALL_SELECTION_MODES.len();

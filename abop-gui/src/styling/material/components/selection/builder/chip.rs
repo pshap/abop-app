@@ -175,7 +175,7 @@ impl ChipBuilder {
     // ========================================================================
 
     /// Set label with validation
-    /// 
+    ///
     /// Validates the label according to the current validation configuration
     /// before applying it to the chip component.
     #[must_use]

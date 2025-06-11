@@ -123,7 +123,7 @@ where
     // ========================================================================
 
     /// Set label with validation
-    /// 
+    ///
     /// Validates the label according to the current validation configuration
     /// before applying it to the radio button.
     #[must_use]
