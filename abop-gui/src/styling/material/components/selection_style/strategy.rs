@@ -3,10 +3,12 @@
 //! This module provides the strategy implementations for different selection
 //! component variants (Checkbox, Radio, Switch, Chip) following Material Design 3.
 
+use crate::styling::color_utils::ColorUtils;
 use crate::styling::material::tokens::core::MaterialTokens;
+use iced::{Background, Border, Color};
 
 use super::{
-    SelectionColors, SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
+    constants, SelectionColors, SelectionSize, SelectionState, SelectionStyleError, SelectionStyling,
     SelectionVariant,
 };
 
@@ -32,11 +34,36 @@ pub trait SelectionStyleStrategy {
         size: SelectionSize,
         error_state: bool,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, self.variant())
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
+        let background = self.calculate_background_color(state, tokens, error_state);
+        let text_color = self.calculate_text_color(state, tokens, error_state);
+        let border = self.calculate_border(state, tokens, size, error_state);
+        let foreground_color = self.calculate_foreground_color(state, tokens, error_state);
+        let state_layer = self.calculate_state_layer_color(state, tokens);
+
+        Ok(SelectionStyling {
+            background: Background::Color(background),
+            text_color,
+            border,
+            shadow: None, // Selection components typically don't use shadows
+            foreground_color,
+            state_layer,
+        })
     }
+
+    /// Calculate the background color for this variant and state
+    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the text color for this variant and state
+    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the border for this variant and state
+    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border;
+    
+    /// Calculate the foreground color (icon/dot) for this variant and state
+    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color;
+    
+    /// Calculate the state layer color for interactions
+    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color>;
 
     /// Get the variant name for debugging and logging
     fn variant_name(&self) -> &'static str {
@@ -88,6 +115,129 @@ impl SelectionStyleStrategy for CheckboxStrategy {
     fn supports_indeterminate(&self) -> bool {
         true
     }
+
+    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+        let colors = &tokens.colors;
+
+        // Handle error state first
+        if error_state {
+            return if state.is_selected() { colors.error.base } else { Color::TRANSPARENT };
+        }
+
+        // Handle disabled state
+        if state.is_disabled() {
+            return if state.is_selected() {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            } else {
+                Color::TRANSPARENT
+            };
+        }
+
+        // Default base color for selected state
+        let base_color = if state.is_selected() {
+            colors.primary.base
+        } else {
+            Color::TRANSPARENT
+        };
+
+        // Apply interaction state effects for checkbox
+        if state.is_pressed() && state.is_selected() {
+            colors.secondary.container
+        } else if state.is_hovered() && state.is_selected() {
+            colors.secondary.container
+        } else if state.is_focused() && state.is_selected() {
+            colors.secondary.container
+        } else {
+            base_color
+        }
+    }
+
+    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, _error_state: bool) -> Color {
+        let colors = &tokens.colors;
+        if state.is_disabled() {
+            return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
+        }
+        colors.on_surface
+    }
+
+    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
+        let colors = &tokens.colors;
+
+        let border_color = if error_state && !state.is_selected() {
+            colors.error.base
+        } else if state.is_disabled() {
+            if state.is_selected() {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            } else {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            }
+        } else if state.is_focused() {
+            if state.is_selected() {
+                colors.on_secondary_container
+            } else {
+                colors.primary.base
+            }
+        } else if state.is_selected() {
+            colors.primary.base
+        } else {
+            colors.on_surface_variant
+        };
+
+        Border {
+            color: border_color,
+            width: size.border_width(),
+            radius: self.variant().default_border_radius().into(),
+        }
+    }
+
+    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+        let colors = &tokens.colors;
+
+        // Error state takes highest priority
+        if error_state && state.is_selected() {
+            return colors.on_error;
+        }
+
+        // Handle disabled state
+        if state.is_disabled() {
+            return if state.is_selected() {
+                ColorUtils::with_alpha(colors.on_primary, constants::opacity::DISABLED)
+            } else {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            };
+        }
+
+        // Handle selected state - checkbox shows checkmark
+        if state.is_selected() {
+            colors.on_primary
+        } else {
+            colors.on_surface_variant
+        }
+    }
+
+    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color> {
+        use constants::opacity::{FOCUS, HOVER, PRESSED};
+
+        if state.is_disabled() {
+            return None;
+        }
+
+        let colors = &tokens.colors;
+
+        if state.is_pressed() {
+            return Some(ColorUtils::with_alpha(colors.on_surface, PRESSED));
+        }
+
+        if state.is_hovered() {
+            return Some(ColorUtils::with_alpha(colors.on_surface, HOVER));
+        }
+
+        if state.is_focused() {
+            return Some(ColorUtils::with_alpha(colors.primary.base, FOCUS));
+        }
+
+        None
+    }
 }
 
 /// Radio button strategy implementation  
@@ -96,6 +246,110 @@ pub struct RadioStrategy;
 impl SelectionStyleStrategy for RadioStrategy {
     fn variant(&self) -> SelectionVariant {
         SelectionVariant::Radio
+    }
+
+    fn calculate_background_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+        let colors = &tokens.colors;
+
+        // Handle error state first
+        if error_state {
+            return if state.is_selected() { colors.error.base } else { Color::TRANSPARENT };
+        }
+
+        // Handle disabled state
+        if state.is_disabled() {
+            return if state.is_selected() {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            } else {
+                Color::TRANSPARENT
+            };
+        }
+
+        // Radio buttons have transparent background, only the dot is colored
+        Color::TRANSPARENT
+    }
+
+    fn calculate_text_color(&self, state: SelectionState, tokens: &MaterialTokens, _error_state: bool) -> Color {
+        let colors = &tokens.colors;
+        if state.is_disabled() {
+            return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
+        }
+        colors.on_surface
+    }
+
+    fn calculate_border(&self, state: SelectionState, tokens: &MaterialTokens, size: SelectionSize, error_state: bool) -> Border {
+        let colors = &tokens.colors;
+
+        let border_color = if error_state && !state.is_selected() {
+            colors.error.base
+        } else if state.is_disabled() {
+            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+        } else if state.is_focused() {
+            if state.is_selected() {
+                colors.on_secondary_container
+            } else {
+                colors.primary.base
+            }
+        } else if state.is_selected() {
+            colors.primary.base
+        } else {
+            colors.on_surface_variant
+        };
+
+        Border {
+            color: border_color,
+            width: size.border_width(),
+            radius: self.variant().default_border_radius().into(),
+        }
+    }
+
+    fn calculate_foreground_color(&self, state: SelectionState, tokens: &MaterialTokens, error_state: bool) -> Color {
+        let colors = &tokens.colors;
+
+        // Error state takes highest priority
+        if error_state && state.is_selected() {
+            return colors.error.base;
+        }
+
+        // Handle disabled state
+        if state.is_disabled() {
+            return if state.is_selected() {
+                ColorUtils::with_alpha(colors.on_primary, constants::opacity::DISABLED)
+            } else {
+                ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+            };
+        }
+
+        // Handle selected state - radio shows center dot
+        if state.is_selected() {
+            colors.primary.base
+        } else {
+            colors.on_surface_variant
+        }
+    }
+
+    fn calculate_state_layer_color(&self, state: SelectionState, tokens: &MaterialTokens) -> Option<Color> {
+        use constants::opacity::{FOCUS, HOVER, PRESSED};
+
+        if state.is_disabled() {
+            return None;
+        }
+
+        let colors = &tokens.colors;
+
+        if state.is_pressed() {
+            return Some(ColorUtils::with_alpha(colors.on_surface, PRESSED));
+        }
+
+        if state.is_hovered() {
+            return Some(ColorUtils::with_alpha(colors.on_surface, HOVER));
+        }
+
+        if state.is_focused() {
+            return Some(ColorUtils::with_alpha(colors.primary.base, FOCUS));
+        }
+
+        None
     }
 }
 

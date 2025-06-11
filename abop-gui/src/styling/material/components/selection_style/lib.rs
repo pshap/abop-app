@@ -31,70 +31,185 @@ use crate::styling::material::tokens::core::MaterialTokens;
 
 /// Material Design 3 constants for selection components
 mod constants {
+    /// Consolidated Material Design 3 constants
+    pub struct SelectionConstants {
+        pub opacity: OpacityConstants,
+        pub border_radius: BorderRadiusConstants,
+        pub size: SizeConstants,
+        pub color: ColorConstants,
+    }
+
+    impl SelectionConstants {
+        pub const fn new() -> Self {
+            Self {
+                opacity: OpacityConstants::new(),
+                border_radius: BorderRadiusConstants::new(),
+                size: SizeConstants::new(),
+                color: ColorConstants::new(),
+            }
+        }
+    }
+
     /// Opacity values following Material Design 3 specifications
-    pub mod opacity {
+    pub struct OpacityConstants {
         /// Disabled state opacity (Material Design 3 specification)
-        pub const DISABLED: f32 = 0.38;
+        pub disabled: f32,
         /// Pressed state opacity for state layers
-        pub const PRESSED: f32 = 0.12;
+        pub pressed: f32,
         /// Hover state opacity for state layers  
-        pub const HOVER: f32 = 0.08;
+        pub hover: f32,
         /// Focus state opacity for state layers
-        pub const FOCUS: f32 = 0.12;
+        pub focus: f32,
         /// Surface overlay opacity for disabled backgrounds
-        #[allow(dead_code)]
-        pub const DISABLED_SURFACE: f32 = 0.12;
+        pub disabled_surface: f32,
+    }
+
+    impl OpacityConstants {
+        pub const fn new() -> Self {
+            Self {
+                disabled: 0.38,
+                pressed: 0.12,
+                hover: 0.08,
+                focus: 0.12,
+                disabled_surface: 0.12,
+            }
+        }
     }
 
     /// Border radius values for different component variants
-    pub mod border_radius {
+    pub struct BorderRadiusConstants {
         /// Checkbox border radius
-        pub const CHECKBOX: f32 = 2.0;
+        pub checkbox: f32,
         /// Radio button border radius (circular)
-        pub const RADIO: f32 = 12.0;
+        pub radio: f32,
         /// Chip border radius
-        pub const CHIP: f32 = 8.0;
+        pub chip: f32,
         /// Switch border radius
-        pub const SWITCH: f32 = 16.0;
+        pub switch: f32,
+    }
+
+    impl BorderRadiusConstants {
+        pub const fn new() -> Self {
+            Self {
+                checkbox: 2.0,
+                radio: 12.0,
+                chip: 8.0,
+                switch: 16.0,
+            }
+        }
     }
 
     /// Size constants for components
-    pub mod size {
-        /// Small component size in pixels
-        pub const SMALL_PX: f32 = 16.0;
-        /// Medium component size in pixels
-        pub const MEDIUM_PX: f32 = 20.0;
-        /// Large component size in pixels
-        pub const LARGE_PX: f32 = 24.0;
-
+    pub struct SizeConstants {
+        /// Component sizes in pixels
+        pub small_px: f32,
+        pub medium_px: f32,
+        pub large_px: f32,
+        
         /// Touch target sizes
-        #[allow(dead_code)]
-        pub const SMALL_TOUCH: f32 = 32.0;
-        #[allow(dead_code)]
-        pub const MEDIUM_TOUCH: f32 = 40.0;
-        #[allow(dead_code)]
-        pub const LARGE_TOUCH: f32 = 48.0;
+        pub small_touch: f32,
+        pub medium_touch: f32,
+        pub large_touch: f32,
 
         /// Border widths
-        pub const SMALL_BORDER: f32 = 1.5;
-        pub const MEDIUM_BORDER: f32 = 2.0;
-        pub const LARGE_BORDER: f32 = 2.5;
+        pub small_border: f32,
+        pub medium_border: f32,
+        pub large_border: f32,
 
         /// Text sizes
-        pub const SMALL_TEXT: f32 = 12.0;
-        pub const MEDIUM_TEXT: f32 = 14.0;
-        pub const LARGE_TEXT: f32 = 16.0;
+        pub small_text: f32,
+        pub medium_text: f32,
+        pub large_text: f32,
 
         /// Padding values
-        pub const SMALL_PADDING: f32 = 4.0;
-        pub const MEDIUM_PADDING: f32 = 8.0;
-        pub const LARGE_PADDING: f32 = 12.0;
+        pub small_padding: f32,
+        pub medium_padding: f32,
+        pub large_padding: f32,
+    }
+
+    impl SizeConstants {
+        pub const fn new() -> Self {
+            Self {
+                small_px: 16.0,
+                medium_px: 20.0,
+                large_px: 24.0,
+                small_touch: 32.0,
+                medium_touch: 40.0,
+                large_touch: 48.0,
+                small_border: 1.5,
+                medium_border: 2.0,
+                large_border: 2.5,
+                small_text: 12.0,
+                medium_text: 14.0,
+                large_text: 16.0,
+                small_padding: 4.0,
+                medium_padding: 8.0,
+                large_padding: 12.0,
+            }
+        }
     }
 
     /// Color modifier constants
-    pub mod color {
+    pub struct ColorConstants {
         /// Darken amount for pressed chip states
-        pub const CHIP_PRESSED_DARKEN: f32 = 0.1;
+        pub chip_pressed_darken: f32,
+    }
+
+    impl ColorConstants {
+        pub const fn new() -> Self {
+            Self {
+                chip_pressed_darken: 0.1,
+            }
+        }
+    }
+
+    /// Global constants instance
+    pub const SELECTION_CONSTANTS: SelectionConstants = SelectionConstants::new();
+
+    // Legacy module constants for backward compatibility
+    pub mod opacity {
+        use super::SELECTION_CONSTANTS;
+        pub const DISABLED: f32 = SELECTION_CONSTANTS.opacity.disabled;
+        pub const PRESSED: f32 = SELECTION_CONSTANTS.opacity.pressed;
+        pub const HOVER: f32 = SELECTION_CONSTANTS.opacity.hover;
+        pub const FOCUS: f32 = SELECTION_CONSTANTS.opacity.focus;
+        #[allow(dead_code)]
+        pub const DISABLED_SURFACE: f32 = SELECTION_CONSTANTS.opacity.disabled_surface;
+    }
+
+    pub mod border_radius {
+        use super::SELECTION_CONSTANTS;
+        pub const CHECKBOX: f32 = SELECTION_CONSTANTS.border_radius.checkbox;
+        pub const RADIO: f32 = SELECTION_CONSTANTS.border_radius.radio;
+        pub const CHIP: f32 = SELECTION_CONSTANTS.border_radius.chip;
+        pub const SWITCH: f32 = SELECTION_CONSTANTS.border_radius.switch;
+    }
+
+    pub mod size {
+        use super::SELECTION_CONSTANTS;
+        pub const SMALL_PX: f32 = SELECTION_CONSTANTS.size.small_px;
+        pub const MEDIUM_PX: f32 = SELECTION_CONSTANTS.size.medium_px;
+        pub const LARGE_PX: f32 = SELECTION_CONSTANTS.size.large_px;
+        #[allow(dead_code)]
+        pub const SMALL_TOUCH: f32 = SELECTION_CONSTANTS.size.small_touch;
+        #[allow(dead_code)]
+        pub const MEDIUM_TOUCH: f32 = SELECTION_CONSTANTS.size.medium_touch;
+        #[allow(dead_code)]
+        pub const LARGE_TOUCH: f32 = SELECTION_CONSTANTS.size.large_touch;
+        pub const SMALL_BORDER: f32 = SELECTION_CONSTANTS.size.small_border;
+        pub const MEDIUM_BORDER: f32 = SELECTION_CONSTANTS.size.medium_border;
+        pub const LARGE_BORDER: f32 = SELECTION_CONSTANTS.size.large_border;
+        pub const SMALL_TEXT: f32 = SELECTION_CONSTANTS.size.small_text;
+        pub const MEDIUM_TEXT: f32 = SELECTION_CONSTANTS.size.medium_text;
+        pub const LARGE_TEXT: f32 = SELECTION_CONSTANTS.size.large_text;
+        pub const SMALL_PADDING: f32 = SELECTION_CONSTANTS.size.small_padding;
+        pub const MEDIUM_PADDING: f32 = SELECTION_CONSTANTS.size.medium_padding;
+        pub const LARGE_PADDING: f32 = SELECTION_CONSTANTS.size.large_padding;
+    }
+
+    pub mod color {
+        use super::SELECTION_CONSTANTS;
+        pub const CHIP_PRESSED_DARKEN: f32 = SELECTION_CONSTANTS.color.chip_pressed_darken;
     }
 }
 
@@ -476,9 +591,7 @@ impl SelectionColors {
             size: SelectionSize::Medium,
             error_state: false,
         }
-    }
-
-    /// Create selection colors with borrowed tokens (optimized)
+    }    /// Create selection colors with borrowed tokens (optimized)
     #[must_use]
     pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
         Self {
@@ -489,10 +602,23 @@ impl SelectionColors {
         }
     }
 
-    /// Get error state color if applicable
+    /// Set the size for this selection component
     #[must_use]
-    #[allow(dead_code)]
-    fn error_color(&self, state: SelectionState) -> Option<Color> {
+    pub fn with_size(mut self, size: SelectionSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Set the error state for this selection component
+    #[must_use]
+    pub fn with_error(mut self, error_state: bool) -> Self {
+        self.error_state = error_state;
+        self
+    }
+
+    /// Apply error state color if applicable
+    #[must_use]
+    fn apply_error_state(&self, state: SelectionState) -> Option<Color> {
         if !self.error_state {
             return None;
         }
@@ -501,42 +627,32 @@ impl SelectionColors {
         Some(if state.is_selected() {
             colors.error.base
         } else {
-            Color::TRANSPARENT
+            colors.error.base // Error state for unselected (border)
         })
     }
 
-    /// Get disabled state opacity for the given variant
+    /// Get error state color if applicable
     #[must_use]
     #[allow(dead_code)]
-    fn disabled_opacity(&self, for_surface: bool) -> f32 {
-        if for_surface {
-            constants::opacity::DISABLED_SURFACE
-        } else {
-            constants::opacity::DISABLED
+    fn error_color(&self, state: SelectionState) -> Option<Color> {
+        // Deprecated: Use apply_error_state instead
+        self.apply_error_state(state)
+    }
+
+    /// Apply disabled state color if applicable
+    #[must_use]
+    fn apply_disabled_state(&self, state: SelectionState, for_selected: bool) -> Option<Color> {
+        if !state.is_disabled() {
+            return None;
         }
-    }
 
-    /// Create new selection colors from token reference (optimized)
-    #[must_use]
-    pub fn from_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
-        Self::with_tokens(tokens, variant)
-    }
-
-    /// Set component size
-    #[must_use]
-    pub const fn with_size(mut self, size: SelectionSize) -> Self {
-        self.size = size;
-        self
-    }
-
-    /// Set error state for form validation
-    #[must_use]
-    pub const fn with_error(mut self, error: bool) -> Self {
-        self.error_state = error;
-        self
-    }
-
-    /// Calculate the primary component color (background, border, or fill)
+        let colors = &self.tokens.colors;
+        Some(if for_selected && state.is_selected() {
+            ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
+        } else {
+            Color::TRANSPARENT
+        })
+    }    /// Calculate the primary component color (background, border, or fill)
     ///
     /// This method centralizes the color logic using Material Design 3 token system.
     #[must_use]
@@ -544,75 +660,66 @@ impl SelectionColors {
         let colors = &self.tokens.colors;
 
         // Handle error state first
-        if self.error_state && state.is_selected() {
-            return colors.error.base;
+        if let Some(error_color) = self.apply_error_state(state) {
+            return if state.is_selected() { error_color } else { Color::TRANSPARENT };
         }
 
         // Handle disabled state
-        if state.is_disabled() {
-            if state.is_selected() {
-                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
-            }
-            return Color::TRANSPARENT;
+        if let Some(disabled_color) = self.apply_disabled_state(state, true) {
+            return disabled_color;
         }
 
-        // Handle pressed state
-        if state.is_pressed() {
-            if state.is_selected() {
-                if let SelectionVariant::Chip = self.variant {
-                    return ColorUtils::darken(
-                        colors.secondary.container,
-                        constants::color::CHIP_PRESSED_DARKEN,
-                    );
-                }
-                return colors.secondary.container;
-            }
-            return Color::TRANSPARENT;
-        }
-
-        // Handle hover state
-        if state.is_hovered() {
-            if state.is_selected() {
-                if let SelectionVariant::Chip = self.variant {
-                    return colors.secondary.container;
-                }
-                return colors.secondary.container;
-            }
-            return Color::TRANSPARENT;
-        }
-
-        // Handle focused state
-        if state.is_focused() {
-            if state.is_selected() {
-                return colors.secondary.container;
-            }
-            return Color::TRANSPARENT;
-        }
-
-        // Default state
-        if state.is_selected() {
+        // Default base color for selected state
+        let base_color = if state.is_selected() {
             colors.primary.base
         } else {
             Color::TRANSPARENT
-        }
-    }
+        };
 
-    /// Calculate the border color for the selection component
+        // Apply interaction state effects
+        if state.is_pressed() {
+            if state.is_selected() {
+                match self.variant {
+                    SelectionVariant::Chip => ColorUtils::darken(
+                        colors.secondary.container,
+                        constants::color::CHIP_PRESSED_DARKEN,
+                    ),
+                    _ => colors.secondary.container,
+                }
+            } else {
+                Color::TRANSPARENT
+            }
+        } else if state.is_hovered() {
+            if state.is_selected() {
+                match self.variant {
+                    SelectionVariant::Chip => colors.secondary.container,
+                    _ => colors.secondary.container,
+                }
+            } else {
+                Color::TRANSPARENT
+            }
+        } else if state.is_focused() {
+            if state.is_selected() {
+                colors.secondary.container
+            } else {
+                Color::TRANSPARENT
+            }
+        } else {
+            base_color
+        }
+    }    /// Calculate the border color for the selection component
     #[must_use]
     pub fn border_color(&self, state: SelectionState) -> Color {
         let colors = &self.tokens.colors;
 
-        // Handle error state first
-        if self.error_state && !state.is_selected() {
-            return colors.error.base;
+        // Handle error state first (for unselected components)
+        if let Some(error_color) = self.apply_error_state(state) {
+            return if !state.is_selected() { error_color } else { colors.primary.base };
         }
 
         // Handle disabled state
-        if state.is_disabled() {
-            if state.is_selected() {
-                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
-            }
-            return Color::TRANSPARENT;
+        if let Some(disabled_color) = self.apply_disabled_state(state, true) {
+            return disabled_color;
         }
 
         // Handle focused state
@@ -726,6 +833,89 @@ impl SelectionColors {
 }
 
 // ============================================================================
+// Generic Widget Style Creation
+// ============================================================================
+
+/// Generic status to selection state mapper trait
+trait StatusMapper<T> {
+    /// Map widget status to selection state
+    fn map_status(&self, status: T, is_selected: bool) -> SelectionState;
+}
+
+/// Checkbox status mapper implementation
+struct CheckboxStatusMapper;
+
+impl StatusMapper<iced::widget::checkbox::Status> for CheckboxStatusMapper {
+    fn map_status(&self, status: iced::widget::checkbox::Status, _is_selected: bool) -> SelectionState {
+        match status {
+            iced::widget::checkbox::Status::Active { is_checked: true } => {
+                SelectionState::DefaultSelected
+            }
+            iced::widget::checkbox::Status::Active { is_checked: false } => {
+                SelectionState::DefaultUnselected
+            }
+            iced::widget::checkbox::Status::Hovered { is_checked: true } => {
+                SelectionState::HoveredSelected
+            }
+            iced::widget::checkbox::Status::Hovered { is_checked: false } => {
+                SelectionState::HoveredUnselected
+            }
+            iced::widget::checkbox::Status::Disabled { is_checked: true } => {
+                SelectionState::DisabledSelected
+            }
+            iced::widget::checkbox::Status::Disabled { is_checked: false } => {
+                SelectionState::DisabledUnselected
+            }
+        }
+    }
+}
+
+/// Radio status mapper implementation
+struct RadioStatusMapper;
+
+impl StatusMapper<iced::widget::radio::Status> for RadioStatusMapper {
+    fn map_status(&self, status: iced::widget::radio::Status, _is_selected: bool) -> SelectionState {
+        match status {
+            iced::widget::radio::Status::Active { is_selected: true } => {
+                SelectionState::DefaultSelected
+            }
+            iced::widget::radio::Status::Active { is_selected: false } => {
+                SelectionState::DefaultUnselected
+            }
+            iced::widget::radio::Status::Hovered { is_selected: true } => {
+                SelectionState::HoveredSelected
+            }
+            iced::widget::radio::Status::Hovered { is_selected: false } => {
+                SelectionState::HoveredUnselected
+            }
+        }
+    }
+}
+
+/// Button status mapper implementation (for chips and switches)
+struct ButtonStatusMapper;
+
+impl StatusMapper<iced::widget::button::Status> for ButtonStatusMapper {
+    fn map_status(&self, status: iced::widget::button::Status, is_selected: bool) -> SelectionState {
+        if is_selected {
+            match status {
+                iced::widget::button::Status::Active => SelectionState::DefaultSelected,
+                iced::widget::button::Status::Hovered => SelectionState::HoveredSelected,
+                iced::widget::button::Status::Pressed => SelectionState::PressedSelected,
+                iced::widget::button::Status::Disabled => SelectionState::DisabledSelected,
+            }
+        } else {
+            match status {
+                iced::widget::button::Status::Active => SelectionState::DefaultUnselected,
+                iced::widget::button::Status::Hovered => SelectionState::HoveredUnselected,
+                iced::widget::button::Status::Pressed => SelectionState::PressedUnselected,
+                iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
+            }
+        }
+    }
+}
+
+// ============================================================================
 // Builder for Selection Component Styling
 // ============================================================================
 
@@ -793,26 +983,7 @@ impl SelectionStyleBuilder {
         self,
     ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
         move |_theme: &Theme, status| {
-            let state = match status {
-                iced::widget::checkbox::Status::Active { is_checked: true } => {
-                    SelectionState::DefaultSelected
-                }
-                iced::widget::checkbox::Status::Active { is_checked: false } => {
-                    SelectionState::DefaultUnselected
-                }
-                iced::widget::checkbox::Status::Hovered { is_checked: true } => {
-                    SelectionState::HoveredSelected
-                }
-                iced::widget::checkbox::Status::Hovered { is_checked: false } => {
-                    SelectionState::HoveredUnselected
-                }
-                iced::widget::checkbox::Status::Disabled { is_checked: true } => {
-                    SelectionState::DisabledSelected
-                }
-                iced::widget::checkbox::Status::Disabled { is_checked: false } => {
-                    SelectionState::DisabledUnselected
-                }
-            };
+            let state = CheckboxStatusMapper.map_status(status, false);
 
             let colors = self.colors();
             let styling = colors.create_styling(state);
@@ -837,20 +1008,7 @@ impl SelectionStyleBuilder {
         self,
     ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style {
         move |_theme: &Theme, status: iced::widget::radio::Status| {
-            let state = match status {
-                iced::widget::radio::Status::Active { is_selected: true } => {
-                    SelectionState::DefaultSelected
-                }
-                iced::widget::radio::Status::Active { is_selected: false } => {
-                    SelectionState::DefaultUnselected
-                }
-                iced::widget::radio::Status::Hovered { is_selected: true } => {
-                    SelectionState::HoveredSelected
-                }
-                iced::widget::radio::Status::Hovered { is_selected: false } => {
-                    SelectionState::HoveredUnselected
-                }
-            };
+            let state = RadioStatusMapper.map_status(status, false);
 
             let colors = self.colors();
             let styling = colors.create_styling(state);
@@ -873,21 +1031,7 @@ impl SelectionStyleBuilder {
         is_selected: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style {
         move |_theme: &Theme, status: iced::widget::button::Status| {
-            let state = if is_selected {
-                match status {
-                    iced::widget::button::Status::Active => SelectionState::DefaultSelected,
-                    iced::widget::button::Status::Hovered => SelectionState::HoveredSelected,
-                    iced::widget::button::Status::Pressed => SelectionState::PressedSelected,
-                    iced::widget::button::Status::Disabled => SelectionState::DisabledSelected,
-                }
-            } else {
-                match status {
-                    iced::widget::button::Status::Active => SelectionState::DefaultUnselected,
-                    iced::widget::button::Status::Hovered => SelectionState::HoveredUnselected,
-                    iced::widget::button::Status::Pressed => SelectionState::PressedUnselected,
-                    iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
-                }
-            };
+            let state = ButtonStatusMapper.map_status(status, is_selected);
 
             let colors = self.colors();
             let styling = colors.create_styling(state);
@@ -909,21 +1053,7 @@ impl SelectionStyleBuilder {
         is_enabled: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style {
         move |_theme: &Theme, status: iced::widget::button::Status| {
-            let state = if is_enabled {
-                match status {
-                    iced::widget::button::Status::Active => SelectionState::DefaultSelected,
-                    iced::widget::button::Status::Hovered => SelectionState::HoveredSelected,
-                    iced::widget::button::Status::Pressed => SelectionState::PressedSelected,
-                    iced::widget::button::Status::Disabled => SelectionState::DisabledSelected,
-                }
-            } else {
-                match status {
-                    iced::widget::button::Status::Active => SelectionState::DefaultUnselected,
-                    iced::widget::button::Status::Hovered => SelectionState::HoveredUnselected,
-                    iced::widget::button::Status::Pressed => SelectionState::PressedUnselected,
-                    iced::widget::button::Status::Disabled => SelectionState::DisabledUnselected,
-                }
-            };
+            let state = ButtonStatusMapper.map_status(status, is_enabled);
 
             let colors = self.colors();
             let styling = colors.create_styling(state);
