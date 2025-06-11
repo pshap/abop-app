@@ -208,12 +208,12 @@ mod scanner_performance_tests {
 
         // Create a nested directory structure
         for i in 0..5 {
-            let subdir = temp_dir.path().join(format!("subdir_{}", i));
+            let subdir = temp_dir.path().join(format!("subdir_{i}"));
             std::fs::create_dir_all(&subdir).unwrap();
 
             // Create some test files in each subdirectory
             for j in 0..3 {
-                let file_path = subdir.join(format!("test_{}_{}.mp3", i, j));
+                let file_path = subdir.join(format!("test_{i}_{j}.mp3"));
                 let mut file = File::create(file_path).unwrap();
                 file.write_all(b"fake audio data").unwrap();
             }

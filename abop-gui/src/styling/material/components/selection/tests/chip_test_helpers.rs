@@ -139,15 +139,12 @@ pub fn assert_chip_pressed(chip: &Chip) {
 pub fn assert_chip_has_metadata(chip: &Chip, key: &str, expected_value: &str) {
     assert!(
         chip.props().metadata.contains_key(key),
-        "Chip should have metadata key '{}'",
-        key
+        "Chip should have metadata key '{key}'"
     );
     assert_eq!(
         chip.props().metadata.get(key),
         Some(&expected_value.to_string()),
-        "Metadata '{}' should have value '{}'",
-        key,
-        expected_value
+        "Metadata '{key}' should have value '{expected_value}'"
     );
 }
 

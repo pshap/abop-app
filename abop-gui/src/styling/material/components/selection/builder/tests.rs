@@ -159,7 +159,7 @@ mod validation_tests {
         let result = validate_batch(&items, "CheckboxBuilder", |builder| builder.validate());
 
         assert!(!result.is_valid());
-        assert!(result.errors.len() > 0);
+        assert!(!result.errors.is_empty());
     }
 
     #[test]

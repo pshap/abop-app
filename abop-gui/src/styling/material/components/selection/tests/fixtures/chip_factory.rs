@@ -197,7 +197,7 @@ pub fn all_state_chips(label: &str, variant: ChipVariant) -> Vec<Chip> {
 /// Create chips for performance testing
 pub fn performance_chips(variant: ChipVariant, count: usize) -> Vec<Chip> {
     (0..count)
-        .map(|i| test_chip(&format!("Chip {}", i), variant))
+        .map(|i| test_chip(&format!("Chip {i}"), variant))
         .collect()
 }
 
@@ -278,7 +278,7 @@ pub fn random_configured_chip() -> Chip {
 /// Create a set of test chips with sequential labels
 pub fn test_chip_set(count: usize) -> Vec<Chip> {
     (0..count)
-        .map(|i| test_chip(&format!("Test Chip {}", i), ChipVariant::Filter))
+        .map(|i| test_chip(&format!("Test Chip {i}"), ChipVariant::Filter))
         .collect()
 }
 
@@ -292,7 +292,7 @@ pub fn memory_test_chips() -> Vec<Chip> {
 
     // Complex chips with metadata
     for i in 0..100 {
-        let chip = ChipBuilder::filter(&format!("Complex Chip {}", i))
+        let chip = ChipBuilder::filter(format!("Complex Chip {i}"))
             .with_leading_icon("filter")
             .with_trailing_icon("times")
             .with_badge(i as u32)
@@ -310,7 +310,7 @@ pub fn concurrent_test_chips() -> Vec<Chip> {
     (0..1000)
         .map(|i| {
             test_chip(
-                &format!("Thread Safe Chip {}", i),
+                &format!("Thread Safe Chip {i}"),
                 ALL_CHIP_VARIANTS[i % ALL_CHIP_VARIANTS.len()],
             )
         })

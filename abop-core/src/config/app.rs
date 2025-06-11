@@ -150,9 +150,11 @@ mod tests {
 
     #[test]
     fn test_app_config_validation() {
-        let mut config = AppConfig::default();
-        config.max_recent_files = 150;
-        config.auto_save_interval = 30;
+        let config = AppConfig {
+            max_recent_files: 150,
+            auto_save_interval: 30,
+            ..Default::default()
+        };
 
         let result = config.validate();
         assert!(result.has_warnings());
@@ -161,9 +163,11 @@ mod tests {
 
     #[test]
     fn test_app_config_validate_and_fix() {
-        let mut config = AppConfig::default();
-        config.max_recent_files = 150;
-        config.auto_save_interval = 30;
+        let mut config = AppConfig {
+            max_recent_files: 150,
+            auto_save_interval: 30,
+            ..Default::default()
+        };
 
         let result = config.validate_and_fix();
         assert_eq!(config.max_recent_files, 50);
