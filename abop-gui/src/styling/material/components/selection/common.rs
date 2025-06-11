@@ -685,24 +685,6 @@ pub fn system_has_reduced_motion() -> bool {
     false
 }
 
-/// Convert modern ComponentSize to legacy SelectionSize
-/// This eliminates duplication across component view methods
-pub fn legacy_size_from_modern(
-    size: ComponentSize,
-) -> crate::styling::material::components::selection_style::SelectionSize {
-    match size {
-        ComponentSize::Small => {
-            crate::styling::material::components::selection_style::SelectionSize::Small
-        }
-        ComponentSize::Medium => {
-            crate::styling::material::components::selection_style::SelectionSize::Medium
-        }
-        ComponentSize::Large => {
-            crate::styling::material::components::selection_style::SelectionSize::Large
-        }
-    }
-}
-
 /// Helper function to create validation config for specific use cases
 #[must_use]
 pub fn validation_config_for_chips() -> ValidationConfig {

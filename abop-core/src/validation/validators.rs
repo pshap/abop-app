@@ -324,30 +324,6 @@ impl IntegrityValidator {
     }
 }
 
-/// Validates schema version compatibility
-/// Validates schema version compatibility
-#[derive(Debug, Clone)]
-pub struct SchemaValidator {
-    /// Configuration for schema validation
-    _config: ValidationConfig,
-}
-
-impl SchemaValidator {
-    /// Create a new `SchemaValidator` with the given configuration
-    #[must_use]
-    pub fn new(config: &ValidationConfig) -> Self {
-        Self {
-            _config: config.clone(),
-        }
-    }
-
-    /// Validate schema version compatibility
-    pub fn validate_schema_version(&self, _state: &AppState, _result: &mut ValidationResult) {
-        // Schema validation will be implemented when versioning is added to AppState
-        // Currently not needed as the project doesn't require backward compatibility
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::error::ValidationSeverity;

@@ -1,32 +1,11 @@
 //! Integration tests for the modular configuration system
 //!
-//! These tests ensure that the new modular configuration system maintains
-//! backward compatibility while providing enhanced validation and functionality.
+//! These tests ensure that the new modular configuration system provides
+//! enhanced validation and functionality.
 
 use abop_core::config::{AppConfig, Config, ConfigValidation, UiConfig, WindowConfig};
 use std::fs;
 use tempfile::tempdir;
-
-#[test]
-fn test_config_backward_compatibility() {
-    // Test that old TOML format still works
-    let old_config_toml = r#"theme = "Light"
-data_dir = "/tmp/test_data"
-
-[window]
-min_width = 1024
-min_height = 768
-"#;
-
-    let config: Config = toml::from_str(old_config_toml).unwrap();
-    assert_eq!(config.window.min_width, 1024);
-    assert_eq!(config.window.min_height, 768);
-    assert_eq!(config.data_dir.to_string_lossy(), "/tmp/test_data");
-
-    // New fields should have defaults
-    assert_eq!(config.app.app_name, "ABOP Iced");
-    assert_eq!(config.ui.scale_factor, 1.0);
-}
 
 #[test]
 fn test_config_new_format() {
@@ -166,29 +145,6 @@ fn test_ui_config_validation() {
     let result = ui_config.validate();
     assert!(result.has_errors());
     assert_eq!(result.errors.len(), 2);
-}
-
-#[test]
-fn test_migration_from_old_config() {
-    // Simulate an old config file that only has basic fields
-    let old_config_toml = r#"theme = "System"
-data_dir = "/old/data/path"
-
-[window]
-min_width = 800
-min_height = 600
-"#;
-
-    let mut config: Config = toml::from_str(old_config_toml).unwrap();
-
-    // Validate and fix should not break anything
-    let result = config.validate_and_fix();
-    assert!(result.is_valid || result.has_warnings()); // Should be valid or have only warnings
-
-    // New fields should have sensible defaults
-    assert!(!config.app.app_name.is_empty());
-    assert!(config.ui.scale_factor > 0.0);
-    assert!(config.app.max_recent_files > 0);
 }
 
 #[test]
