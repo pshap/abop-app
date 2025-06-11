@@ -8,6 +8,9 @@ use super::super::common::*;
 use super::validation::*;
 use super::*;
 
+// Type alias for test validation functions
+pub type CheckboxValidationFn = Box<dyn Fn(&CheckboxBuilder) -> ValidationResult>;
+
 // ============================================================================
 // Core Builder Tests
 // ============================================================================
@@ -167,7 +170,7 @@ mod validation_tests {
         let composer = DefaultValidationComposer;
         let checkbox = CheckboxBuilder::checked().label("Test");
 
-        let validators: Vec<Box<dyn Fn(&CheckboxBuilder) -> ValidationResult>> =
+        let validators: Vec<CheckboxValidationFn> =
             vec![Box::new(|builder| builder.validate_detailed())];
 
         let result = composer.compose_validations(&checkbox, validators);
@@ -576,7 +579,7 @@ mod module_structure_tests {
         let _checkbox = Checkbox::new(CheckboxState::Unchecked);
         let _radio = Radio::new("test");
         let _switch = Switch::new(SwitchState::Off);
-        let _chip = Chip::new("test", ChipVariant::Filter);
+        let _chip = Chip::builder("test", ChipVariant::Filter);
     }
 
     #[test]

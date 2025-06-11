@@ -21,9 +21,9 @@ use iced::{Element, Renderer, theme::Theme, widget::Checkbox as IcedCheckbox};
 // ============================================================================
 
 impl Checkbox {
-    /// Create a new checkbox with the specified state
+    /// Create a new checkbox builder with the specified state
     #[must_use]
-    pub fn new(state: CheckboxState) -> CheckboxBuilder {
+    pub fn builder(state: CheckboxState) -> CheckboxBuilder {
         CheckboxBuilder::new(state)
     }
 

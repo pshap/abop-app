@@ -20,8 +20,9 @@
 //!
 //! ## Basic Chip Creation
 //!
-//! ```rust
-//! use crate::styling::material::components::selection::chip::*;
+//! ```rust,no_run
+//! use abop_gui::styling::material::components::selection::chip::*;
+//! use abop_gui::styling::material::components::selection::common::ComponentSize;
 //!
 //! // Create different types of chips
 //! let filter_chip = filter_chip("Technology")
@@ -41,8 +42,8 @@
 //!
 //! ## Collection Management
 //!
-//! ```rust
-//! use crate::styling::material::components::selection::chip::*;
+//! ```rust,no_run
+//! use abop_gui::styling::material::components::selection::chip::*;
 //!
 //! // Create a single-select chip collection
 //! let mut collection = single_select_chip_collection(vec![
@@ -69,8 +70,9 @@
 //!
 //! ## Enhanced UI with Icons and Badges
 //!
-//! ```rust
-//! use crate::styling::material::components::selection::chip::*;
+//! ```rust,no_run
+//! use abop_gui::styling::material::components::selection::chip::*;
+//! use abop_gui::styling::material::theme::MaterialColors;
 //!
 //! let enhanced_chip = filter_chip("Messages")
 //!     .with_leading_icon("email")
@@ -92,14 +94,17 @@
 //!
 //! ## Collection Layout and Rendering
 //!
-//! ```rust
-//! use crate::styling::material::components::selection::chip::*;
+//! ```rust,no_run
+//! use abop_gui::styling::material::components::selection::chip::*;
+//! use abop_gui::styling::material::theme::ColorScheme;
 //!
 //! let collection = filter_chip_collection(vec![
 //!     filter_chip("Technology").build(),
 //!     filter_chip("Science").build(),
 //!     filter_chip("Art").build(),
 //! ]);
+//!
+//! let color_scheme = ColorScheme::default();
 //!
 //! // Render with different layouts
 //! let row_view = collection.view_with_layout(

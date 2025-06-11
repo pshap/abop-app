@@ -8,6 +8,13 @@
 
 use super::super::common::*;
 
+// Type aliases for complex function types
+/// Type alias for configuration functions used in builder patterns
+///
+/// This reduces complexity and improves readability of function signatures
+/// that accept configuration callbacks for builder customization.
+pub type ConfigurationFn<B> = Box<dyn Fn(B) -> Result<B, SelectionError>>;
+
 // ============================================================================
 // Core Builder Trait System
 // ============================================================================
@@ -125,7 +132,7 @@ impl<T> BuilderComposer<T> {
     pub fn compose<B: ComponentBuilder<T> + Clone>(
         &self,
         builder: B,
-        configurations: &[Box<dyn Fn(B) -> Result<B, SelectionError>>],
+        configurations: &[ConfigurationFn<B>],
     ) -> Result<B, SelectionError> {
         configurations
             .iter()
@@ -212,7 +219,6 @@ macro_rules! impl_common_builder_methods {
             }
 
             /// Apply size with validation
-            #[must_use]
             pub fn size_validated(
                 self,
                 size: ComponentSize,
@@ -241,10 +247,9 @@ macro_rules! impl_common_builder_methods {
             }
 
             /// Apply multiple configurations in a validated chain
-            #[must_use]
             pub fn configure_chain(
                 self,
-                configurations: &[Box<dyn Fn(Self) -> Result<Self, SelectionError>>],
+                configurations: &[ConfigurationFn<Self>],
             ) -> Result<Self, SelectionError>
             where
                 Self: Clone,

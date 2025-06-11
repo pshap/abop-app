@@ -445,7 +445,7 @@ mod tests {
     fn test_window_config_validation() {
         let config = WindowConfig {
             min_width: 200, // Too small
-            opacity: 2.0, // Invalid
+            opacity: 2.0,   // Invalid
             ..Default::default()
         };
 
@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn test_ui_config_validation() {
         let config = UiConfig {
-            scale_factor: 5.0, // Too large
+            scale_factor: 5.0,    // Too large
             tooltip_delay: 10000, // Very long
             ..Default::default()
         };
@@ -478,7 +478,7 @@ mod tests {
     fn test_window_config_validate_and_fix() {
         let mut config = WindowConfig {
             min_width: 200, // Too small
-            opacity: 2.0, // Too high
+            opacity: 2.0,   // Too high
             ..Default::default()
         };
 
@@ -491,9 +491,9 @@ mod tests {
     #[test]
     fn test_ui_config_validate_and_fix() {
         let mut config = UiConfig {
-            scale_factor: 5.0, // Too large
+            scale_factor: 5.0,     // Too large
             animation_speed: -1.0, // Too small
-            items_per_page: 0, // Invalid
+            items_per_page: 0,     // Invalid
             ..Default::default()
         };
 

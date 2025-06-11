@@ -108,7 +108,6 @@ impl CheckboxBuilder {
     // ========================================================================
 
     /// Set label with validation
-    #[must_use]
     pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
         let label_str = label.into();
         validate_label(label_str.as_str(), &self.validation_config)?;
@@ -117,7 +116,6 @@ impl CheckboxBuilder {
     }
 
     /// Set state with validation
-    #[must_use]
     pub fn state_validated(mut self, state: CheckboxState) -> Result<Self, SelectionError> {
         validate_checkbox_state(state, &self.props)?;
         self.state = state;
@@ -132,7 +130,6 @@ impl CheckboxBuilder {
     }
 
     /// Apply a custom validation rule
-    #[must_use]
     pub fn with_custom_validation<F>(self, validator: F) -> Result<Self, SelectionError>
     where
         F: FnOnce(&Self) -> Result<(), SelectionError>,

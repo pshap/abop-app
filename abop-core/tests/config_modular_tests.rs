@@ -132,7 +132,7 @@ fn test_config_load_save_integration() {
 #[test]
 fn test_window_config_validation() {
     let window_config = WindowConfig {
-        min_width: 200, // Too small
+        min_width: 200,  // Too small
         min_height: 100, // Too small
         ..Default::default()
     };
@@ -145,7 +145,7 @@ fn test_window_config_validation() {
 #[test]
 fn test_app_config_validation() {
     let app_config = AppConfig {
-        max_recent_files: 200, // Too many
+        max_recent_files: 200,  // Too many
         auto_save_interval: 10, // Too frequent
         ..Default::default()
     };
@@ -157,9 +157,11 @@ fn test_app_config_validation() {
 
 #[test]
 fn test_ui_config_validation() {
-    let mut ui_config = UiConfig::default();
-    ui_config.scale_factor = 10.0; // Too large
-    ui_config.animation_speed = -1.0; // Invalid
+    let ui_config = UiConfig {
+        scale_factor: 10.0,    // Too large
+        animation_speed: -1.0, // Invalid
+        ..Default::default()
+    };
 
     let result = ui_config.validate();
     assert!(result.has_errors());

@@ -169,9 +169,22 @@ impl ErrorChain {
     }
 
     /// Add an error to the chain
-    pub fn add<E: std::fmt::Display>(mut self, error: E) -> Self {
+    pub fn push_error<E: std::fmt::Display>(mut self, error: E) -> Self {
         self.errors.push(error.to_string());
         self
+    }
+
+    /// Add an error to the chain (alias for push_error to maintain compatibility)
+    ///
+    /// # Deprecated
+    /// This method is deprecated in favor of `push_error()` to avoid confusion
+    /// with the `std::ops::Add` trait. Use `push_error()` instead.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Use `push_error()` instead to avoid trait confusion"
+    )]
+    pub fn add<E: std::fmt::Display>(self, error: E) -> Self {
+        self.push_error(error)
     }
 
     /// Add a context message to the chain

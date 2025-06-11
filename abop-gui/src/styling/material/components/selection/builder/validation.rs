@@ -8,6 +8,9 @@
 
 use super::super::common::SelectionError;
 
+// Type aliases for complex validation function types
+pub type ValidationFn<T> = Box<dyn Fn(&T) -> ValidationResult>;
+
 // ============================================================================
 // Validation Results and Context
 // ============================================================================
@@ -136,7 +139,7 @@ pub trait ValidationComposer {
     fn compose_validations<T>(
         &self,
         target: &T,
-        validators: Vec<Box<dyn Fn(&T) -> ValidationResult>>,
+        validators: Vec<ValidationFn<T>>,
     ) -> ValidationResult;
 
     /// Validate a collection of items

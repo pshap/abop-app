@@ -94,7 +94,6 @@ impl SwitchBuilder {
     ///
     /// Validates the label according to the current validation configuration
     /// before applying it to the switch component.
-    #[must_use]
     pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
         let label_str: String = label.into();
         validate_label(&label_str, &self.validation_config)?;
@@ -103,7 +102,6 @@ impl SwitchBuilder {
     }
 
     /// Set state with validation
-    #[must_use]
     pub fn state_validated(mut self, state: SwitchState) -> Result<Self, SelectionError> {
         validate_switch_state(state, &self.props)?;
         self.state = state;

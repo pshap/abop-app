@@ -155,7 +155,7 @@ where
 {
     /// Create a new radio button with the specified value
     #[must_use]
-    pub fn new(value: T) -> super::RadioBuilder<T> {
+    pub fn builder(value: T) -> super::RadioBuilder<T> {
         super::RadioBuilder::new(value)
     }
 
