@@ -11,14 +11,14 @@ use super::{
 };
 
 /// Strategy trait for selection component styling following Material Design 3
-pub trait SelectionStyleStrategy {    /// Get styling for a specific selection state
+pub trait SelectionStyleStrategy {
+    /// Get styling for a specific selection state
     ///
     /// # Arguments
     /// * `state` - The current selection state
     /// * `tokens` - Material Design tokens for consistent styling
     /// * `size` - Component size variant
     /// * `error_state` - Whether the component is in error state
-    /// * `context` - Optional context for styling decisions
     ///
     /// # Returns
     /// Complete styling configuration for the given state
@@ -28,7 +28,6 @@ pub trait SelectionStyleStrategy {    /// Get styling for a specific selection s
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-        context: Option<&SelectionStyleContext>,
     ) -> Result<SelectionStyling, SelectionStyleError>;
 
     /// Get the variant name for debugging and logging
@@ -78,9 +77,8 @@ impl SelectionStyleStrategy for CheckboxStrategy {
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-        _context: Option<&SelectionStyleContext>,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Checkbox)
+        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Checkbox)
             .with_size(size)
             .with_error(error_state);
         Ok(colors.create_styling(state))
@@ -105,9 +103,8 @@ impl SelectionStyleStrategy for RadioStrategy {
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-        _context: Option<&SelectionStyleContext>,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Radio)
+        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Radio)
             .with_size(size)
             .with_error(error_state);
         Ok(colors.create_styling(state))
@@ -128,9 +125,8 @@ impl SelectionStyleStrategy for ChipStrategy {
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-        _context: Option<&SelectionStyleContext>,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Chip)
+        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Chip)
             .with_size(size)
             .with_error(error_state);
         Ok(colors.create_styling(state))
@@ -155,9 +151,8 @@ impl SelectionStyleStrategy for SwitchStrategy {
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-        _context: Option<&SelectionStyleContext>,
     ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Switch)
+        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Switch)
             .with_size(size)
             .with_error(error_state);
         Ok(colors.create_styling(state))

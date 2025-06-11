@@ -6,6 +6,17 @@
 mod lib;
 pub mod strategy;
 
-// Re-export everything from lib
-pub use lib::*;
-pub use strategy::*;
+// Re-export core types from lib
+pub use lib::{
+    SelectionColors, SelectionSize, SelectionState, SelectionStyling, 
+    SelectionStyleBuilder, SelectionStyleError, SelectionVariant,
+    BaseSelectionState, InteractionState,
+    checkbox_style, radio_style, chip_style, switch_style,
+};
+
+// Re-export strategy types
+pub use strategy::{
+    SelectionStyleStrategy, SelectionStyleContext,
+    CheckboxStrategy, RadioStrategy, ChipStrategy, SwitchStrategy,
+    create_strategy,
+};

@@ -447,12 +447,13 @@ pub struct SelectionStyling {
 // Strategy pattern traits and types are imported from the strategy module
 
 // ============================================================================
-// Centralized Color Calculation System (Legacy - Will be deprecated)
+// Centralized Color Calculation System
 // ============================================================================
 
 /// Enhanced color calculation for selection components using Material Design 3 tokens
 ///
-/// @deprecated This will be removed in a future version. Use the strategy pattern instead.
+/// This structure provides comprehensive color logic while leveraging
+/// the centralized `MaterialTokens` system for consistency and maintainability.
 #[derive(Debug, Clone)]
 pub struct SelectionColors {
     /// The material token system to use
@@ -737,7 +738,7 @@ impl SelectionColors {
 /// Builder for creating selection component styling with enhanced capabilities
 ///
 /// Provides a fluent interface for creating Material Design selection styles
-/// with comprehensive state handling and strategy pattern integration.
+/// with comprehensive state handling.
 #[derive(Debug)]
 pub struct SelectionStyleBuilder {
     /// The token system to use for styling
@@ -748,8 +749,6 @@ pub struct SelectionStyleBuilder {
     size: SelectionSize,
     /// Whether the component is in an error state
     error: bool,
-    /// Additional context for styling
-    context: super::strategy::SelectionStyleContext,
 }
 
 impl SelectionStyleBuilder {
@@ -760,7 +759,6 @@ impl SelectionStyleBuilder {
             variant,
             size: SelectionSize::Medium,
             error: false,
-            context: super::strategy::SelectionStyleContext::default(),
         }
     }
     
@@ -771,7 +769,6 @@ impl SelectionStyleBuilder {
             variant,
             size: SelectionSize::Medium,
             error: false,
-            context: super::strategy::SelectionStyleContext::default(),
         }
     }
 
@@ -788,25 +785,11 @@ impl SelectionStyleBuilder {
         self
     }
 
-    /// Set styling context
-    #[must_use]
-    pub fn context(mut self, context: super::strategy::SelectionStyleContext) -> Self {
-        self.context = context;
-        self
-    }
-
     /// Create a color calculator for this configuration
-    /// 
-    /// @deprecated Use the strategy pattern instead
     pub fn colors(&self) -> SelectionColors {
         SelectionColors::new(self.tokens.clone(), self.variant)
             .with_size(self.size)
             .with_error(self.error)
-    }
-
-    /// Get the strategy for this variant
-    pub fn get_strategy(&self) -> Box<dyn super::strategy::SelectionStyleStrategy> {
-        super::strategy::create_strategy(self.variant)
     }
 
     /// Create checkbox styling function
@@ -815,12 +798,6 @@ impl SelectionStyleBuilder {
     pub fn checkbox_style(
         self,
     ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
-        let strategy = self.get_strategy();
-        let tokens = self.tokens.clone();
-        let size = self.size;
-        let error = self.error;
-        let context = self.context.clone();
-        
         move |_theme: &Theme, status| {
             let state = match status {
                 iced::widget::checkbox::Status::Active { is_checked: true } => {
@@ -843,15 +820,8 @@ impl SelectionStyleBuilder {
                 }
             };
 
-            let styling = strategy
-                .get_styling(state, &tokens, size, error, Some(&context))
-                .unwrap_or_else(|_| {
-                    // Fallback to default styling if strategy fails
-                    let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Checkbox)
-                        .with_size(size)
-                        .with_error(error);
-                    colors.create_styling(state)
-                });
+            let colors = self.colors();
+            let styling = colors.create_styling(state);
 
             iced::widget::checkbox::Style {
                 background: styling.background,
