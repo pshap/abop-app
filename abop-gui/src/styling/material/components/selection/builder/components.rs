@@ -66,33 +66,6 @@ impl EnhancedSelectionWidget<CheckboxState> for Checkbox {
 }
 
 impl Checkbox {
-    // Note: Basic accessors now provided by traits
-    // Keeping const versions for backwards compatibility
-
-    /// Get the checkbox state (const version)
-    #[must_use]
-    pub const fn state_const(&self) -> CheckboxState {
-        self.state
-    }
-
-    /// Get the component properties (const version)
-    #[must_use]
-    pub const fn props_const(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the checkbox is in error state (const version)
-    #[must_use]
-    pub const fn has_error_const(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration (const version)
-    #[must_use]
-    pub const fn animation_config_const(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
     /// Check the checkbox
     pub fn check(&mut self) -> Result<CheckboxState, SelectionError> {
         let previous_state = self.state;
@@ -371,33 +344,6 @@ pub struct Switch {
 }
 
 impl Switch {
-    // Note: Basic accessors now provided by traits
-    // Keeping const versions for backwards compatibility
-
-    /// Get the switch state (const version)
-    #[must_use]
-    pub const fn state_const(&self) -> SwitchState {
-        self.state
-    }
-
-    /// Get the component properties (const version)
-    #[must_use]
-    pub const fn props_const(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the switch is in error state (const version)
-    #[must_use]
-    pub const fn has_error_const(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration (const version)
-    #[must_use]
-    pub const fn animation_config_const(&self) -> &AnimationConfig {
-        &self.animation_config
-    }
-
     /// Toggle the switch state (enhanced version)
     pub fn toggle(&mut self) -> Result<(SwitchState, SwitchState), SelectionError> {
         let previous_state = self.toggle_if_binary().unwrap_or(self.state);
@@ -482,43 +428,16 @@ pub struct Chip {
 }
 
 impl Chip {
-    // Note: Basic accessors now provided by traits
-    // Keeping const versions for backwards compatibility
-
     /// Get the chip label
     #[must_use]
     pub fn label(&self) -> &str {
         &self.label
     }
 
-    /// Get the chip state (const version)
-    #[must_use]
-    pub const fn state_const(&self) -> ChipState {
-        self.state
-    }
-
     /// Get the chip variant
     #[must_use]
     pub const fn variant(&self) -> ChipVariant {
         self.variant
-    }
-
-    /// Get the component properties (const version)
-    #[must_use]
-    pub const fn props_const(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    /// Check if the chip is in error state (const version)
-    #[must_use]
-    pub const fn has_error_const(&self) -> bool {
-        self.error_state
-    }
-
-    /// Get the animation configuration (const version)
-    #[must_use]
-    pub const fn animation_config_const(&self) -> &AnimationConfig {
-        &self.animation_config
     }
 
     /// Select the chip

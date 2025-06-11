@@ -292,8 +292,3 @@ pub fn selected_filter_chip(label: &str) -> Chip {
 pub fn max_length_label() -> String {
     "A".repeat(MAX_LABEL_LENGTH)
 }
-
-/// Alias for test_chip function for compatibility
-pub fn helper_test_chip(label: &str, variant: ChipVariant) -> Chip {
-    test_chip(label, variant)
-}
