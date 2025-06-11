@@ -147,8 +147,6 @@ impl MigrationManager {
         Ok(results)
     }
 
-    // Note: Rollback functionality removed as backward compatibility is not needed
-
     /// Apply a single migration
     fn apply_migration(conn: &mut Connection, migration: &Migration) -> DbResult<MigrationResult> {
         let tx = conn.transaction().map_err(DatabaseError::from)?;

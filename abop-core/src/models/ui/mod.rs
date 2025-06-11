@@ -12,7 +12,7 @@ mod persistence;
 mod state;
 mod types;
 
-// Re-export main types for backward compatibility
+// Re-export main types
 pub use state::AppState;
 pub use types::{AppData, PlaybackConfig, ThemeConfig, UserPreferences, ViewType, WindowConfig};
 

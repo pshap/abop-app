@@ -107,7 +107,7 @@ pub mod view;
 
 // Import ComponentBuilder trait for build() method
 
-// Re-export core types for backward compatibility
+// Re-export core types
 pub use self::builder::{ChipBuilder, ChipCollectionBuilder};
 pub use self::collection::{ChipCollection, ChipSelectionMode};
 pub use super::builder::Chip;

@@ -19,14 +19,14 @@ pub use validation::{ConfigValidation, ValidationError, ValidationResult};
 /// Main application configuration settings
 ///
 /// This is the primary configuration struct that combines all configuration
-/// modules while maintaining backward compatibility with existing TOML files.
+/// modules while maintaining compatibility with existing TOML files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// Window-specific configuration options
     pub window: WindowConfig,
     /// Theme and appearance settings
     pub theme: ThemeConfig,
-    /// Directory for application data storage (backward compatibility)
+    /// Directory for application data storage
     pub data_dir: PathBuf,
     /// Application-level settings (new modular structure)
     #[serde(default)]
@@ -132,7 +132,7 @@ impl ConfigValidation for Config {
         result.errors.extend(ui_result.errors);
         result.warnings.extend(ui_result.warnings);
 
-        // Validate data_dir (backward compatibility)
+        // Validate data_dir
         if let Err(e) = validation::validate_or_create_directory(&self.data_dir, "data_dir") {
             result.add_error(
                 "data_dir",

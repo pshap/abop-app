@@ -51,7 +51,7 @@
 
 use serde::{Deserialize, Serialize};
 
-// Re-export all public types for backward compatibility
+// Re-export all public types
 pub use self::{
     channel_mixer::{ChannelMixerConfig, ChannelMixerConfigBuilder, MixingAlgorithm},
     normalizer::{NormalizationAlgorithm, NormalizerConfig, NormalizerConfigBuilder},

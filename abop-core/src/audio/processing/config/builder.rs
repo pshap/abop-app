@@ -66,7 +66,7 @@ impl ProcessingConfigBuilder {
         self
     }
 
-    // Convenience methods for backward compatibility
+    // Convenience methods
 
     /// Configure resampling with target sample rate
     #[must_use]
