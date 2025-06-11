@@ -12,6 +12,9 @@ use super::{
 
 /// Strategy trait for selection component styling following Material Design 3
 pub trait SelectionStyleStrategy {
+    /// Get the selection variant for this strategy
+    fn variant(&self) -> SelectionVariant;
+
     /// Get styling for a specific selection state
     ///
     /// # Arguments
@@ -28,10 +31,17 @@ pub trait SelectionStyleStrategy {
         tokens: &MaterialTokens,
         size: SelectionSize,
         error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError>;
+    ) -> Result<SelectionStyling, SelectionStyleError> {
+        let colors = SelectionColors::with_tokens(tokens, self.variant())
+            .with_size(size)
+            .with_error(error_state);
+        Ok(colors.create_styling(state))
+    }
 
     /// Get the variant name for debugging and logging
-    fn variant_name(&self) -> &'static str;
+    fn variant_name(&self) -> &'static str {
+        self.variant().name()
+    }
 
     /// Whether this variant supports error states
     fn supports_error_state(&self) -> bool {
@@ -71,21 +81,8 @@ pub struct SelectionStyleContext {
 pub struct CheckboxStrategy;
 
 impl SelectionStyleStrategy for CheckboxStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Checkbox)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Checkbox"
+    fn variant(&self) -> SelectionVariant {
+        SelectionVariant::Checkbox
     }
 
     fn supports_indeterminate(&self) -> bool {
@@ -97,21 +94,8 @@ impl SelectionStyleStrategy for CheckboxStrategy {
 pub struct RadioStrategy;
 
 impl SelectionStyleStrategy for RadioStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Radio)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Radio"
+    fn variant(&self) -> SelectionVariant {
+        SelectionVariant::Radio
     }
 }
 
@@ -119,21 +103,8 @@ impl SelectionStyleStrategy for RadioStrategy {
 pub struct ChipStrategy;
 
 impl SelectionStyleStrategy for ChipStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Chip)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Chip"
+    fn variant(&self) -> SelectionVariant {
+        SelectionVariant::Chip
     }
 
     fn supports_icons(&self) -> bool {
@@ -145,21 +116,8 @@ impl SelectionStyleStrategy for ChipStrategy {
 pub struct SwitchStrategy;
 
 impl SelectionStyleStrategy for SwitchStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::with_tokens(tokens, SelectionVariant::Switch)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Switch"
+    fn variant(&self) -> SelectionVariant {
+        SelectionVariant::Switch
     }
 }
 
