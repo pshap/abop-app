@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_radio_creation() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .label("Option A")
             .size(ComponentSize::Large)
             .build()
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_radio_selection() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .build()
             .expect("Should create valid radio");
 
@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_radio_error_state() {
-        let mut radio = Radio::new(TestOption::A)
+        let mut radio = radio(TestOption::A)
             .error(true)
             .build()
             .expect("Should create radio with error state");
@@ -402,11 +402,11 @@ mod tests {
 
     #[test]
     fn test_radio_traits() {
-        let radio = Radio::new(TestOption::A)
+        let radio = radio(TestOption::A)
             .build()
             .expect("Should create valid radio");
 
-        // Test SelectionWidget trait
+        // Test SelectionComponent trait
         assert_eq!(radio.state(), TestOption::A);
         assert!(radio.validate().is_ok());
 
@@ -429,8 +429,8 @@ mod tests {
     #[test]
     fn test_radio_group_duplicate_values() {
         // This should fail due to duplicate values
-        let radio1 = Radio::new(TestOption::A).build().unwrap();
-        let radio2 = Radio::new(TestOption::A).build().unwrap(); // Duplicate!
+        let radio1 = radio(TestOption::A).build().unwrap();
+        let radio2 = radio(TestOption::A).build().unwrap(); // Duplicate!
 
         let mut group = RadioGroupState::new();
         group.add_radio(radio1);

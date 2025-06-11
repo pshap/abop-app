@@ -25,9 +25,6 @@ pub mod switch_tests;
 
 // New comprehensive test framework modules
 
-/// Basic functionality tests for all selection components
-pub mod basic_functionality;
-
 /// Builder pattern tests and validation
 pub mod builder_patterns;
 
