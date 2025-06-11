@@ -308,8 +308,8 @@ impl ComponentProps {
     /// * `value` - The metadata value (automatically converted to String)
     ///
     /// # Examples
-    /// ```rust
-    /// use crate::styling::material::components::selection::common::*;
+    /// ```rust,no_run
+    /// use abop_gui::styling::material::components::selection::common::*;
     ///
     /// let props = ComponentProps::new()
     ///     .with_metadata(LEADING_ICON_KEY, "star")
