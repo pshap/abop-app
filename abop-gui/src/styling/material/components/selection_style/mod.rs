@@ -3,14 +3,14 @@
 //! This module provides a sophisticated styling system for all selection components,
 //! implementing the strategy pattern used throughout the Material Design system.
 
+pub mod builder;
+pub mod colors;
+pub mod constants;
+pub mod functions;
 mod lib;
+pub mod state;
 pub mod strategy;
 pub mod variants;
-pub mod constants;
-pub mod state;
-pub mod colors;
-pub mod builder;
-pub mod functions;
 
 // Re-export core types from lib
 pub use lib::{
@@ -20,11 +20,7 @@ pub use lib::{
 };
 
 // Re-export strategy types
-pub use strategy::{
-    SelectionStyleContext, SelectionStyleStrategy, create_strategy,
-};
+pub use strategy::{SelectionStyleContext, SelectionStyleStrategy, create_strategy};
 
 // Export variant implementations
-pub use variants::{
-    CheckboxStrategy, ChipStrategy, RadioStrategy, SwitchStrategy,
-};
+pub use variants::{CheckboxStrategy, ChipStrategy, RadioStrategy, SwitchStrategy};

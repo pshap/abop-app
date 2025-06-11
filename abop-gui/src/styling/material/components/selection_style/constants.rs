@@ -15,6 +15,12 @@ pub struct SelectionConstants {
     pub color: ColorConstants,
 }
 
+impl Default for SelectionConstants {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SelectionConstants {
     /// Creates a new instance of SelectionConstants with Material Design 3 values
     pub const fn new() -> Self {
@@ -39,6 +45,12 @@ pub struct OpacityConstants {
     pub focus: f32,
     /// Surface overlay opacity for disabled backgrounds
     pub disabled_surface: f32,
+}
+
+impl Default for OpacityConstants {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl OpacityConstants {
@@ -66,6 +78,12 @@ pub struct BorderRadiusConstants {
     pub switch: f32,
 }
 
+impl Default for BorderRadiusConstants {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BorderRadiusConstants {
     /// Creates a new instance of BorderRadiusConstants with Material Design 3 values
     pub const fn new() -> Self {
@@ -86,7 +104,7 @@ pub struct SizeConstants {
     pub medium_px: f32,
     /// Component sizes in pixels for large components
     pub large_px: f32,
-    
+
     /// Touch target size for small components
     pub small_touch: f32,
     /// Touch target size for medium components
@@ -116,6 +134,12 @@ pub struct SizeConstants {
     pub large_padding: f32,
 }
 
+impl Default for SizeConstants {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SizeConstants {
     /// Creates a new instance of SizeConstants with Material Design 3 values
     pub const fn new() -> Self {
@@ -143,6 +167,12 @@ impl SizeConstants {
 pub struct ColorConstants {
     /// Darken amount for pressed chip states
     pub chip_pressed_darken: f32,
+}
+
+impl Default for ColorConstants {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ColorConstants {

@@ -18,17 +18,17 @@
 //! system, ensuring consistency across all Material components.
 
 // Re-export sibling modules
-pub use super::constants;
-pub use super::state;
-pub use super::colors;
 pub use super::builder;
+pub use super::colors;
+pub use super::constants;
 pub use super::functions;
+pub use super::state;
 
 // Re-export commonly used types
-pub use state::{
-    BaseSelectionState, InteractionState, SelectionSize, SelectionState,
-    SelectionStyleError, SelectionStyling, SelectionVariant,
-};
-pub use colors::SelectionColors;
 pub use builder::SelectionStyleBuilder;
+pub use colors::SelectionColors;
 pub use functions::{checkbox_style, chip_style, radio_style, switch_style};
+pub use state::{
+    BaseSelectionState, InteractionState, SelectionSize, SelectionState, SelectionStyleError,
+    SelectionStyling, SelectionVariant,
+};

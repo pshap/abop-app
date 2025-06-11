@@ -9,7 +9,9 @@ use crate::styling::material::tokens::core::MaterialTokens;
 
 use super::{
     colors::SelectionColors,
-    state::{SelectionState, SelectionSize, SelectionStyling, SelectionStyleError, SelectionVariant},
+    state::{
+        SelectionSize, SelectionState, SelectionStyleError, SelectionStyling, SelectionVariant,
+    },
     strategy::SelectionStyleStrategy,
 };
 
@@ -23,7 +25,11 @@ trait StatusMapper<T> {
 struct CheckboxStatusMapper;
 
 impl StatusMapper<iced::widget::checkbox::Status> for CheckboxStatusMapper {
-    fn map_status(&self, status: iced::widget::checkbox::Status, _is_selected: bool) -> SelectionState {
+    fn map_status(
+        &self,
+        status: iced::widget::checkbox::Status,
+        _is_selected: bool,
+    ) -> SelectionState {
         match status {
             iced::widget::checkbox::Status::Active { is_checked: true } => {
                 SelectionState::DefaultSelected
@@ -51,7 +57,11 @@ impl StatusMapper<iced::widget::checkbox::Status> for CheckboxStatusMapper {
 struct RadioStatusMapper;
 
 impl StatusMapper<iced::widget::radio::Status> for RadioStatusMapper {
-    fn map_status(&self, status: iced::widget::radio::Status, _is_selected: bool) -> SelectionState {
+    fn map_status(
+        &self,
+        status: iced::widget::radio::Status,
+        _is_selected: bool,
+    ) -> SelectionState {
         match status {
             iced::widget::radio::Status::Active { is_selected: true } => {
                 SelectionState::DefaultSelected
@@ -73,7 +83,11 @@ impl StatusMapper<iced::widget::radio::Status> for RadioStatusMapper {
 struct ButtonStatusMapper;
 
 impl StatusMapper<iced::widget::button::Status> for ButtonStatusMapper {
-    fn map_status(&self, status: iced::widget::button::Status, is_selected: bool) -> SelectionState {
+    fn map_status(
+        &self,
+        status: iced::widget::button::Status,
+        is_selected: bool,
+    ) -> SelectionState {
         if is_selected {
             match status {
                 iced::widget::button::Status::Active => SelectionState::DefaultSelected,
@@ -137,10 +151,12 @@ impl<'a> SelectionStyleBuilder<'a> {
         SelectionColors::with_tokens(self.tokens, self.variant)
             .with_size(self.size)
             .with_error(self.error)
-    }/// Get the strategy for this variant
+    }
+    /// Get the strategy for this variant
     fn get_strategy(&self) -> Result<Box<dyn SelectionStyleStrategy>, SelectionStyleError> {
         super::strategy::create_strategy(self.variant)
-    }    /// Get styling using the strategy pattern
+    }
+    /// Get styling using the strategy pattern
     fn get_styling(&self, state: SelectionState) -> Result<SelectionStyling, SelectionStyleError> {
         let strategy = self.get_strategy()?;
         strategy.get_styling(state, self.tokens, self.size, self.error)

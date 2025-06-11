@@ -9,11 +9,11 @@
 //! styling requirements.
 
 pub mod checkbox;
-pub mod radio;
 pub mod chip;
+pub mod radio;
 pub mod switch;
 
 pub use checkbox::CheckboxStrategy;
-pub use radio::RadioStrategy;
 pub use chip::ChipStrategy;
+pub use radio::RadioStrategy;
 pub use switch::SwitchStrategy;

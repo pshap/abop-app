@@ -75,8 +75,10 @@ pub mod builder;
 pub mod checkbox;
 pub mod chip;
 pub mod common;
+pub mod constants;  // Phase 1: Extracted constants
 pub mod defaults;
 pub mod radio;
+pub mod state_traits;  // Phase 1: Unified state behavior
 pub mod switch;
 
 #[cfg(test)]
@@ -100,6 +102,9 @@ pub use common::{
     ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState, ValidationConfig,
     ValidationRule,
 };
+// Phase 1: Re-export new state traits and constants
+pub use constants;
+pub use state_traits::{ComponentState, InteractiveState, MultiLevelState};
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use switch::SwitchDimensions;
 

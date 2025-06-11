@@ -5,18 +5,19 @@
 
 use super::super::builder::{Chip, ChipBuilder};
 use super::super::common::*;
+use super::super::constants;
 
 use std::time::Duration;
 
 // ============================================================================
-// Constants
+// Constants (Phase 1: Use centralized constants)
 // ============================================================================
 
-/// Maximum allowed length for chip labels
-pub const MAX_CHIP_LABEL_LENGTH: usize = 100;
+/// Maximum allowed length for chip labels (from centralized constants)
+pub const MAX_CHIP_LABEL_LENGTH: usize = constants::chips::MAX_LABEL_LENGTH;
 
 /// Default animation duration for chip state transitions
-pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(150);
+pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(constants::animation::FAST_DURATION_MS);
 
 // ============================================================================
 // Core Chip Implementation Extensions

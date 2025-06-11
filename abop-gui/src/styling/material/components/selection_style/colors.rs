@@ -8,7 +8,10 @@ use iced::{Background, Border, Color};
 use crate::styling::color_utils::ColorUtils;
 use crate::styling::material::tokens::core::MaterialTokens;
 
-use super::{constants, state::{SelectionState, SelectionSize, SelectionStyling, SelectionVariant}};
+use super::{
+    constants,
+    state::{SelectionSize, SelectionState, SelectionStyling, SelectionVariant},
+};
 
 /// Enhanced color calculation for selection components using Material Design 3 tokens
 ///
@@ -102,7 +105,11 @@ impl SelectionColors {
 
         // Handle error state first
         if let Some(error_color) = self.apply_error_state(state) {
-            return if state.is_selected() { error_color } else { Color::TRANSPARENT };
+            return if state.is_selected() {
+                error_color
+            } else {
+                Color::TRANSPARENT
+            };
         }
 
         // Handle disabled state
@@ -157,7 +164,11 @@ impl SelectionColors {
 
         // Handle error state first (for unselected components)
         if let Some(error_color) = self.apply_error_state(state) {
-            return if !state.is_selected() { error_color } else { colors.primary.base };
+            return if !state.is_selected() {
+                error_color
+            } else {
+                colors.primary.base
+            };
         }
 
         // Handle disabled state
