@@ -29,6 +29,10 @@ iced_font_awesome = "0.2.1"
 # Color science for Material Design 3 seed colors
 palette = "0.7.3"
 
+# Enum utilities
+strum = { version = "0.26", features = ["derive"] }
+strum_macros = "0.26"
+
 # File dialogs
 rfd.workspace = true
 

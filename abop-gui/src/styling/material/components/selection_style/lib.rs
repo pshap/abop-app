@@ -42,9 +42,10 @@ mod constants {
         /// Focus state opacity for state layers
         pub const FOCUS: f32 = 0.12;
         /// Surface overlay opacity for disabled backgrounds
+        #[allow(dead_code)]
         pub const DISABLED_SURFACE: f32 = 0.12;
     }
-    
+
     /// Border radius values for different component variants
     pub mod border_radius {
         /// Checkbox border radius
@@ -56,7 +57,7 @@ mod constants {
         /// Switch border radius
         pub const SWITCH: f32 = 16.0;
     }
-    
+
     /// Size constants for components
     pub mod size {
         /// Small component size in pixels
@@ -65,28 +66,31 @@ mod constants {
         pub const MEDIUM_PX: f32 = 20.0;
         /// Large component size in pixels
         pub const LARGE_PX: f32 = 24.0;
-        
+
         /// Touch target sizes
+        #[allow(dead_code)]
         pub const SMALL_TOUCH: f32 = 32.0;
+        #[allow(dead_code)]
         pub const MEDIUM_TOUCH: f32 = 40.0;
+        #[allow(dead_code)]
         pub const LARGE_TOUCH: f32 = 48.0;
-        
+
         /// Border widths
         pub const SMALL_BORDER: f32 = 1.5;
         pub const MEDIUM_BORDER: f32 = 2.0;
         pub const LARGE_BORDER: f32 = 2.5;
-        
+
         /// Text sizes
         pub const SMALL_TEXT: f32 = 12.0;
         pub const MEDIUM_TEXT: f32 = 14.0;
         pub const LARGE_TEXT: f32 = 16.0;
-        
+
         /// Padding values
         pub const SMALL_PADDING: f32 = 4.0;
         pub const MEDIUM_PADDING: f32 = 8.0;
         pub const LARGE_PADDING: f32 = 12.0;
     }
-    
+
     /// Color modifier constants
     pub mod color {
         /// Darken amount for pressed chip states
@@ -440,62 +444,7 @@ pub struct SelectionStyling {
     pub state_layer: Option<Color>,
 }
 
-/// Strategy trait for selection component styling following Material Design 3
-pub trait SelectionStyleStrategy {
-    /// Get styling for a specific selection state
-    ///
-    /// # Arguments
-    /// * `state` - The current selection state
-    /// * `tokens` - Material Design tokens for consistent styling
-    /// * `size` - Component size variant
-    /// * `error_state` - Whether the component is in error state
-    ///
-    /// # Returns
-    /// Complete styling configuration for the given state
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError>;
-
-    /// Get the variant name for debugging and logging
-    fn variant_name(&self) -> &'static str;
-
-    /// Whether this variant supports error states
-    fn supports_error_state(&self) -> bool {
-        true
-    }
-
-    /// Whether this variant supports custom icons
-    fn supports_icons(&self) -> bool {
-        false
-    }
-
-    /// Whether this variant supports indeterminate state
-    fn supports_indeterminate(&self) -> bool {
-        false
-    }
-
-    /// Get the default size for this variant
-    fn default_size(&self) -> SelectionSize {
-        SelectionSize::Medium
-    }
-}
-
-/// Context information for selection styling operations
-#[derive(Debug, Clone, Default)]
-pub struct SelectionStyleContext {
-    /// Whether this component represents a primary selection
-    pub is_primary: bool,
-    /// Whether the component is in an error state
-    pub error_state: bool,
-    /// Whether the component has custom content (icons, etc.)
-    pub has_custom_content: bool,
-    /// Whether the component is part of a group
-    pub is_part_of_group: bool,
-}
+// Strategy pattern traits and types are imported from the strategy module
 
 // ============================================================================
 // Centralized Color Calculation System
@@ -528,7 +477,7 @@ impl SelectionColors {
             error_state: false,
         }
     }
-    
+
     /// Create selection colors with borrowed tokens (optimized)
     #[must_use]
     pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
@@ -539,14 +488,15 @@ impl SelectionColors {
             error_state: false,
         }
     }
-    
+
     /// Get error state color if applicable
     #[must_use]
+    #[allow(dead_code)]
     fn error_color(&self, state: SelectionState) -> Option<Color> {
         if !self.error_state {
             return None;
         }
-        
+
         let colors = &self.tokens.colors;
         Some(if state.is_selected() {
             colors.error.base
@@ -554,9 +504,10 @@ impl SelectionColors {
             Color::TRANSPARENT
         })
     }
-    
+
     /// Get disabled state opacity for the given variant
     #[must_use]
+    #[allow(dead_code)]
     fn disabled_opacity(&self, for_surface: bool) -> f32 {
         if for_surface {
             constants::opacity::DISABLED_SURFACE
@@ -600,10 +551,7 @@ impl SelectionColors {
         // Handle disabled state
         if state.is_disabled() {
             if state.is_selected() {
-                return ColorUtils::with_alpha(
-                    colors.on_surface,
-                    constants::opacity::DISABLED,
-                );
+                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
             }
             return Color::TRANSPARENT;
         }
@@ -662,10 +610,7 @@ impl SelectionColors {
         // Handle disabled state
         if state.is_disabled() {
             if state.is_selected() {
-                return ColorUtils::with_alpha(
-                    colors.on_surface,
-                    constants::opacity::DISABLED,
-                );
+                return ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED);
             }
             return Color::TRANSPARENT;
         }
@@ -733,26 +678,26 @@ impl SelectionColors {
     #[allow(dead_code)]
     #[must_use]
     pub fn state_layer_color(&self, state: SelectionState) -> Option<Color> {
-        use constants::opacity::{HOVER, FOCUS, PRESSED};
-        
+        use constants::opacity::{FOCUS, HOVER, PRESSED};
+
         if state.is_disabled() {
             return None;
         }
 
         let colors = &self.tokens.colors;
-        
+
         if state.is_pressed() {
             return Some(ColorUtils::with_alpha(colors.on_surface, PRESSED));
         }
-        
+
         if state.is_hovered() {
             return Some(ColorUtils::with_alpha(colors.on_surface, HOVER));
         }
-        
+
         if state.is_focused() {
             return Some(ColorUtils::with_alpha(colors.primary.base, FOCUS));
         }
-        
+
         None
     }
 
@@ -787,8 +732,8 @@ impl SelectionColors {
 /// Builder for creating selection component styling with enhanced capabilities
 ///
 /// Provides a fluent interface for creating Material Design selection styles
-/// with comprehensive state handling and strategy pattern integration.
-#[derive(Debug, Clone)]
+/// with comprehensive state handling.
+#[derive(Debug)]
 pub struct SelectionStyleBuilder {
     /// The token system to use for styling
     tokens: MaterialTokens,
@@ -798,32 +743,26 @@ pub struct SelectionStyleBuilder {
     size: SelectionSize,
     /// Whether the component is in an error state
     error: bool,
-    /// Additional styling context
-    context: SelectionStyleContext,
 }
 
 impl SelectionStyleBuilder {
     /// Create a new selection style builder
-    #[must_use]
     pub fn new(tokens: MaterialTokens, variant: SelectionVariant) -> Self {
         Self {
             tokens,
             variant,
-            size: SelectionSize::default(),
+            size: SelectionSize::Medium,
             error: false,
-            context: SelectionStyleContext::default(),
         }
     }
-    
+
     /// Create a new selection style builder with borrowed tokens (optimized)
-    #[must_use]
     pub fn with_tokens(tokens: &MaterialTokens, variant: SelectionVariant) -> Self {
         Self {
-            tokens: tokens.clone(),
+            tokens: tokens.clone(), // Only clone when necessary
             variant,
-            size: SelectionSize::default(),
+            size: SelectionSize::Medium,
             error: false,
-            context: SelectionStyleContext::default(),
         }
     }
 
@@ -840,13 +779,6 @@ impl SelectionStyleBuilder {
         self
     }
 
-    /// Set styling context
-    #[must_use]
-    pub fn context(mut self, context: SelectionStyleContext) -> Self {
-        self.context = context;
-        self
-    }
-
     /// Create a color calculator for this configuration
     pub fn colors(&self) -> SelectionColors {
         SelectionColors::new(self.tokens.clone(), self.variant)
@@ -860,7 +792,7 @@ impl SelectionStyleBuilder {
     pub fn checkbox_style(
         self,
     ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
-        move |_theme: &Theme, status: iced::widget::checkbox::Status| {
+        move |_theme: &Theme, status| {
             let state = match status {
                 iced::widget::checkbox::Status::Active { is_checked: true } => {
                     SelectionState::DefaultSelected
@@ -888,7 +820,11 @@ impl SelectionStyleBuilder {
             iced::widget::checkbox::Style {
                 background: styling.background,
                 icon_color: styling.foreground_color,
-                border: styling.border,
+                border: iced::Border {
+                    radius: styling.border.radius,
+                    width: styling.border.width,
+                    color: styling.border.color,
+                },
                 text_color: Some(styling.text_color),
             }
         }
@@ -1032,104 +968,4 @@ pub fn chip_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
 #[must_use]
 pub fn switch_style(tokens: &MaterialTokens) -> SelectionStyleBuilder {
     SelectionStyleBuilder::with_tokens(tokens, SelectionVariant::Switch)
-}
-
-// ============================================================================
-// Strategy Pattern Implementations (Placeholder for Phase 2)
-// ============================================================================
-
-/// Checkbox strategy implementation
-pub struct CheckboxStrategy;
-
-impl SelectionStyleStrategy for CheckboxStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Checkbox)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Checkbox"
-    }
-
-    fn supports_indeterminate(&self) -> bool {
-        true
-    }
-}
-
-/// Radio button strategy implementation  
-pub struct RadioStrategy;
-
-impl SelectionStyleStrategy for RadioStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Radio)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Radio"
-    }
-}
-
-/// Chip strategy implementation
-pub struct ChipStrategy;
-
-impl SelectionStyleStrategy for ChipStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Chip)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Chip"
-    }
-
-    fn supports_icons(&self) -> bool {
-        true
-    }
-}
-
-/// Switch strategy implementation
-pub struct SwitchStrategy;
-
-impl SelectionStyleStrategy for SwitchStrategy {
-    fn get_styling(
-        &self,
-        state: SelectionState,
-        tokens: &MaterialTokens,
-        size: SelectionSize,
-        error_state: bool,
-    ) -> Result<SelectionStyling, SelectionStyleError> {
-        let colors = SelectionColors::new(tokens.clone(), SelectionVariant::Switch)
-            .with_size(size)
-            .with_error(error_state);
-        Ok(colors.create_styling(state))
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Switch"
-    }
 }

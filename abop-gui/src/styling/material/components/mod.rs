@@ -23,10 +23,18 @@ pub mod menu_item_style;
 pub mod menus;
 /// Material Design 3 navigation components - modularized with tab bars and breadcrumbs for audiobook apps
 pub mod navigation;
-/// Material Design 3 selection components including checkboxes, radio buttons, switches, and chips
-pub mod selection;
-/// Material Design 3 selection component styling system for centralized selection styling
+/// Material Design 3 selection component styling system
+///
+/// Provides a centralized styling system for all selection components (Checkbox, Radio, Switch, Chip)
+/// using the strategy pattern for consistent theming and behavior across components.
 pub mod selection_style;
+
+// Re-export selection components and styles
+pub use selection_style::{
+    CheckboxStrategy, ChipStrategy, RadioStrategy, SelectionColors, SelectionSize, SelectionState,
+    SelectionStyleBuilder, SelectionStyleError, SelectionStyling, SelectionVariant, SwitchStrategy,
+    checkbox_style, chip_style, radio_style, switch_style,
+};
 /// Phase 3: Complete Material Design 3 widget implementations as proper Iced widgets
 pub mod widgets;
 
@@ -62,17 +70,6 @@ pub use menus::MaterialMenu;
 // Re-export navigation components
 pub use navigation::{
     BreadcrumbItem, MaterialBreadcrumbs, MaterialTabBar, Tab, helpers as nav_helpers,
-};
-
-// Re-export selection components (specific items only)
-pub use selection::{
-    Checkbox, CheckboxBuilder, CheckboxState, Chip, ChipBuilder, ChipCollection, ChipSelectionMode,
-    ChipState, ChipVariant, ComponentBuilder, ComponentSize, Radio, RadioBuilder,
-    RadioGroupBuilder, RadioGroupState, SelectionError, Switch, SwitchBuilder, SwitchState,
-};
-
-pub use selection_style::{
-    SelectionColors, SelectionSize, SelectionState, SelectionStyleBuilder, SelectionVariant,
 };
 
 // Re-export widget components
