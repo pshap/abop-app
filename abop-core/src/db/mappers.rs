@@ -15,6 +15,9 @@ macro_rules! get_field {
             message: format!("Failed to get {}: {e}", $field_name),
         })?
     };
+    ($row:expr, $idx:expr, $field_name:literal, optional) => {
+        $row.get($idx).ok()
+    };
 }
 
 /// Alias for backwards compatibility and clarity in row-based access
@@ -54,19 +57,19 @@ impl RowMappers {
     /// Map a database row to an Audiobook entity
     pub fn audiobook_from_row(row: &Row) -> DbResult<Audiobook> {
         Ok(Audiobook {
-            id: get_row_field!(row, 0, "audiobook id"),
-            library_id: get_row_field!(row, 1, "library_id"),
+            id: get_field!(row, 0, "audiobook id"),
+            library_id: get_field!(row, 1, "library_id"),
             path: get_row_path!(row, 2, "path"),
-            title: get_row_field!(row, 3, "title"),
-            author: get_row_field!(row, 4, "author"),
-            narrator: get_row_field!(row, 5, "narrator"),
-            description: get_row_field!(row, 6, "description"),
-            duration_seconds: get_row_field!(row, 7, "duration_seconds"),
-            size_bytes: get_row_field!(row, 8, "size_bytes"),
-            cover_art: get_row_field!(row, 9, "cover_art"),
+            title: get_field!(row, 3, "title", optional),
+            author: get_field!(row, 4, "author", optional),
+            narrator: get_field!(row, 5, "narrator", optional),
+            description: get_field!(row, 6, "description", optional),
+            duration_seconds: get_field!(row, 7, "duration_seconds", optional),
+            size_bytes: get_field!(row, 8, "size_bytes", optional),
+            cover_art: get_field!(row, 9, "cover_art", optional),
             created_at: parse_datetime_from_row(row, "created_at")?,
             updated_at: parse_datetime_from_row(row, "updated_at")?,
-            selected: row.get(12).unwrap_or(false), // Default to false if not present
+            selected: get_field!(row, 12, "selected", optional).unwrap_or(false),
         })
     }
     /// Map a database row to a Library entity
@@ -81,15 +84,15 @@ impl RowMappers {
     pub fn progress_from_row(row: &Row) -> DbResult<Progress> {
         use crate::db::datetime_serde::SqliteDateTime;
 
-        let last_played: Option<SqliteDateTime> = get_row_field!(row, 4, "last_played");
-        let created_at: SqliteDateTime = get_row_field!(row, 5, "created_at");
-        let updated_at: SqliteDateTime = get_row_field!(row, 6, "updated_at");
+        let last_played: Option<SqliteDateTime> = get_field!(row, 4, "last_played", optional);
+        let created_at: SqliteDateTime = get_field!(row, 5, "created_at");
+        let updated_at: SqliteDateTime = get_field!(row, 6, "updated_at");
 
         Ok(Progress {
-            id: get_row_field!(row, 0, "progress id"),
-            audiobook_id: get_row_field!(row, 1, "audiobook_id"),
-            position_seconds: get_row_field!(row, 2, "position_seconds"),
-            completed: get_row_field!(row, 3, "completed"),
+            id: get_field!(row, 0, "progress id"),
+            audiobook_id: get_field!(row, 1, "audiobook_id"),
+            position_seconds: get_field!(row, 2, "position_seconds"),
+            completed: get_field!(row, 3, "completed"),
             last_played: last_played.map(|dt| dt.into()),
             created_at: created_at.into(),
             updated_at: updated_at.into(),
@@ -104,13 +107,13 @@ impl RowMappers {
             id: get_indexed_field!(row, indices.id, "audiobook id"),
             library_id: get_indexed_field!(row, indices.library_id, "library_id"),
             path: get_indexed_path!(row, indices.path, "path"),
-            title: get_indexed_field!(row, indices.title, "title"),
-            author: get_indexed_field!(row, indices.author, "author"),
-            narrator: get_indexed_field!(row, indices.narrator, "narrator"),
-            description: get_indexed_field!(row, indices.description, "description"),
-            duration_seconds: get_indexed_field!(row, indices.duration_seconds, "duration_seconds"),
-            size_bytes: get_indexed_field!(row, indices.size_bytes, "size_bytes"),
-            cover_art: get_indexed_field!(row, indices.cover_art, "cover_art"),
+            title: get_field!(row, indices.title, "title", optional),
+            author: get_field!(row, indices.author, "author", optional),
+            narrator: get_field!(row, indices.narrator, "narrator", optional),
+            description: get_field!(row, indices.description, "description", optional),
+            duration_seconds: get_field!(row, indices.duration_seconds, "duration_seconds", optional),
+            size_bytes: get_field!(row, indices.size_bytes, "size_bytes", optional),
+            cover_art: get_field!(row, indices.cover_art, "cover_art", optional),
             created_at: {
                 let datetime_str: String =
                     get_indexed_field!(row, indices.created_at, "created_at");
@@ -121,7 +124,7 @@ impl RowMappers {
                     get_indexed_field!(row, indices.updated_at, "updated_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
-            selected: row.get(indices.selected).unwrap_or(false),
+            selected: get_field!(row, indices.selected, "selected", optional).unwrap_or(false),
         })
     }
 }
