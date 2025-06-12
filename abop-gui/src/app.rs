@@ -422,9 +422,9 @@ impl App {
         // Get the current route to determine which view to show
         let current_route = self.router.current_route();
         
-        // Create the appropriate view based on the current route
+        // Use the unified view function that includes toolbar and handles routing
         match current_route {
-            Route::Library => views::library_view(&self.state),
+            Route::Library => views::view(&self.state),
             Route::Player => views::audio_processing_view(&self.state),
             Route::Settings => views::settings_view(&self.state),
             Route::About => views::about_view(&self.state),
