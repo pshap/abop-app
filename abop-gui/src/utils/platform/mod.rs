@@ -17,23 +17,13 @@ use std::path::PathBuf;
 /// Get the default audiobook directory for the current platform
 pub fn get_default_audiobook_directory() -> PathBuf {
     #[cfg(windows)]
-    {
-        windows::get_default_audiobook_directory()
-    }
+    return windows::get_default_audiobook_directory();
     
     #[cfg(target_os = "macos")]
-    {
-        macos::get_default_audiobook_directory()
-    }
+    return macos::get_default_audiobook_directory();
     
     #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        unix::get_default_audiobook_directory()
-    }
-    
-    #[cfg(not(any(windows, unix)))]
-    {
-        // Ultimate fallback for unknown platforms
-        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-    }
+    return unix::get_default_audiobook_directory();
+      #[cfg(not(any(windows, unix)))]
+    return PathBuf::from(".");
 }

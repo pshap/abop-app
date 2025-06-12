@@ -8,7 +8,9 @@ use log::info;
 use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 
-// Import centralized types from abop-core
+// Import configuration from abop-core
+// NOTE: Direct dependency on concrete Config type is acceptable for the main entry point.
+// Future refactoring could introduce a ConfigProvider trait if needed for testing or modularity.
 use abop_core::Config;
 
 /// Errors that can occur during application initialization

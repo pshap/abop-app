@@ -21,6 +21,7 @@ use abop_core::services::ServiceContainer;
 
 /// Messages for task management
 #[derive(Debug)]
+#[allow(dead_code)] // Status and Shutdown are infrastructure for future functionality
 enum TaskMessage {
     /// Cancel a task by ID
     Cancel(u64),

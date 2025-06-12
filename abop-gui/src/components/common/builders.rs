@@ -281,7 +281,9 @@ pub fn primary_button_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Filled)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Primary button build error: {}", e)).into()
+        })
 }
 
 /// Creates a semantic secondary button using the builder pattern
@@ -295,7 +297,9 @@ pub fn secondary_button_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Outlined)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Secondary button build error: {}", e)).into()
+        })
 }
 
 /// Creates a semantic tertiary button using the builder pattern
@@ -309,7 +313,9 @@ pub fn tertiary_button<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Text)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Tertiary button build error: {}", e)).into()
+        })
 }
 
 /// Creates a primary button with icon using the builder pattern
@@ -326,7 +332,9 @@ pub fn primary_button_with_icon_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Filled)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Primary icon button build error: {}", e)).into()
+        })
 }
 
 /// Creates a secondary button with icon using the builder pattern
@@ -343,7 +351,9 @@ pub fn secondary_button_with_icon_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Outlined)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Secondary icon button build error: {}", e)).into()
+        })
 }
 
 /// Creates a tertiary button with icon using the builder pattern
@@ -360,7 +370,9 @@ pub fn tertiary_button_with_icon<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Text)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Tertiary icon button build error: {}", e)).into()
+        })
 }
 
 /// Creates an icon-only button using the builder pattern
@@ -377,7 +389,9 @@ pub fn icon_button_semantic<'a, M: Clone + 'a>(
         .size(size)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Icon button build error: {}", e)).into()
+        })
 }
 
 /// Creates a filled icon button using the builder pattern
@@ -555,5 +569,7 @@ pub fn create_button<'a, Message: Clone + 'a>(
         .variant(variant)
         .on_press(message)
         .build()
-        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
+        .unwrap_or_else(|e| {
+            iced::widget::Text::new(format!("Button build error: {}", e)).into()
+        })
 }
