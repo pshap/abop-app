@@ -389,9 +389,7 @@ pub fn icon_button_semantic<'a, M: Clone + 'a>(
         .size(size)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Icon button build error: {e}")).into()
-        })
+        .unwrap_or_else(|e| iced::widget::Text::new(format!("Icon button build error: {e}")).into())
 }
 
 /// Creates a filled icon button using the builder pattern

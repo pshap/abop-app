@@ -2,7 +2,8 @@
 
 use std::path::PathBuf;
 
-use abop_core::{PlayerState, audio::player::ThreadSafeAudioPlayer};
+use abop_core::PlayerState;
+use abop_core::audio::player::ThreadSafeAudioPlayer;
 
 // ================================================================================================
 // GLOBAL AUDIO PLAYER
