@@ -240,9 +240,13 @@ impl ThemeUtilities {
 /// Seasonal theme variations
 #[derive(Debug, Clone, Copy)]
 pub enum Season {
+    /// Spring season color palette
     Spring,
+    /// Summer season color palette
     Summer,
+    /// Autumn season color palette
     Autumn,
+    /// Winter season color palette
     Winter,
 }
 
