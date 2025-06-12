@@ -9,11 +9,25 @@ use rusqlite::Row;
 use std::path::PathBuf;
 
 /// Helper macro to extract row fields with consistent error handling
-macro_rules! get_row_field {
+macro_rules! get_field {
     ($row:expr, $idx:expr, $field_name:literal) => {
         $row.get($idx).map_err(|e| DatabaseError::ExecutionFailed {
             message: format!("Failed to get {}: {e}", $field_name),
         })?
+    };
+}
+
+/// Alias for backwards compatibility and clarity in row-based access
+macro_rules! get_row_field {
+    ($row:expr, $idx:expr, $field_name:literal) => {
+        get_field!($row, $idx, $field_name)
+    };
+}
+
+/// Alias for backwards compatibility and clarity in indexed access
+macro_rules! get_indexed_field {
+    ($row:expr, $idx:expr, $field_name:literal) => {
+        get_field!($row, $idx, $field_name)
     };
 }
 
@@ -23,15 +37,6 @@ macro_rules! get_row_path {
         let path_str: String = get_row_field!($row, $idx, $field_name);
         PathBuf::from(path_str)
     }};
-}
-
-/// Helper macro to extract indexed row fields with consistent error handling
-macro_rules! get_indexed_field {
-    ($row:expr, $idx:expr, $field_name:literal) => {
-        $row.get($idx).map_err(|e| DatabaseError::ExecutionFailed {
-            message: format!("Failed to get {}: {e}", $field_name),
-        })?
-    };
 }
 
 /// Helper macro to extract indexed path fields from rows

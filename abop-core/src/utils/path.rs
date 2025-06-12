@@ -58,7 +58,7 @@ pub fn normalize_path(path: &Path) -> PathBuf {
                     }
                 }
             }
-            components.iter().collect()
+            components.into_iter().collect()
         }
     }
 }
