@@ -5,7 +5,6 @@
 use std::path::PathBuf;
 
 use iced::Task;
-use iced::futures::FutureExt;
 
 use crate::messages::Message;
 use crate::state::UiState;

@@ -162,7 +162,7 @@ mod tests {
     fn test_health_status_changes() {
         let monitor = HealthMonitor::new();
 
-        monitor.set_connecting();
+        monitor.set_connecting().unwrap();
         assert_eq!(monitor.status(), ConnectionHealth::Connecting);
         assert!(monitor.last_check().is_some());
 

@@ -265,8 +265,8 @@ impl AudioPlayer {
 
 impl Default for AudioPlayer {
     fn default() -> Self {
-        /// Create a new instance with default values
-        /// This matches the field types in the struct definition exactly
+        // Create a new instance with default values
+        // This matches the field types in the struct definition exactly
         AudioPlayer {
             sink: None,                  // Option<Sink>
             state: PlayerState::Stopped, // PlayerState
