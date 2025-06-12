@@ -79,9 +79,7 @@ impl SelectionStyleStrategy for RadioStrategy {
             colors.error.base
         } else if state.is_disabled() {
             ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
-        } else if state.is_focused() {
-            colors.primary.base
-        } else if state.is_selected() {
+        } else if state.is_focused() || state.is_selected() {
             colors.primary.base
         } else {
             colors.on_surface_variant
@@ -110,7 +108,7 @@ impl SelectionStyleStrategy for RadioStrategy {
         // Handle disabled state
         if state.is_disabled() {
             return if state.is_selected() {
-                ColorUtils::with_alpha(colors.on_primary, constants::opacity::DISABLED)
+                ColorUtils::with_alpha(colors.on_primary(), constants::opacity::DISABLED)
             } else {
                 ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
             };

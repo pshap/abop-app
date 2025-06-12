@@ -8,7 +8,8 @@
 //! - Improved radio group management
 
 use super::builder::{ComponentBuilder, Radio, RadioBuilder};
-use super::common::*;
+use super::common::prelude::*;
+use super::common::validation_config_for_toggles;
 
 // ============================================================================
 // Component Implementation

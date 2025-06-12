@@ -6,7 +6,10 @@
 //! - Animation support for smooth transitions
 //! - Performance optimizations and advanced patterns
 
-use super::super::common::*;
+use super::super::common::prelude::*;
+use super::super::common::{
+    system_has_reduced_motion, validate_checkbox_state, validate_label, validate_props,
+};
 use super::patterns::*;
 use super::validation::*;
 

@@ -7,13 +7,14 @@
 //! - Indeterminate state visual rendering
 //! - Modern builder pattern with fluent API
 
+use super::builder::components::LIGHT_TOKENS;
 use super::builder::{Checkbox, CheckboxBuilder};
-use super::common::*;
-use crate::styling::material::colors::MaterialColors;
+use super::common::SelectionComponent;
+use super::common::prelude::*;
+use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use crate::styling::material::tokens::MaterialTokens;
 
 use iced::{Element, Renderer, theme::Theme, widget::Checkbox as IcedCheckbox};
 
@@ -63,7 +64,7 @@ impl Checkbox {
     pub fn view<'a, Message: Clone + 'a>(
         &self,
         on_toggle: impl Fn(CheckboxState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         // Convert modern state to legacy boolean for Iced compatibility
         let is_checked = match self.state() {
@@ -77,22 +78,24 @@ impl Checkbox {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
-        // Create styling function
-        let style_fn = SelectionStyleBuilder::new(
-            MaterialTokens::default().with_colors(color_scheme.clone()),
-            SelectionVariant::Checkbox,
-        )
-        .size(legacy_size)
-        .error(self.has_error())
-        .checkbox_style();
-
-        // Create the checkbox label
+        }; // Create the checkbox label first
         let default_label = String::new();
         let label = self.props().label.as_ref().unwrap_or(&default_label);
 
-        // Create checkbox widget
+        // Use static tokens to avoid lifetime issues
+        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+
+        // Create the style function with the tokens
+        let style_fn = {
+            let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Checkbox)
+                .size(legacy_size)
+                .error(self.has_error());
+
+            // Create the style function
+            builder.checkbox_style()
+        };
+
+        // Create the checkbox widget with the style function
         let mut checkbox = IcedCheckbox::new(label, is_checked).style(style_fn);
 
         // Only add on_toggle handler if the checkbox is not disabled
@@ -115,9 +118,9 @@ impl Checkbox {
     pub fn view_with_state<'a, Message: Clone + 'a>(
         &self,
         on_change: impl Fn(CheckboxState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
-        self.view(on_change, color_scheme)
+        self.view(on_change, _color_scheme)
     }
 }
 

@@ -11,7 +11,11 @@
 //! - Fluent builder API with method chaining
 //! - Performance optimizations with inline hints
 
-use super::super::common::*;
+use super::super::common::prelude::*;
+use super::super::common::{
+    system_has_reduced_motion, validate_chip_state, validate_label, validate_props,
+    validation_config_for_chips,
+};
 use super::super::defaults;
 use super::components::Chip;
 use super::patterns::*;

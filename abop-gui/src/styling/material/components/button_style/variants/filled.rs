@@ -20,7 +20,7 @@ impl ButtonStyleStrategy for FilledButtonStrategy {
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
         let base_background = colors.primary.base;
-        let text_color = colors.on_primary;
+        let text_color = colors.primary.on_base;
         // Use proper Material Design 3 primary.on_base color for icons
         // This ensures WCAG AA compliance with the corrected dark theme colors
         let icon_color = colors.primary.on_base;

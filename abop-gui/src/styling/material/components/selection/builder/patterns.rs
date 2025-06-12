@@ -6,7 +6,7 @@
 //! - State validation at compile time
 //! - Performance-optimized builder method chaining
 
-use super::super::common::*;
+use super::super::common::prelude::*;
 
 // Type aliases for complex function types
 /// Type alias for configuration functions used in builder patterns

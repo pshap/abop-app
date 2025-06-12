@@ -90,15 +90,13 @@ pub use builder::{
     ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder,
 };
 pub use chip::{
-    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection, 
+    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection,
     single_select_chip_collection,
 };
 pub use common::{
-    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-    ComponentSize, EasingCurve, SelectionError, StatefulComponent, SwitchState, ValidationConfig,
-    ValidationRule,
+    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentSize,
+    EasingCurve, SelectionComponent, SelectionError, SwitchState, ValidationConfig, ValidationRule,
 };
-pub use constants; // Direct access to all constants
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use state_traits::{AnimatableState, ComponentState, InteractiveState, MultiLevelState};
 pub use switch::SwitchDimensions;
@@ -281,13 +279,13 @@ pub mod state_utils {
 
         summary.push_str(&format!("Checkboxes ({}): ", checkboxes.len()));
         for checkbox in checkboxes {
-            summary.push_str(&format!("{:?} ", checkbox.state()));
+            summary.push_str(&format!("{:?} ", checkbox.state)); // Field access, not method call
         }
         summary.push('\n');
 
         summary.push_str(&format!("Switches ({}): ", switches.len()));
         for switch in switches {
-            summary.push_str(&format!("{:?} ", switch.state()));
+            summary.push_str(&format!("{:?} ", switch.state)); // Field access, not method call
         }
         summary.push('\n');
 
@@ -298,48 +296,6 @@ pub mod state_utils {
         summary.push('\n');
 
         summary
-    }
-}
-
-/// Constants for Material Design 3 compliance
-pub mod constants {
-    /// Minimum touch target size (Material Design guideline)
-    pub const MIN_TOUCH_TARGET_SIZE: f32 = 48.0;
-
-    /// Maximum label length for accessibility
-    pub const MAX_LABEL_LENGTH: usize = 200;
-
-    /// Default animation duration in milliseconds
-    pub const DEFAULT_ANIMATION_DURATION_MS: u32 = 200;
-
-    /// Reduced motion animation duration
-    pub const REDUCED_MOTION_DURATION_MS: u32 = 0;
-
-    /// Component size dimensions
-    pub mod sizes {
-        /// Small component dimensions
-        pub const SMALL_SIZE: f32 = 16.0;
-
-        /// Medium component dimensions
-        pub const MEDIUM_SIZE: f32 = 20.0;
-
-        /// Large component dimensions
-        pub const LARGE_SIZE: f32 = 24.0;
-    }
-
-    /// Switch-specific dimensions
-    pub mod switch {
-        /// Default track width
-        pub const TRACK_WIDTH: f32 = 52.0;
-
-        /// Default track height
-        pub const TRACK_HEIGHT: f32 = 32.0;
-
-        /// Default thumb size
-        pub const THUMB_SIZE: f32 = 24.0;
-
-        /// Default padding
-        pub const PADDING: f32 = 8.0;
     }
 }
 
@@ -408,10 +364,10 @@ mod module_tests {
 
     #[test]
     fn test_constants() {
-        assert_eq!(constants::MIN_TOUCH_TARGET_SIZE, 48.0);
-        assert_eq!(constants::MAX_LABEL_LENGTH, 200);
+        assert_eq!(constants::ui::MIN_TOUCH_TARGET_SIZE, 48.0);
+        assert_eq!(constants::ui::MAX_LABEL_LENGTH, 200);
         // Verify animation duration is positive
-        assert_ne!(constants::DEFAULT_ANIMATION_DURATION_MS, 0);
-        assert_eq!(constants::REDUCED_MOTION_DURATION_MS, 0);
+        assert_ne!(constants::animation::DEFAULT_DURATION_MS, 0);
+        assert_eq!(constants::animation::REDUCED_MOTION_DURATION_MS, 0);
     }
 }

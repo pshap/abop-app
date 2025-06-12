@@ -3,7 +3,7 @@
 //! This module provides default configurations and helper functions used across
 //! all selection component builders.
 
-use super::common::*;
+use super::common::prelude::*;
 
 /// Create default validation configuration for selection components
 #[must_use]

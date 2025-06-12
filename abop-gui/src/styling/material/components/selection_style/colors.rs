@@ -68,17 +68,13 @@ impl SelectionColors {
 
     /// Apply error state color if applicable
     #[must_use]
-    fn apply_error_state(&self, state: SelectionState) -> Option<Color> {
+    fn apply_error_state(&self, _state: SelectionState) -> Option<Color> {
         if !self.error_state {
             return None;
         }
 
         let colors = &self.tokens.colors;
-        Some(if state.is_selected() {
-            colors.error.base
-        } else {
-            colors.error.base // Error state for unselected (border)
-        })
+        Some(colors.error.base) // Error state uses same color regardless of selection
     }
 
     /// Apply disabled state color if applicable
@@ -179,7 +175,7 @@ impl SelectionColors {
         // Handle focused state
         if state.is_focused() {
             if state.is_selected() {
-                return colors.on_secondary_container;
+                return colors.on_secondary_container();
             }
             return colors.primary.base;
         }
@@ -200,25 +196,25 @@ impl SelectionColors {
 
         match (state, self.error_state, self.variant) {
             // Error state takes highest priority
-            (state, true, SelectionVariant::Checkbox) if state.is_selected() => colors.on_error,
+            (state, true, SelectionVariant::Checkbox) if state.is_selected() => colors.on_error(),
             (state, true, SelectionVariant::Radio) if state.is_selected() => colors.error.base,
-            (state, true, SelectionVariant::Chip) if state.is_selected() => colors.on_error,
-            (state, true, SelectionVariant::Switch) if state.is_selected() => colors.on_error,
+            (state, true, SelectionVariant::Chip) if state.is_selected() => colors.on_error(),
+            (state, true, SelectionVariant::Switch) if state.is_selected() => colors.on_error(),
 
             // Handle disabled state
             (state, _, _) if state.is_disabled() => {
                 if state.is_selected() {
-                    ColorUtils::with_alpha(colors.on_primary, constants::opacity::DISABLED)
+                    ColorUtils::with_alpha(colors.on_primary(), constants::opacity::DISABLED)
                 } else {
                     ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
                 }
             }
 
             // Handle selected state
-            (state, _, SelectionVariant::Checkbox) if state.is_selected() => colors.on_primary,
+            (state, _, SelectionVariant::Checkbox) if state.is_selected() => colors.on_primary(),
             (state, _, SelectionVariant::Radio) if state.is_selected() => colors.primary.base,
-            (state, _, SelectionVariant::Chip) if state.is_selected() => colors.on_primary,
-            (state, _, SelectionVariant::Switch) if state.is_selected() => colors.on_primary,
+            (state, _, SelectionVariant::Chip) if state.is_selected() => colors.on_primary(),
+            (state, _, SelectionVariant::Switch) if state.is_selected() => colors.on_primary(),
 
             // Default state
             _ => colors.on_surface_variant,

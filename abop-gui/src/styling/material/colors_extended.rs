@@ -41,30 +41,34 @@ pub struct ExtendedMaterialColors {
 
 impl ExtendedMaterialColors {
     /// Create extended colors from base MaterialColors
-    pub const fn from_base(base: MaterialColors) -> Self {
+    pub fn from_base(base: MaterialColors) -> Self {
+        let primary_fixed = base.primary_fixed_container();
+        let secondary_fixed = base.secondary_fixed_container();
+        let tertiary_fixed = base.tertiary_fixed_container();
+        let error_fixed = base.error_fixed_container();
+        
         Self {
-            // Extract fixed variants from base color roles
-            primary_fixed: base.primary.fixed,
-            primary_fixed_dim: base.primary.fixed_dim,
-            on_primary_fixed: base.primary.on_fixed,
-            on_primary_fixed_variant: base.primary.on_fixed_variant,
+            // Extract fixed variants from base color containers
+            primary_fixed: primary_fixed.fixed,
+            primary_fixed_dim: primary_fixed.fixed_dim,
+            on_primary_fixed: primary_fixed.on_fixed,
+            on_primary_fixed_variant: primary_fixed.on_fixed_variant,
             
-            secondary_fixed: base.secondary.fixed,
-            secondary_fixed_dim: base.secondary.fixed_dim,
-            on_secondary_fixed: base.secondary.on_fixed,
-            on_secondary_fixed_variant: base.secondary.on_fixed_variant,
+            secondary_fixed: secondary_fixed.fixed,
+            secondary_fixed_dim: secondary_fixed.fixed_dim,
+            on_secondary_fixed: secondary_fixed.on_fixed,
+            on_secondary_fixed_variant: secondary_fixed.on_fixed_variant,
             
-            tertiary_fixed: base.tertiary.fixed,
-            tertiary_fixed_dim: base.tertiary.fixed_dim,
-            on_tertiary_fixed: base.tertiary.on_fixed,
-            on_tertiary_fixed_variant: base.tertiary.on_fixed_variant,
+            tertiary_fixed: tertiary_fixed.fixed,
+            tertiary_fixed_dim: tertiary_fixed.fixed_dim,
+            on_tertiary_fixed: tertiary_fixed.on_fixed,
+            on_tertiary_fixed_variant: tertiary_fixed.on_fixed_variant,
             
-            error_fixed: base.error.fixed,
-            error_fixed_dim: base.error.fixed_dim,
-            on_error_fixed: base.error.on_fixed,
-            on_error_fixed_variant: base.error.on_fixed_variant,
-            
-            // Missing container tokens
+            error_fixed: error_fixed.fixed,
+            error_fixed_dim: error_fixed.fixed_dim,
+            on_error_fixed: error_fixed.on_fixed,
+            on_error_fixed_variant: error_fixed.on_fixed_variant,
+              // Container tokens from field access
             tertiary_container: base.tertiary.container,
             on_tertiary_container: base.tertiary.on_container,
             on_error_container: base.error.on_container,
@@ -135,52 +139,84 @@ pub trait FixedVariantAccess {
 
 impl FixedVariantAccess for MaterialColors {
     fn primary_fixed_container(&self) -> FixedColorContainer {
-        FixedColorContainer::from_color_role(&self.primary)
+        // For method-based MaterialColors, we'll provide sensible defaults
+        // since the fixed variants are typically used for surface elements
+        FixedColorContainer {
+            fixed: self.primary_container(),
+            fixed_dim: {
+                let mut color = self.primary_container();
+                color.a = 0.8; // Slightly more transparent
+                color
+            },
+            on_fixed: self.on_primary_container(),
+            on_fixed_variant: self.on_primary(),
+        }
     }
     
     fn secondary_fixed_container(&self) -> FixedColorContainer {
-        FixedColorContainer::from_color_role(&self.secondary)
+        FixedColorContainer {
+            fixed: self.secondary_container(),
+            fixed_dim: {
+                let mut color = self.secondary_container();
+                color.a = 0.8;
+                color
+            },
+            on_fixed: self.on_secondary_container(),
+            on_fixed_variant: self.on_secondary(),
+        }
     }
     
     fn tertiary_fixed_container(&self) -> FixedColorContainer {
-        FixedColorContainer::from_color_role(&self.tertiary)
+        FixedColorContainer {
+            fixed: self.tertiary_container(),
+            fixed_dim: {
+                let mut color = self.tertiary_container();
+                color.a = 0.8;
+                color
+            },
+            on_fixed: self.on_tertiary_container(),
+            on_fixed_variant: self.on_tertiary(),
+        }
     }
     
     fn error_fixed_container(&self) -> FixedColorContainer {
-        FixedColorContainer::from_color_role(&self.error)
+        FixedColorContainer {
+            fixed: self.error_container(),
+            fixed_dim: {
+                let mut color = self.error_container();
+                color.a = 0.8;
+                color
+            },
+            on_fixed: self.on_error_container(),
+            on_fixed_variant: self.on_error(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::styling::material::{MaterialPalette, MaterialColors};
-
-    #[test]
+    use crate::styling::material::{MaterialPalette, MaterialColors};    #[test]
     fn test_extended_colors_creation() {
-        let palette = MaterialPalette::default();
-        let base_colors = MaterialColors::light(&palette);
-        let extended = ExtendedMaterialColors::from_base(base_colors);
+        let colors = MaterialColors::light_default();
+        let primary_container = colors.primary_fixed_container();
         
         // Verify fixed variants are properly exposed
-        assert_eq!(extended.primary_fixed, base_colors.primary.fixed);
-        assert_eq!(extended.on_primary_fixed, base_colors.primary.on_fixed);
+        assert_eq!(primary_container.fixed, colors.primary_container());
+        assert_eq!(primary_container.on_fixed, colors.on_primary_container());
     }
     
     #[test]
     fn test_fixed_color_container() {
-        let palette = MaterialPalette::default();
-        let colors = MaterialColors::light(&palette);
+        let colors = MaterialColors::light_default();
         
         let primary_container = colors.primary_fixed_container();
-        assert_eq!(primary_container.fixed, colors.primary.fixed);
-        assert_eq!(primary_container.on_fixed, colors.primary.on_fixed);
+        assert_eq!(primary_container.fixed, colors.primary_container());
+        assert_eq!(primary_container.on_fixed, colors.on_primary_container());
     }
-    
-    #[test]
+      #[test]
     fn test_fixed_container_text_colors() {
-        let palette = MaterialPalette::default();
-        let colors = MaterialColors::light(&palette);
+        let colors = MaterialColors::light_default();
         let container = colors.primary_fixed_container();
         
         let normal_text = container.text_color(false);

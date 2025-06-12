@@ -37,7 +37,7 @@ mod color_helpers {
         is_striped: bool,
     ) -> Color {
         if is_selected {
-            tokens.colors.secondary_container
+            tokens.colors.secondary.container
         } else if is_striped && index % 2 == 1 {
             tokens.colors.surface_container
         } else {
@@ -48,7 +48,7 @@ mod color_helpers {
     /// Get background color for header cells
     pub fn get_header_background_color(tokens: &MaterialTokens, is_sorted: bool) -> Color {
         if is_sorted {
-            tokens.colors.primary_container
+            tokens.colors.primary.container
         } else {
             tokens.colors.surface_variant
         }

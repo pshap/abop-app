@@ -46,8 +46,8 @@ impl MenuStyleValues {
             surface_container_highest: colors.surface_container_highest,
             outline: colors.outline,
             primary: colors.primary.base,
-            secondary_container: colors.secondary_container,
-            on_secondary_container: colors.on_secondary_container,
+            secondary_container: colors.secondary.container,
+            on_secondary_container: colors.secondary.on_container,
             corner_radius: shapes.corner_extra_small.to_radius(),
         }
     }

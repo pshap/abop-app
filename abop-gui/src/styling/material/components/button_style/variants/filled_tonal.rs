@@ -19,8 +19,8 @@ impl ButtonStyleStrategy for FilledTonalButtonStrategy {
         _elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        let base_background = colors.secondary_container;
-        let text_color = colors.on_secondary_container;
+        let base_background = colors.secondary.container;
+        let text_color = colors.secondary.on_container;
 
         match state {
             ButtonState::Default => ButtonStyling {

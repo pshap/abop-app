@@ -62,7 +62,7 @@ pub use validation::{
 // Internal modules
 mod checkbox;
 mod chip;
-mod components;
+pub mod components;
 pub mod factory;
 pub mod patterns;
 mod radio;

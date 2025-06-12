@@ -45,6 +45,8 @@ pub struct OpacityConstants {
     pub focus: f32,
     /// Surface overlay opacity for disabled backgrounds
     pub disabled_surface: f32,
+    /// Indeterminate state opacity for partial selection (checkboxes)
+    pub indeterminate: f32,
 }
 
 impl Default for OpacityConstants {
@@ -62,6 +64,7 @@ impl OpacityConstants {
             hover: 0.08,
             focus: 0.12,
             disabled_surface: 0.12,
+            indeterminate: 0.24,
         }
     }
 }
@@ -202,6 +205,8 @@ pub mod opacity {
     /// Opacity value for disabled surface elements
     #[allow(dead_code)]
     pub const DISABLED_SURFACE: f32 = SELECTION_CONSTANTS.opacity.disabled_surface;
+    /// Opacity value for indeterminate state (partial selection)
+    pub const INDETERMINATE: f32 = SELECTION_CONSTANTS.opacity.indeterminate;
 }
 
 /// Border radius constants for different component variants

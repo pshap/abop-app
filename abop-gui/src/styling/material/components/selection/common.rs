@@ -24,17 +24,17 @@ pub mod prelude {
     // Core component types and states
     pub use super::{
         AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-        ComponentSize, SelectionError, StatefulComponent, SwitchState,
+        ComponentSize, SelectionComponent, SelectionError, StatefulComponent, SwitchState,
     };
-    
+
     // Unified state traits
     pub use super::super::state_traits::{
-        AnimatableState, ComponentState, InteractiveState, MultiLevelState
+        AnimatableState, ComponentState, InteractiveState, MultiLevelState,
     };
-    
+
     // Validation types
-    pub use super::{ValidationConfig, ValidationRule, EasingCurve};
-    
+    pub use super::{EasingCurve, ValidationConfig, ValidationRule};
+
     // Constants access
     pub use super::super::constants;
 }
@@ -102,15 +102,15 @@ impl ComponentState for CheckboxState {
     fn toggle(self) -> Self {
         self.toggle()
     }
-    
+
     fn is_active(self) -> bool {
         self.is_selected()
     }
-    
+
     fn to_bool(self) -> bool {
         self.to_bool()
     }
-    
+
     fn from_bool(value: bool) -> Self {
         Self::from_bool(value)
     }
@@ -120,11 +120,11 @@ impl MultiLevelState for CheckboxState {
     fn is_intermediate(self) -> bool {
         matches!(self, Self::Indeterminate)
     }
-    
+
     fn all_states() -> &'static [Self] {
         &[Self::Unchecked, Self::Checked, Self::Indeterminate]
     }
-    
+
     fn next_state(self) -> Self {
         match self {
             Self::Unchecked => Self::Checked,
@@ -183,15 +183,15 @@ impl ComponentState for SwitchState {
     fn toggle(self) -> Self {
         self.toggle()
     }
-    
+
     fn is_active(self) -> bool {
         self.is_on()
     }
-    
+
     fn to_bool(self) -> bool {
         self.to_bool()
     }
-    
+
     fn from_bool(value: bool) -> Self {
         Self::from_bool(value)
     }
@@ -236,17 +236,21 @@ impl ComponentState for ChipState {
     fn toggle(self) -> Self {
         self.toggle()
     }
-    
+
     fn is_active(self) -> bool {
         self.is_selected()
     }
-    
+
     fn to_bool(self) -> bool {
         matches!(self, Self::Selected)
     }
-    
+
     fn from_bool(value: bool) -> Self {
-        if value { Self::Selected } else { Self::Unselected }
+        if value {
+            Self::Selected
+        } else {
+            Self::Unselected
+        }
     }
 }
 
@@ -254,14 +258,14 @@ impl InteractiveState for ChipState {
     fn is_pressed(self) -> bool {
         matches!(self, Self::Pressed)
     }
-    
+
     fn to_pressed(self) -> Self {
         match self {
             Self::Selected => Self::Pressed,
             other => other,
         }
     }
-    
+
     fn to_unpressed(self) -> Self {
         match self {
             Self::Pressed => Self::Selected,
@@ -301,24 +305,21 @@ impl ComponentSize {
             Self::Large => constants::sizes::LARGE_SIZE_PX,
         }
     }
-
     /// Get the appropriate touch target size (Material Design minimum 48px)
     #[must_use]
     pub const fn touch_target_size(self) -> f32 {
-        match self {
-            Self::Small => constants::sizes::touch_targets::SMALL,
-            Self::Medium => constants::sizes::touch_targets::MEDIUM,
-            Self::Large => constants::sizes::touch_targets::LARGE,
-        }
+        // Material Design minimum touch target size is 48px
+        constants::ui::MIN_TOUCH_TARGET_SIZE
     }
 
     /// Get the appropriate border width for the size
     #[must_use]
     pub const fn border_width(self) -> f32 {
+        // Default border width based on size
         match self {
-            Self::Small => constants::sizes::borders::SMALL,
-            Self::Medium => constants::sizes::borders::MEDIUM,
-            Self::Large => constants::sizes::borders::LARGE,
+            Self::Small => 1.0,
+            Self::Medium => 1.5,
+            Self::Large => 2.0,
         }
     }
 
@@ -326,9 +327,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn text_size(self) -> f32 {
         match self {
-            Self::Small => constants::sizes::text::SMALL,
-            Self::Medium => constants::sizes::text::MEDIUM,
-            Self::Large => constants::sizes::text::LARGE,
+            Self::Small => 12.0,
+            Self::Medium => 14.0,
+            Self::Large => 16.0,
         }
     }
 
@@ -416,7 +417,8 @@ impl ComponentProps {
     pub fn size(mut self, size: ComponentSize) -> Self {
         self.size = size;
         self
-    }    /// Add metadata key-value pair (builder pattern)
+    }
+    /// Add metadata key-value pair (builder pattern)
     ///
     /// This method allows storing arbitrary metadata for enhanced features
     /// like icons, badges, layout preferences, etc. It validates that only
@@ -440,17 +442,16 @@ impl ComponentProps {
         let key_string = key.into();
 
         // Use const lookup for better performance in release builds
-        let is_known_key = constants::metadata_keys::ALL_SUPPORTED.iter().any(|&k| k == key_string);
+        let is_known_key = constants::metadata_keys::ALL_SUPPORTED
+            .iter()
+            .any(|&k| k == key_string);
 
         if is_known_key {
             self.metadata.insert(key_string, value.into());
         } else {
             // Allow unknown keys for extensibility but warn in debug builds
             #[cfg(debug_assertions)]
-            log::warn!(
-                "Unknown metadata key '{}'. Consider using predefined constants.", 
-                key_string
-            );
+            log::warn!("Unknown metadata key '{key_string}'. Consider using predefined constants.");
             self.metadata.insert(key_string, value.into());
         }
         self
@@ -831,7 +832,8 @@ mod tests {
         assert_eq!(props.label, Some("Test Label".to_string()));
         assert!(props.disabled);
         assert_eq!(props.size, ComponentSize::Large);
-    }    #[test]
+    }
+    #[test]
     fn test_component_props_metadata() {
         let props = ComponentProps::new()
             .with_metadata("leading_icon", "filter")
@@ -852,95 +854,101 @@ mod tests {
     #[test]
     fn test_component_state_trait_consistency() {
         use super::super::state_traits::ComponentState;
-        
+
         // Test CheckboxState implements ComponentState
         let checkbox = CheckboxState::Unchecked;
         assert!(!checkbox.is_active());
         assert!(!checkbox.to_bool());
-        
+
         let toggled = checkbox.toggle();
         assert_eq!(toggled, CheckboxState::Checked);
         assert!(toggled.is_active());
         assert!(toggled.to_bool());
-        
+
         // Test SwitchState implements ComponentState
         let switch = SwitchState::Off;
         assert!(!switch.is_active());
         assert!(!switch.to_bool());
-        
+
         let toggled = switch.toggle();
         assert_eq!(toggled, SwitchState::On);
         assert!(toggled.is_active());
         assert!(toggled.to_bool());
-        
+
         // Test ChipState implements ComponentState
         let chip = ChipState::Unselected;
         assert!(!chip.is_active());
         assert!(!chip.to_bool());
-        
+
         let toggled = chip.toggle();
         assert_eq!(toggled, ChipState::Selected);
         assert!(toggled.is_active());
         assert!(toggled.to_bool());
     }
-    
+
     #[test]
     fn test_multi_level_state_trait() {
         use super::super::state_traits::MultiLevelState;
-        
+
         // Test CheckboxState MultiLevelState implementation
         assert!(!CheckboxState::Checked.is_intermediate());
         assert!(CheckboxState::Indeterminate.is_intermediate());
         assert!(!CheckboxState::Unchecked.is_intermediate());
-        
+
         let all_states = CheckboxState::all_states();
         assert_eq!(all_states.len(), 3);
         assert!(all_states.contains(&CheckboxState::Unchecked));
         assert!(all_states.contains(&CheckboxState::Checked));
         assert!(all_states.contains(&CheckboxState::Indeterminate));
-        
+
         // Test state cycling
         let unchecked = CheckboxState::Unchecked;
         let checked = unchecked.next_state();
         let indeterminate = checked.next_state();
         let back_to_unchecked = indeterminate.next_state();
-        
+
         assert_eq!(checked, CheckboxState::Checked);
         assert_eq!(indeterminate, CheckboxState::Indeterminate);
         assert_eq!(back_to_unchecked, CheckboxState::Unchecked);
     }
-    
+
     #[test]
     fn test_interactive_state_trait() {
         use super::super::state_traits::InteractiveState;
-        
+
         // Test ChipState InteractiveState implementation
         let selected = ChipState::Selected;
         assert!(!selected.is_pressed());
-        
+
         let pressed = selected.to_pressed();
         assert_eq!(pressed, ChipState::Pressed);
         assert!(pressed.is_pressed());
-        
+
         let unpressed = pressed.to_unpressed();
         assert_eq!(unpressed, ChipState::Selected);
         assert!(!unpressed.is_pressed());
-        
+
         // Test that unselected doesn't become pressed
         let unselected = ChipState::Unselected;
         let still_unselected = unselected.to_pressed();
         assert_eq!(still_unselected, ChipState::Unselected);
     }
-      #[test]
+    #[test]
     fn test_constants_access() {
         // Test that constants are properly accessible
         assert_eq!(constants::animation::DEFAULT_DURATION_MS, 200);
         assert_eq!(constants::ui::MIN_TOUCH_TARGET_SIZE, 48.0);
         assert_eq!(constants::ui::MAX_LABEL_LENGTH, 200);
         assert_eq!(constants::chips::MAX_LABEL_LENGTH, 100);
-        
+
         // Test that component sizes use constants correctly
-        assert_eq!(ComponentSize::Large.touch_target_size(), constants::sizes::touch_targets::LARGE);
-        assert_eq!(ComponentSize::Medium.size_px(), constants::sizes::MEDIUM_SIZE_PX);
+        assert_eq!(
+            ComponentSize::Large.touch_target_size(),
+            constants::sizes::touch_targets::LARGE
+        );
+        assert_eq!(
+            ComponentSize::Medium.size_px(),
+            constants::sizes::MEDIUM_SIZE_PX
+        );
     }
 }

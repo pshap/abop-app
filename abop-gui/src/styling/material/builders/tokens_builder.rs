@@ -6,7 +6,7 @@
 use iced::Color;
 
 use crate::styling::material::{
-    colors::MaterialColors, themes::theme_mode::ThemeMode, tokens::core::MaterialTokens,
+    MaterialColors, themes::theme_mode::ThemeMode, tokens::core::MaterialTokens,
 };
 
 /// Builder for creating customized Material Design tokens

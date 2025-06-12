@@ -38,6 +38,10 @@ pub enum Message {
 
     /// Selects an audiobook by its ID.
     SelectAudiobook(String),
+    /// Toggles selection state of an audiobook by its ID.
+    ToggleAudiobookSelection(String),
+    /// Toggles selection of all visible audiobooks.
+    ToggleSelectAll,
     /// Deselects all selected audiobooks.
     DeselectAll,
     /// Sorts the audiobook table by the given column.
@@ -64,9 +68,14 @@ pub enum Message {
     PlaybackStarted(Result<String, String>),
     /// Indicates playback has stopped.
     PlaybackStopped,
-
     /// Sets the application theme.
     SetTheme(ThemeMode),
+    /// Toggles between light and dark theme
+    ToggleTheme,
+    /// Toggles the auto-save library setting
+    ToggleAutoSaveLibrary,
+    /// Toggles the scan subdirectories setting
+    ToggleScanSubdirectories,
 
     /// Internal message to reset the `needs_redraw` flag after rendering
     ResetRedrawFlag,
