@@ -357,15 +357,20 @@ impl ButtonTokens {
 /// Color set for button variants
 #[derive(Debug, Clone)]
 pub struct ButtonColorSet {
+    /// Container background color for the button
     pub container: Color,
+    /// Text/icon color that appears on the container
     pub on_container: Color,
+    /// Overlay color applied on hover interactions
     pub hover_overlay: Color,
+    /// Overlay color applied when button is pressed
     pub pressed_overlay: Color,
 }
 
 /// Shape tokens for buttons
 #[derive(Debug, Clone)]
 pub struct ButtonShapes {
+    /// Corner radius for button borders in logical pixels
     pub corner_radius: f32,
 }
 
@@ -402,17 +407,24 @@ impl TextFieldTokens {
 /// Color tokens for text fields
 #[derive(Debug, Clone)]
 pub struct TextFieldColors {
+    /// Background color for the text field container
     pub container: Color,
+    /// Text color that appears within the container
     pub on_container: Color,
+    /// Default outline color for text field borders
     pub outline: Color,
+    /// Outline color when text field is focused
     pub outline_focused: Color,
+    /// Error state color for validation failures
     pub error: Color,
+    /// Overlay color applied on hover interactions
     pub hover_overlay: Color,
 }
 
 /// Shape tokens for text fields
 #[derive(Debug, Clone)]
 pub struct TextFieldShapes {
+    /// Corner radius for text field borders in logical pixels
     pub corner_radius: f32,
 }
 
@@ -446,10 +458,15 @@ impl SelectionTokens {
 /// Color tokens for selection components
 #[derive(Debug, Clone)]
 pub struct SelectionColors {
+    /// Background color when the selection component is selected
     pub selected: Color,
+    /// Text/icon color that appears on selected background
     pub on_selected: Color,
+    /// Background color when the selection component is unselected
     pub unselected: Color,
+    /// Text/icon color that appears on unselected background
     pub on_unselected: Color,
+    /// Color used when the selection component is disabled
     pub disabled: Color,
 }
 
