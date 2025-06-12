@@ -24,13 +24,12 @@ impl std::error::Error for EnvVarError {}
 impl fmt::Display for EnvVarError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EnvVarError::NotFound(var) => write!(f, "Environment variable '{}' not found", var),
+            EnvVarError::NotFound(var) => write!(f, "Environment variable '{var}' not found"),
             EnvVarError::InvalidUnicode(os_str) => write!(
                 f,
-                "Environment variable contains invalid Unicode: {:?}",
-                os_str
+                "Environment variable contains invalid Unicode: {os_str:?}"
             ),
-            EnvVarError::PathConversion(msg) => write!(f, "Path conversion error: {}", msg),
+            EnvVarError::PathConversion(msg) => write!(f, "Path conversion error: {msg}"),
         }
     }
 }
@@ -138,7 +137,7 @@ mod tests {
     use std::env;
 
     // Use a static mutex to prevent environment variable tests from interfering with each other
-    static ENV_MUTEX: std::sync::LazyLock<std::sync::Mutex<()>> = 
+    static ENV_MUTEX: std::sync::LazyLock<std::sync::Mutex<()>> =
         std::sync::LazyLock::new(|| std::sync::Mutex::new(()));
 
     #[test]

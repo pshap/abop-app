@@ -185,7 +185,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             if self.disabled {
                 // Get the size or default to Medium
                 let button_size = self.size.unwrap_or(ButtonSize::Medium);
-                
+
                 // Map to size variant for icon support
                 let size_variant = icon_support::map_button_size(button_size);
 
@@ -210,7 +210,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                     .into())
             } else {
                 // Create an enabled icon button
-                let on_press = self.on_press.ok_or_else(|| {
+                let on_press = self.on_press.ok_or({
                     ButtonBuildError::MissingField("on_press for enabled icon button")
                 })?;
 

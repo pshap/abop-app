@@ -250,15 +250,15 @@ impl AudioPlayer {
 
     /// Checks if the sink is empty (finished playing)
     pub fn is_finished(&self) -> bool {
-        self.sink.as_ref().map_or(true, |s| s.empty())
+        self.sink.as_ref().is_none_or(|s| s.empty())
     }
 
     /// Updates the player state based on sink status
     pub fn update_state(&mut self) {
-        if let Some(sink) = self.sink.as_ref() {
-            if sink.empty() {
-                self.state = PlayerState::Stopped;
-            }
+        if let Some(sink) = self.sink.as_ref()
+            && sink.empty()
+        {
+            self.state = PlayerState::Stopped;
         }
     }
 }

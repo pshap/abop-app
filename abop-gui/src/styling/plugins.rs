@@ -8,7 +8,6 @@ use iced::{Background, Border, Color, Shadow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use thiserror::Error;
 
 /// Result type for style operations
 pub type StyleResult<T> = Result<T, StyleError>;
@@ -16,16 +15,16 @@ pub type StyleResult<T> = Result<T, StyleError>;
 /// Safely read from an RwLock, converting poison errors to StyleError
 fn read_lock<T>(lock: &RwLock<T>) -> StyleResult<RwLockReadGuard<'_, T>> {
     lock.read().map_err(|e| {
-        log::error!("Failed to acquire read lock: {}", e);
-        StyleError::LockError(format!("Failed to acquire read lock: {}", e))
+        log::error!("Failed to acquire read lock: {e}");
+        StyleError::LockError(format!("Failed to acquire read lock: {e}"))
     })
 }
 
 /// Safely write to an RwLock, converting poison errors to StyleError
 fn write_lock<T>(lock: &RwLock<T>) -> StyleResult<RwLockWriteGuard<'_, T>> {
     lock.write().map_err(|e| {
-        log::error!("Failed to acquire write lock: {}", e);
-        StyleError::LockError(format!("Failed to acquire write lock: {}", e))
+        log::error!("Failed to acquire write lock: {e}");
+        StyleError::LockError(format!("Failed to acquire write lock: {e}"))
     })
 }
 
@@ -195,14 +194,14 @@ impl StylePluginRegistry {
         // Use write_lock helper for safe write operations
         let mut plugins = write_lock(&self.plugins)?;
         let theme = read_lock(&self.current_theme)?;
-        
+
         // Initialize the plugin with the current theme
         let mut plugin = plugin;
         plugin.initialize(&theme)?;
-        
+
         // Insert the plugin into the registry
         plugins.insert(info.name, plugin);
-        
+
         Ok(())
     }
 
@@ -302,7 +301,7 @@ impl StylePluginRegistry {
     /// Returns `StyleError::LockError` if either lock is poisoned
     pub fn update_theme(&self, new_theme: ThemeMode) -> StyleResult<()> {
         // Update current theme
-        *write_lock(&self.current_theme)? = new_theme.clone();
+        *write_lock(&self.current_theme)? = new_theme;
 
         // Update each plugin while holding the lock
         let plugins = read_lock(&self.plugins)?;

@@ -4,7 +4,6 @@
 //! including long path support and UNC path handling.
 
 use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 /// The maximum path length in Windows without the extended-length prefix
@@ -96,7 +95,7 @@ pub fn is_valid_windows_path<P: AsRef<Path>>(path: P) -> bool {
     // Check for invalid characters in the path
     let invalid_chars: &[char] = &['<', '>', '"', '|', '?', '*'];
 
-    path.to_str().map_or(false, |s| {
+    path.to_str().is_some_and(|s| {
         !s.chars().any(|c| invalid_chars.contains(&c)) &&
         // Check for reserved device names (e.g., CON, PRN, AUX, etc.)
         !is_reserved_device_name(path)

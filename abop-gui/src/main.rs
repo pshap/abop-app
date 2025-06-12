@@ -68,7 +68,7 @@ fn main() -> iced::Result {
         ))
         .run_with(App::initial)
         .map_err(|e| {
-            log::error!("Application failed to run: {}", e);
+            log::error!("Application failed to run: {e}");
             e
         })
 }

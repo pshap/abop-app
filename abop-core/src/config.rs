@@ -104,9 +104,9 @@ impl Config {
                     if expanded_path.exists() {
                         return Ok(expanded_path);
                     }
-                    warn!("Configured config file does not exist: {:?}", expanded_path);
+                    warn!("Configured config file does not exist: {expanded_path:?}");
                 }
-                Err(e) => warn!("Failed to expand config path from ABOP_CONFIG: {}", e),
+                Err(e) => warn!("Failed to expand config path from ABOP_CONFIG: {e}"),
             }
         }
 
@@ -118,7 +118,7 @@ impl Config {
 
         let config_dir = base_dirs.config_dir();
         std::fs::create_dir_all(config_dir)
-            .map_err(|e| AppError::Config(format!("Could not create config directory: {}", e)))?;
+            .map_err(|e| AppError::Config(format!("Could not create config directory: {e}")))?;
 
         Ok(config_dir.join("config.toml"))
     }

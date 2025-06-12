@@ -53,7 +53,7 @@ pub fn view(state: &UiState, route: crate::router::Route) -> Element<'_, Message
         &state.library_path,
         &state.material_tokens,
     );
-    
+
     // Route-specific content
     let content = match route {
         crate::router::Route::Library => library_view(state),
@@ -65,7 +65,7 @@ pub fn view(state: &UiState, route: crate::router::Route) -> Element<'_, Message
     let main_content = column![toolbar, content]
         .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
         .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)
-        
+
     // If settings dialog is open, show it as a modal overlay
     if state.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)

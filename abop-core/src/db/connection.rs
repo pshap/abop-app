@@ -98,7 +98,7 @@ impl EnhancedConnection {
         );
 
         if let Err(e) = self.health_monitor.set_connecting() {
-            log::warn!("Failed to set health status to connecting: {}", e);
+            log::warn!("Failed to set health status to connecting: {e}");
         }
 
         let start_time = Instant::now();

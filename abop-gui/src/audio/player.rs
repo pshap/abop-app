@@ -8,8 +8,9 @@ use std::path::PathBuf;
 // ================================================================================================
 
 /// Global audio player instance
-static AUDIO_PLAYER: std::sync::LazyLock<ThreadSafeAudioPlayer> =
-    std::sync::LazyLock::new(|| ThreadSafeAudioPlayer::new().expect("Failed to create audio player"));
+static AUDIO_PLAYER: std::sync::LazyLock<ThreadSafeAudioPlayer> = std::sync::LazyLock::new(|| {
+    ThreadSafeAudioPlayer::new().expect("Failed to create audio player")
+});
 
 /// Get a reference to the global audio player
 #[must_use]

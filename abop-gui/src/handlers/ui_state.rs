@@ -2,17 +2,15 @@
 //!
 //! Handles messages that update UI state without requiring async operations
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use iced::futures::future;
-use iced::futures::FutureExt;
-use iced::widget::text;
 use iced::Task;
+use iced::futures::FutureExt;
 
-use crate::utils::path_utils::PathCompare;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::theme::ThemeMode;
+use crate::utils::path_utils::PathCompare;
 
 /// Handles UI state changes that don't require async operations
 #[must_use]
@@ -78,7 +76,11 @@ fn handle_play_pause(state: &mut UiState) -> Option<Task<Message>> {
         // Start playback if we have a file selected
         if let Some(current_file) = &state.current_playing_file {
             // Find the audiobook and start playing
-            if let Some(audiobook) = state.audiobooks.iter().find(|ab| ab.path.eq_path(current_file).unwrap_or(false)) {
+            if let Some(audiobook) = state
+                .audiobooks
+                .iter()
+                .find(|ab| ab.path.eq_path(current_file).unwrap_or(false))
+            {
                 // Return a command to play the audio
                 return Some(Task::perform(
                     crate::audio::player::play_selected_audio(

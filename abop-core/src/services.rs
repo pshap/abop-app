@@ -4,10 +4,7 @@ use crate::{AppError, Result};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::future::Future;
-use std::sync::{
-    Arc, RwLock,
-    atomic::{AtomicU64, Ordering},
-};
+use std::sync::{Arc, RwLock, atomic::Ordering};
 use tokio::task::JoinHandle;
 
 /// Represents a handle to a background task
@@ -142,7 +139,7 @@ impl ServiceContainer {
         // Create a task that maps the Result<(), AppError> to ()
         let task = async move {
             if let Err(e) = future().await {
-                log::error!("Task '{}' failed: {}", task_name_for_log, e);
+                log::error!("Task '{task_name_for_log}' failed: {e}");
             }
         };
 
@@ -218,7 +215,7 @@ impl ServiceContainer {
         // Await the task completion and return the result
         handle
             .await
-            .map_err(|e| AppError::Other(format!("Task failed: {}", e)))?;
+            .map_err(|e| AppError::Other(format!("Task failed: {e}")))?;
 
         Ok(())
     }
@@ -234,7 +231,7 @@ impl Drop for ServiceContainer {
     fn drop(&mut self) {
         // Try to cancel all tasks on drop
         if let Err(e) = self.cancel_all_tasks() {
-            log::error!("Failed to cancel all tasks during drop: {}", e);
+            log::error!("Failed to cancel all tasks during drop: {e}");
         }
     }
 }

@@ -131,7 +131,7 @@ impl HealthMonitor {
             .write()
             .map(|mut guard| *guard = ConnectionHealth::Connecting)
         {
-            return Err(format!("Failed to update health status: {}", e));
+            return Err(format!("Failed to update health status: {e}"));
         }
 
         if let Err(e) = self
@@ -139,7 +139,7 @@ impl HealthMonitor {
             .write()
             .map(|mut guard| *guard = Some(Instant::now()))
         {
-            return Err(format!("Failed to update last check time: {}", e));
+            return Err(format!("Failed to update last check time: {e}"));
         }
 
         Ok(())
