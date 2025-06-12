@@ -14,7 +14,6 @@ use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use crate::styling::material::tokens::MaterialTokens;
 
 use iced::{
     Element,

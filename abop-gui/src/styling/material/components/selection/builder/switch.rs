@@ -12,8 +12,7 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{
-    validate_label, validate_switch_state, validate_props, system_has_reduced_motion,
-    validation_config_for_toggles
+    validate_label, validate_switch_state, validate_props, system_has_reduced_motion
 };
 use super::super::defaults;
 use super::components::Switch;
