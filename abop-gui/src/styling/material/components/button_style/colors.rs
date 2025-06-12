@@ -5,7 +5,7 @@
 //! `SelectionColors` to maintain architectural consistency.
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::{StateOpacity, MaterialColors};
+use crate::styling::material::{MaterialColors, StateOpacity};
 use iced::Color;
 
 use super::ButtonStyleVariant;

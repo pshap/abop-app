@@ -59,11 +59,7 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
         .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
         .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)    // If settings dialog is open, show it as a modal overlay
     if state.settings_open {
-        modal(
-            main_content,
-            settings_view(state),
-            Message::CloseSettings,
-        )
+        modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
         main_content.into()
     }

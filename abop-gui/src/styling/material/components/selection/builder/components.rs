@@ -10,26 +10,28 @@
 //! - [`Chip`] - Material Design 3 chip component
 
 use super::super::common::{prelude::*, validate_props};
-use crate::styling::material::{MaterialColors, tokens::core::MaterialTokens};
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
+use crate::styling::material::{MaterialColors, tokens::core::MaterialTokens};
 use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 
 // Static MaterialTokens instances to avoid lifetime issues
 /// Default light theme Material Design tokens for selection components.
-/// 
+///
 /// This provides a static instance of MaterialTokens configured with light theme colors,
 /// used as a fallback when no specific tokens are provided for component styling.
-pub static LIGHT_TOKENS: std::sync::LazyLock<MaterialTokens> = 
-    std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::light_default()));
-    
+pub static LIGHT_TOKENS: std::sync::LazyLock<MaterialTokens> = std::sync::LazyLock::new(|| {
+    MaterialTokens::default().with_colors(MaterialColors::light_default())
+});
+
 /// Default dark theme Material Design tokens for selection components.
-/// 
+///
 /// This provides a static instance of MaterialTokens configured with dark theme colors,
 /// used as a fallback when no specific tokens are provided for component styling.
-pub static DARK_TOKENS: std::sync::LazyLock<MaterialTokens> = 
-    std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::dark_default()));
+pub static DARK_TOKENS: std::sync::LazyLock<MaterialTokens> = std::sync::LazyLock::new(|| {
+    MaterialTokens::default().with_colors(MaterialColors::dark_default())
+});
 
 // ============================================================================
 // Component Struct Definitions
@@ -304,29 +306,30 @@ where
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer>
     where
-        T: Copy + 'a,    {
+        T: Copy + 'a,
+    {
         // Convert modern size to legacy size
         let legacy_size = match self.props.size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };        // Create the radio button label
+        }; // Create the radio button label
         let default_label = String::new();
         let label = self.props.label.as_ref().unwrap_or(&default_label);
-        
+
         // Create tokens outside the closure to ensure they live long enough
         let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
-        
+
         // Create the style function with the tokens
         let style_fn = {
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
                 .size(legacy_size)
                 .error(self.error_state);
-                
+
             // Create the style function
             builder.radio_style()
         };
-        
+
         // Create radio widget with the style function
         let radio = IcedRadio::new(label, self.value, selected_value, on_select).style(style_fn);
 

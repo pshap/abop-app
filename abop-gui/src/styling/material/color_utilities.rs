@@ -3,8 +3,8 @@
 //! This module provides enhanced utilities for working with the unified MD3 color system,
 //! including accessibility helpers, color manipulation, and theme utilities.
 
+use crate::styling::material::unified_colors::{ColorRole, MaterialColors, MaterialPalette};
 use iced::Color;
-use crate::styling::material::unified_colors::{MaterialColors, MaterialPalette, ColorRole};
 
 /// Advanced color manipulation and accessibility utilities
 pub struct ColorUtilities;
@@ -96,7 +96,10 @@ impl ColorUtilities {
         );
         report.add_check(
             "Primary Container/On-Primary Container",
-            Self::meets_accessibility_contrast(colors.primary.on_container, colors.primary.container),
+            Self::meets_accessibility_contrast(
+                colors.primary.on_container,
+                colors.primary.container,
+            ),
         );
 
         // Check secondary color combinations
@@ -133,9 +136,7 @@ pub struct AccessibilityReport {
 
 impl AccessibilityReport {
     fn new() -> Self {
-        Self {
-            checks: Vec::new(),
-        }
+        Self { checks: Vec::new() }
     }
 
     fn add_check(&mut self, name: impl Into<String>, passes: bool) {
@@ -157,7 +158,8 @@ impl AccessibilityReport {
 
     /// Get a summary of the accessibility report
     pub fn summary(&self) -> String {
-        let total = self.checks.len();        let passed = self.checks.iter().filter(|(_, passes)| *passes).count();
+        let total = self.checks.len();
+        let passed = self.checks.iter().filter(|(_, passes)| *passes).count();
         format!("Accessibility: {passed}/{total} checks passed")
     }
 }
@@ -200,7 +202,8 @@ impl ThemeUtilities {
 
         // Ensure primary combinations have high contrast
         enhanced.primary.on_base = ColorUtilities::get_best_text_color(enhanced.primary.base);
-        enhanced.primary.on_container = ColorUtilities::get_best_text_color(enhanced.primary.container);
+        enhanced.primary.on_container =
+            ColorUtilities::get_best_text_color(enhanced.primary.container);
 
         enhanced
     }
@@ -213,7 +216,8 @@ impl ThemeUtilities {
         let neutral_tone = Color::from_rgb(0.5, 0.5, 0.5);
 
         softened.outline = ColorUtilities::blend_colors(softened.outline, neutral_tone, 0.3);
-        softened.outline_variant = ColorUtilities::blend_colors(softened.outline_variant, neutral_tone, 0.5);
+        softened.outline_variant =
+            ColorUtilities::blend_colors(softened.outline_variant, neutral_tone, 0.5);
 
         softened
     }
@@ -221,14 +225,23 @@ impl ThemeUtilities {
     /// Generate a seasonal theme variation
     pub fn seasonal_theme(base_color: Color, season: Season) -> MaterialColors {
         let seasonal_color = match season {
-            Season::Spring => ColorUtilities::blend_colors(base_color, Color::from_rgb(0.4, 0.8, 0.4), 0.2),
-            Season::Summer => ColorUtilities::blend_colors(base_color, Color::from_rgb(1.0, 0.8, 0.2), 0.2),
-            Season::Autumn => ColorUtilities::blend_colors(base_color, Color::from_rgb(0.8, 0.4, 0.2), 0.2),
-            Season::Winter => ColorUtilities::blend_colors(base_color, Color::from_rgb(0.3, 0.5, 0.8), 0.2),
+            Season::Spring => {
+                ColorUtilities::blend_colors(base_color, Color::from_rgb(0.4, 0.8, 0.4), 0.2)
+            }
+            Season::Summer => {
+                ColorUtilities::blend_colors(base_color, Color::from_rgb(1.0, 0.8, 0.2), 0.2)
+            }
+            Season::Autumn => {
+                ColorUtilities::blend_colors(base_color, Color::from_rgb(0.8, 0.4, 0.2), 0.2)
+            }
+            Season::Winter => {
+                ColorUtilities::blend_colors(base_color, Color::from_rgb(0.3, 0.5, 0.8), 0.2)
+            }
         };
 
         MaterialColors::from_seed(seasonal_color, false)
-    }    /// Helper to create a custom palette with specific brand colors
+    }
+    /// Helper to create a custom palette with specific brand colors
     fn create_custom_palette(primary: Color, _secondary: Option<Color>) -> MaterialPalette {
         // This would use your existing seed generation but with custom secondary
         // For now, use the primary-based generation
@@ -256,17 +269,17 @@ impl ColorRoleUtilities {
     /// Create a color role from a base color with automatic contrast calculations
     pub fn create_role_from_base(base_color: Color, is_dark_theme: bool) -> ColorRole {
         let on_base = ColorUtilities::get_best_text_color(base_color);
-        
+
         // Create container as a lighter/darker variant
         let container = if is_dark_theme {
             ColorUtilities::darken(base_color, 0.6)
         } else {
             ColorUtilities::lighten(base_color, 0.7)
         };
-        
-        let on_container = ColorUtilities::get_best_text_color(container);        // Fixed variants (for consistent surfaces)
+
+        let on_container = ColorUtilities::get_best_text_color(container); // Fixed variants (for consistent surfaces)
         let fixed = ColorUtilities::lighten(base_color, 0.7); // Same for both themes intentionally
-        
+
         let fixed_dim = ColorUtilities::darken(fixed, 0.1);
         let on_fixed = ColorUtilities::get_best_text_color(fixed);
         let on_fixed_variant = ColorUtilities::blend_colors(on_fixed, base_color, 0.3);
@@ -308,7 +321,7 @@ mod tests {
     fn test_accessibility_validation() {
         let colors = MaterialColors::light_default();
         let report = ColorUtilities::validate_accessibility(&colors);
-        
+
         // Most combinations should pass accessibility
         assert!(report.all_pass() || report.failed_checks().len() < 3);
     }
@@ -318,7 +331,7 @@ mod tests {
         let red = Color::from_rgb(1.0, 0.0, 0.0);
         let blue = Color::from_rgb(0.0, 0.0, 1.0);
         let purple = ColorUtilities::blend_colors(red, blue, 0.5);
-        
+
         assert!(purple.r > 0.0 && purple.r < 1.0);
         assert!(purple.b > 0.0 && purple.b < 1.0);
         assert_eq!(purple.g, 0.0);
@@ -328,7 +341,7 @@ mod tests {
     fn test_theme_creation() {
         let brand_color = Color::from_rgb(0.2, 0.4, 0.8);
         let theme = ThemeUtilities::from_brand_colors(brand_color, None, false);
-        
+
         // Should create a valid theme
         assert!(ColorUtilities::validate_accessibility(&theme).all_pass());
     }
@@ -338,7 +351,7 @@ mod tests {
         let base = Color::from_rgb(0.5, 0.5, 0.5);
         let spring = ThemeUtilities::seasonal_theme(base, Season::Spring);
         let winter = ThemeUtilities::seasonal_theme(base, Season::Winter);
-        
+
         // Seasonal themes should be different
         assert_ne!(spring.primary.base, winter.primary.base);
     }

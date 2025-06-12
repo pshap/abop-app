@@ -43,10 +43,8 @@ pub use selection_style::{
 };
 
 // Re-export selection components
-pub use selection::{
-    Checkbox, CheckboxBuilder, Switch, SwitchBuilder,
-};
 pub use selection::common::{CheckboxState, ComponentSize, SwitchState};
+pub use selection::{Checkbox, CheckboxBuilder, Switch, SwitchBuilder};
 /// Phase 3: Complete Material Design 3 widget implementations as proper Iced widgets
 pub mod widgets;
 

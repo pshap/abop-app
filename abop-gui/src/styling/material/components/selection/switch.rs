@@ -7,8 +7,8 @@
 //! - Modern builder pattern with fluent API
 //! - Preparation for custom switch widget implementation (Phase 4)
 
-use super::builder::{Switch, SwitchBuilder};
 use super::builder::components::LIGHT_TOKENS;
+use super::builder::{Switch, SwitchBuilder};
 use super::common::prelude::*;
 use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
@@ -78,7 +78,7 @@ impl Switch {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };        // Legacy size conversion (this will be used in the closure below)
+        }; // Legacy size conversion (this will be used in the closure below)
 
         // Create the switch label
         let default_label = String::new();
@@ -86,20 +86,17 @@ impl Switch {
 
         // Use static tokens to avoid lifetime issues
         let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
-        
+
         // Create the style function with the tokens
         let style_fn = {
-            let builder = SelectionStyleBuilder::new(
-                tokens,
-                SelectionVariant::Switch,
-            )
-            .size(legacy_size)
-            .error(self.has_error());
-            
+            let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Switch)
+                .size(legacy_size)
+                .error(self.has_error());
+
             // Create the style function
             builder.checkbox_style()
         };
-        
+
         // Create the checkbox widget with the style function
         let mut switch_widget = IcedCheckbox::new(label, is_enabled).style(style_fn);
 
@@ -112,7 +109,8 @@ impl Switch {
         }
 
         switch_widget.into()
-    }    /// Create a simplified view that handles state changes automatically
+    }
+    /// Create a simplified view that handles state changes automatically
     ///
     /// This is a convenience method for cases where you want the switch to
     /// manage its own state internally.
@@ -277,7 +275,7 @@ impl CustomSwitchWidget {
             }
             (_, _, true) => colors.on_error(), // Error state
             (SwitchState::On, false, false) => colors.on_primary(), // On state
-            (SwitchState::Off, false, false) => colors.outline // Off state
+            (SwitchState::Off, false, false) => colors.outline, // Off state
         }
     }
 }

@@ -3,10 +3,7 @@
 //! This module provides a clean, professional theming system with two carefully
 //! crafted themes: a dark sunset theme and a matching light theme.
 
-use crate::styling::material::{
-    MaterialTokens,
-    MaterialColors, MaterialPalette,
-};
+use crate::styling::material::{MaterialColors, MaterialPalette, MaterialTokens};
 use iced::{Color, Theme as IcedTheme, theme::Palette};
 
 // ================================================================================================

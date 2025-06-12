@@ -12,7 +12,8 @@ use crate::styling::material::components::data;
 /// Component for creating table headers with Material Design styling
 pub struct TableHeader;
 
-impl TableHeader {    /// Create a header element from columns and state with selection support
+impl TableHeader {
+    /// Create a header element from columns and state with selection support
     #[must_use]
     pub fn create<'a>(
         columns: &[data::TableColumn],
@@ -21,10 +22,10 @@ impl TableHeader {    /// Create a header element from columns and state with se
         selected_items: &HashSet<String>,
         total_items: usize,
     ) -> Element<'a, Message> {
-        let mut header_cells = vec![];        // Add select-all checkbox with enhanced indeterminate state visualization
+        let mut header_cells = vec![]; // Add select-all checkbox with enhanced indeterminate state visualization
         let all_selected = !selected_items.is_empty() && selected_items.len() == total_items;
         let some_selected = !selected_items.is_empty() && selected_items.len() < total_items;
-        
+
         // Enhanced checkbox with proper Material Design 3 styling and indeterminate state support
         let select_all_checkbox = checkbox("", all_selected)
             .on_toggle(|_| Message::ToggleSelectAll)
@@ -44,13 +45,13 @@ impl TableHeader {    /// Create a header element from columns and state with se
                 } else {
                     Color::TRANSPARENT
                 };
-                
+
                 let border_color = if some_selected || all_selected {
                     tokens.colors.primary.base
                 } else {
                     tokens.colors.outline
                 };
-                
+
                 iced::widget::checkbox::Style {
                     background: Background::Color(background_color),
                     icon_color: if some_selected {
@@ -67,14 +68,14 @@ impl TableHeader {    /// Create a header element from columns and state with se
                     text_color: Some(tokens.colors.on_surface),
                 }
             });
-            
+
         let select_cell = container(select_all_checkbox)
             .width(Length::Fixed(48.0))
             .height(Length::Fill)
             .padding(Padding::from([8.0, 8.0]))
             .align_x(iced::Alignment::Center)
             .align_y(iced::Alignment::Center);
-        
+
         header_cells.push(select_cell.into());
 
         // Add the regular column headers
@@ -82,7 +83,7 @@ impl TableHeader {    /// Create a header element from columns and state with se
             .iter()
             .enumerate()
             .map(|(index, column)| Self::create_header_cell(column, index, state, tokens));
-        
+
         header_cells.extend(column_headers);
 
         container(

@@ -13,8 +13,8 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{
-    validate_label, validate_chip_state, validate_props, system_has_reduced_motion,
-    validation_config_for_chips
+    system_has_reduced_motion, validate_chip_state, validate_label, validate_props,
+    validation_config_for_chips,
 };
 use super::super::defaults;
 use super::components::Chip;

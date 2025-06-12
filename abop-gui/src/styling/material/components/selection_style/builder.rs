@@ -135,9 +135,9 @@ impl<'a> SelectionStyleBuilder<'a> {
             _marker: std::marker::PhantomData,
         }
     }
-    
+
     /// Consume the builder and return the tokens
-    /// 
+    ///
     /// This is useful when you need to ensure the builder is not used after
     /// creating the style function.
     pub fn into_inner(self) -> &'a MaterialTokens {
@@ -210,7 +210,7 @@ impl<'a> SelectionStyleBuilder<'a> {
     /// Create radio button styling function
     ///
     /// Returns a function that can be used with Iced's radio styling system.
-pub fn radio_style(
+    pub fn radio_style(
         self,
     ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style + 'a {
         move |_theme: &Theme, status: iced::widget::radio::Status| {
@@ -241,7 +241,7 @@ pub fn radio_style(
     /// Create chip button styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for chips.
-pub fn chip_style(
+    pub fn chip_style(
         self,
         is_selected: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {
@@ -272,7 +272,7 @@ pub fn chip_style(
     /// Create switch styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for switches.
-pub fn switch_style(
+    pub fn switch_style(
         self,
         is_enabled: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {

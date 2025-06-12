@@ -33,7 +33,8 @@ impl TableRow {
             .collect();
         log::debug!("Finished creating rows, total: {}", result.len());
         result
-    }    /// Create a single row element with selection checkbox
+    }
+    /// Create a single row element with selection checkbox
     fn create_single_row<'a>(
         audiobook: &'a Audiobook,
         columns: &[data::TableColumn],
@@ -41,12 +42,13 @@ impl TableRow {
         tokens: &'a MaterialTokens,
         config: &data::DataTableConfig,
         row_index: usize,
-    ) -> Element<'a, Message> {        let is_selected = selected_items.contains(&audiobook.id);
+    ) -> Element<'a, Message> {
+        let is_selected = selected_items.contains(&audiobook.id);
         let is_striped = config.striped && row_index % 2 == 1;
 
         // Create enhanced selection checkbox with improved Material Design 3 styling
         let mut all_cells = vec![];
-        
+
         let selection_checkbox = checkbox("", is_selected)
             .on_toggle(|_| Message::ToggleAudiobookSelection(audiobook.id.clone()))
             .size(20)
@@ -64,10 +66,10 @@ impl TableRow {
                         tokens.colors.primary.base
                     },
                     border: iced::Border {
-                        color: if is_selected { 
-                            tokens.colors.primary.base 
-                        } else { 
-                            tokens.colors.outline 
+                        color: if is_selected {
+                            tokens.colors.primary.base
+                        } else {
+                            tokens.colors.outline
                         },
                         width: 2.0,
                         radius: 4.0.into(),
@@ -75,14 +77,14 @@ impl TableRow {
                     text_color: Some(tokens.colors.on_surface),
                 }
             });
-            
+
         let checkbox_cell = container(selection_checkbox)
             .width(Length::Fixed(48.0))
             .height(Length::Fill)
             .padding(Padding::from([8.0, 8.0]))
             .align_x(iced::Alignment::Center)
             .align_y(iced::Alignment::Center);
-        
+
         all_cells.push(checkbox_cell.into());
 
         // Create data cells
@@ -94,7 +96,7 @@ impl TableRow {
             })
             .collect();
         log::debug!("Created {} cells for row {}", data_cells.len(), row_index);
-        
+
         all_cells.extend(data_cells);
 
         let row_content = row(all_cells);

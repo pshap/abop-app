@@ -67,7 +67,8 @@ pub enum Message {
     /// Indicates playback has started.
     PlaybackStarted(Result<String, String>),
     /// Indicates playback has stopped.
-    PlaybackStopped,    /// Sets the application theme.
+    PlaybackStopped,
+    /// Sets the application theme.
     SetTheme(ThemeMode),
     /// Toggles between light and dark theme
     ToggleTheme,

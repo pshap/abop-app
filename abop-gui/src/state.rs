@@ -70,7 +70,8 @@ pub struct UiState {
     /// Current theme mode for the GUI (light or dark)
     pub theme_mode: ThemeMode,
     /// Whether the settings dialog is currently open
-    pub settings_open: bool,    /// Whether the recent directories dropdown is currently open
+    pub settings_open: bool,
+    /// Whether the recent directories dropdown is currently open
     pub recent_directories_open: bool,
     /// Whether to automatically save library state after scanning  
     pub auto_save_library: bool,
@@ -129,7 +130,8 @@ impl UiState {
     #[must_use]
     pub fn from_core_state(core_state: AppState) -> Self {
         let theme_mode = ThemeMode::Dark;
-        let material_tokens = MaterialTokens::new();        Self {
+        let material_tokens = MaterialTokens::new();
+        Self {
             core_state: core_state.clone(), // Clone core_state first
             theme_mode,
             material_tokens,

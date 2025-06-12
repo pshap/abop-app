@@ -6,9 +6,9 @@
 use iced::Color;
 
 use crate::styling::material::{
+    MaterialColors,
     elevation::MaterialElevation,
     helpers::{AnimationHelpers, ComponentHelpers, ElevationHelpers},
-    MaterialColors,
     shapes::{self, MaterialShapes},
     sizing::SizingTokens,
     spacing::SpacingTokens,
@@ -186,7 +186,7 @@ impl MaterialTokens {
     #[must_use]
     pub fn is_dark_theme(&self) -> bool {
         // Check if background is darker than 0.5 luminance
-        let bg = self.colors.background;  // Field access, not method call
+        let bg = self.colors.background; // Field access, not method call
         bg.b.mul_add(0.114, bg.r.mul_add(0.299, bg.g * 0.587)) < 0.5
     }
 

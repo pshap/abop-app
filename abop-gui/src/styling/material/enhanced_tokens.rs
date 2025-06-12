@@ -3,8 +3,8 @@
 //! This module provides a comprehensive token system that integrates with the unified
 //! MaterialColors and provides additional semantic and component-specific tokens.
 
-use iced::Color;
 use crate::styling::material::unified_colors::MaterialColors;
+use iced::Color;
 
 /// Complete Material Design 3 token system
 #[derive(Debug, Clone)]
@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn test_enhanced_tokens_creation() {
         let tokens = EnhancedMaterialTokens::light();
-        
+
         // Verify all token categories are present
         assert!(tokens.typography.body_medium > 0.0);
         assert!(tokens.spacing.md > 0.0);
@@ -555,7 +555,7 @@ mod tests {
     fn test_component_tokens() {
         let tokens = EnhancedMaterialTokens::light();
         let button_tokens = tokens.button_tokens();
-        
+
         // Button tokens should be valid
         assert_ne!(button_tokens.primary.container, Color::TRANSPARENT);
         assert!(button_tokens.shapes.corner_radius > 0.0);
@@ -567,14 +567,14 @@ mod tests {
         let tokens = ThemeBuilder::new()
             .with_colors(custom_colors.clone())
             .build(false);
-            
+
         assert_eq!(tokens.colors.primary.base, custom_colors.primary.base);
     }
 
     #[test]
     fn test_state_layer_opacity() {
         let state_layers = StateLayerTokens::light();
-        
+
         // All opacities should be reasonable values
         assert!(state_layers.hover_opacity > 0.0 && state_layers.hover_opacity < 1.0);
         assert!(state_layers.focus_opacity > 0.0 && state_layers.focus_opacity < 1.0);

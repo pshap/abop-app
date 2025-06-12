@@ -33,8 +33,8 @@ impl MaterialElevation {
     /// Create elevation system with Material Design colors
     #[must_use]
     pub fn new(colors: &MaterialColors) -> Self {
-        let shadow_color = colors.shadow;  // Field access, not method call
-        let tint_color = colors.surface_tint;  // Field access, not method call
+        let shadow_color = colors.shadow; // Field access, not method call
+        let tint_color = colors.surface_tint; // Field access, not method call
 
         Self::with_colors(shadow_color, tint_color)
     }

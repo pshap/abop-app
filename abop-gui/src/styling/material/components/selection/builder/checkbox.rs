@@ -8,7 +8,7 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{
-    validate_label, validate_checkbox_state, validate_props, system_has_reduced_motion
+    system_has_reduced_motion, validate_checkbox_state, validate_label, validate_props,
 };
 use super::patterns::*;
 use super::validation::*;

@@ -19,7 +19,8 @@ pub const fn get_status_colors(
 ) -> (Color, Color) {
     match status_type {
         StatusType::Success => (Color::from_rgb(0.0, 0.8, 0.0), Color::WHITE),
-        StatusType::Warning => (Color::from_rgb(1.0, 0.6, 0.0), Color::WHITE),        StatusType::Error => (tokens.colors.error.base, tokens.colors.error.on_base),
+        StatusType::Warning => (Color::from_rgb(1.0, 0.6, 0.0), Color::WHITE),
+        StatusType::Error => (tokens.colors.error.base, tokens.colors.error.on_base),
         StatusType::Info => (tokens.colors.primary.base, tokens.colors.primary.on_base),
         StatusType::Loading => (tokens.colors.primary.base, tokens.colors.primary.on_base),
         StatusType::Neutral => (
@@ -38,7 +39,8 @@ pub fn create_action_button<'a, Message>(
 ) -> button::Button<'a, Message>
 where
     Message: Clone + 'a,
-{    let button_style = if is_primary {
+{
+    let button_style = if is_primary {
         button::Style {
             background: Some(Background::Color(tokens.colors.primary.base)),
             text_color: tokens.colors.primary.on_base,

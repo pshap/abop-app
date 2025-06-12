@@ -90,13 +90,12 @@ pub use builder::{
     ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder,
 };
 pub use chip::{
-    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection, 
+    ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection,
     single_select_chip_collection,
 };
 pub use common::{
-    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentSize, 
-    EasingCurve, SelectionComponent, SelectionError, SwitchState, ValidationConfig,
-    ValidationRule,
+    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentSize,
+    EasingCurve, SelectionComponent, SelectionError, SwitchState, ValidationConfig, ValidationRule,
 };
 pub use radio::{RadioGroupBuilder, RadioGroupState};
 pub use state_traits::{AnimatableState, ComponentState, InteractiveState, MultiLevelState};

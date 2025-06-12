@@ -7,10 +7,10 @@
 //! - Indeterminate state visual rendering
 //! - Modern builder pattern with fluent API
 
-use super::builder::{Checkbox, CheckboxBuilder};
 use super::builder::components::LIGHT_TOKENS;
-use super::common::prelude::*;
+use super::builder::{Checkbox, CheckboxBuilder};
 use super::common::SelectionComponent;
+use super::common::prelude::*;
 use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
@@ -78,26 +78,23 @@ impl Checkbox {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };        // Create the checkbox label first
+        }; // Create the checkbox label first
         let default_label = String::new();
         let label = self.props().label.as_ref().unwrap_or(&default_label);
 
         // Use static tokens to avoid lifetime issues
         let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
-        
+
         // Create the style function with the tokens
         let style_fn = {
-            let builder = SelectionStyleBuilder::new(
-                tokens,
-                SelectionVariant::Checkbox,
-            )
-            .size(legacy_size)
-            .error(self.has_error());
-            
+            let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Checkbox)
+                .size(legacy_size)
+                .error(self.has_error());
+
             // Create the style function
             builder.checkbox_style()
         };
-        
+
         // Create the checkbox widget with the style function
         let mut checkbox = IcedCheckbox::new(label, is_checked).style(style_fn);
 

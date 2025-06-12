@@ -14,7 +14,7 @@
 //! - **Factories**: Component factory patterns (Phase 3 foundation)
 
 // Core Material Design modules
-pub mod colors;          // DEPRECATED - Use unified_colors instead
+pub mod colors; // DEPRECATED - Use unified_colors instead
 pub mod components;
 pub mod elevation;
 pub mod motion;
@@ -26,7 +26,7 @@ pub mod typography;
 pub mod visual;
 // pub mod md3_color;       // DEPRECATED - Use unified_colors instead
 
-// Phase 2: New organizational modules  
+// Phase 2: New organizational modules
 pub mod builders;
 pub mod factories;
 pub mod helpers;
@@ -34,23 +34,23 @@ pub mod themes;
 pub mod tokens;
 
 // Phase 3: Unified Material Design 3 System
-pub mod unified_colors;  // THE unified color system
 pub mod color_utilities; // Advanced color utilities
 pub mod enhanced_tokens; // Complete token system
-pub mod migration_guide; // Migration helpers
+pub mod migration_guide;
+pub mod unified_colors; // THE unified color system // Migration helpers
 
 // Re-export the UNIFIED Material Design types (Phase 3)
-pub use unified_colors::{MaterialColors, MaterialPalette, TonalPalette, ColorRole};
-pub use color_utilities::{ColorUtilities, ThemeUtilities, AccessibilityReport};
-pub use enhanced_tokens::{EnhancedMaterialTokens};
+pub use color_utilities::{AccessibilityReport, ColorUtilities, ThemeUtilities};
 pub use components::*;
 pub use elevation::{ElevationLevel, MaterialElevation};
+pub use enhanced_tokens::EnhancedMaterialTokens;
 pub use motion::{Animation, AnimationPattern, AnimationState, EasingCurve, MotionTokens};
 pub use seed::generate_palette_from_seed;
 pub use shapes::{MaterialShapes, ShapeStyle};
 pub use sizing::SizingTokens;
 pub use spacing::SpacingTokens;
 pub use typography::{MaterialTypography, TypographyRole};
+pub use unified_colors::{ColorRole, MaterialColors, MaterialPalette, TonalPalette};
 pub use visual::VisualTokens;
 
 // Re-export Phase 2 structures
@@ -66,6 +66,5 @@ pub use themes::{DynamicTheme, ThemeMode};
 
 // Re-export Material Design 3 selection components
 pub use components::{
-    Checkbox, CheckboxBuilder, CheckboxState, ComponentSize, 
-    Switch, SwitchBuilder, SwitchState
+    Checkbox, CheckboxBuilder, CheckboxState, ComponentSize, Switch, SwitchBuilder, SwitchState,
 };

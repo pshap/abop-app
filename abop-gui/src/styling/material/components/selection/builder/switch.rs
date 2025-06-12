@@ -12,7 +12,7 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{
-    validate_label, validate_switch_state, validate_props, system_has_reduced_motion
+    system_has_reduced_motion, validate_label, validate_props, validate_switch_state,
 };
 use super::super::defaults;
 use super::components::Switch;

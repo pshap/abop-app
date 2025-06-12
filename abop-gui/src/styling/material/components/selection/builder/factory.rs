@@ -9,9 +9,7 @@
 //! - [`switch`] - Create a switch builder
 //! - [`chip`] - Create a chip builder
 
-use super::super::common::{
-    CheckboxState, ChipVariant, SwitchState,
-};
+use super::super::common::{CheckboxState, ChipVariant, SwitchState};
 #[cfg(test)]
 use super::super::common::{ChipState, ComponentSize, SelectionComponent};
 use super::{
