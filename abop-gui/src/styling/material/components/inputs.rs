@@ -12,7 +12,7 @@ use iced::{
 
 use crate::styling::color_utils::ColorUtils;
 use crate::styling::material::{
-    MaterialTokens, colors::MaterialColors, shapes::MaterialShapes, typography::TypographyRole,
+    MaterialTokens, MaterialColors, shapes::MaterialShapes, typography::TypographyRole,
 };
 
 /// Material Design 3 text field variants

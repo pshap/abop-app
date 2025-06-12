@@ -3,90 +3,111 @@
 //! This module provides an enhanced implementation of the Material Design 3 color system
 //! with improved support for dynamic theming, accessibility, and color manipulation.
 
-use crate::material::color::{
-    Theme, ThemeVariant,
-    palette::{MaterialPalette as CoreMaterialPalette, TonalPalette as CoreTonalPalette},
-    scheme::Theme as CoreTheme,
-};
 use iced::Color;
+use palette::{Srgb, Hsl, IntoColor, FromColor};
 
 /// Material Design 3 color scheme
 /// Provides semantic color roles for theming
+#[derive(Debug, Clone)]
 pub struct MaterialColors {
-    theme: CoreTheme,
+    primary_palette: TonalPalette,
+    secondary_palette: TonalPalette,
+    tertiary_palette: TonalPalette,
+    neutral_palette: TonalPalette,
+    neutral_variant_palette: TonalPalette,
+    error_palette: TonalPalette,
     is_dark: bool,
 }
 
-/// Enhanced TonalPalette that wraps the core implementation
+/// Tonal palette for Material Design 3
+/// Generates colors across different tones (0-100) based on hue and chroma
 #[derive(Debug, Clone, PartialEq)]
 pub struct TonalPalette {
-    inner: CoreTonalPalette,
+    hue: f64,
+    chroma: f64,
 }
 
 impl TonalPalette {
     /// Create a new TonalPalette from hue and chroma
     pub fn new(hue: f64, chroma: f64) -> Self {
-        Self {
-            inner: CoreTonalPalette::new(hue, chroma),
-        }
+        Self { hue, chroma }
     }
 
     /// Get the color for a specific tone (0-100)
     pub fn get_tone(&self, tone: u8) -> Color {
-        let tone = tone as f64 / 100.0;
-        let srgb = self.inner.get(tone);
-        Color::from_rgba(srgb.r as f32, srgb.g as f32, srgb.b as f32, 1.0)
+        let tone_value = tone as f64 / 100.0;
+        
+        // Create HSL color from hue, chroma (saturation), and tone (lightness)
+        let hsl = Hsl::new(self.hue, self.chroma / 100.0, tone_value);
+        let srgb: Srgb = hsl.into_color();
+        
+        Color::from_rgba(
+            srgb.red as f32,
+            srgb.green as f32, 
+            srgb.blue as f32,
+            1.0
+        )
     }
 }
 
-/// Enhanced MaterialPalette that wraps the core implementation
+/// Material palette containing all tonal palettes
 #[derive(Debug, Clone, PartialEq)]
 pub struct MaterialPalette {
-    inner: CoreMaterialPalette,
+    primary: TonalPalette,
+    secondary: TonalPalette,
+    tertiary: TonalPalette,
+    neutral: TonalPalette,
+    neutral_variant: TonalPalette,
+    error: TonalPalette,
 }
 
 impl MaterialPalette {
     /// Create a new MaterialPalette from a seed color
     pub fn from_seed(seed: Color) -> Self {
-        let srgb = crate::material::color::Srgb::new(seed.r as f64, seed.g as f64, seed.b as f64);
+        // Convert seed color to HSL to extract hue
+        let srgb = Srgb::new(seed.r as f64, seed.g as f64, seed.b as f64);
+        let hsl: Hsl = srgb.into_color();
+        
+        let primary_hue = hsl.hue.into_positive_degrees();
+        
         Self {
-            inner: CoreMaterialPalette::from_seed(srgb),
+            primary: TonalPalette::new(primary_hue, 48.0),
+            secondary: TonalPalette::new((primary_hue + 60.0) % 360.0, 16.0),
+            tertiary: TonalPalette::new((primary_hue + 120.0) % 360.0, 24.0),
+            neutral: TonalPalette::new(primary_hue, 4.0),
+            neutral_variant: TonalPalette::new(primary_hue, 8.0),
+            error: TonalPalette::new(25.0, 84.0), // Standard error hue and chroma
         }
     }
 
     /// Get the primary tonal palette
     pub fn primary(&self) -> TonalPalette {
-        TonalPalette {
-            inner: self.inner.primary.clone(),
-        }
+        self.primary.clone()
     }
 
     /// Get the secondary tonal palette
     pub fn secondary(&self) -> TonalPalette {
-        TonalPalette {
-            inner: self.inner.secondary.clone(),
-        }
+        self.secondary.clone()
     }
 
     /// Get the tertiary tonal palette
     pub fn tertiary(&self) -> TonalPalette {
-        TonalPalette {
-            inner: self.inner.tertiary.clone(),
-        }
+        self.tertiary.clone()
     }
 
     /// Get the neutral tonal palette
     pub fn neutral(&self) -> TonalPalette {
-        TonalPalette {
-            inner: self.inner.neutral.clone(),
-        }
+        self.neutral.clone()
     }
 
     /// Get the neutral variant tonal palette
     pub fn neutral_variant(&self) -> TonalPalette {
-        TonalPalette {
-            inner: self.inner.neutral_variant.clone(),
-        }
+        self.neutral_variant.clone()
+    }
+    
+    /// Get the error tonal palette
+    pub fn error(&self) -> TonalPalette {
+        self.error.clone()
     }
 }
 
@@ -105,6 +126,16 @@ impl MaterialColors {
             theme: CoreTheme::dark(),
             is_dark: true,
         }
+    }
+
+    /// Create default light theme color scheme
+    pub fn light_default() -> Self {
+        Self::light()
+    }
+
+    /// Create default dark theme color scheme
+    pub fn dark_default() -> Self {
+        Self::dark()
     }
 
     /// Create a color scheme from a seed color
@@ -220,6 +251,10 @@ impl MaterialColors {
         self.theme.core.outline.into()
     }
 
+    pub fn outline_variant(&self) -> Color {
+        self.theme.core.outline_variant.into()
+    }
+
     // Inverse colors
     pub fn inverse_surface(&self) -> Color {
         self.theme.core.inverse_surface.into()
@@ -304,57 +339,23 @@ impl MaterialColors {
             Color::from_rgb(0.93, 0.92, 0.93)
         }
     }
-}
 
-impl MaterialColors {
-    /// Create a light theme color scheme
-    pub fn light() -> Self {
-        Self {
-            theme: CoreTheme::light(),
-        }
-    }
-
-    /// Create a dark theme color scheme
-    pub fn dark() -> Self {
-        Self {
-            theme: CoreTheme::dark(),
-        }
-    }
-
-    /// Create a color scheme from a seed color
-    pub fn from_seed(seed: Color, is_dark: bool) -> Self {
-        let srgb = crate::material::color::Srgb::new(seed.r as f64, seed.g as f64, seed.b as f64);
-        let variant = if is_dark {
-            ThemeVariant::Dark
+    /// Get the shadow color for elevation system
+    pub fn shadow(&self) -> Color {
+        if self.is_dark {
+            Color::from_rgba(0.0, 0.0, 0.0, 0.5)
         } else {
-            ThemeVariant::Light
-        };
-        Self {
-            theme: CoreTheme::from_seed(srgb, variant),
+            Color::from_rgba(0.0, 0.0, 0.0, 0.2)
         }
     }
 
-    /// Get the primary color
-    pub fn primary(&self) -> Color {
-        self.theme.core.primary.into()
+    /// Get the surface tint color for elevation system
+    pub fn surface_tint(&self) -> Color {
+        // Return the primary color with some opacity for surface tint
+        let mut color = self.primary();
+        color.a = 0.1; // Adjust opacity as needed
+        color
     }
-
-    /// Get the primary container color
-    pub fn primary_container(&self) -> Color {
-        self.theme.core.primary_container.into()
-    }
-
-    /// Get the on primary color
-    pub fn on_primary(&self) -> Color {
-        self.theme.core.on_primary.into()
-    }
-
-    /// Get the on primary container color
-    pub fn on_primary_container(&self) -> Color {
-        self.theme.core.on_primary_container.into()
-    }
-
-    // Add more color getters as needed...
 }
 
 impl From<Color> for MaterialPalette {

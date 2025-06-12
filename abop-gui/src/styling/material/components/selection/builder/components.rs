@@ -9,13 +9,19 @@
 //! - [`Switch`] - Material Design 3 switch component
 //! - [`Chip`] - Material Design 3 chip component
 
-use super::super::common::*;
-use crate::styling::material::colors::MaterialColors;
+use super::super::common::{prelude::*, validate_props};
+use crate::styling::material::{MaterialColors, tokens::core::MaterialTokens};
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use crate::styling::material::tokens::core::MaterialTokens;
 use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
+
+// Static MaterialTokens instances to avoid lifetime issues
+pub static LIGHT_TOKENS: std::sync::LazyLock<MaterialTokens> = 
+    std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::light_default()));
+    
+pub static DARK_TOKENS: std::sync::LazyLock<MaterialTokens> = 
+    std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::dark_default()));
 
 // ============================================================================
 // Component Struct Definitions
@@ -290,29 +296,30 @@ where
         color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer>
     where
-        T: Copy + 'a,
-    {
+        T: Copy + 'a,    {
         // Convert modern size to legacy size
         let legacy_size = match self.props.size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
-        // Create MaterialTokens from MaterialColors
-        let tokens = MaterialTokens::default().with_colors(color_scheme.clone());
-
-        // Create styling function
-        let style_fn = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
-            .size(legacy_size)
-            .error(self.error_state)
-            .radio_style();
-
-        // Create the radio button label
+        };        // Create the radio button label
         let default_label = String::new();
         let label = self.props.label.as_ref().unwrap_or(&default_label);
-
-        // Create radio widget
+        
+        // Create tokens outside the closure to ensure they live long enough
+        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+        
+        // Create the style function with the tokens
+        let style_fn = {
+            let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
+                .size(legacy_size)
+                .error(self.error_state);
+                
+            // Create the style function
+            builder.radio_style()
+        };
+        
+        // Create radio widget with the style function
         let radio = IcedRadio::new(label, self.value, selected_value, on_select).style(style_fn);
 
         // Note: Radio widget always requires on_select callback in Iced API

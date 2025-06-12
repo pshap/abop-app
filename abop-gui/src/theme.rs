@@ -5,7 +5,7 @@
 
 use crate::styling::material::{
     MaterialTokens,
-    colors::{MaterialColors, MaterialPalette},
+    MaterialColors, MaterialPalette,
 };
 use iced::{Color, Theme as IcedTheme, theme::Palette};
 

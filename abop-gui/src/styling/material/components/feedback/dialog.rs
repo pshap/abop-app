@@ -248,7 +248,7 @@ impl MaterialDialog {
             },
             DialogButton::Filled => button::Style {
                 background: Some(Background::Color(tokens.colors.primary.base)),
-                text_color: tokens.colors.on_primary,
+                text_color: tokens.colors.primary.on_base,
                 border: Border {
                     color: Color::TRANSPARENT,
                     width: 0.0,
@@ -257,8 +257,8 @@ impl MaterialDialog {
                 shadow: Shadow::default(),
             },
             DialogButton::Tonal => button::Style {
-                background: Some(Background::Color(tokens.colors.secondary_container)),
-                text_color: tokens.colors.on_secondary_container,
+                background: Some(Background::Color(tokens.colors.secondary.container)),
+                text_color: tokens.colors.secondary.on_container,
                 border: Border {
                     color: Color::TRANSPARENT,
                     width: 0.0,

@@ -21,20 +21,46 @@ impl TableHeader {    /// Create a header element from columns and state with se
         selected_items: &HashSet<String>,
         total_items: usize,
     ) -> Element<'a, Message> {
-        let mut header_cells = vec![];
-        
-        // Add select-all checkbox as the first column
+        let mut header_cells = vec![];        // Add select-all checkbox with enhanced indeterminate state visualization
         let all_selected = !selected_items.is_empty() && selected_items.len() == total_items;
         let some_selected = !selected_items.is_empty() && selected_items.len() < total_items;
         
+        // Enhanced checkbox with proper Material Design 3 styling and indeterminate state support
         let select_all_checkbox = checkbox("", all_selected)
             .on_toggle(|_| Message::ToggleSelectAll)
-            .size(20)            .style(move |_theme, _status| {                // Use Material Design styling for checkbox
+            .size(20)
+            .style(move |_theme, _status| {
+                // Enhanced Material Design styling with indeterminate state
+                let background_color = if some_selected {
+                    // Show a distinct background for indeterminate state
+                    Color {
+                        r: tokens.colors.primary.base.r,
+                        g: tokens.colors.primary.base.g,
+                        b: tokens.colors.primary.base.b,
+                        a: 0.5, // Semi-transparent to indicate partial selection
+                    }
+                } else if all_selected {
+                    tokens.colors.primary.base
+                } else {
+                    Color::TRANSPARENT
+                };
+                
+                let border_color = if some_selected || all_selected {
+                    tokens.colors.primary.base
+                } else {
+                    tokens.colors.outline
+                };
+                
                 iced::widget::checkbox::Style {
-                    background: Background::Color(Color::TRANSPARENT),
-                    icon_color: tokens.colors.primary.base,
+                    background: Background::Color(background_color),
+                    icon_color: if some_selected {
+                        // Use a different icon color for indeterminate state
+                        tokens.colors.primary.on_container
+                    } else {
+                        tokens.colors.primary.base
+                    },
                     border: iced::Border {
-                        color: if some_selected { tokens.colors.primary.base } else { tokens.colors.outline },
+                        color: border_color,
                         width: 2.0,
                         radius: 4.0.into(),
                     },
@@ -146,7 +172,7 @@ impl TableHeader {    /// Create a header element from columns and state with se
 
         // Base colors for normal state
         let base_background = if is_sorted {
-            colors.primary_container
+            colors.primary.container
         } else {
             colors.surface_variant
         };

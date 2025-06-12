@@ -9,7 +9,7 @@
 //! - [`switch`] - Create a switch builder
 //! - [`chip`] - Create a chip builder
 
-use super::super::common::*;
+use super::super::common::prelude::*;
 use super::{
     checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
 };

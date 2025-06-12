@@ -107,10 +107,10 @@ impl MaterialBadge {
     /// Get the background and text colors for the badge
     const fn get_colors(&self, tokens: &MaterialTokens) -> (Color, Color) {
         match self.color {
-            BadgeColor::Error => (tokens.colors.error.base, tokens.colors.on_error),
+            BadgeColor::Error => (tokens.colors.error.base, tokens.colors.error.on_base),
             BadgeColor::Warning => (Color::from_rgb(1.0, 0.6, 0.0), Color::WHITE),
             BadgeColor::Success => (Color::from_rgb(0.0, 0.8, 0.0), Color::WHITE),
-            BadgeColor::Info => (tokens.colors.primary.base, tokens.colors.on_primary),
+            BadgeColor::Info => (tokens.colors.primary.base, tokens.colors.primary.on_base),
             BadgeColor::Neutral => (
                 tokens.colors.surface_variant,
                 tokens.colors.on_surface_variant,

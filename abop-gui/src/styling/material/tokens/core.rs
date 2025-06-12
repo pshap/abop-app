@@ -6,9 +6,9 @@
 use iced::Color;
 
 use crate::styling::material::{
-    colors::{self, MaterialColors, MaterialPalette},
     elevation::MaterialElevation,
     helpers::{AnimationHelpers, ComponentHelpers, ElevationHelpers},
+    MaterialColors,
     shapes::{self, MaterialShapes},
     sizing::SizingTokens,
     spacing::SpacingTokens,
@@ -42,7 +42,7 @@ macro_rules! token_getter {
 #[derive(Debug, Clone)]
 pub struct MaterialTokens {
     /// Material Design color system with semantic roles
-    pub colors: colors::MaterialColors,
+    pub colors: MaterialColors,
     /// Material Design typography scale
     pub typography: MaterialTypography,
     /// Material Design elevation system
@@ -80,15 +80,13 @@ impl MaterialTokens {
     /// Create Material tokens for dark theme
     #[must_use]
     pub fn dark() -> Self {
-        Self::with_theme_colors(colors::MaterialColors::dark(
-            &colors::MaterialPalette::default(),
-        ))
+        Self::with_theme_colors(MaterialColors::dark_default())
     }
 
     /// Create Material tokens for light theme
     #[must_use]
     pub fn light() -> Self {
-        Self::with_theme_colors(MaterialColors::light(&MaterialPalette::default()))
+        Self::with_theme_colors(MaterialColors::light_default())
     }
 
     /// Create dynamic Material tokens from a seed color
@@ -99,7 +97,7 @@ impl MaterialTokens {
     }
 
     /// Internal helper to create tokens with given colors
-    fn with_theme_colors(colors: colors::MaterialColors) -> Self {
+    fn with_theme_colors(colors: MaterialColors) -> Self {
         let elevation = MaterialElevation::new(&colors);
         Self {
             colors,
@@ -188,7 +186,7 @@ impl MaterialTokens {
     #[must_use]
     pub fn is_dark_theme(&self) -> bool {
         // Check if background is darker than 0.5 luminance
-        let bg = self.colors.background;
+        let bg = self.colors.background;  // Field access, not method call
         bg.b.mul_add(0.114, bg.r.mul_add(0.299, bg.g * 0.587)) < 0.5
     }
 
@@ -197,15 +195,15 @@ impl MaterialTokens {
     /// This provides a mapping between Material Design color roles and
     /// the application's semantic color system.
     #[must_use]
-    pub const fn semantic_colors(&self) -> SemanticColors {
+    pub fn semantic_colors(&self) -> SemanticColors {
         let colors = &self.colors;
         SemanticColors {
             primary: colors.primary.base,
             secondary: colors.secondary.base,
-            success: colors.tertiary.base,
-            warning: colors.secondary.base,
+            success: colors.tertiary.base, // Using tertiary for success
+            warning: colors.secondary.base, // Using secondary for warning
             error: colors.error.base,
-            info: colors.primary.base,
+            info: colors.primary.base, // Using primary for info
             surface: colors.surface,
             on_surface: colors.on_surface,
         }
@@ -228,6 +226,11 @@ impl MaterialTokens {
             b: surface_color.b,
             a: surface_color.a * tint_opacity,
         }
+    }
+
+    /// Get the background color for the current theme
+    pub fn background_color(&self) -> Color {
+        self.colors.background
     }
 }
 

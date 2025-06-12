@@ -5,11 +5,11 @@
 //! use cases such as basic view, toggle view, and filter chip view.
 
 use super::super::builder::Chip;
-use super::super::common::{ChipState, ComponentSize, SelectionComponent};
-use crate::styling::material::colors::MaterialColors;
-use crate::styling::material::components::selection_style::{
-    SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
-};
+use super::super::builder::components::LIGHT_TOKENS;
+use super::super::common::prelude::*;
+use super::super::common::{ChipState, ComponentSize};
+use crate::styling::material::MaterialColors;
+use crate::styling::material::components::selection_style::{SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant};
 use crate::styling::material::tokens::MaterialTokens;
 
 use iced::{
@@ -70,26 +70,32 @@ impl Chip {
         &'a self,
         on_press: Option<Message>,
         color_scheme: &'a MaterialColors,
-    ) -> Element<'a, Message, Theme, Renderer> {
-        // Convert modern size to legacy size
+    ) -> Element<'a, Message, Theme, Renderer> {        // Convert modern size to legacy size
         let legacy_size = match self.props().size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
         };
-
-        // Create styling function (avoid cloning color_scheme)
-        let style_fn = SelectionStyleBuilder::new(
-            MaterialTokens::default().with_colors(color_scheme.clone()),
-            SelectionVariant::Chip,
-        )
-        .size(legacy_size)
-        .chip_style(self.is_selected());
-
+        
         // Create chip content
         let content = Text::new(self.label()).size(self.props().size.text_size());
-
-        // Create chip button
+        
+                // Use static tokens to avoid lifetime issues
+        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+        
+        // Create the style function with the tokens
+        let style_fn = {
+            let builder = SelectionStyleBuilder::new(
+                tokens,
+                SelectionVariant::Chip,
+            )
+            .size(legacy_size);
+            
+            // Create the style function
+            builder.chip_style(self.is_selected())
+        };
+        
+        // Create the chip button with the style function
         let mut chip_button = button(content).style(style_fn);
 
         // Only add on_press handler if the chip is not disabled and callback is provided
@@ -214,16 +220,22 @@ impl Chip {
         let legacy_size = match self.props().size {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        };
+            ComponentSize::Large => LegacySelectionSize::Large,        };
 
-        // Create styling function
-        let style_fn = SelectionStyleBuilder::new(
-            MaterialTokens::default().with_colors(color_scheme.clone()),
-            SelectionVariant::Chip,
-        )
-        .size(legacy_size)
-        .chip_style(self.is_selected());
+                // Use static tokens to avoid lifetime issues
+        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+        
+        // Create the style function with the tokens
+        let style_fn = {
+            let builder = SelectionStyleBuilder::new(
+                tokens,
+                SelectionVariant::Chip,
+            )
+            .size(legacy_size);
+            
+            // Create the style function
+            builder.chip_style(self.is_selected())
+        };
 
         // Build content with icons and text
         let mut content_row = Row::new().spacing(4.0);
@@ -257,7 +269,7 @@ impl Chip {
         // Add badge if specified
         if let Some(count) = config.badge_count {
             let badge_color = config.badge_color.unwrap_or(color_scheme.error.base);
-            let badge_text_color = color_scheme.on_error;
+            let badge_text_color = color_scheme.on_error();
 
             let badge = Container::new(Text::new(count.to_string()).size(10.0).style(
                 move |_theme: &Theme| iced::widget::text::Style {

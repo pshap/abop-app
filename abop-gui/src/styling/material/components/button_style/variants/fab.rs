@@ -19,8 +19,8 @@ impl ButtonStyleStrategy for FabButtonStrategy {
         material_elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        let base_background = colors.primary_container;
-        let icon_color = colors.on_primary_container;
+        let base_background = colors.primary.container;
+        let icon_color = colors.primary.on_container;
 
         match state {
             ButtonState::Default => ButtonStyling {

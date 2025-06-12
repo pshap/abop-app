@@ -93,7 +93,7 @@ pub fn create_icon_text_menu_item<'a, Message: Clone + 'a>(
     let colors = &tokens.colors;
 
     let text_color = match variant {
-        MenuItemVariant::Selected => colors.on_secondary_container,
+        MenuItemVariant::Selected => colors.secondary.on_container,
         MenuItemVariant::Header => colors.on_surface_variant,
         MenuItemVariant::Disabled => ColorUtils::with_alpha(colors.on_surface, 0.38),
         MenuItemVariant::Destructive => colors.error.base,
@@ -151,7 +151,7 @@ pub fn create_text_menu_item<'a, Message: Clone + 'a>(
     let colors = &tokens.colors;
 
     let text_color = match variant {
-        MenuItemVariant::Selected => colors.on_secondary_container,
+        MenuItemVariant::Selected => colors.secondary.on_container,
         MenuItemVariant::Header => colors.on_surface_variant,
         MenuItemVariant::Disabled => ColorUtils::with_alpha(colors.on_surface, 0.38),
         MenuItemVariant::Destructive => colors.error.base,

@@ -14,7 +14,7 @@
 //! - **Factories**: Component factory patterns (Phase 3 foundation)
 
 // Core Material Design modules
-pub mod colors;
+pub mod colors;          // DEPRECATED - Use unified_colors instead
 pub mod components;
 pub mod elevation;
 pub mod motion;
@@ -24,16 +24,25 @@ pub mod sizing;
 pub mod spacing;
 pub mod typography;
 pub mod visual;
+// pub mod md3_color;       // DEPRECATED - Use unified_colors instead
 
-// Phase 2: New organizational modules
+// Phase 2: New organizational modules  
 pub mod builders;
 pub mod factories;
 pub mod helpers;
 pub mod themes;
 pub mod tokens;
 
-// Re-export core Material Design types
-pub use colors::{MaterialColors, MaterialPalette, TonalPalette};
+// Phase 3: Unified Material Design 3 System
+pub mod unified_colors;  // THE unified color system
+pub mod color_utilities; // Advanced color utilities
+pub mod enhanced_tokens; // Complete token system
+pub mod migration_guide; // Migration helpers
+
+// Re-export the UNIFIED Material Design types (Phase 3)
+pub use unified_colors::{MaterialColors, MaterialPalette, TonalPalette, ColorRole};
+pub use color_utilities::{ColorUtilities, ThemeUtilities, AccessibilityReport};
+pub use enhanced_tokens::{EnhancedMaterialTokens};
 pub use components::*;
 pub use elevation::{ElevationLevel, MaterialElevation};
 pub use motion::{Animation, AnimationPattern, AnimationState, EasingCurve, MotionTokens};
@@ -54,3 +63,9 @@ pub use helpers::{AnimationHelpers, ComponentHelpers, ElevationHelpers};
 pub use builders::{MaterialTokensBuilder, ThemeBuilder};
 pub use factories::MaterialComponentFactory;
 pub use themes::{DynamicTheme, ThemeMode};
+
+// Re-export Material Design 3 selection components
+pub use components::{
+    Checkbox, CheckboxBuilder, CheckboxState, ComponentSize, 
+    Switch, SwitchBuilder, SwitchState
+};

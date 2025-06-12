@@ -110,16 +110,18 @@ impl StatusMapper<iced::widget::button::Status> for ButtonStatusMapper {
 ///
 /// Provides a fluent interface for creating Material Design selection styles
 /// with comprehensive state handling.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SelectionStyleBuilder<'a> {
-    /// The token system to use for styling
+    /// Reference to the design tokens
     tokens: &'a MaterialTokens,
-    /// The component variant being styled
+    /// Component variant
     variant: SelectionVariant,
-    /// The size of the component
+    /// Component size
     size: SelectionSize,
-    /// Whether the component is in an error state
+    /// Error state
     error: bool,
+    /// This field is used to ensure the builder is not used after being consumed
+    _marker: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'a> SelectionStyleBuilder<'a> {
@@ -130,7 +132,16 @@ impl<'a> SelectionStyleBuilder<'a> {
             variant,
             size: SelectionSize::Medium,
             error: false,
+            _marker: std::marker::PhantomData,
         }
+    }
+    
+    /// Consume the builder and return the tokens
+    /// 
+    /// This is useful when you need to ensure the builder is not used after
+    /// creating the style function.
+    pub fn into_inner(self) -> &'a MaterialTokens {
+        self.tokens
     }
 
     /// Set the component size
@@ -167,7 +178,10 @@ impl<'a> SelectionStyleBuilder<'a> {
     /// Returns a function that can be used with Iced's checkbox styling system.
     pub fn checkbox_style(
         self,
-    ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style {
+    ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style + 'a {
+        let tokens = self.tokens;
+        let size = self.size;
+        let error = self.error;
         move |_theme: &Theme, status| {
             let state = CheckboxStatusMapper.map_status(status, false);
 
@@ -199,9 +213,12 @@ impl<'a> SelectionStyleBuilder<'a> {
     /// Create radio button styling function
     ///
     /// Returns a function that can be used with Iced's radio styling system.
-    pub fn radio_style(
+pub fn radio_style(
         self,
-    ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style {
+    ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style + 'a {
+        let tokens = self.tokens;
+        let size = self.size;
+        let error = self.error;
         move |_theme: &Theme, status: iced::widget::radio::Status| {
             let state = RadioStatusMapper.map_status(status, false);
 
@@ -230,10 +247,13 @@ impl<'a> SelectionStyleBuilder<'a> {
     /// Create chip button styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for chips.
-    pub fn chip_style(
+pub fn chip_style(
         self,
         is_selected: bool,
-    ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+    ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {
+        let tokens = self.tokens;
+        let size = self.size;
+        let error = self.error;
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_selected);
 
@@ -261,10 +281,13 @@ impl<'a> SelectionStyleBuilder<'a> {
     /// Create switch styling function
     ///
     /// Returns a function that can be used with Iced's button styling system for switches.
-    pub fn switch_style(
+pub fn switch_style(
         self,
         is_enabled: bool,
-    ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+    ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {
+        let tokens = self.tokens;
+        let size = self.size;
+        let error = self.error;
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_enabled);
 

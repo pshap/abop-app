@@ -3,7 +3,9 @@
 //! This module defines the `ButtonStyleStrategy` trait that allows different button variants
 //! to implement their own styling logic while maintaining a consistent interface.
 
-use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
+use crate::styling::material::{
+    MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens,
+};
 use iced::{Background, Border, Color};
 
 /// Button state for styling calculations

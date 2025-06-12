@@ -5,7 +5,7 @@
 //! `SelectionColors` to maintain architectural consistency.
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::{StateOpacity, colors::MaterialColors};
+use crate::styling::material::{StateOpacity, MaterialColors};
 use iced::Color;
 
 use super::ButtonStyleVariant;
@@ -52,14 +52,14 @@ impl ButtonColors {
             }
             ButtonStyleVariant::FilledTonal => {
                 if is_pressed {
-                    ColorUtils::with_alpha(self.colors.secondary_container, 0.88)
+                    ColorUtils::with_alpha(self.colors.secondary.container, 0.88)
                 } else if is_hovered {
                     self.apply_state_layer(
-                        self.colors.secondary_container,
+                        self.colors.secondary.container,
                         self.state_opacity.hover,
                     )
                 } else {
-                    self.colors.secondary_container
+                    self.colors.secondary.container
                 }
             }
             ButtonStyleVariant::Outlined => {
@@ -100,11 +100,11 @@ impl ButtonColors {
             }
             ButtonStyleVariant::Fab => {
                 if is_pressed {
-                    ColorUtils::with_alpha(self.colors.primary_container, 0.88)
+                    ColorUtils::with_alpha(self.colors.primary.container, 0.88)
                 } else if is_hovered {
-                    self.apply_state_layer(self.colors.primary_container, self.state_opacity.hover)
+                    self.apply_state_layer(self.colors.primary.container, self.state_opacity.hover)
                 } else {
-                    self.colors.primary_container
+                    self.colors.primary.container
                 }
             }
         }
@@ -114,13 +114,13 @@ impl ButtonColors {
     #[must_use]
     pub const fn text_color(&self, variant: ButtonStyleVariant) -> Color {
         match variant {
-            ButtonStyleVariant::Filled => self.colors.on_primary,
-            ButtonStyleVariant::FilledTonal => self.colors.on_secondary_container,
+            ButtonStyleVariant::Filled => self.colors.primary.on_base,
+            ButtonStyleVariant::FilledTonal => self.colors.secondary.on_container,
             ButtonStyleVariant::Outlined => self.colors.primary.base,
             ButtonStyleVariant::Text => self.colors.primary.base,
             ButtonStyleVariant::Elevated => self.colors.primary.base,
             ButtonStyleVariant::Icon => self.colors.on_surface_variant,
-            ButtonStyleVariant::Fab => self.colors.on_primary_container,
+            ButtonStyleVariant::Fab => self.colors.primary.on_container,
         }
     }
 
@@ -206,7 +206,7 @@ mod tests {
         let text = button_colors.text_color(ButtonStyleVariant::Filled);
 
         assert_eq!(bg, material_colors.primary.base);
-        assert_eq!(text, material_colors.on_primary);
+        assert_eq!(text, material_colors.primary.on_base);
     }
 
     #[test]

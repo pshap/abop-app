@@ -4,7 +4,7 @@ use super::{
     ElevationError, ElevationLevel, ElevationRegistry, ElevationStyle, MaterialElevation,
     constants::MIN_SCALE_FACTOR,
 };
-use crate::styling::material::colors::MaterialColors;
+use crate::styling::material::MaterialColors;
 use iced::Color;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};

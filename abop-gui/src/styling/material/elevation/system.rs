@@ -4,7 +4,7 @@
 //! and provides methods for creating, scaling, and manipulating elevation styles.
 
 use crate::styling::material::{
-    colors::MaterialColors,
+    MaterialColors,
     elevation::{constants, level::ElevationLevel, style::ElevationStyle},
 };
 use iced::{Color, Shadow, Vector};
@@ -33,8 +33,8 @@ impl MaterialElevation {
     /// Create elevation system with Material Design colors
     #[must_use]
     pub fn new(colors: &MaterialColors) -> Self {
-        let shadow_color = colors.shadow;
-        let tint_color = colors.surface_tint;
+        let shadow_color = colors.shadow;  // Field access, not method call
+        let tint_color = colors.surface_tint;  // Field access, not method call
 
         Self::with_colors(shadow_color, tint_color)
     }
@@ -171,7 +171,7 @@ impl MaterialElevation {
 
     /// Create elevated surface color using the stored surface tint color
     #[must_use]
-    pub fn elevated_surface_with_stored_tint(
+    pub fn elevated_surface_with_colors(
         &self,
         base_surface: Color,
         level: ElevationLevel,

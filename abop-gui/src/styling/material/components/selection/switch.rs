@@ -8,8 +8,9 @@
 //! - Preparation for custom switch widget implementation (Phase 4)
 
 use super::builder::{Switch, SwitchBuilder};
-use super::common::*;
-use crate::styling::material::colors::MaterialColors;
+use super::builder::components::LIGHT_TOKENS;
+use super::common::prelude::*;
+use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
@@ -79,22 +80,29 @@ impl Switch {
             ComponentSize::Small => LegacySelectionSize::Small,
             ComponentSize::Medium => LegacySelectionSize::Medium,
             ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
-        // Create styling function (this will be replaced in Phase 4)
-        let style_fn = SelectionStyleBuilder::new(
-            MaterialTokens::default().with_colors(color_scheme.clone()),
-            SelectionVariant::Switch,
-        )
-        .size(legacy_size)
-        .error(self.has_error())
-        .checkbox_style(); // Use checkbox style since we're using checkbox widget temporarily
+        };        // Legacy size conversion (this will be used in the closure below)
 
         // Create the switch label
         let default_label = String::new();
         let label = self.props().label.as_ref().unwrap_or(&default_label);
 
-        // Create checkbox widget as temporary switch implementation
+        // Use static tokens to avoid lifetime issues
+        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+        
+        // Create the style function with the tokens
+        let style_fn = {
+            let builder = SelectionStyleBuilder::new(
+                tokens,
+                SelectionVariant::Switch,
+            )
+            .size(legacy_size)
+            .error(self.has_error());
+            
+            // Create the style function
+            builder.checkbox_style()
+        };
+        
+        // Create the checkbox widget with the style function
         let mut switch_widget = IcedCheckbox::new(label, is_enabled).style(style_fn);
 
         // Only add on_toggle handler if the switch is not disabled
@@ -271,9 +279,9 @@ impl CustomSwitchWidget {
                 let base = colors.on_surface;
                 iced::Color::from_rgba(base.r, base.g, base.b, 0.38)
             }
-            (_, _, true) => colors.on_error, // Error state
-            (SwitchState::On, false, false) => colors.on_primary, // On state
-            (SwitchState::Off, false, false) => colors.outline, // Off state
+            (_, _, true) => colors.on_error(), // Error state
+            (SwitchState::On, false, false) => colors.on_primary(), // On state
+            (SwitchState::Off, false, false) => colors.outline // Off state
         }
     }
 }

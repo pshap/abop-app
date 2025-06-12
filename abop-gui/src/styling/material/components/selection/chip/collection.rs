@@ -5,7 +5,7 @@
 
 use super::super::builder::Chip;
 use super::super::common::*;
-use crate::styling::material::colors::MaterialColors;
+use crate::styling::material::MaterialColors;
 
 use iced::{
     Element, Length, Renderer,

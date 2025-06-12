@@ -19,10 +19,9 @@ pub const fn get_status_colors(
 ) -> (Color, Color) {
     match status_type {
         StatusType::Success => (Color::from_rgb(0.0, 0.8, 0.0), Color::WHITE),
-        StatusType::Warning => (Color::from_rgb(1.0, 0.6, 0.0), Color::WHITE),
-        StatusType::Error => (tokens.colors.error.base, tokens.colors.on_error),
-        StatusType::Info => (tokens.colors.primary.base, tokens.colors.on_primary),
-        StatusType::Loading => (tokens.colors.primary.base, tokens.colors.on_primary),
+        StatusType::Warning => (Color::from_rgb(1.0, 0.6, 0.0), Color::WHITE),        StatusType::Error => (tokens.colors.error.base, tokens.colors.error.on_base),
+        StatusType::Info => (tokens.colors.primary.base, tokens.colors.primary.on_base),
+        StatusType::Loading => (tokens.colors.primary.base, tokens.colors.primary.on_base),
         StatusType::Neutral => (
             tokens.colors.surface_variant,
             tokens.colors.on_surface_variant,
@@ -43,7 +42,7 @@ where
     let button_style = if is_primary {
         button::Style {
             background: Some(Background::Color(tokens.colors.primary.base)),
-            text_color: tokens.colors.on_primary,
+            text_color: tokens.colors.on_primary(),
             border: Border {
                 radius: tokens.shapes.corner_small.radius,
                 ..Default::default()

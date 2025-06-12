@@ -29,12 +29,24 @@ pub mod navigation;
 /// using the strategy pattern for consistent theming and behavior across components.
 pub mod selection_style;
 
+/// Material Design 3 selection components with state-based design
+///
+/// Comprehensive selection components including Checkbox, Switch, Radio, and Chip
+/// with modern builder patterns, validation, and Material Design 3 compliance.
+pub mod selection;
+
 // Re-export selection components and styles
 pub use selection_style::{
     CheckboxStrategy, ChipStrategy, RadioStrategy, SelectionColors, SelectionSize, SelectionState,
     SelectionStyleBuilder, SelectionStyleError, SelectionStyling, SelectionVariant, SwitchStrategy,
     checkbox_style, chip_style, radio_style, switch_style,
 };
+
+// Re-export selection components
+pub use selection::{
+    Checkbox, CheckboxBuilder, Switch, SwitchBuilder,
+};
+pub use selection::common::{CheckboxState, ComponentSize, SwitchState};
 /// Phase 3: Complete Material Design 3 widget implementations as proper Iced widgets
 pub mod widgets;
 

@@ -86,7 +86,7 @@ impl SelectionStyleStrategy for SwitchStrategy {
             ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
         } else if state.is_focused() {
             if state.is_selected() {
-                colors.on_secondary_container
+                colors.on_secondary_container()
             } else {
                 colors.primary.base
             }
@@ -113,13 +113,13 @@ impl SelectionStyleStrategy for SwitchStrategy {
 
         // Error state takes highest priority
         if error_state && state.is_selected() {
-            return colors.on_error;
+            return colors.on_error();
         }
 
         // Handle disabled state
         if state.is_disabled() {
             return if state.is_selected() {
-                ColorUtils::with_alpha(colors.on_primary, constants::opacity::DISABLED)
+                ColorUtils::with_alpha(colors.on_primary(), constants::opacity::DISABLED)
             } else {
                 ColorUtils::with_alpha(colors.on_surface, constants::opacity::DISABLED)
             };
@@ -127,7 +127,7 @@ impl SelectionStyleStrategy for SwitchStrategy {
 
         // Handle selected state - switch shows thumb
         if state.is_selected() {
-            colors.on_primary
+            colors.on_primary()
         } else {
             colors.on_surface_variant
         }

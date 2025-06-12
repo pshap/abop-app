@@ -4,6 +4,8 @@
 //! across different component state types, promoting consistency and
 //! reducing code duplication.
 
+use super::constants;
+
 /// Common behavior for all component states
 ///
 /// This trait unifies the behavior of CheckboxState, SwitchState, and ChipState
@@ -69,11 +71,9 @@ pub trait AnimatableState: ComponentState {
     fn should_animate_to(self, target: Self) -> bool {
         self != target // Default: animate if states are different
     }
-    
-    /// Get the animation duration for transitioning to the target state
+      /// Get the animation duration for transitioning to the target state
     fn animation_duration_to(self, target: Self) -> std::time::Duration {
-        use super::constants::animation;
-        std::time::Duration::from_millis(animation::DEFAULT_DURATION_MS)
+        std::time::Duration::from_millis(constants::animation::DEFAULT_DURATION_MS)
     }
     
     /// Check if this state can be interrupted by another transition

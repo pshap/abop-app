@@ -1,7 +1,7 @@
 //! Performance optimizations for the elevation system
 
 use super::{ElevationLevel, ElevationStyle, MaterialElevation, ShadowParams, constants};
-use crate::styling::material::colors::MaterialColors;
+use crate::styling::material::MaterialColors;
 use iced::Color;
 use std::sync::LazyLock;
 

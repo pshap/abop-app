@@ -41,22 +41,34 @@ impl TableRow {
         tokens: &'a MaterialTokens,
         config: &data::DataTableConfig,
         row_index: usize,
-    ) -> Element<'a, Message> {
-        let is_selected = selected_items.contains(&audiobook.id);
+    ) -> Element<'a, Message> {        let is_selected = selected_items.contains(&audiobook.id);
         let is_striped = config.striped && row_index % 2 == 1;
 
-        // Create selection checkbox as first cell
+        // Create enhanced selection checkbox with improved Material Design 3 styling
         let mut all_cells = vec![];
         
         let selection_checkbox = checkbox("", is_selected)
             .on_toggle(|_| Message::ToggleAudiobookSelection(audiobook.id.clone()))
             .size(20)
-            .style(move |_theme, _status| {                // Use Material Design styling for checkbox
+            .style(move |_theme, _status| {
+                // Enhanced Material Design styling with better visual feedback
                 iced::widget::checkbox::Style {
-                    background: Background::Color(Color::TRANSPARENT),
-                    icon_color: tokens.colors.primary.base,
+                    background: Background::Color(if is_selected {
+                        tokens.colors.primary.base
+                    } else {
+                        Color::TRANSPARENT
+                    }),
+                    icon_color: if is_selected {
+                        tokens.colors.primary.on_base
+                    } else {
+                        tokens.colors.primary.base
+                    },
                     border: iced::Border {
-                        color: if is_selected { tokens.colors.primary.base } else { tokens.colors.outline },
+                        color: if is_selected { 
+                            tokens.colors.primary.base 
+                        } else { 
+                            tokens.colors.outline 
+                        },
                         width: 2.0,
                         radius: 4.0.into(),
                     },
@@ -177,7 +189,7 @@ impl TableRow {
 
         // Get the base background color using Material Design patterns
         let base_background = if is_selected {
-            colors.secondary_container
+            colors.secondary.container
         } else if is_striped && row_index % 2 == 1 {
             colors.surface_container
         } else {

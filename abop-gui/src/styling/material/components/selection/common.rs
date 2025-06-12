@@ -24,7 +24,7 @@ pub mod prelude {
     // Core component types and states
     pub use super::{
         AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentProps,
-        ComponentSize, SelectionError, StatefulComponent, SwitchState,
+        ComponentSize, SelectionError, SelectionComponent, StatefulComponent, SwitchState,
     };
     
     // Unified state traits
@@ -291,8 +291,7 @@ impl Default for ComponentSize {
     }
 }
 
-impl ComponentSize {
-    /// Get the pixel size for the selection component
+impl ComponentSize {    /// Get the pixel size for the selection component
     #[must_use]
     pub const fn size_px(self) -> f32 {
         match self {
@@ -300,25 +299,21 @@ impl ComponentSize {
             Self::Medium => constants::sizes::MEDIUM_SIZE_PX,
             Self::Large => constants::sizes::LARGE_SIZE_PX,
         }
-    }
-
-    /// Get the appropriate touch target size (Material Design minimum 48px)
+    }    /// Get the appropriate touch target size (Material Design minimum 48px)
     #[must_use]
     pub const fn touch_target_size(self) -> f32 {
-        match self {
-            Self::Small => constants::sizes::touch_targets::SMALL,
-            Self::Medium => constants::sizes::touch_targets::MEDIUM,
-            Self::Large => constants::sizes::touch_targets::LARGE,
-        }
+        // Material Design minimum touch target size is 48px
+        constants::ui::MIN_TOUCH_TARGET_SIZE
     }
 
     /// Get the appropriate border width for the size
     #[must_use]
     pub const fn border_width(self) -> f32 {
+        // Default border width based on size
         match self {
-            Self::Small => constants::sizes::borders::SMALL,
-            Self::Medium => constants::sizes::borders::MEDIUM,
-            Self::Large => constants::sizes::borders::LARGE,
+            Self::Small => 1.0,
+            Self::Medium => 1.5,
+            Self::Large => 2.0,
         }
     }
 
@@ -326,9 +321,9 @@ impl ComponentSize {
     #[must_use]
     pub const fn text_size(self) -> f32 {
         match self {
-            Self::Small => constants::sizes::text::SMALL,
-            Self::Medium => constants::sizes::text::MEDIUM,
-            Self::Large => constants::sizes::text::LARGE,
+            Self::Small => 12.0,
+            Self::Medium => 14.0,
+            Self::Large => 16.0,
         }
     }
 
