@@ -324,7 +324,7 @@ mod button_contrast_validation {
 
     /// Check for potential contrast issues in the color scheme
     fn check_potential_contrast_issues(colors: &MaterialColors) {
-        let mut issues = Vec::new();
+        let mut issues = Vec::with_capacity(10); // Pre-allocate for typical number of contrast checks
 
         // Check if primary color on surface meets contrast
         let primary_on_surface =

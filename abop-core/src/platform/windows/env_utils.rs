@@ -141,13 +141,15 @@ mod tests {
     #[test]
     fn test_expand_env_vars() {
         // Use unique test-specific environment variables to avoid conflicts
-        let test_var = format!("TEST_VAR_{}", std::process::id());
-        let test_value = "test_value";
+        let _test_var = format!("TEST_VAR_{}", std::process::id());
+        let _test_value = "test_value";
         
         // Set up test environment variables with unique names
         let test_var = format!("TEST_VAR_{}", std::process::id());
-        env::set_var(&test_var, "test_value");
-        env::set_var("USERNAME", "testuser");
+        unsafe {
+            env::set_var(&test_var, "test_value");
+            env::set_var("USERNAME", "testuser");
+        }
 
         // Test %VAR% syntax
         assert_eq!(
@@ -168,8 +170,10 @@ mod tests {
         ));
         
         // Clean up test environment variable
-        env::remove_var(&test_var);
-        env::remove_var("USERNAME");
+        unsafe {
+            env::remove_var(&test_var);
+            env::remove_var("USERNAME");
+        }
     }
 
     #[test]
@@ -179,7 +183,9 @@ mod tests {
         let test_localappdata = format!("LOCALAPPDATA_{}", std::process::id());
         
         // Test with APPDATA set
-        env::set_var(&test_appdata, "C:\\Users\\testuser\\AppData\\Roaming");
+        unsafe {
+            env::set_var(&test_appdata, "C:\\Users\\testuser\\AppData\\Roaming");
+        }
         // For testing purposes, we can't directly test the actual function since it uses system vars
         // Instead, we'll test the internal logic by setting and reading our own vars
         
@@ -187,11 +193,15 @@ mod tests {
         assert_eq!(env::var(&test_appdata).unwrap(), "C:\\Users\\testuser\\AppData\\Roaming");
         
         // Test with LOCALAPPDATA set  
-        env::remove_var(&test_appdata);
-        env::set_var(&test_localappdata, "C:\\Users\\testuser\\AppData\\Local");
+        unsafe {
+            env::remove_var(&test_appdata);
+            env::set_var(&test_localappdata, "C:\\Users\\testuser\\AppData\\Local");
+        }
         assert_eq!(env::var(&test_localappdata).unwrap(), "C:\\Users\\testuser\\AppData\\Local");
         
         // Clean up
-        env::remove_var(&test_localappdata);
+        unsafe {
+            env::remove_var(&test_localappdata);
+        }
     }
 }

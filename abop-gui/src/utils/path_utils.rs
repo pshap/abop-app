@@ -50,7 +50,7 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
 
         // Process components while preserving drive and root information
         let mut normalized = PathBuf::new();
-        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::new();
+        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::with_capacity(8); // Pre-allocate for typical path depth
 
         for comp in sep_norm.components() {
             match comp {
