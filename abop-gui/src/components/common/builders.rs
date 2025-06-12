@@ -1,8 +1,21 @@
 //! Builder patterns for creating complex UI components
 
 use iced::{Element, Length, Padding};
+use thiserror::Error;
 
 use crate::styling::material::MaterialTokens;
+
+/// Errors that can occur during button building
+#[derive(Debug, Error, Clone)]
+pub enum ButtonBuildError {
+    /// Occurs when a required field is missing
+    #[error("Missing required field: {0}")]
+    MissingField(&'static str),
+
+    /// Occurs when there's a conflict in button configuration
+    #[error("Invalid configuration: {0}")]
+    InvalidConfiguration(&'static str),
+}
 use crate::styling::material::components::widgets::{ButtonSize, IconPosition};
 use crate::styling::material::components::widgets::{MaterialButton, MaterialButtonVariant};
 
@@ -100,32 +113,52 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Build the button element
-    pub fn build(self) -> Element<'a, M> {
+    ///
+    /// # Errors
+    ///
+    /// Returns `ButtonBuildError` if:
+    /// - Button has neither label nor icon
+    /// - Button is enabled but no `on_press` handler is provided
+    /// - Both `on_press` and `disabled` are set
+    pub fn build(self) -> Result<Element<'a, M>, ButtonBuildError> {
+        // Validate button has either label or icon
+        if self.label.is_none() && self.icon_name.is_none() {
+            return Err(ButtonBuildError::MissingField("label or icon"));
+        }
+
+        // Validate on_press and disabled states
+        if let (Some(_), true) = (self.on_press.as_ref(), self.disabled) {
+            return Err(ButtonBuildError::InvalidConfiguration(
+                "Cannot set both on_press and disabled",
+            ));
+        }
+
         // Create the button based on configuration
         if let (Some(label), Some(icon_name)) = (self.label, self.icon_name) {
             // Button with both text and icon
             let on_press = match (self.on_press, self.disabled) {
                 (Some(msg), false) => msg,
-                (None, false) => panic!("on_press is required for enabled buttons"),
-                _ => panic!("Cannot set both on_press and disabled"),
+                (None, false) => {
+                    return Err(ButtonBuildError::MissingField(
+                        "on_press for enabled button",
+                    ));
+                }
+                _ => unreachable!(), // Handled by validation above
             };
 
-            material_button_with_icon_widget(
+            Ok(material_button_with_icon_widget(
                 label,
                 icon_name,
                 self.icon_position,
                 self.variant,
                 on_press,
                 self.tokens,
-            )
+            ))
         } else if let Some(label) = self.label {
             // Text-only button
             let mut btn = MaterialButton::new(label, self.tokens).variant(self.variant);
 
             if let Some(msg) = self.on_press {
-                if self.disabled {
-                    panic!("Cannot set both on_press and disabled");
-                }
                 btn = btn.on_press(msg);
             }
 
@@ -146,13 +179,15 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                 btn = btn.padding(padding);
             }
 
-            btn.into()
+            Ok(btn.into())
         } else if let Some(icon_name) = self.icon_name {
             // Icon-only button
             if self.disabled {
-                // Create a disabled icon button
-                let size_variant =
-                    icon_support::map_button_size(self.size.unwrap_or(ButtonSize::Medium));
+                // Get the size or default to Medium
+                let button_size = self.size.unwrap_or(ButtonSize::Medium);
+                
+                // Map to size variant for icon support
+                let size_variant = icon_support::map_button_size(button_size);
 
                 // Create icon content
                 let content = icon_support::create_icon_button_content::<M>(
@@ -162,31 +197,34 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                     self.tokens,
                 );
 
-                // Use centralized size calculation
-                let button_size =
-                    super::sizing::button_size_to_pixels(self.size.unwrap_or(ButtonSize::Medium));
+                // Use centralized size calculation with the same size
+                let button_size_px = super::sizing::button_size_to_pixels(button_size);
 
                 // Create disabled button
-                MaterialButton::new_with_content(content, self.tokens)
+                Ok(MaterialButton::new_with_content(content, self.tokens)
                     .variant(self.variant)
-                    .width(Length::Fixed(button_size))
-                    .height(Length::Fixed(button_size))
+                    .width(Length::Fixed(button_size_px))
+                    .height(Length::Fixed(button_size_px))
                     .padding(8.0)
                     .disabled()
-                    .into()
+                    .into())
             } else {
                 // Create an enabled icon button
-                material_icon_button_widget(
+                let on_press = self.on_press.ok_or_else(|| {
+                    ButtonBuildError::MissingField("on_press for enabled icon button")
+                })?;
+
+                Ok(material_icon_button_widget(
                     icon_name,
                     self.variant,
                     self.size.unwrap_or(ButtonSize::Medium),
-                    self.on_press
-                        .unwrap_or_else(|| panic!("on_press is required for enabled buttons")),
+                    on_press,
                     self.tokens,
-                )
+                ))
             }
         } else {
-            panic!("Button must have either label or icon")
+            // This should be unreachable due to validation at start of method
+            unreachable!("Button must have either label or icon");
         }
     }
 }
@@ -243,6 +281,7 @@ pub fn primary_button_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Filled)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a semantic secondary button using the builder pattern
@@ -256,6 +295,7 @@ pub fn secondary_button_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Outlined)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a semantic tertiary button using the builder pattern
@@ -269,6 +309,7 @@ pub fn tertiary_button<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Text)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a primary button with icon using the builder pattern
@@ -285,6 +326,7 @@ pub fn primary_button_with_icon_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Filled)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a secondary button with icon using the builder pattern
@@ -301,6 +343,7 @@ pub fn secondary_button_with_icon_semantic<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Outlined)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a tertiary button with icon using the builder pattern
@@ -317,6 +360,7 @@ pub fn tertiary_button_with_icon<'a, M: Clone + 'a>(
         .variant(MaterialButtonVariant::Text)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates an icon-only button using the builder pattern
@@ -333,6 +377,7 @@ pub fn icon_button_semantic<'a, M: Clone + 'a>(
         .size(size)
         .on_press(on_press)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }
 
 /// Creates a filled icon button using the builder pattern
@@ -510,4 +555,5 @@ pub fn create_button<'a, Message: Clone + 'a>(
         .variant(variant)
         .on_press(message)
         .build()
+        .unwrap_or_else(|_| iced::widget::Text::new("Error").into())
 }

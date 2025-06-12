@@ -43,7 +43,7 @@ fn main() -> iced::Result {
     // Initialize logging - panic on failure since this is critical
     init_logging().expect("Failed to initialize logging");
 
-    info!("Starting ABOP GUI with Iced 0.13.1 (new functional approach)...");
+    info!("Starting ABOP GUI with Iced 0.13.1 (trait-based approach)...");
 
     // Register embedded fonts (Roboto only, Font Awesome handled by iced_font_awesome)
     assets::register_fonts();
@@ -58,20 +58,17 @@ fn main() -> iced::Result {
     // Initialize services
     let _services = ServiceContainer::new();
 
-    // Create the application instance
-    let app = App::new();
-
-    // Run the application using the new modular approach with system font defaults
-    iced::application(
-        "ABOP - Audiobook Organizer & Processor",
-        App::update,
-        App::view,
-    )
-    .subscription(App::subscription)
-    .theme(|app: &App| app.state.theme_mode.theme())
-    .window_size(iced::Size::new(
-        config.window.min_width as f32,
-        config.window.min_height as f32,
-    ))
-    .run_with(move || (app, iced::Task::none()))
+    // Run the application using the Application trait with proper window settings
+    iced::application(App::title, App::update, App::view)
+        .theme(App::theme)
+        .subscription(App::subscription)
+        .window_size(iced::Size::new(
+            config.window.min_width as f32,
+            config.window.min_height as f32,
+        ))
+        .run_with(App::initial)
+        .map_err(|e| {
+            log::error!("Application failed to run: {}", e);
+            e
+        })
 }

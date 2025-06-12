@@ -122,12 +122,27 @@ impl HealthMonitor {
 
     /// Set health status to connecting
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the internal health status mutex is poisoned.
-    pub fn set_connecting(&self) {
-        *self.health.write().unwrap() = ConnectionHealth::Connecting;
-        *self.last_check.write().unwrap() = Some(Instant::now());
+    /// Returns an error if either lock is poisoned.
+    pub fn set_connecting(&self) -> Result<(), String> {
+        if let Err(e) = self
+            .health
+            .write()
+            .map(|mut guard| *guard = ConnectionHealth::Connecting)
+        {
+            return Err(format!("Failed to update health status: {}", e));
+        }
+
+        if let Err(e) = self
+            .last_check
+            .write()
+            .map(|mut guard| *guard = Some(Instant::now()))
+        {
+            return Err(format!("Failed to update last check time: {}", e));
+        }
+
+        Ok(())
     }
 }
 

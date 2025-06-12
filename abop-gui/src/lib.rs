@@ -8,6 +8,9 @@
 // Main application module
 pub mod app;
 
+// Application router for view navigation
+pub mod router;
+
 // Asset management (including fonts)
 pub mod assets;
 

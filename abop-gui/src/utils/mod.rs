@@ -6,6 +6,7 @@
 use crate::state::UiState;
 use std::path::Path;
 
+pub mod path_utils;
 pub mod safe_conversions;
 
 // Re-export commonly used utilities

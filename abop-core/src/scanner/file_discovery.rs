@@ -46,9 +46,38 @@ impl DefaultFileDiscoverer {
         }
     }
 
+    /// Check if a file has one of the allowed extensions (case-insensitive)
+    fn has_valid_extension(path: &Path, extensions: &[String]) -> bool {
+        path.extension()
+            .and_then(OsStr::to_str)
+            .map(|ext| {
+                // Convert both the file extension and allowed extensions to lowercase for comparison
+                let ext_lower = ext.to_lowercase();
+                extensions
+                    .iter()
+                    .any(|allowed| allowed.to_lowercase() == ext_lower)
+            })
+            .unwrap_or(false)
+    }
+
     /// Find audio files synchronously (used internally)
-    fn find_audio_files_sync(path: &Path, extensions: &[String]) -> Vec<PathBuf> {
+    fn find_audio_files_sync(path: &Path, extensions: &[String]) -> crate::Result<Vec<PathBuf>> {
         debug!("🔍 Starting scan of path: {}", path.display());
+
+        // Check if the path exists and is a directory
+        if !path.exists() {
+            let msg = format!("Path does not exist: {}", path.display());
+            debug!("{}", msg);
+            return Err(crate::error::AppError::Io(msg));
+        }
+        if !path.is_dir() {
+            let msg = format!("Path is not a directory: {}", path.display());
+            debug!("{}", msg);
+            return Err(crate::error::AppError::Io(msg));
+        }
+
+        // Normalize extensions to lowercase for consistent comparison
+        let extensions: Vec<String> = extensions.iter().map(|ext| ext.to_lowercase()).collect();
 
         let results: Vec<PathBuf> = WalkDir::new(path)
             .into_iter()
@@ -64,28 +93,19 @@ impl DefaultFileDiscoverer {
                 }
             })
             .filter(|e| e.file_type().is_file())
-            .filter_map(|entry| {
+            .filter(|entry| {
                 let path = entry.path();
-                #[allow(clippy::option_if_let_else)]
-                if let Some(ext) = path
-                    .extension()
-                    .and_then(OsStr::to_str)
-                    .map(str::to_lowercase)
-                {
-                    if extensions.contains(&ext) {
-                        debug!("🎵 Found audio file: {}", path.display());
-                        Some(entry.into_path())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
+                let is_match = Self::has_valid_extension(path, &extensions);
+                if is_match {
+                    debug!("🎵 Found audio file: {}", path.display());
                 }
+                is_match
             })
+            .map(|entry| entry.into_path())
             .collect();
 
         debug!("🔍 Completed scan, found {} files", results.len());
-        results
+        Ok(results)
     }
 }
 
@@ -96,11 +116,9 @@ impl FileDiscoverer for DefaultFileDiscoverer {
         let extensions = self.extensions.clone();
 
         // Spawn blocking task for file system operations
-        task::spawn_blocking(move || {
-            Ok::<_, crate::error::AppError>(Self::find_audio_files_sync(&path, &extensions))
-        })
-        .await
-        .map_err(|e| crate::error::AppError::TaskJoin(e.to_string()))?
+        task::spawn_blocking(move || Self::find_audio_files_sync(&path, &extensions))
+            .await
+            .map_err(|e| crate::error::AppError::TaskJoin(e.to_string()))?
     }
 }
 
@@ -115,7 +133,15 @@ mod tests {
     use super::*;
     use std::fs::File;
     use std::io::Write;
+    use std::path::PathBuf;
     use tempfile::tempdir;
+
+    fn create_test_file(dir: &Path, name: &str) -> PathBuf {
+        let path = dir.join(name);
+        let mut file = File::create(&path).unwrap();
+        writeln!(file, "test content").unwrap();
+        path
+    }
 
     #[tokio::test]
     async fn test_discover_files() {
@@ -143,5 +169,75 @@ mod tests {
         assert!(audio_files.iter().any(|p| p.ends_with("test.m4b")));
         assert!(audio_files.iter().any(|p| p.ends_with("test.flac")));
         assert!(!audio_files.iter().any(|p| p.ends_with("test.txt")));
+    }
+
+    #[tokio::test]
+    async fn test_case_insensitive_extension_matching() {
+        let temp_dir = tempdir().unwrap();
+        let extensions = vec!["mp3".to_string(), "FLAC".to_string()];
+
+        // Create test files with different case variations
+        let mp3_upper = create_test_file(temp_dir.path(), "UPPER.MP3");
+        let flac_lower = create_test_file(temp_dir.path(), "lower.flac");
+        let mixed_case = create_test_file(temp_dir.path(), "Mixed.CaSe.Mp3");
+
+        let discoverer = DefaultFileDiscoverer::new(extensions);
+        let files = discoverer.discover_files(temp_dir.path()).await.unwrap();
+
+        assert_eq!(files.len(), 3);
+        assert!(files.contains(&mp3_upper));
+        assert!(files.contains(&flac_lower));
+        assert!(files.contains(&mixed_case));
+    }
+
+    #[tokio::test]
+    async fn test_ignores_files_without_extension() {
+        let temp_dir = tempdir().unwrap();
+        create_test_file(temp_dir.path(), "no_extension");
+
+        let discoverer = DefaultFileDiscoverer::with_default_extensions();
+        let files = discoverer.discover_files(temp_dir.path()).await.unwrap();
+
+        assert!(files.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_handles_nonexistent_directory() {
+        let temp_dir = tempdir().unwrap();
+        let non_existent = temp_dir.path().join("nonexistent");
+
+        let discoverer = DefaultFileDiscoverer::with_default_extensions();
+        let result = discoverer.discover_files(&non_existent).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_handles_permission_denied() {
+        // On Unix-like systems, we can test permission denied scenarios
+        // On Windows, this test will be skipped
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let temp_dir = tempdir().unwrap();
+            let protected_dir = temp_dir.path().join("protected");
+            std::fs::create_dir(&protected_dir).unwrap();
+
+            // Set directory to read-only
+            let mut perms = std::fs::metadata(&protected_dir).unwrap().permissions();
+            perms.set_mode(0o000); // No permissions
+            std::fs::set_permissions(&protected_dir, perms).unwrap();
+
+            let discoverer = DefaultFileDiscoverer::with_default_extensions();
+            let result = discoverer.discover_files(&protected_dir).await;
+
+            // Cleanup: restore permissions so tempdir can be deleted
+            let mut perms = std::fs::metadata(&protected_dir).unwrap().permissions();
+            perms.set_mode(0o755);
+            let _ = std::fs::set_permissions(&protected_dir, perms);
+
+            assert!(result.is_err());
+        }
     }
 }
