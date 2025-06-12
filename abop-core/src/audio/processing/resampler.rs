@@ -143,7 +143,7 @@ impl LinearResampler {
             let pos_f64 = i_f64 * f64::from(buffer.sample_rate) / f64::from(target_rate);
 
             // Safe conversion with bounds checking
-            let pos = safe_f64_to_usize_resampling(pos_f64)?;
+            let pos = usize::try_from(pos_f64.round()).map_err(|_| AudioProcessingError::OutOfBounds)?;
 
             // For each channel
             for c in 0..channels_usize {
