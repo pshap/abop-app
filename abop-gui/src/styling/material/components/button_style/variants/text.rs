@@ -19,8 +19,9 @@ impl ButtonStyleStrategy for TextButtonStrategy {
         _elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        // Use on_primary color for better contrast on dark themes
-        let text_color = colors.primary.on_base;
+        // Use on_surface color for text buttons - provides proper contrast on surface backgrounds
+        // Text buttons should use subtle, readable text that works on the app's surface
+        let text_color = colors.on_surface;
 
         match state {
             ButtonState::Default => ButtonStyling {

@@ -4,11 +4,11 @@
 //! to address the reported issue of white icons/logos on light backgrounds.
 
 #[cfg(test)]
-mod button_contrast_validation {
-    use iced::Color;
+mod button_contrast_validation {    use iced::Color;
     use crate::styling::material::{
-        colors::{MaterialColors, MaterialPalette},
-        color_utilities::ColorUtilities,
+        MaterialColors, MaterialPalette, MaterialTokens,
+        components::button_style::strategy::ButtonStyleStrategy,
+        ColorUtilities,
     };
 
     /// Test current button contrast ratios in dark theme
@@ -47,29 +47,75 @@ mod button_contrast_validation {
         let light_colors = MaterialColors::light(&palette);
         test_contrast_scenario("Light Primary", light_colors.primary.base, light_colors.primary.on_base);
         test_contrast_scenario("Light Surface", light_colors.surface, light_colors.on_surface);
-    }
-
-    /// Test button strategy implementations for proper contrast
+    }    /// Test button strategy implementations for proper contrast
     #[test] 
     fn test_button_strategy_contrast_compliance() {
         println!("=== BUTTON STRATEGY CONTRAST VALIDATION ===");
+        let dark_colors = MaterialColors::dark_default();
+        let tokens = MaterialTokens::dark();
         
-        let palette = MaterialPalette::default();
-        let dark_colors = MaterialColors::dark(&palette);
-        
-        // Simulate what each button variant should produce
+        // Test actual button strategy implementations
         
         // Filled button strategy
-        test_contrast_scenario("Filled Strategy", dark_colors.primary.base, dark_colors.primary.on_base);
+        let filled_strategy = crate::styling::material::components::button_style::variants::filled::FilledButtonStrategy;
+        let filled_styling = filled_strategy.get_styling(
+            crate::styling::material::components::button_style::strategy::ButtonState::Default,
+            &tokens,
+            &dark_colors,
+            &tokens.elevation,
+            &tokens.shapes,
+        );
+        if let iced::Background::Color(bg) = filled_styling.background {
+            test_contrast_scenario("Filled Strategy", bg, filled_styling.text_color);
+        }
         
-        // Text button strategy (potential issue)
-        test_contrast_scenario("Text Strategy", dark_colors.surface, dark_colors.primary.base);
+        // Text button strategy  
+        let text_strategy = crate::styling::material::components::button_style::variants::text::TextButtonStrategy;
+        let text_styling = text_strategy.get_styling(
+            crate::styling::material::components::button_style::strategy::ButtonState::Default,
+            &tokens,
+            &dark_colors,
+            &tokens.elevation,
+            &tokens.shapes,
+        );
+        if let iced::Background::Color(bg) = text_styling.background {
+            test_contrast_scenario("Text Strategy", bg, text_styling.text_color);
+        } else {
+            // Text buttons have transparent background, so test against surface
+            test_contrast_scenario("Text Strategy", dark_colors.surface, text_styling.text_color);
+        }
         
         // Icon button strategy
-        test_contrast_scenario("Icon Strategy", dark_colors.surface, dark_colors.on_surface);
+        let icon_strategy = crate::styling::material::components::button_style::variants::icon::IconButtonStrategy;
+        let icon_styling = icon_strategy.get_styling(
+            crate::styling::material::components::button_style::strategy::ButtonState::Default,
+            &tokens,
+            &dark_colors,
+            &tokens.elevation,
+            &tokens.shapes,
+        );
+        if let iced::Background::Color(bg) = icon_styling.background {
+            test_contrast_scenario("Icon Strategy", bg, icon_styling.text_color);
+        } else {
+            // Icon buttons have transparent background, so test against surface
+            test_contrast_scenario("Icon Strategy", dark_colors.surface, icon_styling.text_color);
+        }
         
         // Outlined button strategy
-        test_contrast_scenario("Outlined Strategy", dark_colors.surface, dark_colors.primary.base);
+        let outlined_strategy = crate::styling::material::components::button_style::variants::outlined::OutlinedButtonStrategy;
+        let outlined_styling = outlined_strategy.get_styling(
+            crate::styling::material::components::button_style::strategy::ButtonState::Default,
+            &tokens,
+            &dark_colors,
+            &tokens.elevation,
+            &tokens.shapes,
+        );
+        if let iced::Background::Color(bg) = outlined_styling.background {
+            test_contrast_scenario("Outlined Strategy", bg, outlined_styling.text_color);
+        } else {
+            // Outlined buttons have transparent background, so test against surface
+            test_contrast_scenario("Outlined Strategy", dark_colors.surface, outlined_styling.text_color);
+        }
         
         // Check if any strategies fail WCAG AA
         println!("\n🔍 ANALYZING POTENTIAL ISSUES:");

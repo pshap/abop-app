@@ -19,8 +19,9 @@ impl ButtonStyleStrategy for OutlinedButtonStrategy {
         _elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        // Use on_primary color for better contrast on dark themes
-        let text_color = colors.primary.on_base;
+        // Use on_surface color for outlined buttons - provides proper contrast on surface backgrounds
+        // Outlined buttons should use readable text that works well on the app's surface
+        let text_color = colors.on_surface;
         let border_color = colors.outline;
 
         match state {

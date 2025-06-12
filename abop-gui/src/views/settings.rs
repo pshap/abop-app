@@ -3,12 +3,14 @@
 //! This module provides an enhanced settings view with consistent styling
 //! and improved user interaction patterns.
 
-use iced::widget::{Space, button, column, container, row, text};
+use iced::widget::{Space, column, container, row, text};
 use iced::{Element, Length};
 
+use crate::components::common::create_button;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::styling::container::dialog::DialogContainerStyles;
+use crate::styling::material::components::widgets::MaterialButtonVariant;
 
 // Import Material Design 3 selection components
 use crate::styling::material::MaterialColors;
@@ -62,18 +64,19 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         .align_y(iced::Alignment::Center),
     ]
     .spacing(state.material_tokens.spacing().lg)
-    .padding(state.material_tokens.spacing().lg);
-
-    // Create the settings modal container with proper styling
+    .padding(state.material_tokens.spacing().lg);    // Create the settings modal container with proper styling
     container(
         column![
             settings_content,
             // Close button row
             row![
                 Space::new(Length::Fill, 0),
-                button("Close")
-                    .on_press(Message::CloseSettings)
-                    .padding([8, 16])
+                create_button(
+                    "Close",
+                    MaterialButtonVariant::Filled,
+                    Message::CloseSettings,
+                    &state.material_tokens,
+                )
             ]
         ]
         .spacing(state.material_tokens.spacing().md),
