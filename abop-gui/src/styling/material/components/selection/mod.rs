@@ -95,10 +95,9 @@ pub use chip::{
 };
 use common::prelude::*;
 use common::{
-    CheckboxState, ChipState, ComponentProps, ComponentSize, SelectionComponent, SelectionError,
+    CheckboxState, ChipState, ComponentSize, SelectionComponent, SelectionError,
     SwitchState,
 };
-use crate::styling::material::MaterialColors;
 pub use common::{
     AnimatedComponent, AnimationConfig, EasingCurve, ValidationConfig,
     ValidationRule,

@@ -17,9 +17,17 @@ use crate::styling::material::components::selection_style::{
 use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 
 // Static MaterialTokens instances to avoid lifetime issues
+/// Default light theme Material Design tokens for selection components.
+/// 
+/// This provides a static instance of MaterialTokens configured with light theme colors,
+/// used as a fallback when no specific tokens are provided for component styling.
 pub static LIGHT_TOKENS: std::sync::LazyLock<MaterialTokens> = 
     std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::light_default()));
     
+/// Default dark theme Material Design tokens for selection components.
+/// 
+/// This provides a static instance of MaterialTokens configured with dark theme colors,
+/// used as a fallback when no specific tokens are provided for component styling.
 pub static DARK_TOKENS: std::sync::LazyLock<MaterialTokens> = 
     std::sync::LazyLock::new(|| MaterialTokens::default().with_colors(MaterialColors::dark_default()));
 
@@ -293,7 +301,7 @@ where
         &self,
         selected_value: Option<T>,
         on_select: impl FnOnce(T) -> Message + Copy + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer>
     where
         T: Copy + 'a,    {

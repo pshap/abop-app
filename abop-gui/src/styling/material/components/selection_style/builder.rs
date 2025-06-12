@@ -179,9 +179,6 @@ impl<'a> SelectionStyleBuilder<'a> {
     pub fn checkbox_style(
         self,
     ) -> impl Fn(&Theme, iced::widget::checkbox::Status) -> iced::widget::checkbox::Style + 'a {
-        let tokens = self.tokens;
-        let size = self.size;
-        let error = self.error;
         move |_theme: &Theme, status| {
             let state = CheckboxStatusMapper.map_status(status, false);
 
@@ -216,9 +213,6 @@ impl<'a> SelectionStyleBuilder<'a> {
 pub fn radio_style(
         self,
     ) -> impl Fn(&Theme, iced::widget::radio::Status) -> iced::widget::radio::Style + 'a {
-        let tokens = self.tokens;
-        let size = self.size;
-        let error = self.error;
         move |_theme: &Theme, status: iced::widget::radio::Status| {
             let state = RadioStatusMapper.map_status(status, false);
 
@@ -251,9 +245,6 @@ pub fn chip_style(
         self,
         is_selected: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {
-        let tokens = self.tokens;
-        let size = self.size;
-        let error = self.error;
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_selected);
 
@@ -285,9 +276,6 @@ pub fn switch_style(
         self,
         is_enabled: bool,
     ) -> impl Fn(&Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a {
-        let tokens = self.tokens;
-        let size = self.size;
-        let error = self.error;
         move |_theme: &Theme, status: iced::widget::button::Status| {
             let state = ButtonStatusMapper.map_status(status, is_enabled);
 

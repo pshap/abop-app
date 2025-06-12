@@ -70,9 +70,9 @@ pub mod chips {
     
     /// Minimum chip height following Material Design 3
     pub const MIN_HEIGHT: f32 = 32.0;
-    
-    /// Standard chip padding
+      /// Standard chip padding
     pub const HORIZONTAL_PADDING: f32 = 16.0;
+    /// Vertical padding for chips following Material Design 3 spacing guidelines
     pub const VERTICAL_PADDING: f32 = 8.0;
 }
 

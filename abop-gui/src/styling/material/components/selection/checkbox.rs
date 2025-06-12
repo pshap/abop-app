@@ -64,7 +64,7 @@ impl Checkbox {
     pub fn view<'a, Message: Clone + 'a>(
         &self,
         on_toggle: impl Fn(CheckboxState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         // Convert modern state to legacy boolean for Iced compatibility
         let is_checked = match self.state() {
@@ -121,9 +121,9 @@ impl Checkbox {
     pub fn view_with_state<'a, Message: Clone + 'a>(
         &self,
         on_change: impl Fn(CheckboxState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
-        self.view(on_change, color_scheme)
+        self.view(on_change, _color_scheme)
     }
 }
 

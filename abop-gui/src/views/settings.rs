@@ -79,6 +79,7 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
 }
 
 /// Helper function to create MaterialColors based on theme
+#[allow(dead_code)]
 fn get_material_colors(is_dark: bool) -> MaterialColors {
     if is_dark {
         MaterialColors::dark_default()

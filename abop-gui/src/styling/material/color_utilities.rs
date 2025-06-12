@@ -229,10 +229,8 @@ impl ThemeUtilities {
         };
 
         MaterialColors::from_seed(seasonal_color, false)
-    }
-
-    /// Helper to create a custom palette with specific brand colors
-    fn create_custom_palette(primary: Color, secondary: Option<Color>) -> MaterialPalette {
+    }    /// Helper to create a custom palette with specific brand colors
+    fn create_custom_palette(primary: Color, _secondary: Option<Color>) -> MaterialPalette {
         // This would use your existing seed generation but with custom secondary
         // For now, use the primary-based generation
         MaterialPalette::from_seed(primary)

@@ -68,7 +68,7 @@ impl Chip {
     pub fn view<'a, Message: Clone + 'a>(
         &'a self,
         on_press: Option<Message>,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {        // Convert modern size to legacy size
         let legacy_size = match self.props().size {
             ComponentSize::Small => LegacySelectionSize::Small,

@@ -59,14 +59,13 @@ impl Switch {
     ///
     /// # Returns
     /// An Iced Element that can be added to the UI
-    ///
-    /// # Note
+    ///    /// # Note
     /// Currently implemented as styled checkbox. Phase 4 will replace this
     /// with a proper custom switch widget implementation.
     pub fn view<'a, Message: Clone + 'a>(
         &self,
         on_toggle: impl Fn(SwitchState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
         // TODO: Phase 4 - Replace with custom switch widget
         // For now, use styled checkbox as placeholder
@@ -113,18 +112,16 @@ impl Switch {
         }
 
         switch_widget.into()
-    }
-
-    /// Create a simplified view that handles state changes automatically
+    }    /// Create a simplified view that handles state changes automatically
     ///
     /// This is a convenience method for cases where you want the switch to
     /// manage its own state internally.
     pub fn view_with_state<'a, Message: Clone + 'a>(
         &self,
         on_change: impl Fn(SwitchState) -> Message + 'a,
-        color_scheme: &'a MaterialColors,
+        _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
-        self.view(on_change, color_scheme)
+        self.view(on_change, _color_scheme)
     }
 }
 

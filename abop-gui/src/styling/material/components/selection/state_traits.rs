@@ -70,9 +70,8 @@ pub trait AnimatableState: ComponentState {
     /// Check if animation should be enabled for this state transition
     fn should_animate_to(self, target: Self) -> bool {
         self != target // Default: animate if states are different
-    }
-      /// Get the animation duration for transitioning to the target state
-    fn animation_duration_to(self, target: Self) -> std::time::Duration {
+    }    /// Get the animation duration for transitioning to the target state
+    fn animation_duration_to(self, _target: Self) -> std::time::Duration {
         std::time::Duration::from_millis(constants::animation::DEFAULT_DURATION_MS)
     }
     
