@@ -6,7 +6,7 @@ use iced::{self, Element, Subscription, Task, keyboard, theme::Theme as IcedThem
 
 // Import ThemeMode from the appropriate module
 
-use log::{error, info};
+use log::{debug, error, info};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, UnboundedSender};
 
@@ -20,17 +20,14 @@ use crate::{
 use abop_core::services::ServiceContainer;
 
 /// Messages for task management
+#[derive(Debug)]
 enum TaskMessage {
     /// Cancel a task by ID
     Cancel(u64),
-}
-
-impl std::fmt::Debug for TaskMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TaskMessage::Cancel(id) => f.debug_tuple("Cancel").field(id).finish(),
-        }
-    }
+    /// Request status of a task by ID
+    Status(u64),
+    /// Shutdown the task manager
+    Shutdown,
 }
 
 /// Main application struct
@@ -66,6 +63,14 @@ impl App {
                             error!("Failed to cancel task {task_id}: {e}");
                         }
                     }
+                    TaskMessage::Status(task_id) => {
+                        // Log task status - could be extended to return status via channel
+                        debug!("Task status requested for task {task_id}");
+                    }
+                    TaskMessage::Shutdown => {
+                        info!("Task manager received shutdown signal");
+                        break;
+                    }
                 }
             }
 
@@ -92,14 +97,10 @@ impl App {
         let name = name.into();
         let services = Arc::clone(&self.services);
         
-        // Create a closure that wraps the task to match ServiceContainer::spawn_named signature
-        let wrapped_task = move || {
-            let services_ref = &services;
-            let future = task(services_ref);
-            async move {
-                future.await;
-                Ok(())
-            }
+        // Simplified task wrapper - directly return the future result
+        let wrapped_task = move || async move {
+            task(&services).await;
+            Ok(())
         };
 
         // Directly use ServiceContainer::spawn_named to get the task ID synchronously
