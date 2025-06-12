@@ -18,12 +18,12 @@ use std::path::PathBuf;
 pub fn get_default_audiobook_directory() -> PathBuf {
     #[cfg(windows)]
     return windows::get_default_audiobook_directory();
-    
+
     #[cfg(target_os = "macos")]
     return macos::get_default_audiobook_directory();
-    
+
     #[cfg(all(unix, not(target_os = "macos")))]
     return unix::get_default_audiobook_directory();
-      #[cfg(not(any(windows, unix)))]
+    #[cfg(not(any(windows, unix)))]
     return PathBuf::from(".");
 }

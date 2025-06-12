@@ -97,7 +97,7 @@ impl App {
     {
         let name = name.into();
         let services = Arc::clone(&self.services);
-        
+
         // Simplified task wrapper - directly return the future result
         let wrapped_task = move || async move {
             task(&services).await;
@@ -153,14 +153,14 @@ impl Drop for App {
 }
 
 /// Application theme options
-/// 
+///
 /// Defines the available visual themes for the application's user interface.
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Theme {
     /// Light color scheme with dark text on light background
     #[default]
     Light,
-    
+
     /// Dark color scheme with light text on dark background
     Dark,
 }

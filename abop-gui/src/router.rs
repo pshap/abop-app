@@ -46,15 +46,15 @@ impl Router {
     }
 
     /// Navigates to the specified route
-    /// 
+    ///
     /// # Behavior
     /// - Adds the new route to navigation history
     /// - Updates the current route
     /// - Returns `Task::none()` as navigation is a synchronous state change
-    /// 
+    ///
     /// # Arguments
     /// * `route` - The target route to navigate to
-    /// 
+    ///
     /// # Returns
     /// A no-op Task since navigation only updates internal state synchronously
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
@@ -64,12 +64,12 @@ impl Router {
     }
 
     /// Navigates back to the previous route if available
-    /// 
+    ///
     /// # Behavior
     /// - Pops the current route from history if history has more than one entry
     /// - Sets current route to the last item in history
     /// - Does nothing if already at the first route in history
-    /// 
+    ///
     /// # Returns
     /// A no-op Task since navigation only updates internal state synchronously
     pub fn navigate_back(&mut self) -> Task<Message> {

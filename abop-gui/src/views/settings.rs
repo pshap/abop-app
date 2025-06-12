@@ -64,7 +64,7 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         .align_y(iced::Alignment::Center),
     ]
     .spacing(state.material_tokens.spacing().lg)
-    .padding(state.material_tokens.spacing().lg);    // Create the settings modal container with proper styling
+    .padding(state.material_tokens.spacing().lg); // Create the settings modal container with proper styling
     container(
         column![
             settings_content,

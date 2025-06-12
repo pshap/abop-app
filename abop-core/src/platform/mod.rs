@@ -10,27 +10,27 @@ pub mod windows;
 #[cfg(not(windows))]
 pub mod fallback {
     //! Fallback implementations for non-Windows platforms
-    
+
     pub mod env_utils {
         //! Environment utilities fallback for non-Windows platforms
         use std::env;
-        
+
         /// Get environment variable (fallback implementation)
-        /// 
+        ///
         /// # Safety
         /// This function provides read-only access to environment variables.
         /// Use with caution as environment variables may contain sensitive information.
         pub fn get_env(key: &str) -> Option<std::ffi::OsString> {
             env::var_os(key)
         }
-        
+
         /// Set environment variable (fallback implementation)
-        /// 
+        ///
         /// # Safety
         /// This function allows modification of environment variables.
         /// Use with extreme caution as this affects the entire process.
         /// Consider restricting usage to specific, validated keys only.
-        /// 
+        ///
         /// # Security Note
         /// Environment variables can affect process behavior and security.
         /// Validate input and restrict to known-safe variables only.

@@ -125,7 +125,7 @@ mod tests {
         let long_path = Path::new("C:").join("a".repeat(300));
         let extended = to_extended_path(&long_path);
         let extended_str = extended.to_str().unwrap();
-        
+
         // More flexible assertion - check for \\?\ prefix and drive letter
         assert!(extended_str.starts_with(r"\\?\"));
         assert!(extended_str.contains("C:"));

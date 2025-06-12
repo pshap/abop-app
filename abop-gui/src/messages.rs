@@ -134,10 +134,10 @@ pub enum Command {
         /// Path to the library directory to scan
         library_path: PathBuf,
     },
-    
+
     /// Open a directory browser dialog
     BrowseDirectory,
-    
+
     /// Quickly scan a single directory
     QuickScanDirectory {
         /// Path to the directory to scan
@@ -152,7 +152,7 @@ pub enum Command {
         /// Full list of audiobooks for reference
         audiobooks: Vec<Audiobook>,
     },
-    
+
     /// Start playing the selected audiobooks
     PlayAudio {
         /// IDs of the selected audiobooks
@@ -160,17 +160,17 @@ pub enum Command {
         /// Full list of audiobooks for reference
         audiobooks: Vec<Audiobook>,
     },
-    
+
     /// Stop any currently playing audio
     StopAudio,
 
     // ===== System Commands =====
     /// Save the current application state
     SaveState,
-    
+
     /// Load the saved application state
     LoadState,
-    
+
     /// Quit the application
     Quit,
 }

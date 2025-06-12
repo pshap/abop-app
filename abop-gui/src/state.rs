@@ -14,9 +14,9 @@ use abop_core::{
     scanner::{LibraryScanner, ScannerState},
 };
 
+use crate::utils::platform;
 use abop_core::audio::player::PlayerState;
 use abop_core::models::Audiobook;
-use crate::utils::platform;
 
 // ================================================================================================
 // HELPER FUNCTIONS

@@ -7,7 +7,7 @@
 //! - Consistent path normalization
 
 use std::io;
-use std::path::{Path, PathBuf, Component};
+use std::path::{Component, Path, PathBuf};
 
 #[cfg(windows)]
 use abop_core::platform::windows::path_utils as win_path_utils;
@@ -47,11 +47,11 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
     {
         // Normalize separators first
         let sep_norm = win_path_utils::normalize_path_separators(path);
-        
+
         // Process components while preserving drive and root information
         let mut normalized = PathBuf::new();
         let mut components_stack: Vec<&std::ffi::OsStr> = Vec::new();
-        
+
         for comp in sep_norm.components() {
             match comp {
                 Component::Prefix(prefix) => {
@@ -74,12 +74,12 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
                 }
             }
         }
-        
+
         // Add the processed normal components
         for component in components_stack {
             normalized.push(component);
         }
-        
+
         Ok(normalized)
     }
 
