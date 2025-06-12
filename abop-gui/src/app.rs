@@ -11,7 +11,6 @@ use iced::{
 };
 
 // Import ThemeMode from the appropriate module
-use crate::theme::ThemeMode;
 
 use log::{error, info};
 use std::sync::Arc;
@@ -254,12 +253,7 @@ impl App {
         let current_route = self.router.current_route();
         
         // Use the unified view function that includes toolbar and handles routing
-        match current_route {
-            Route::Library => views::view(&self.state),
-            Route::Player => views::audio_processing_view(&self.state),
-            Route::Settings => views::settings_view(&self.state),
-            Route::About => views::about_view(&self.state),
-        }
+        views::view(&self.state, current_route)
     }
 
     /// Get the theme for the application

@@ -44,20 +44,29 @@ fn modal<'a>(
     .into()
 }
 
-/// View function that renders the application UI based on current state
+/// View function that renders the application UI based on current state and route
 #[must_use]
-pub fn view(state: &UiState) -> Element<'_, Message> {
+pub fn view(state: &UiState, route: crate::router::Route) -> Element<'_, Message> {
     // Unified toolbar at the top combining navigation and actions
     let toolbar = MainToolbar::view(
         &state.recent_directories,
         &state.library_path,
         &state.material_tokens,
     );
-    let content = library_view(state);
+    
+    // Route-specific content
+    let content = match route {
+        crate::router::Route::Library => library_view(state),
+        crate::router::Route::Player => audio_processing_view(state),
+        crate::router::Route::Settings => settings_view(state),
+        crate::router::Route::About => about_view(state),
+    };
 
     let main_content = column![toolbar, content]
         .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)    // If settings dialog is open, show it as a modal overlay
+        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)
+        
+    // If settings dialog is open, show it as a modal overlay
     if state.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
