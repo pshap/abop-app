@@ -54,9 +54,6 @@ impl Router {
     ///
     /// # Arguments
     /// * `route` - The target route to navigate to
-    ///
-    /// # Returns
-    /// A no-op Task since navigation only updates internal state synchronously
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
         self.history.push(route);
         self.current_route = route;

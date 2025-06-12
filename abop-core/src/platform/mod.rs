@@ -17,9 +17,9 @@ pub mod fallback {
 
         /// Get environment variable (fallback implementation)
         ///
-        /// # Safety
-        /// This function provides read-only access to environment variables.
-        /// Use with caution as environment variables may contain sensitive information.
+        /// # Security
+        /// Environment variables may contain sensitive information.
+        /// Ensure proper handling and avoid logging raw values.
         pub fn get_env(key: &str) -> Option<std::ffi::OsString> {
             env::var_os(key)
         }
