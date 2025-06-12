@@ -47,6 +47,9 @@ tokio-stream.workspace = true
 tempfile.workspace = true
 rusqlite.workspace = true
 
+# Platform-specific dependencies
+directories = { version = "5.0.0", default-features = false }
+
 # Non-workspace dependencies that override workspace versions
 iced = { version = "0.13.1", features = ["tokio", "advanced"] }
 crossbeam-channel = "0.5"

@@ -3,12 +3,50 @@
 use crate::{AppError, Result};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::future::Future;
+use std::sync::{Arc, RwLock, atomic::Ordering};
+use tokio::task::JoinHandle;
+
+/// Represents a handle to a background task
+#[derive(Debug)]
+pub struct TaskHandle {
+    id: u64,
+    name: String,
+    handle: JoinHandle<()>,
+}
+
+impl TaskHandle {
+    /// Create a new task handle
+    pub fn new(id: u64, name: impl Into<String>, handle: JoinHandle<()>) -> Self {
+        Self {
+            id,
+            name: name.into(),
+            handle,
+        }
+    }
+
+    /// Get the task ID
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    /// Get the task name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Abort the task
+    pub fn abort(&self) {
+        self.handle.abort();
+    }
+}
 
 /// Service container for dependency injection using type-based registration
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ServiceContainer {
     services: Arc<RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>>,
+    next_task_id: std::sync::atomic::AtomicU64,
+    tasks: Arc<RwLock<HashMap<u64, TaskHandle>>>,
 }
 
 impl ServiceContainer {
@@ -17,6 +55,8 @@ impl ServiceContainer {
     pub fn new() -> Self {
         Self {
             services: Arc::new(RwLock::new(HashMap::new())),
+            next_task_id: std::sync::atomic::AtomicU64::new(1),
+            tasks: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -85,6 +125,100 @@ impl ServiceContainer {
             .map(|services| services.len())
             .unwrap_or(0)
     }
+
+    /// Spawn a new background task with a name for tracking
+    pub fn spawn_named<F, Fut>(&self, name: impl Into<String>, future: F) -> Result<u64>
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = Result<()>> + Send + 'static,
+    {
+        let task_name = name.into();
+        let task_name_for_log = task_name.clone(); // Clone for the async block
+        let task_id = self.next_task_id.fetch_add(1, Ordering::SeqCst);
+
+        // Create a task that maps the Result<(), AppError> to ()
+        let task = async move {
+            if let Err(e) = future().await {
+                log::error!("Task '{task_name_for_log}' failed: {e}");
+            }
+        };
+
+        let handle = tokio::spawn(task);
+        let task_handle = TaskHandle::new(task_id, task_name, handle);
+
+        self.tasks
+            .write()
+            .map_err(|_| AppError::Other("Failed to acquire write lock on tasks".to_string()))?
+            .insert(task_id, task_handle);
+
+        Ok(task_id)
+    }
+
+    /// Cancel a running task by ID
+    pub fn cancel_task(&self, task_id: u64) -> Result<()> {
+        if let Some(handle) = self
+            .tasks
+            .write()
+            .map_err(|_| AppError::Other("Failed to acquire write lock on tasks".to_string()))?
+            .remove(&task_id)
+        {
+            handle.handle.abort();
+            Ok(())
+        } else {
+            Err(AppError::Other("Task not found".to_string()))
+        }
+    }
+
+    /// Cancel all running tasks
+    pub fn cancel_all_tasks(&self) -> Result<()> {
+        let tasks =
+            std::mem::take(&mut *self.tasks.write().map_err(|_| {
+                AppError::Other("Failed to acquire write lock on tasks".to_string())
+            })?);
+
+        for (_, handle) in tasks {
+            handle.abort();
+        }
+
+        Ok(())
+    }
+
+    /// Get a list of all running tasks
+    pub fn list_tasks(&self) -> Result<Vec<(u64, String)>> {
+        self.tasks
+            .read()
+            .map_err(|_| AppError::Other("Failed to acquire read lock on tasks".to_string()))
+            .map(|tasks| {
+                tasks
+                    .values()
+                    .map(|t| (t.id(), t.name().to_string()))
+                    .collect()
+            })
+    }
+
+    /// Wait for a task to complete
+    pub async fn wait_for_task(&self, task_id: u64) -> Result<()> {
+        let handle = {
+            let mut tasks = self.tasks.write().map_err(|_| {
+                AppError::Other("Failed to acquire write lock on tasks".to_string())
+            })?;
+
+            // Remove the task from tracking before awaiting its completion
+            // This prevents holding the lock across await points
+            if let Some(handle) = tasks.remove(&task_id) {
+                handle.handle
+            } else {
+                return Err(AppError::Other("Task not found".to_string()));
+            }
+        };
+
+        // Await the task completion and return the result
+        handle
+            .await
+            .map_err(|e| AppError::Other(format!("Task failed: {e}")))?;
+
+        Ok(())
+    }
 }
 
 impl Default for ServiceContainer {
@@ -93,10 +227,31 @@ impl Default for ServiceContainer {
     }
 }
 
-/// Example database service
+impl Drop for ServiceContainer {
+    fn drop(&mut self) {
+        // Try to cancel all tasks on drop
+        if let Err(e) = self.cancel_all_tasks() {
+            log::error!("Failed to cancel all tasks during drop: {e}");
+        }
+    }
+}
+
+/// Database service with connection management
 #[derive(Debug)]
 pub struct DatabaseService {
     connection_string: String,
+    // Add connection pool or other resources here
+}
+
+impl Drop for DatabaseService {
+    fn drop(&mut self) {
+        // Clean up database connections
+        log::debug!(
+            "Dropping DatabaseService with connection: {}",
+            self.connection_string
+        );
+        // Add any necessary cleanup code here
+    }
 }
 
 impl DatabaseService {
@@ -113,10 +268,22 @@ impl DatabaseService {
     }
 }
 
-/// Example configuration service
+/// Configuration service with file watching
 #[derive(Debug)]
 pub struct ConfigService {
     config_path: String,
+    // Add file watcher or other resources here
+}
+
+impl Drop for ConfigService {
+    fn drop(&mut self) {
+        // Clean up file watchers
+        log::debug!(
+            "Dropping ConfigService with config path: {}",
+            self.config_path
+        );
+        // Add any necessary cleanup code here
+    }
 }
 
 impl ConfigService {

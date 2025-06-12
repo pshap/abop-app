@@ -23,6 +23,11 @@ pub mod test_utils;
 pub mod utils;
 pub mod validation;
 
+/// Platform-specific functionality including environment utilities,
+/// path handling, and OS-specific implementations
+#[cfg(windows)]
+pub mod platform;
+
 // Test constants module (only available in test builds)
 #[cfg(test)]
 pub mod test_constants;

@@ -32,7 +32,7 @@ impl StyleTestResult {
             test_name: name.to_string(),
             passed: true,
             error_message: None,
-            details: Vec::new(),
+            details: Vec::with_capacity(4), // Pre-allocate for typical test detail count
         }
     }
 
@@ -43,7 +43,7 @@ impl StyleTestResult {
             test_name: name.to_string(),
             passed: false,
             error_message: Some(error.to_string()),
-            details: Vec::new(),
+            details: Vec::with_capacity(4), // Pre-allocate for typical test detail count
         }
     }
 
@@ -67,18 +67,18 @@ pub struct StyleTestSuite {
 impl StyleTestSuite {
     /// Create a new style test suite
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            results: Vec::new(),
+            results: Vec::with_capacity(16), // Pre-allocate for typical test suite size
             validator: ThemeValidator::new(),
         }
     }
 
     /// Create a strict test suite with enhanced validation
     #[must_use]
-    pub const fn strict() -> Self {
+    pub fn strict() -> Self {
         Self {
-            results: Vec::new(),
+            results: Vec::with_capacity(16), // Pre-allocate for typical test suite size
             validator: ThemeValidator::strict(),
         }
     }

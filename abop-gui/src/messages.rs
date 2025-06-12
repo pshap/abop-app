@@ -1,128 +1,191 @@
 //! Message and command definitions for the GUI application
 
-// use std::collections::HashSet; // Commented out, unused import
 use std::path::PathBuf;
 
-use crate::state::DirectoryInfo;
-use crate::theme::ThemeMode;
 use abop_core::models::Audiobook;
+use serde::{Deserialize, Serialize};
+
+use crate::{router::Route, state::DirectoryInfo, theme::ThemeMode};
 
 // ================================================================================================
-// GUI MESSAGE SYSTEM
+// MESSAGE SYSTEM
 // ================================================================================================
 
-/// GUI-specific message enum that wraps core `AppMessage` and adds GUI-specific messages
+/// Top-level application message enum
+///
+/// This enum represents all possible messages that can be processed by the application's
+/// update loop. Each variant corresponds to a specific user action or system event.
 #[derive(Debug, Clone)]
 pub enum Message {
-    /// Opens the settings dialog.
-    ShowSettings,
-    /// Closes the settings dialog.
-    CloseSettings,
+    // ===== Navigation =====
+    /// Navigate to a specific route in the application
+    Navigate(Route),
+    /// Navigate back to the previous route
+    NavigateBack,
 
-    /// Indicates a directory was selected (or not) by the user.
+    // ===== Settings =====
+    /// Show the settings dialog
+    ShowSettings,
+    /// Close the settings dialog
+    CloseSettings,
+    /// Toggle between light and dark theme
+    ToggleTheme,
+    /// Toggle automatic saving of the library state
+    ToggleAutoSaveLibrary,
+    /// Toggle whether to scan subdirectories when importing
+    ToggleScanSubdirectories,
+    /// Set the application theme to a specific mode
+    SetTheme(ThemeMode),
+
+    // ===== Library Management =====
+    /// A directory was selected for scanning/import
     DirectorySelected(Option<PathBuf>),
-    /// Selects a recently used directory.
+    /// Select a recently used directory
     SelectRecentDirectory(PathBuf),
-    /// Shows the recent directories dropdown.
+    /// Show the recent directories dialog
     ShowRecentDirectories,
-    /// Quick scan a directory for metadata without full library processing.
+    /// Perform a quick scan of a directory
     QuickScanDirectory(PathBuf),
-    /// Quick scan completed with directory metadata.
+    /// Result of a quick directory scan
     QuickScanComplete(Result<DirectoryInfo, String>),
-    /// Indicates the library scan has completed with a result.
+    /// Result of a full library scan
     ScanComplete(Result<crate::library::ScanResult, String>),
-    /// Reports progress during library scanning (0.0 to 1.0).
+    /// Progress update for a scan operation (0.0 to 1.0)
     ScanProgress(f32),
-    /// Reports enhanced scan progress with detailed information
+    /// Enhanced progress information for a scan operation
     ScanProgressEnhanced(abop_core::scanner::ScanProgress),
 
-    /// Selects an audiobook by its ID.
+    // ===== Audiobook Selection =====
+    /// Select a single audiobook by ID
     SelectAudiobook(String),
-    /// Toggles selection state of an audiobook by its ID.
+    /// Toggle selection state of an audiobook by ID
     ToggleAudiobookSelection(String),
-    /// Toggles selection of all visible audiobooks.
+    /// Toggle selection state of all audiobooks
     ToggleSelectAll,
-    /// Deselects all selected audiobooks.
+    /// Deselect all audiobooks
     DeselectAll,
-    /// Sorts the audiobook table by the given column.
+    /// Sort audiobooks by the specified column
     SortBy(String),
 
-    /// Processes the currently selected audiobooks.
-    ProcessSelected,
-    /// Starts audio playback.
+    // ===== Playback Control =====
+    /// Start playback of selected audiobooks
     StartPlayback,
-    /// Stops audio playback.
+    /// Stop the current playback
     StopPlayback,
-    /// Toggles between play and pause.
+    /// Toggle between play and pause
     PlayPause,
-    /// Plays the previous track.
+    /// Play the previous track
     Previous,
-    /// Plays the next track.
+    /// Play the next track
     Next,
-    /// Stops audio playback (same as `StopPlayback` but for consistency).
+    /// Stop all playback
     Stop,
+    /// Process the selected audiobooks
+    ProcessSelected,
 
-    /// Indicates audio processing has completed.
+    // ===== System Messages =====
+    /// Result of an audio processing operation
     AudioProcessingComplete(Result<String, String>),
-    /// Indicates playback has started.
+    /// Result of starting playback
     PlaybackStarted(Result<String, String>),
-    /// Indicates playback has stopped.
+    /// Notification that playback has stopped
     PlaybackStopped,
-    /// Sets the application theme.
-    SetTheme(ThemeMode),
-    /// Toggles between light and dark theme
-    ToggleTheme,
-    /// Toggles the auto-save library setting
-    ToggleAutoSaveLibrary,
-    /// Toggles the scan subdirectories setting
-    ToggleScanSubdirectories,
-
-    /// Internal message to reset the `needs_redraw` flag after rendering
+    /// Result of saving application state
+    StateSaveComplete(Result<String, String>),
+    /// Progress update for state saving (0.0 to 1.0)
+    StateSaveProgress(f32),
+    /// Reset the redraw flag after rendering
     ResetRedrawFlag,
 
-    /// Indicates async state save has completed
-    StateSaveComplete(Result<String, String>),
-
-    /// Reports progress during state saving (0.0 to 1.0).
-    StateSaveProgress(f32),
-
-    /// Executes a high-level command.
+    // ===== Command Execution =====
+    /// Execute a command asynchronously
     ExecuteCommand(Command),
+
+    // ===== Utility =====
+    /// No operation - used as a placeholder when no action is needed
+    NoOp,
+}
+
+impl Message {
+    /// Creates a navigation message to the specified route
+    pub fn navigate(route: Route) -> Self {
+        Self::Navigate(route)
+    }
+
+    /// Creates a command execution message
+    pub fn command(command: Command) -> Self {
+        Self::ExecuteCommand(command)
+    }
 }
 
 // ================================================================================================
-// COMMAND DEFINITIONS
+// COMMAND SYSTEM
 // ================================================================================================
 
 /// Represents high-level asynchronous operations the GUI can trigger.
-#[derive(Debug, Clone)]
+///
+/// These commands are typically executed in a background thread and can perform
+/// potentially long-running operations without blocking the UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    /// Command to scan the library at the given path.
+    // ===== Library Commands =====
+    /// Scan a library directory for audiobooks
     ScanLibrary {
-        /// Path to the library directory to scan.
+        /// Path to the library directory to scan
         library_path: PathBuf,
     },
-    /// Command to open a directory browser dialog.
+
+    /// Open a directory browser dialog
     BrowseDirectory,
-    /// Command to quickly scan a directory for metadata.
+
+    /// Quickly scan a single directory
     QuickScanDirectory {
-        /// Path to the directory to scan.
+        /// Path to the directory to scan
         directory_path: PathBuf,
     },
-    /// Command to convert selected audiobooks to mono.
+
+    // ===== Audio Processing =====
+    /// Convert selected audiobooks to mono
     ConvertToMono {
-        /// IDs of selected audiobooks to convert.
+        /// IDs of the selected audiobooks
         selected_ids: Vec<String>,
-        /// Audiobook data for conversion.
+        /// Full list of audiobooks for reference
         audiobooks: Vec<Audiobook>,
     },
-    /// Command to play selected audiobooks.
+
+    /// Start playing the selected audiobooks
     PlayAudio {
-        /// IDs of selected audiobooks to play.
+        /// IDs of the selected audiobooks
         selected_ids: Vec<String>,
-        /// Audiobook data for playback.
+        /// Full list of audiobooks for reference
         audiobooks: Vec<Audiobook>,
     },
-    /// Command to stop audio playback.
+
+    /// Stop any currently playing audio
     StopAudio,
+
+    // ===== System Commands =====
+    /// Save the current application state
+    SaveState,
+
+    /// Load the saved application state
+    LoadState,
+
+    /// Quit the application
+    Quit,
+}
+
+impl Command {
+    /// Creates a new scan library command
+    pub fn scan_library(library_path: PathBuf) -> Self {
+        Self::ScanLibrary { library_path }
+    }
+
+    /// Creates a new play audio command
+    pub fn play_audio(selected_ids: Vec<String>, audiobooks: Vec<Audiobook>) -> Self {
+        Self::PlayAudio {
+            selected_ids,
+            audiobooks,
+        }
+    }
 }

@@ -24,21 +24,80 @@ pub enum PlayerState {
 }
 
 /// Thread-safe audio player for playing audio files
+///
+/// This type is not `Send` or `Sync` by default. To share it between threads,
+/// wrap it in an `Arc<Mutex<AudioPlayer>>` or use the provided `ThreadSafeAudioPlayer` type.
 pub struct AudioPlayer {
     /// Current audio sink
-    sink: Arc<Mutex<Option<Sink>>>,
+    sink: Option<Sink>,
     /// Current player state
-    state: Arc<Mutex<PlayerState>>,
+    state: PlayerState,
     /// Current volume (0.0 to 1.0)
-    volume: Arc<Mutex<f32>>,
+    volume: f32,
     /// Current playing file path
-    current_file: Arc<Mutex<Option<PathBuf>>>,
+    current_file: Option<PathBuf>,
 }
 
-// Implement Send + Sync for AudioPlayer to make it usable in static contexts
-// This is safe because all fields are wrapped in Arc<Mutex<T>> which are Send + Sync
-unsafe impl Send for AudioPlayer {}
-unsafe impl Sync for AudioPlayer {}
+/// Thread-safe wrapper around AudioPlayer
+///
+/// This type provides `Send` and `Sync` implementations by using internal
+/// synchronization. It's the preferred way to share an AudioPlayer between threads.
+#[derive(Clone)]
+pub struct ThreadSafeAudioPlayer {
+    inner: Arc<Mutex<AudioPlayer>>,
+}
+
+impl ThreadSafeAudioPlayer {
+    /// Creates a new thread-safe audio player
+    ///
+    /// # Errors
+    ///
+    /// Returns `AppError::Audio` if audio system initialization fails.
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            inner: Arc::new(Mutex::new(AudioPlayer::new()?)),
+        })
+    }
+
+    /// Plays an audio file
+    ///
+    /// See `AudioPlayer::play` for details.
+    pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
+        self.inner
+            .lock()
+            .map_err(|e| AppError::Audio(format!("Failed to acquire audio player lock: {e}")))?
+            .play(file_path)
+    }
+
+    /// Stops audio playback
+    ///
+    /// See `AudioPlayer::stop` for details.
+    pub fn stop(&self) {
+        if let Ok(mut player) = self.inner.lock() {
+            player.stop();
+        }
+    }
+
+    /// Gets the current player state
+    ///
+    /// See `AudioPlayer::get_state` for details.
+    pub fn get_state(&self) -> PlayerState {
+        self.inner
+            .lock()
+            .map(|player| player.get_state())
+            .unwrap_or(PlayerState::Stopped)
+    }
+
+    /// Gets the currently playing file path
+    ///
+    /// See `AudioPlayer::get_current_file` for details.
+    pub fn get_current_file(&self) -> Option<PathBuf> {
+        self.inner
+            .lock()
+            .map(|player| player.get_current_file())
+            .unwrap_or(None)
+    }
+}
 
 impl AudioPlayer {
     /// Creates a new audio player
@@ -48,11 +107,22 @@ impl AudioPlayer {
     /// Returns [`AppError::Audio`] if audio system initialization fails.
     pub fn new() -> Result<Self> {
         Ok(Self {
-            sink: Arc::new(Mutex::new(None)),
-            state: Arc::new(Mutex::new(PlayerState::Stopped)),
-            volume: Arc::new(Mutex::new(0.7)), // Default volume 70%
-            current_file: Arc::new(Mutex::new(None)),
+            sink: None,
+            state: PlayerState::Stopped,
+            volume: 0.7, // Default volume 70%
+            current_file: None,
         })
+    }
+
+    /// Creates a new thread-safe audio player
+    ///
+    /// This is a convenience method that wraps the player in a `ThreadSafeAudioPlayer`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `AppError::Audio` if audio system initialization fails.
+    pub fn new_thread_safe() -> Result<ThreadSafeAudioPlayer> {
+        ThreadSafeAudioPlayer::new()
     }
 
     /// Plays an audio file
@@ -62,7 +132,7 @@ impl AudioPlayer {
     /// Returns [`AppError::Audio`] if the audio output stream cannot be created,
     /// the file format is unsupported, or the audio sink creation fails.
     /// Returns [`AppError::Io`] if the file cannot be read.
-    pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
+    pub fn play<P: AsRef<Path>>(&mut self, file_path: P) -> Result<()> {
         let file_path = file_path.as_ref();
 
         // Stop any currently playing audio
@@ -74,7 +144,6 @@ impl AudioPlayer {
 
         // Open the audio file
         let file = File::open(file_path)?;
-
         let buf_reader = BufReader::new(file);
 
         // Create decoder
@@ -86,72 +155,48 @@ impl AudioPlayer {
             ))
         })?;
 
-        // Create new sink
+        // Create new sink and set volume
         let sink = Sink::try_new(&stream_handle)
             .map_err(|e| AppError::Audio(format!("Failed to create audio sink: {e}")))?;
-
-        // Set volume
-        if let Ok(volume) = self.volume.lock() {
-            sink.set_volume(*volume);
-        }
+        sink.set_volume(self.volume);
 
         // Append the source and play
         sink.append(source);
         sink.play();
 
         // Update state
-        if let Ok(mut sink_opt) = self.sink.lock() {
-            *sink_opt = Some(sink);
-        }
-        if let Ok(mut state) = self.state.lock() {
-            *state = PlayerState::Playing;
-        }
-        if let Ok(mut current_file) = self.current_file.lock() {
-            *current_file = Some(file_path.to_path_buf());
-        }
+        self.sink = Some(sink);
+        self.state = PlayerState::Playing;
+        self.current_file = Some(file_path.to_path_buf());
 
         log::info!("Started playing audio file: {}", file_path.display());
         Ok(())
     }
 
     /// Stops audio playback
-    pub fn stop(&self) {
-        if let Ok(mut sink_opt) = self.sink.lock()
-            && let Some(sink) = sink_opt.take()
-        {
+    pub fn stop(&mut self) {
+        if let Some(sink) = self.sink.take() {
             sink.stop();
             log::info!("Stopped audio playback");
         }
 
-        if let Ok(mut state) = self.state.lock() {
-            *state = PlayerState::Stopped;
-        }
-        if let Ok(mut current_file) = self.current_file.lock() {
-            *current_file = None;
-        }
+        self.state = PlayerState::Stopped;
+        self.current_file = None;
     }
     /// Pauses audio playback
-    pub fn pause(&self) {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
+    pub fn pause(&mut self) {
+        if let Some(ref sink) = self.sink {
             sink.pause();
-            if let Ok(mut state) = self.state.lock() {
-                *state = PlayerState::Paused;
-            }
+            self.state = PlayerState::Paused;
             log::info!("Paused audio playback");
         }
     }
 
     /// Resumes audio playback
-    pub fn resume(&self) {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
+    pub fn resume(&mut self) {
+        if let Some(ref sink) = self.sink {
             sink.play();
-            if let Ok(mut state) = self.state.lock() {
-                *state = PlayerState::Playing;
-            }
+            self.state = PlayerState::Playing;
             log::info!("Resumed audio playback");
         }
     }
@@ -159,22 +204,15 @@ impl AudioPlayer {
     /// Gets the current player state
     #[must_use]
     pub fn get_state(&self) -> PlayerState {
-        self.state
-            .lock()
-            .map(|state| state.clone())
-            .unwrap_or_default()
+        self.state.clone()
     }
 
     /// Sets the volume (0.0 to 1.0)
-    pub fn set_volume(&self, volume: f32) {
+    pub fn set_volume(&mut self, volume: f32) {
         let volume = volume.clamp(0.0, 1.0);
-        if let Ok(mut vol) = self.volume.lock() {
-            *vol = volume;
-        }
+        self.volume = volume;
 
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
+        if let Some(ref sink) = self.sink {
             sink.set_volume(volume);
         }
         log::debug!("Set volume to {:.1}%", volume * 100.0);
@@ -183,7 +221,7 @@ impl AudioPlayer {
     /// Gets the current volume (0.0 to 1.0)
     #[must_use]
     pub fn get_volume(&self) -> f32 {
-        self.volume.lock().map(|vol| *vol).unwrap_or(0.7)
+        self.volume
     }
 
     /// Checks if the player is currently playing
@@ -207,42 +245,34 @@ impl AudioPlayer {
     /// Gets the currently playing file path
     #[must_use]
     pub fn get_current_file(&self) -> Option<PathBuf> {
-        self.current_file.lock().ok().and_then(|file| file.clone())
+        self.current_file.clone()
     }
 
     /// Checks if the sink is empty (finished playing)
-    #[must_use]
     pub fn is_finished(&self) -> bool {
-        if let Ok(sink_opt) = self.sink.lock()
-            && let Some(ref sink) = *sink_opt
-        {
-            return sink.empty();
-        }
-        true
+        self.sink.as_ref().map_or(true, |s| s.empty())
     }
 
     /// Updates the player state based on sink status
-    pub fn update_state(&self) {
-        if self.is_finished() && self.get_state() == PlayerState::Playing {
-            if let Ok(mut state) = self.state.lock() {
-                *state = PlayerState::Stopped;
-            }
-            if let Ok(mut current_file) = self.current_file.lock() {
-                *current_file = None;
-            }
-            log::info!("Audio playback finished");
+    pub fn update_state(&mut self) {
+        if let Some(sink) = self.sink.as_ref()
+            && sink.empty()
+        {
+            self.state = PlayerState::Stopped;
         }
     }
 }
 
 impl Default for AudioPlayer {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|_| Self {
-            sink: Arc::new(Mutex::new(None)),
-            state: Arc::new(Mutex::new(PlayerState::Stopped)),
-            volume: Arc::new(Mutex::new(0.7)),
-            current_file: Arc::new(Mutex::new(None)),
-        })
+        // Create a new instance with default values
+        // This matches the field types in the struct definition exactly
+        AudioPlayer {
+            sink: None,                  // Option<Sink>
+            state: PlayerState::Stopped, // PlayerState
+            volume: 0.7,                 // f32
+            current_file: None,          // Option<PathBuf>
+        }
     }
 }
 
@@ -269,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_volume_control() {
-        let player = AudioPlayer::new().unwrap();
+        let mut player = AudioPlayer::new().unwrap();
 
         player.set_volume(0.5);
         assert_eq!(player.get_volume(), 0.5);

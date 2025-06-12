@@ -14,6 +14,7 @@ use abop_core::{
     scanner::{LibraryScanner, ScannerState},
 };
 
+use crate::utils::platform;
 use abop_core::audio::player::PlayerState;
 use abop_core::models::Audiobook;
 
@@ -23,22 +24,7 @@ use abop_core::models::Audiobook;
 
 /// Determines a sensible default directory for audiobooks when no recent directories exist
 fn get_default_audiobook_directory() -> PathBuf {
-    // Only use as fallback when no previous directories exist
-    // Try to find a good default directory in order of preference:
-    // 1. User's Documents/Audiobooks folder
-    // 2. User's home directory
-    // 3. Current directory as ultimate fallback
-
-    if let Some(docs_dir) = dirs::document_dir() {
-        return docs_dir.join("Audiobooks");
-    }
-
-    if let Some(home_dir) = dirs::home_dir() {
-        return home_dir;
-    }
-
-    // Ultimate fallback
-    PathBuf::from(".")
+    platform::get_default_audiobook_directory()
 }
 
 // ================================================================================================

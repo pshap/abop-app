@@ -4,6 +4,8 @@
 //! compatibility while offering enhanced validation and organization.
 
 use crate::error::{AppError, Result};
+use crate::platform::env_utils;
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -95,11 +97,30 @@ impl Config {
     }
 
     fn config_path() -> Result<PathBuf> {
-        let mut path = dirs::config_dir()
-            .ok_or_else(|| AppError::Config("Could not find config directory".to_string()))?;
-        path.push("abop-iced");
-        path.push("config.toml");
-        Ok(path)
+        // First try to get the config path from environment variable
+        if let Ok(custom_config) = std::env::var("ABOP_CONFIG") {
+            match env_utils::expand_path_env_vars(PathBuf::from(custom_config).as_path()) {
+                Ok(expanded_path) => {
+                    if expanded_path.exists() {
+                        return Ok(expanded_path);
+                    }
+                    warn!("Configured config file does not exist: {expanded_path:?}");
+                }
+                Err(e) => warn!("Failed to expand config path from ABOP_CONFIG: {e}"),
+            }
+        }
+
+        // Fall back to standard locations
+        let base_dirs =
+            directories::ProjectDirs::from("com", "abop", "abop-iced").ok_or_else(|| {
+                AppError::Config("Could not determine project directories".to_string())
+            })?;
+
+        let config_dir = base_dirs.config_dir();
+        std::fs::create_dir_all(config_dir)
+            .map_err(|e| AppError::Config(format!("Could not create config directory: {e}")))?;
+
+        Ok(config_dir.join("config.toml"))
     }
 }
 

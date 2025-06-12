@@ -9,6 +9,25 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+/// Result type for style operations
+pub type StyleResult<T> = Result<T, StyleError>;
+
+/// Safely read from an RwLock, converting poison errors to StyleError
+fn read_lock<T>(lock: &RwLock<T>) -> StyleResult<RwLockReadGuard<'_, T>> {
+    lock.read().map_err(|e| {
+        log::error!("Failed to acquire read lock: {e}");
+        StyleError::LockError(format!("Failed to acquire read lock: {e}"))
+    })
+}
+
+/// Safely write to an RwLock, converting poison errors to StyleError
+fn write_lock<T>(lock: &RwLock<T>) -> StyleResult<RwLockWriteGuard<'_, T>> {
+    lock.write().map_err(|e| {
+        log::error!("Failed to acquire write lock: {e}");
+        StyleError::LockError(format!("Failed to acquire write lock: {e}"))
+    })
+}
+
 /// Plugin trait for style extensions
 pub trait StylePlugin: Send + Sync {
     /// Plugin name and version
@@ -34,10 +53,10 @@ pub trait StylePlugin: Send + Sync {
     fn get_custom_tokens(&self) -> Option<HashMap<String, f32>>;
 
     /// Handle theme changes
-    fn on_theme_change(&mut self, new_theme: &ThemeMode);
+    fn on_theme_change(&self, new_theme: &ThemeMode);
 
     /// Cleanup resources
-    fn cleanup(&mut self) {}
+    fn cleanup(&self) {}
 }
 
 /// Plugin information
@@ -172,12 +191,16 @@ impl StylePluginRegistry {
             .into());
         }
 
-        self.plugins.write()?.insert(info.name, {
-            let theme = self.current_theme.read()?;
-            let mut plugin = plugin;
-            plugin.initialize(&theme)?;
-            plugin
-        });
+        // Use write_lock helper for safe write operations
+        let mut plugins = write_lock(&self.plugins)?;
+        let theme = read_lock(&self.current_theme)?;
+
+        // Initialize the plugin with the current theme
+        let mut plugin = plugin;
+        plugin.initialize(&theme)?;
+
+        // Insert the plugin into the registry
+        plugins.insert(info.name, plugin);
 
         Ok(())
     }
@@ -187,12 +210,20 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
-    pub fn unregister_plugin(&self, name: &str) -> bool {
-        let mut plugins = self.plugins.write().unwrap();
-        plugins.remove(name).is_some_and(|mut plugin| {
+    /// Unregister a plugin
+    ///
+    /// # Errors
+    ///
+    /// Returns `StyleError::LockError` if the lock is poisoned
+    pub fn unregister_plugin(&self, name: &str) -> StyleResult<bool> {
+        let mut plugins = write_lock(&self.plugins)?;
+        let removed = if let Some(plugin) = plugins.remove(name) {
             plugin.cleanup();
             true
-        })
+        } else {
+            false
+        };
+        Ok(removed)
     }
 
     /// Get component style from plugins
@@ -201,14 +232,19 @@ impl StylePluginRegistry {
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
     #[must_use]
-    pub fn get_plugin_style(&self, component: &str, variant: &str) -> Option<CustomComponentStyle> {
-        for plugin in self.plugins.read().unwrap().values() {
+    pub fn get_plugin_style(
+        &self,
+        component: &str,
+        variant: &str,
+    ) -> StyleResult<Option<CustomComponentStyle>> {
+        let plugins = read_lock(&self.plugins)?;
+        for plugin in plugins.values() {
             if let Some(style) = plugin.get_component_style(component, variant) {
-                return Some(style);
+                return Ok(Some(style));
             }
         }
 
-        None
+        Ok(None)
     }
 
     /// Get all custom colors from plugins
@@ -216,16 +252,20 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
-    pub fn get_all_custom_colors(&self) -> HashMap<String, Color> {
+    /// Get all custom colors from plugins
+    ///
+    /// # Errors
+    ///
+    /// Returns `StyleError::LockError` if the lock is poisoned
+    pub fn get_all_custom_colors(&self) -> StyleResult<HashMap<String, Color>> {
+        let plugins = read_lock(&self.plugins)?;
         let mut colors = HashMap::new();
-
-        for plugin in self.plugins.read().unwrap().values() {
+        for plugin in plugins.values() {
             if let Some(plugin_colors) = plugin.get_custom_colors() {
                 colors.extend(plugin_colors);
             }
         }
-
-        colors
+        Ok(colors)
     }
 
     /// Get all custom tokens from plugins
@@ -233,16 +273,20 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
-    pub fn get_all_custom_tokens(&self) -> HashMap<String, f32> {
+    /// Get all custom tokens from plugins
+    ///
+    /// # Errors
+    ///
+    /// Returns `StyleError::LockError` if the lock is poisoned
+    pub fn get_all_custom_tokens(&self) -> StyleResult<HashMap<String, f32>> {
+        let plugins = read_lock(&self.plugins)?;
         let mut tokens = HashMap::new();
-
-        for plugin in self.plugins.read().unwrap().values() {
+        for plugin in plugins.values() {
             if let Some(plugin_tokens) = plugin.get_custom_tokens() {
                 tokens.extend(plugin_tokens);
             }
         }
-
-        tokens
+        Ok(tokens)
     }
 
     /// Update theme for all plugins
@@ -250,16 +294,22 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal theme or plugin registry mutex is poisoned.
-    pub fn update_theme(&self, new_theme: ThemeMode) {
-        {
-            let mut current_theme = self.current_theme.write().unwrap();
-            *current_theme = new_theme;
-        }
+    /// Update theme for all plugins
+    ///
+    /// # Errors
+    ///
+    /// Returns `StyleError::LockError` if either lock is poisoned
+    pub fn update_theme(&self, new_theme: ThemeMode) -> StyleResult<()> {
+        // Update current theme
+        *write_lock(&self.current_theme)? = new_theme;
 
-        let mut plugins = self.plugins.write().unwrap();
-        for plugin in plugins.values_mut() {
+        // Update each plugin while holding the lock
+        let plugins = read_lock(&self.plugins)?;
+        for plugin in plugins.values() {
             plugin.on_theme_change(&new_theme);
         }
+
+        Ok(())
     }
 
     /// List all registered plugins
@@ -267,9 +317,14 @@ impl StylePluginRegistry {
     /// # Panics
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
-    pub fn list_plugins(&self) -> Vec<PluginInfo> {
-        let plugins = self.plugins.read().unwrap();
-        plugins.values().map(|p| p.info()).collect()
+    /// List all registered plugins
+    ///
+    /// # Errors
+    ///
+    /// Returns `StyleError::LockError` if the lock is poisoned
+    pub fn list_plugins(&self) -> StyleResult<Vec<PluginInfo>> {
+        let plugins = read_lock(&self.plugins)?;
+        Ok(plugins.values().map(|p| p.info()).collect())
     }
 }
 
@@ -306,7 +361,7 @@ impl StyleCustomizationAPI {
     ///
     /// Panics if the internal theme overrides mutex is poisoned.
     pub fn add_theme_override(&self, context: String, override_def: ThemeOverride) {
-        let mut overrides = self.theme_overrides.write().unwrap();
+        let mut overrides = write_lock(&self.theme_overrides).unwrap();
         overrides.insert(context, override_def);
     }
 
@@ -316,7 +371,7 @@ impl StyleCustomizationAPI {
     ///
     /// Panics if the internal theme overrides mutex is poisoned.
     pub fn remove_theme_override(&self, context: &str) -> bool {
-        let mut overrides = self.theme_overrides.write().unwrap();
+        let mut overrides = write_lock(&self.theme_overrides).unwrap();
         overrides.remove(context).is_some()
     }
 
@@ -330,14 +385,14 @@ impl StyleCustomizationAPI {
         component: &str,
         variant: &str,
         context: Option<&str>,
-    ) -> Option<CustomComponentStyle> {
+    ) -> StyleResult<Option<CustomComponentStyle>> {
         // Check context-specific overrides first
         if let Some(context) = context {
-            let overrides = self.theme_overrides.read().unwrap();
+            let overrides = read_lock(&self.theme_overrides)?;
             if let Some(override_def) = overrides.get(context)
                 && let Some(style) = override_def.component_styles.get(component)
             {
-                return Some(style.clone());
+                return Ok(Some(style.clone()));
             }
         }
 
@@ -405,7 +460,7 @@ impl CustomStyleBuilder {
     /// Merge with plugin styles
     #[must_use]
     pub fn merge_plugin_styles(mut self, component: &str, variant: &str) -> Self {
-        if let Some(plugin_style) = self.registry.get_plugin_style(component, variant) {
+        if let Some(plugin_style) = self.registry.get_plugin_style(component, variant).unwrap() {
             // Merge styles, preferring existing values
             if self.style.background.is_none() {
                 self.style.background = plugin_style.background;
@@ -561,7 +616,7 @@ mod tests {
             None
         }
 
-        fn on_theme_change(&mut self, _new_theme: &ThemeMode) {}
+        fn on_theme_change(&self, _new_theme: &ThemeMode) {}
     }
 
     #[test]
@@ -570,9 +625,9 @@ mod tests {
         let plugin = Box::new(TestPlugin::new());
 
         assert!(registry.register_plugin(plugin).is_ok());
-        assert_eq!(registry.list_plugins().len(), 1);
-        assert!(registry.unregister_plugin("test_plugin"));
-        assert_eq!(registry.list_plugins().len(), 0);
+        assert_eq!(registry.list_plugins().unwrap().len(), 1);
+        assert!(registry.unregister_plugin("test_plugin").unwrap());
+        assert_eq!(registry.list_plugins().unwrap().len(), 0);
     }
 
     #[test]

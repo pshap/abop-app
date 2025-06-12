@@ -8,6 +8,9 @@
 // Main application module
 pub mod app;
 
+// Application router for view navigation
+pub mod router;
+
 // Asset management (including fonts)
 pub mod assets;
 
@@ -62,6 +65,10 @@ pub mod theme;
 
 // Professional styling components
 pub mod styling;
+
+// Testing utilities and validation
+#[cfg(test)]
+pub mod testing;
 
 // Re-exports (simplified for new implementation)
 
