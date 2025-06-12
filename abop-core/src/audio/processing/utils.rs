@@ -282,10 +282,8 @@ pub mod performance {
     /// Estimate processing time based on buffer size and sample rate
     #[must_use]
     pub fn estimate_processing_time<T>(buffer: &AudioBuffer<T>) -> Duration {
-        let samples_per_channel = buffer.data.len() / usize::from(buffer.channels);
-        // Use safe casting utility for duration calculation
+        let samples_per_channel = buffer.data.len() / usize::from(buffer.channels);        // Use safe casting utility for duration calculation
         let duration_seconds = safe_conversions::safe_usize_to_f64_audio(samples_per_channel)
-            .unwrap_or(0.0)
             / f64::from(buffer.sample_rate);
 
         // Rough estimate: processing takes about 10% of audio duration minimum

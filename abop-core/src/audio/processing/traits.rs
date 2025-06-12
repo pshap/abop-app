@@ -50,7 +50,7 @@ pub trait LatencyReporting {
     }
     /// Get the processing latency in seconds for a given sample rate
     fn get_latency_seconds(&self, sample_rate: u32) -> f64 {
-        safe_usize_to_f64_audio(self.get_latency_samples()).unwrap_or(0.0) / f64::from(sample_rate)
+        safe_usize_to_f64_audio(self.get_latency_samples()) / f64::from(sample_rate)
     }
 }
 

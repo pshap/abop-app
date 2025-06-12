@@ -122,11 +122,9 @@ impl LinearResampler {
             buffer.sample_rate,
             target_rate,
             ratio
-        );
-
-        // Calculate output length with safe conversion
+        );        // Calculate output length with safe conversion
         let input_samples_f64 =
-            safe_usize_to_f64_audio(buffer.data.len())? / f64::from(buffer.channels);
+            safe_usize_to_f64_audio(buffer.data.len()) / f64::from(buffer.channels);
         let output_samples_f64 = input_samples_f64 * ratio;
 
         // Safe conversion to usize with bounds checking
@@ -137,9 +135,8 @@ impl LinearResampler {
         let mut resampled_data = Vec::with_capacity(output_samples * channels_usize);
 
         // Simple linear resampling
-        for i in 0..output_samples {
-            // Calculate source position with safe bounds checking using f64 for precision
-            let i_f64 = safe_usize_to_f64_audio(i)?;
+        for i in 0..output_samples {            // Calculate source position with safe bounds checking using f64 for precision
+            let i_f64 = safe_usize_to_f64_audio(i);
             let pos_f64 = i_f64 * f64::from(buffer.sample_rate) / f64::from(target_rate);
 
             // Safe conversion with bounds checking

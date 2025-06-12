@@ -92,8 +92,7 @@ impl RowMappers {
     pub fn audiobook_from_row_indexed(
         row: &Row,
         indices: &AudiobookColumnIndices,
-    ) -> DbResult<Audiobook> {
-        Ok(Audiobook {
+    ) -> DbResult<Audiobook> {        Ok(Audiobook {
             id: get_indexed_field!(row, indices.id, "audiobook id"),
             library_id: get_indexed_field!(row, indices.library_id, "library_id"),
             path: get_indexed_path!(row, indices.path, "path"),
@@ -104,36 +103,7 @@ impl RowMappers {
             duration_seconds: get_indexed_field!(row, indices.duration_seconds, "duration_seconds"),
             size_bytes: get_indexed_field!(row, indices.size_bytes, "size_bytes"),
             cover_art: get_indexed_field!(row, indices.cover_art, "cover_art"),
-            author: row
-                .get(indices.author)
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get author: {e}"),
-                })?,
-            narrator: row
-                .get(indices.narrator)
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get narrator: {e}"),
-                })?,
-            description: row.get(indices.description).map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get description: {e}"),
-                }
-            })?,
-            duration_seconds: row.get(indices.duration_seconds).map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get duration_seconds: {e}"),
-                }
-            })?,
-            size_bytes: row.get(indices.size_bytes).map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get size_bytes: {e}"),
-                }
-            })?,
-            cover_art: row
-                .get(indices.cover_art)
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get cover_art: {e}"),
-                })?,            created_at: {
+            created_at: {
                 let datetime_str: String = get_indexed_field!(row, indices.created_at, "created_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
