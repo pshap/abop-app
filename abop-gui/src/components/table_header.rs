@@ -8,6 +8,7 @@ use crate::messages::Message;
 use crate::state::TableState;
 use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
+use crate::styling::material::components::selection_style::constants;
 
 /// Component for creating table headers with Material Design styling
 pub struct TableHeader;
@@ -38,7 +39,7 @@ impl TableHeader {
                         r: tokens.colors.primary.base.r,
                         g: tokens.colors.primary.base.g,
                         b: tokens.colors.primary.base.b,
-                        a: 0.5, // Semi-transparent to indicate partial selection
+                        a: constants::opacity::INDETERMINATE, // Material Design token for partial selection
                     }
                 } else if all_selected {
                     tokens.colors.primary.base
