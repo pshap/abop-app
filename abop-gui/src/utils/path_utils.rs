@@ -15,10 +15,10 @@ use abop_core::platform::windows::path_utils as win_path_utils;
 /// Normalizes a path for comparison, handling platform-specific cases
 ///
 /// This function:
-/// - Converts to absolute path if not already
-/// - Handles UNC paths on Windows
-/// - Normalizes path separators
+/// - Normalizes path separators  
 /// - Resolves . and .. components
+/// - Preserves drive information on Windows
+/// - Does NOT convert to absolute paths (use canonicalize for that)
 ///
 /// # Examples
 /// ```
@@ -45,23 +45,41 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
     // On Windows, use our extended path utilities
     #[cfg(windows)]
     {
-        // Normalize separators
+        // Normalize separators first
         let sep_norm = win_path_utils::normalize_path_separators(path);
-        // Collapse '.' and '..', dropping drive prefix and root
-        let mut processed: Vec<&std::ffi::OsStr> = Vec::new();
+        
+        // Process components while preserving drive and root information
+        let mut normalized = PathBuf::new();
+        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::new();
+        
         for comp in sep_norm.components() {
             match comp {
-                Component::Normal(s) => processed.push(s),
-                Component::CurDir => {},
-                Component::ParentDir => { processed.pop(); },
-                // Skip Prefix and RootDir to drop drive information
-                _ => {},
+                Component::Prefix(prefix) => {
+                    // Preserve drive/UNC prefix information
+                    normalized.push(prefix.as_os_str());
+                }
+                Component::RootDir => {
+                    // Preserve root directory
+                    normalized.push(Component::RootDir.as_os_str());
+                }
+                Component::Normal(s) => {
+                    components_stack.push(s);
+                }
+                Component::CurDir => {
+                    // Skip current directory references
+                }
+                Component::ParentDir => {
+                    // Pop the last normal component if available
+                    components_stack.pop();
+                }
             }
         }
-        let mut normalized = PathBuf::new();
-        for s in processed {
-            normalized.push(s);
+        
+        // Add the processed normal components
+        for component in components_stack {
+            normalized.push(component);
         }
+        
         Ok(normalized)
     }
 
