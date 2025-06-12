@@ -66,6 +66,10 @@ pub mod theme;
 // Professional styling components
 pub mod styling;
 
+// Testing utilities and validation
+#[cfg(test)]
+pub mod testing;
+
 // Re-exports (simplified for new implementation)
 
 /// Prelude module for convenient imports

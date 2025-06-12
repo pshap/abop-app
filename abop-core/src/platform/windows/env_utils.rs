@@ -60,8 +60,10 @@ pub fn expand_env_vars(path: &str) -> Result<String, EnvVarError> {
             let prefix: String = chars.by_ref().take(4).collect();
             if prefix == "env:" {
                 let mut var_name = String::new();
+                let mut next_char = None;
                 for c in chars.by_ref() {
                     if !c.is_alphanumeric() && c != '_' {
+                        next_char = Some(c);
                         break;
                     }
                     var_name.push(c);
@@ -70,9 +72,9 @@ pub fn expand_env_vars(path: &str) -> Result<String, EnvVarError> {
                 let value = env::var(&var_name).map_err(|_| EnvVarError::NotFound(var_name))?;
                 result.push_str(&value);
 
-                // Push the current character if it's not a valid variable name character
-                if !c.is_alphanumeric() && c != '_' {
-                    result.push(c);
+                // Push the next character if it's not a valid variable name character
+                if let Some(next_c) = next_char {
+                    result.push(next_c);
                 }
             } else {
                 result.push('$');
