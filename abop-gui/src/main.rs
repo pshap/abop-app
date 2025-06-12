@@ -9,7 +9,7 @@ use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 
 // Import centralized types from abop-core
-use abop_core::{Config, ServiceContainer};
+use abop_core::Config;
 
 /// Errors that can occur during application initialization
 #[derive(Error, Debug)]
