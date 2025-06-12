@@ -17,17 +17,26 @@ use std::path::PathBuf;
 /// Get the default audiobook directory for the current platform
 pub fn get_default_audiobook_directory() -> PathBuf {
     #[cfg(windows)]
-    return windows::get_default_audiobook_directory();
-
+    {
+        windows::get_default_audiobook_directory()
+    }
+    
     #[cfg(target_os = "macos")]
-    return macos::get_default_audiobook_directory();
-
+    {
+        macos::get_default_audiobook_directory()
+    }
+    
     #[cfg(all(unix, not(target_os = "macos")))]
-    return unix::get_default_audiobook_directory();
-    #[cfg(not(any(windows, unix)))]
+    {
+        unix::get_default_audiobook_directory()
+    }
+      #[cfg(not(any(windows, unix)))]
     {
         // Log warning for unknown platform instead of silently falling back
         eprintln!("Warning: Unknown platform detected, falling back to current directory");
-        PathBuf::from(".")
+        std::env::current_dir().unwrap_or_else(|_| {
+            eprintln!("Error: Failed to get current directory for unknown platform");
+            PathBuf::from(".")
+        })
     }
 }

@@ -285,7 +285,7 @@ pub fn test_chip_set(count: usize) -> Vec<Chip> {
 /// Create chips for memory usage testing
 pub fn memory_test_chips() -> Vec<Chip> {
     // Create chips with varying amounts of data to test memory efficiency
-    let mut chips = Vec::new();
+    let mut chips = Vec::with_capacity(200); // Pre-allocate for 100 simple + 100 complex chips
 
     // Simple chips
     chips.extend(performance_chips(ChipVariant::Filter, 100));

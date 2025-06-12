@@ -51,7 +51,7 @@ where
     }
 
     U::try_from(signed_value).map_err(|_| {
-        CastError::ValueTooLarge(value.to_string(), std::any::type_name::<U>().to_string())
+        CastError::ValueTooLarge(value.to_string(), "target type".to_string())
     })
 }
 
@@ -99,7 +99,7 @@ where
     T::try_from(value_i128).map_err(|_| {
         CastError::ValueTooLarge(
             value_f64.to_string(),
-            std::any::type_name::<T>().to_string(),
+            "target integer type".to_string(),
         )
     })
 }
@@ -138,7 +138,7 @@ where
     T::try_from(value_f64).map_err(|_| {
         CastError::ValueTooLarge(
             value_f64.to_string(),
-            std::any::type_name::<T>().to_string(),
+            "target float type".to_string(),
         )
     })
 }

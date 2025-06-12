@@ -42,12 +42,11 @@ impl<T> RadioGroupState<T>
 where
     T: Clone + PartialEq + Eq + std::hash::Hash + Copy,
 {
-    /// Create a new radio group state
-    #[must_use]
+    /// Create a new radio group state    #[must_use]
     pub fn new() -> Self {
         Self {
             selected: None,
-            radios: Vec::new(),
+            radios: Vec::with_capacity(8), // Pre-allocate for typical radio group size
             props: ComponentProps::new(),
             validation_config: validation_config_for_toggles(),
         }
