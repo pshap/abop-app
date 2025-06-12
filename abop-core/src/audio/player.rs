@@ -250,7 +250,7 @@ impl AudioPlayer {
 
     /// Checks if the sink is empty (finished playing)
     pub fn is_finished(&self) -> bool {
-        self.sink.as_ref().is_none_or(|s| s.empty())
+        self.sink.as_ref().map_or(true, |s| s.empty())
     }
 
     /// Updates the player state based on sink status
