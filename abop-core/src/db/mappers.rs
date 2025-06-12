@@ -8,6 +8,40 @@ use crate::models::{Audiobook, Library, Progress};
 use rusqlite::Row;
 use std::path::PathBuf;
 
+/// Helper macro to extract row fields with consistent error handling
+macro_rules! get_row_field {
+    ($row:expr, $idx:expr, $field_name:literal) => {
+        $row.get($idx).map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Failed to get {}: {e}", $field_name),
+        })?
+    };
+}
+
+/// Helper macro to extract path fields from rows
+macro_rules! get_row_path {
+    ($row:expr, $idx:expr, $field_name:literal) => {{
+        let path_str: String = get_row_field!($row, $idx, $field_name);
+        PathBuf::from(path_str)
+    }};
+}
+
+/// Helper macro to extract indexed row fields with consistent error handling
+macro_rules! get_indexed_field {
+    ($row:expr, $idx:expr, $field_name:literal) => {
+        $row.get($idx).map_err(|e| DatabaseError::ExecutionFailed {
+            message: format!("Failed to get {}: {e}", $field_name),
+        })?
+    };
+}
+
+/// Helper macro to extract indexed path fields from rows
+macro_rules! get_indexed_path {
+    ($row:expr, $idx:expr, $field_name:literal) => {{
+        let path_str: String = get_indexed_field!($row, $idx, $field_name);
+        PathBuf::from(path_str)
+    }};
+}
+
 /// Centralized row mapping utilities
 pub struct RowMappers;
 
@@ -15,39 +49,16 @@ impl RowMappers {
     /// Map a database row to an Audiobook entity
     pub fn audiobook_from_row(row: &Row) -> DbResult<Audiobook> {
         Ok(Audiobook {
-            id: row.get(0).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get audiobook id: {e}"),
-            })?,
-            library_id: row.get(1).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get library_id: {e}"),
-            })?,
-            path: {
-                let path_str: String = row.get(2).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get path: {e}"),
-                })?;
-                PathBuf::from(path_str)
-            },
-            title: row.get(3).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get title: {e}"),
-            })?,
-            author: row.get(4).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get author: {e}"),
-            })?,
-            narrator: row.get(5).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get narrator: {e}"),
-            })?,
-            description: row.get(6).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get description: {e}"),
-            })?,
-            duration_seconds: row.get(7).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get duration_seconds: {e}"),
-            })?,
-            size_bytes: row.get(8).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get size_bytes: {e}"),
-            })?,
-            cover_art: row.get(9).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get cover_art: {e}"),
-            })?,
+            id: get_row_field!(row, 0, "audiobook id"),
+            library_id: get_row_field!(row, 1, "library_id"),
+            path: get_row_path!(row, 2, "path"),
+            title: get_row_field!(row, 3, "title"),
+            author: get_row_field!(row, 4, "author"),
+            narrator: get_row_field!(row, 5, "narrator"),
+            description: get_row_field!(row, 6, "description"),
+            duration_seconds: get_row_field!(row, 7, "duration_seconds"),
+            size_bytes: get_row_field!(row, 8, "size_bytes"),
+            cover_art: get_row_field!(row, 9, "cover_art"),
             created_at: parse_datetime_from_row(row, "created_at")?,
             updated_at: parse_datetime_from_row(row, "updated_at")?,
             selected: row.get(12).unwrap_or(false), // Default to false if not present
@@ -56,86 +67,43 @@ impl RowMappers {
     /// Map a database row to a Library entity
     pub fn library_from_row(row: &Row) -> DbResult<Library> {
         Ok(Library {
-            id: row.get(0).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get library id: {e}"),
-            })?,
-            name: row.get(1).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get library name: {e}"),
-            })?,
-            path: {
-                let path_str: String = row.get(2).map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get library path: {e}"),
-                })?;
-                PathBuf::from(path_str)
-            },
+            id: get_row_field!(row, 0, "library id"),
+            name: get_row_field!(row, 1, "library name"),
+            path: get_row_path!(row, 2, "library path"),
         })
-    }
-
-    /// Map a database row to a Progress entity
+    }    /// Map a database row to a Progress entity
     pub fn progress_from_row(row: &Row) -> DbResult<Progress> {
         use crate::db::datetime_serde::SqliteDateTime;
 
-        let last_played: Option<SqliteDateTime> =
-            row.get(4).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get last_played: {e}"),
-            })?;
-        let created_at: SqliteDateTime =
-            row.get(5).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get created_at: {e}"),
-            })?;
-        let updated_at: SqliteDateTime =
-            row.get(6).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get updated_at: {e}"),
-            })?;
+        let last_played: Option<SqliteDateTime> = get_row_field!(row, 4, "last_played");
+        let created_at: SqliteDateTime = get_row_field!(row, 5, "created_at");
+        let updated_at: SqliteDateTime = get_row_field!(row, 6, "updated_at");
 
         Ok(Progress {
-            id: row.get(0).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get progress id: {e}"),
-            })?,
-            audiobook_id: row.get(1).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get audiobook_id: {e}"),
-            })?,
-            position_seconds: row.get(2).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get position_seconds: {e}"),
-            })?,
-            completed: row.get(3).map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Failed to get completed: {e}"),
-            })?,
+            id: get_row_field!(row, 0, "progress id"),
+            audiobook_id: get_row_field!(row, 1, "audiobook_id"),
+            position_seconds: get_row_field!(row, 2, "position_seconds"),
+            completed: get_row_field!(row, 3, "completed"),
             last_played: last_played.map(|dt| dt.into()),
             created_at: created_at.into(),
             updated_at: updated_at.into(),
         })
-    }
-
-    /// Map a database row to an Audiobook with specific column indices for optimized queries
+    }    /// Map a database row to an Audiobook with specific column indices for optimized queries
     pub fn audiobook_from_row_indexed(
         row: &Row,
         indices: &AudiobookColumnIndices,
     ) -> DbResult<Audiobook> {
         Ok(Audiobook {
-            id: row
-                .get(indices.id)
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get audiobook id: {e}"),
-                })?,
-            library_id: row.get(indices.library_id).map_err(|e| {
-                DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get library_id: {e}"),
-                }
-            })?,
-            path: {
-                let path_str: String =
-                    row.get(indices.path)
-                        .map_err(|e| DatabaseError::ExecutionFailed {
-                            message: format!("Failed to get path: {e}"),
-                        })?;
-                PathBuf::from(path_str)
-            },
-            title: row
-                .get(indices.title)
-                .map_err(|e| DatabaseError::ExecutionFailed {
-                    message: format!("Failed to get title: {e}"),
-                })?,
+            id: get_indexed_field!(row, indices.id, "audiobook id"),
+            library_id: get_indexed_field!(row, indices.library_id, "library_id"),
+            path: get_indexed_path!(row, indices.path, "path"),
+            title: get_indexed_field!(row, indices.title, "title"),
+            author: get_indexed_field!(row, indices.author, "author"),
+            narrator: get_indexed_field!(row, indices.narrator, "narrator"),
+            description: get_indexed_field!(row, indices.description, "description"),
+            duration_seconds: get_indexed_field!(row, indices.duration_seconds, "duration_seconds"),
+            size_bytes: get_indexed_field!(row, indices.size_bytes, "size_bytes"),
+            cover_art: get_indexed_field!(row, indices.cover_art, "cover_art"),
             author: row
                 .get(indices.author)
                 .map_err(|e| DatabaseError::ExecutionFailed {
@@ -165,21 +133,12 @@ impl RowMappers {
                 .get(indices.cover_art)
                 .map_err(|e| DatabaseError::ExecutionFailed {
                     message: format!("Failed to get cover_art: {e}"),
-                })?,
-            created_at: {
-                let datetime_str: String =
-                    row.get(indices.created_at)
-                        .map_err(|e| DatabaseError::ExecutionFailed {
-                            message: format!("Failed to get created_at: {e}"),
-                        })?;
+                })?,            created_at: {
+                let datetime_str: String = get_indexed_field!(row, indices.created_at, "created_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             updated_at: {
-                let datetime_str: String =
-                    row.get(indices.updated_at)
-                        .map_err(|e| DatabaseError::ExecutionFailed {
-                            message: format!("Failed to get updated_at: {e}"),
-                        })?;
+                let datetime_str: String = get_indexed_field!(row, indices.updated_at, "updated_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             selected: row.get(indices.selected).unwrap_or(false),
