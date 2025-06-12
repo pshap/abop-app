@@ -4,6 +4,7 @@
 //! path conventions including case-insensitive comparisons and proper path normalization.
 
 use std::path::{Path, PathBuf};
+use log;
 
 /// Compare two paths for equality with platform-aware rules
 ///
@@ -79,10 +80,22 @@ pub fn path_exists_case_insensitive(path: &Path) -> bool {
             && let Ok(entries) = std::fs::read_dir(parent)
         {
             let target_name = filename.to_string_lossy().to_lowercase();
-            for entry in entries.flatten() {
-                let entry_name = entry.file_name().to_string_lossy().to_lowercase();
-                if entry_name == target_name {
-                    return true;
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let entry_name = entry.file_name().to_string_lossy().to_lowercase();
+                        if entry_name == target_name {
+                            return true;
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Failed to read directory entry in {}: {}",
+                            parent.display(),
+                            e
+                        );
+                        // Continue processing other entries despite this error
+                    }
                 }
             }
         }
