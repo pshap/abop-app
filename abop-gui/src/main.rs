@@ -55,9 +55,6 @@ fn main() -> iced::Result {
         Config::default()
     });
 
-    // Initialize services
-    let _services = ServiceContainer::new();
-
     // Run the application using the Application trait with proper window settings
     iced::application(App::title, App::update, App::view)
         .theme(App::theme)

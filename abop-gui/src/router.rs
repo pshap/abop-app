@@ -75,7 +75,8 @@ impl Router {
     pub fn navigate_back(&mut self) -> Task<Message> {
         if self.history.len() > 1 {
             self.history.pop();
-            self.current_route = *self.history.last().unwrap();
+            // Safe to unwrap: we verified history has more than one element
+            self.current_route = *self.history.last().expect("History should not be empty after pop");
         }
         Task::none()
     }

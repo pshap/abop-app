@@ -21,11 +21,6 @@ use abop_core::services::ServiceContainer;
 
 /// Messages for task management
 enum TaskMessage {
-    /// Spawn a new task
-    Spawn {
-        name: String,
-        task: Box<dyn FnOnce(&ServiceContainer) -> tokio::task::JoinHandle<()> + Send + 'static>,
-    },
     /// Cancel a task by ID
     Cancel(u64),
 }
@@ -33,7 +28,6 @@ enum TaskMessage {
 impl std::fmt::Debug for TaskMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TaskMessage::Spawn { name, .. } => f.debug_struct("Spawn").field("name", name).finish(),
             TaskMessage::Cancel(id) => f.debug_tuple("Cancel").field(id).finish(),
         }
     }
@@ -65,28 +59,11 @@ impl App {
 
         // Spawn the task manager
         tokio::spawn(async move {
-            let mut task_handles = std::collections::HashMap::new();
-
             while let Some(message) = task_rx.recv().await {
                 match message {
-                    TaskMessage::Spawn { name, task } => {
-                        let task_name = name.clone();
-                        let handle = task(&services_clone);
-
-                        if let Ok(task_id) = services_clone.spawn_named(&task_name, || async move {
-                            handle.await.ok();
-                            Ok(())
-                        }) {
-                            task_handles.insert(task_id, task_name);
-                        } else {
-                            error!("Failed to spawn task: {name}");
-                        }
-                    }
                     TaskMessage::Cancel(task_id) => {
                         if let Err(e) = services_clone.cancel_task(task_id) {
                             error!("Failed to cancel task {task_id}: {e}");
-                        } else {
-                            task_handles.remove(&task_id);
                         }
                     }
                 }
@@ -113,25 +90,25 @@ impl App {
         Fut: std::future::Future<Output = ()> + Send + 'static,
     {
         let name = name.into();
-        let task = move |services: &ServiceContainer| {
-            let future = task(services);
-            tokio::spawn(future)
+        let services = Arc::clone(&self.services);
+        
+        // Create a closure that wraps the task to match ServiceContainer::spawn_named signature
+        let wrapped_task = move || {
+            let services_ref = &services;
+            let future = task(services_ref);
+            async move {
+                future.await;
+                Ok(())
+            }
         };
 
-        if let Some(tx) = &self.task_tx {
-            match tx.send(TaskMessage::Spawn {
-                name,
-                task: Box::new(task),
-            }) {
-                Ok(()) => None, // Task ID will be handled by the task manager
-                Err(e) => {
-                    error!("Failed to send spawn task: {e}");
-                    None
-                }
+        // Directly use ServiceContainer::spawn_named to get the task ID synchronously
+        match self.services.spawn_named(name, wrapped_task) {
+            Ok(task_id) => Some(task_id),
+            Err(e) => {
+                error!("Failed to spawn task: {e}");
+                None
             }
-        } else {
-            error!("Task manager not initialized");
-            None
         }
     }
 

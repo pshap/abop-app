@@ -78,7 +78,13 @@ fn handle_play_pause(state: &mut UiState) -> Option<Task<Message>> {
             if let Some(audiobook) = state
                 .audiobooks
                 .iter()
-                .find(|ab| ab.path.eq_path(current_file).unwrap_or(false))
+                .find(|ab| match ab.path.eq_path(current_file) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        log::error!("Error comparing paths: {}", e);
+                        false
+                    }
+                })
             {
                 // Return a command to play the audio
                 return Some(Task::perform(
