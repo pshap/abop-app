@@ -157,9 +157,8 @@ impl AccessibilityReport {
 
     /// Get a summary of the accessibility report
     pub fn summary(&self) -> String {
-        let total = self.checks.len();
-        let passed = self.checks.iter().filter(|(_, passes)| *passes).count();
-        format!("Accessibility: {}/{} checks passed", passed, total)
+        let total = self.checks.len();        let passed = self.checks.iter().filter(|(_, passes)| *passes).count();
+        format!("Accessibility: {passed}/{total} checks passed")
     }
 }
 
@@ -265,14 +264,8 @@ impl ColorRoleUtilities {
             ColorUtilities::lighten(base_color, 0.7)
         };
         
-        let on_container = ColorUtilities::get_best_text_color(container);
-
-        // Fixed variants (for consistent surfaces)
-        let fixed = if is_dark_theme {
-            ColorUtilities::lighten(base_color, 0.7)
-        } else {
-            ColorUtilities::lighten(base_color, 0.7)
-        };
+        let on_container = ColorUtilities::get_best_text_color(container);        // Fixed variants (for consistent surfaces)
+        let fixed = ColorUtilities::lighten(base_color, 0.7); // Same for both themes intentionally
         
         let fixed_dim = ColorUtilities::darken(fixed, 0.1);
         let on_fixed = ColorUtilities::get_best_text_color(fixed);

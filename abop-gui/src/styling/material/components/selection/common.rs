@@ -439,12 +439,10 @@ impl ComponentProps {
 
         if is_known_key {
             self.metadata.insert(key_string, value.into());
-        } else {
-            // Allow unknown keys for extensibility but warn in debug builds
+        } else {            // Allow unknown keys for extensibility but warn in debug builds
             #[cfg(debug_assertions)]
             log::warn!(
-                "Unknown metadata key '{}'. Consider using predefined constants.", 
-                key_string
+                "Unknown metadata key '{key_string}'. Consider using predefined constants."
             );
             self.metadata.insert(key_string, value.into());
         }

@@ -293,11 +293,11 @@ fn handle_toggle_scan_subdirectories(state: &mut UiState) -> Option<Task<Message
 
 fn handle_toggle_audiobook_selection(state: &mut UiState, audiobook_id: String) -> Option<Task<Message>> {
     if state.selected_audiobooks.contains(&audiobook_id) {
-        state.selected_audiobooks.remove(&audiobook_id);
-        log::info!("Deselected audiobook: {}", audiobook_id);
+    state.selected_audiobooks.remove(&audiobook_id);
+        log::info!("Deselected audiobook: {audiobook_id}");
     } else {
         state.selected_audiobooks.insert(audiobook_id.clone());
-        log::info!("Selected audiobook: {}", audiobook_id);
+        log::info!("Selected audiobook: {audiobook_id}");
     }
     Some(Task::none())
 }

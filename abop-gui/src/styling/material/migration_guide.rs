@@ -110,54 +110,49 @@ pub mod guide {
     //! # Migration Guide: From Dual MaterialColors to Unified System
     //!
     //! ## Step 1: Update Import Statements
-    //!
-    //! **Before:**
-    //! ```rust
+    //!    //! **Before:**
+    //! ```rust,ignore
     //! use crate::styling::material::MaterialColors;
     //! use crate::styling::material::md3_color::MaterialColors; // Conflict!
     //! ```
     //!
     //! **After:**
-    //! ```rust
+    //! ```rust,ignore
     //! use crate::styling::material::unified_colors::MaterialColors;
     //! ```
     //!
     //! ## Step 2: Update Color Access Patterns
-    //!
-    //! **Before (Method-based):**
-    //! ```rust
+    //!    //! **Before (Method-based):**
+    //! ```rust,ignore
     //! let primary = colors.primary();
     //! let surface = colors.surface();
     //! ```
     //!
     //! **After (Field-based):**
-    //! ```rust
+    //! ```rust,ignore
     //! let primary = colors.primary.base;
     //! let surface = colors.surface;
     //! ```
     //!
     //! ## Step 3: Update Color Role Access
-    //!
-    //! **Before:**
-    //! ```rust
+    //!    //! **Before:**
+    //! ```rust,ignore
     //! let container = colors.primary_container();
     //! let on_container = colors.on_primary_container();
     //! ```
     //!
     //! **After:**
-    //! ```rust
+    //! ```rust,ignore
     //! let container = colors.primary.container;
     //! let on_container = colors.primary.on_container;
     //! ```
     //!
     //! ## Step 4: Use Migration Adapter (Temporary)
-    //!
-    //! If you need to maintain method-based access temporarily:
-    //! ```rust
+    //!    //! If you need to maintain method-based access temporarily:
+    //! ```rust,ignore
     //! use crate::styling::material::migration_guide::migration::adapt_method_calls;
     //!
-    //! let colors = MaterialColors::light_default();
-    //! let adapter = adapt_method_calls(&colors);
+    //! let colors = MaterialColors::light_default();    //! let adapter = adapt_method_calls(&colors);
     //! let primary = adapter.primary(); // Still works!
     //! ```
     //!
@@ -172,8 +167,8 @@ pub mod guide {
     /// Common migration patterns and fixes
     pub struct MigrationPatterns;
     
-    impl MigrationPatterns {
-        /// Pattern 1: Simple color access
+    impl MigrationPatterns {        /// Pattern 1: Simple color access
+        #[allow(dead_code)]
         pub fn example_basic_access() {
             // OLD WAY (multiple approaches, confusing):
             // let colors1 = old_md3_color::MaterialColors::light();
@@ -183,9 +178,9 @@ pub mod guide {
             // let primary2 = colors2.primary.base; // field access
             
             // NEW WAY (unified):
-            use crate::styling::material::unified_colors::MaterialColors;
-            let colors = MaterialColors::light_default();
-            let _primary = colors.primary.base; // Always field access
+            // use abop_gui::styling::material::MaterialColors;
+            // let colors = MaterialColors::light_default();
+            // let _primary = colors.primary.base; // Always field access
         }
 
         /// Pattern 2: Container colors

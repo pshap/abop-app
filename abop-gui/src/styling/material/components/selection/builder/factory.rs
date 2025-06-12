@@ -28,8 +28,7 @@ use super::{
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::checkbox;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
-/// use abop_gui::styling::material::components::selection::CheckboxState;
-/// use abop_gui::styling::material::components::selection::common::ComponentSize;
+/// use abop_gui::styling::material::components::selection::{CheckboxState, ComponentSize};
 ///
 /// let cb = checkbox(CheckboxState::Checked)
 ///     .label("Accept terms")
@@ -48,7 +47,7 @@ pub fn checkbox(state: CheckboxState) -> CheckboxBuilder {
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::radio;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
-/// use abop_gui::styling::material::components::selection::common::ComponentSize;
+/// use abop_gui::styling::material::components::selection::ComponentSize;
 ///
 /// let rb = radio("option_a")
 ///     .label("Option A")
@@ -70,8 +69,7 @@ where
 /// ```
 /// use abop_gui::styling::material::components::selection::builder::factory::switch;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
-/// use abop_gui::styling::material::components::selection::SwitchState;
-/// use abop_gui::styling::material::components::selection::common::ComponentSize;
+/// use abop_gui::styling::material::components::selection::{SwitchState, ComponentSize};
 ///
 /// let sw = switch(SwitchState::On)
 ///     .label("Enable notifications")

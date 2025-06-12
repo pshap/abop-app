@@ -68,17 +68,13 @@ impl SelectionColors {
 
     /// Apply error state color if applicable
     #[must_use]
-    fn apply_error_state(&self, state: SelectionState) -> Option<Color> {
+    fn apply_error_state(&self, _state: SelectionState) -> Option<Color> {
         if !self.error_state {
             return None;
         }
 
         let colors = &self.tokens.colors;
-        Some(if state.is_selected() {
-            colors.error.base
-        } else {
-            colors.error.base // Error state for unselected (border)
-        })
+        Some(colors.error.base) // Error state uses same color regardless of selection
     }
 
     /// Apply disabled state color if applicable

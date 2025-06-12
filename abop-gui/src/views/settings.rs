@@ -100,21 +100,18 @@ fn create_theme_switch(state: &UiState) -> Element<'_, Message> {
         .unwrap_or_else(|_| {
             // Fallback to off state if build fails
             Switch::off().build().expect("Default switch should build")
-        });
-      // Use static MaterialColors to solve lifetime issues
-    if is_dark {
-        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::dark_default());
+        });    // Use static MaterialColors to solve lifetime issues
+    if is_dark {        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
         md3_switch.view(
             move |_state| Message::ToggleTheme,
-            &*DARK_COLORS,
-        )
-    } else {
+            &DARK_COLORS,
+        )    } else {
         static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::light_default());
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
         md3_switch.view(
             move |_state| Message::ToggleTheme,
-            &*LIGHT_COLORS,
+            &LIGHT_COLORS,
         )
     }
 }
@@ -131,21 +128,19 @@ fn create_auto_save_switch(state: &UiState) -> Element<'_, Message> {
         .unwrap_or_else(|_| {
             // Fallback to off state if build fails
             Switch::off().build().expect("Default switch should build")
-        });
-      // Use static MaterialColors to solve lifetime issues
+        });    // Use static MaterialColors to solve lifetime issues
     if is_dark {
         static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::dark_default());
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
         md3_switch.view(
             move |_state| Message::ToggleAutoSaveLibrary,
-            &*DARK_COLORS,
-        )
-    } else {
+            &DARK_COLORS,
+        )    } else {
         static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::light_default());
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
         md3_switch.view(
             move |_state| Message::ToggleAutoSaveLibrary,
-            &*LIGHT_COLORS,
+            &LIGHT_COLORS,
         )
     }
 }
@@ -162,21 +157,19 @@ fn create_scan_subdirs_switch(state: &UiState) -> Element<'_, Message> {
         .unwrap_or_else(|_| {
             // Fallback to off state if build fails
             Switch::off().build().expect("Default switch should build")
-        });
-      // Use static MaterialColors to solve lifetime issues
+        });    // Use static MaterialColors to solve lifetime issues
     if is_dark {
         static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::dark_default());
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
         md3_switch.view(
             move |_state| Message::ToggleScanSubdirectories,
-            &*DARK_COLORS,
-        )
-    } else {
+            &DARK_COLORS,
+        )    } else {
         static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> = 
-            std::sync::LazyLock::new(|| crate::styling::material::MaterialColors::light_default());
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
         md3_switch.view(
             move |_state| Message::ToggleScanSubdirectories,
-            &*LIGHT_COLORS,
+            &LIGHT_COLORS,
         )
     }
 }

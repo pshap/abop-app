@@ -93,13 +93,9 @@ pub use chip::{
     ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection, 
     single_select_chip_collection,
 };
-use common::prelude::*;
-use common::{
-    CheckboxState, ChipState, ComponentSize, SelectionComponent, SelectionError,
-    SwitchState,
-};
 pub use common::{
-    AnimatedComponent, AnimationConfig, EasingCurve, ValidationConfig,
+    AnimatedComponent, AnimationConfig, CheckboxState, ChipState, ChipVariant, ComponentSize, 
+    EasingCurve, SelectionComponent, SelectionError, SwitchState, ValidationConfig,
     ValidationRule,
 };
 pub use radio::{RadioGroupBuilder, RadioGroupState};

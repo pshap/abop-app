@@ -5,7 +5,7 @@
 //!
 //! # Usage Examples
 //!
-//! ```rust
+//! ```rust,ignore
 //! use crate::styling::material::components::selection::constants::*;
 //!
 //! // UI constants
