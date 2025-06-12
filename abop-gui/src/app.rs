@@ -391,9 +391,8 @@ impl App {
             // Handle command execution
             Message::ExecuteCommand(command) => {
                 log::info!("Executing command: {:?}", command);
-                // Handle command execution - for now just return none
-                // TODO: Implement proper command handling
-                Task::none()
+                // Use the command handler infrastructure
+                crate::commands::handle_command(&mut self.state, command)
             },
 
             // No operation
