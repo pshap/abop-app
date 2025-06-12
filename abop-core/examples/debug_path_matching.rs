@@ -1,6 +1,8 @@
 //! Debug path matching issues in library database operations
 use abop_core::db::Database;
-use abop_core::utils::path::{paths_equal, paths_equal_case_insensitive, normalize_path_for_comparison};
+use abop_core::utils::path::{
+    normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
+};
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -115,7 +117,8 @@ fn main() -> Result<()> {
             row.get::<_, String>(1)?,
             row.get::<_, String>(2)?,
         ))
-    })?;    for row in rows {
+    })?;
+    for row in rows {
         let (id, name, path_str) = row?;
         println!("  DB: ID={id}, Name={name}, Path='{path_str}'");
 
@@ -123,11 +126,19 @@ fn main() -> Result<()> {
         let db_path = PathBuf::from(&path_str);
         let our_path_str = test_path.to_string_lossy();
         println!("  Our path string: '{our_path_str}'");
-        println!("  Paths equal (exact): {}", paths_equal(&db_path, &test_path));
-        println!("  Paths equal (case insensitive): {}", paths_equal_case_insensitive(&db_path, &test_path));
-        println!("  Normalized comparison: {} vs {}", 
-                normalize_path_for_comparison(&db_path), 
-                normalize_path_for_comparison(&test_path));
+        println!(
+            "  Paths equal (exact): {}",
+            paths_equal(&db_path, &test_path)
+        );
+        println!(
+            "  Paths equal (case insensitive): {}",
+            paths_equal_case_insensitive(&db_path, &test_path)
+        );
+        println!(
+            "  Normalized comparison: {} vs {}",
+            normalize_path_for_comparison(&db_path),
+            normalize_path_for_comparison(&test_path)
+        );
     }
 
     Ok(())

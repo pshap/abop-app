@@ -73,11 +73,13 @@ fn test_bail_macro() {
         }
         Ok(value * 2)
     }
-
     assert!(test_function(5).is_ok());
-    assert_eq!(test_function(5).unwrap(), 10);
+    assert_eq!(
+        test_function(5).expect("Should succeed for valid input"),
+        10
+    );
 
-    let err = test_function(-1).unwrap_err();
+    let err = test_function(-1).expect_err("Should fail for negative input");
     match err {
         AppError::Other(msg) => assert_eq!(msg, "Negative values not allowed: -1"),
         _ => panic!("Wrong error type"),
@@ -94,16 +96,15 @@ fn test_ensure_macro() {
         ensure!(value < 100, "Value {} is too large", value);
         Ok(value)
     }
-
     assert!(test_function(50).is_ok());
 
-    let err = test_function(-1).unwrap_err();
+    let err = test_function(-1).expect_err("Should fail for negative input");
     match err {
         AppError::InvalidData(msg) => assert_eq!(msg, "Value must be positive"),
         _ => panic!("Wrong error type"),
     }
 
-    let err = test_function(150).unwrap_err();
+    let err = test_function(150).expect_err("Should fail for too large input");
     match err {
         AppError::Other(msg) => assert_eq!(msg, "Value 150 is too large"),
         _ => panic!("Wrong error type"),
@@ -118,11 +119,10 @@ fn test_with_context_macro() {
             "file not found",
         ))
     }
-
     let result = with_context!(failing_operation(), "Failed to load configuration");
     assert!(result.is_err());
 
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail with context");
     match err {
         AppError::Other(msg) => {
             assert!(msg.contains("Failed to load configuration"));
@@ -134,8 +134,7 @@ fn test_with_context_macro() {
     // Test formatted context
     let result = with_context!(failing_operation(), "Failed to load file {}", "config.toml");
     assert!(result.is_err());
-
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail when providing context");
     match err {
         AppError::Other(msg) => {
             assert!(msg.contains("Failed to load file config.toml"));
@@ -156,8 +155,7 @@ fn test_error_context_trait() {
     // Test context method
     let result = io_operation().context("Reading config file");
     assert!(result.is_err());
-
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail when adding context");
     match err {
         AppError::Other(msg) => {
             assert!(msg.contains("Reading config file"));
@@ -170,7 +168,7 @@ fn test_error_context_trait() {
     let result = io_operation().with_context(|| "Dynamic context message".to_string());
     assert!(result.is_err());
 
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail with dynamic context");
     match err {
         AppError::Other(msg) => {
             assert!(msg.contains("Dynamic context message"));
@@ -227,11 +225,10 @@ fn test_complex_error_scenario() {
 
         Ok("success".to_string())
     }
-
     let result = complex_operation();
     assert!(result.is_err());
 
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail complex operation");
     let error_string = err.to_string();
     assert!(error_string.contains("Input must be non-negative"));
 }
@@ -249,11 +246,10 @@ fn test_error_propagation() {
     fn level_1() -> Result<(), AppError> {
         level_2().context("Level 1 context")
     }
-
     let result = level_1();
     assert!(result.is_err());
 
-    let err = result.unwrap_err();
+    let err = result.expect_err("Should fail with propagated error");
     let error_string = err.to_string();
     assert!(error_string.contains("Level 1 context"));
     assert!(error_string.contains("Level 2 context"));

@@ -20,10 +20,9 @@ mod audio_operations_tests {
         let _ = AudioProcessingOption::Split;
         let _ = AudioProcessingOption::Merge;
     }
-
     #[test]
     fn test_stereo_to_mono_and_normalize() {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("Should create temporary directory");
         let input_path = dir.path().join("input.wav");
         let output_path = dir.path().join("output.wav");
         // Write a stereo WAV file
@@ -33,13 +32,18 @@ mod audio_operations_tests {
             bits_per_sample: 16,
             sample_format: hound::SampleFormat::Int,
         };
-        let mut writer = hound::WavWriter::create(&input_path, spec).unwrap();
+        let mut writer =
+            hound::WavWriter::create(&input_path, spec).expect("Should create stereo WAV file");
         for i in 0..44100 {
             // 1 second
-            writer.write_sample((i % 256) as i16).unwrap(); // L
-            writer.write_sample((255 - (i % 256)) as i16).unwrap(); // R
+            writer
+                .write_sample((i % 256) as i16)
+                .expect("Should write left channel sample"); // L
+            writer
+                .write_sample((255 - (i % 256)) as i16)
+                .expect("Should write right channel sample"); // R
         }
-        writer.finalize().unwrap();
+        writer.finalize().expect("Should finalize stereo WAV file");
 
         // Create pipeline with stereo-to-mono configuration
         let config = ProcessingConfig {
@@ -49,17 +53,17 @@ mod audio_operations_tests {
             }),
             ..Default::default()
         };
-        let pipeline = AudioProcessingPipeline::new(config).unwrap();
+        let pipeline =
+            AudioProcessingPipeline::new(config).expect("Should create processing pipeline");
 
         // Process the file
         pipeline
             .process_file_with_output(&input_path, &output_path)
-            .unwrap();
+            .expect("Should process stereo to mono conversion");
     }
-
     #[test]
     fn test_split_and_merge() {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("Should create temporary directory");
         let input_path = dir.path().join("input.wav");
         // Write a mono WAV file
         let spec = hound::WavSpec {
@@ -68,17 +72,20 @@ mod audio_operations_tests {
             bits_per_sample: 16,
             sample_format: hound::SampleFormat::Int,
         };
-        let mut writer = hound::WavWriter::create(&input_path, spec).unwrap();
+        let mut writer =
+            hound::WavWriter::create(&input_path, spec).expect("Should create mono WAV file");
         for i in 0..44100 * 3 {
-            writer.write_sample((i % 128) as i16).unwrap();
+            writer
+                .write_sample((i % 128) as i16)
+                .expect("Should write sample");
         }
-        writer.finalize().unwrap();
+        writer.finalize().expect("Should finalize mono WAV file");
 
         // Note: Split and merge functionality would need to be implemented
         // separately as these are higher-level operations not part of the
         // core processing pipeline. For now, just test that the file exists.
         assert!(input_path.exists());
-        let metadata = std::fs::metadata(&input_path).unwrap();
+        let metadata = std::fs::metadata(&input_path).expect("Should get file metadata");
         assert!(metadata.len() > 0);
     }
 
@@ -96,12 +103,11 @@ mod audio_operations_tests {
     fn test_audio_processing_progress_reporting() {
         // TODO: Simulate progress and assert progress state/notification
     }
-
     #[test]
     fn test_batch_process_parallelism() {
         use abop_core::audio::AudioProcessingPipeline;
         let pipeline = AudioProcessingPipeline::default();
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("Should create temporary directory");
         // Create several small WAV files
         let mut files = vec![];
         for i in 0..4 {
@@ -112,17 +118,17 @@ mod audio_operations_tests {
                 bits_per_sample: 16,
                 sample_format: hound::SampleFormat::Int,
             };
-            let mut writer = hound::WavWriter::create(&path, spec).unwrap();
+            let mut writer = hound::WavWriter::create(&path, spec).expect("Should create WAV file");
             for _ in 0..8000 {
-                writer.write_sample(0i16).unwrap();
+                writer.write_sample(0i16).expect("Should write sample");
             }
-            writer.finalize().unwrap();
+            writer.finalize().expect("Should finalize WAV file");
             files.push(path);
         }
         // Test parallel processing of multiple files
         let results = pipeline.process_files(&files);
         assert!(results.is_ok());
-        let output_paths = results.unwrap();
+        let output_paths = results.expect("Should process files successfully");
         assert_eq!(output_paths.len(), files.len());
 
         // Note: The following line was causing an error because results is consumed above

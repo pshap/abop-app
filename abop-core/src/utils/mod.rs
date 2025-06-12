@@ -21,7 +21,9 @@ pub mod timer;
 // Re-export commonly used utilities (specific items)
 pub use casting::{CastError, CastResult, CastingBuilder};
 pub use enhanced::{audio, database, file, ui};
-pub use path::{paths_equal, paths_equal_case_insensitive, normalize_path_for_comparison, extension_matches};
+pub use path::{
+    extension_matches, normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
+};
 pub use size::format_bytes;
 pub use time::{TimeFormat, format_duration, format_seconds};
 pub use timer::Timer;

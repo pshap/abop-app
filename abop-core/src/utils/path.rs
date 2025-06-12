@@ -72,18 +72,17 @@ pub fn path_exists_case_insensitive(path: &Path) -> bool {
         if path.exists() {
             return true;
         }
-        
+
         // Try to find the path with different case
-        if let Some(parent) = path.parent() {
-            if let Some(filename) = path.file_name() {
-                if let Ok(entries) = std::fs::read_dir(parent) {
-                    let target_name = filename.to_string_lossy().to_lowercase();
-                    for entry in entries.flatten() {
-                        let entry_name = entry.file_name().to_string_lossy().to_lowercase();
-                        if entry_name == target_name {
-                            return true;
-                        }
-                    }
+        if let Some(parent) = path.parent()
+            && let Some(filename) = path.file_name()
+            && let Ok(entries) = std::fs::read_dir(parent)
+        {
+            let target_name = filename.to_string_lossy().to_lowercase();
+            for entry in entries.flatten() {
+                let entry_name = entry.file_name().to_string_lossy().to_lowercase();
+                if entry_name == target_name {
+                    return true;
                 }
             }
         }
@@ -112,21 +111,21 @@ pub fn extension_matches(path: &Path, expected_ext: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_paths_equal_case_insensitive() {
         let path1 = Path::new("C:\\Users\\Test\\file.txt");
         let path2 = Path::new("c:\\users\\test\\FILE.TXT");
         assert!(paths_equal_case_insensitive(path1, path2));
     }
-    
+
     #[test]
     fn test_normalize_path_for_comparison() {
         let path = Path::new("C:\\Users\\Test\\File.TXT");
         let normalized = normalize_path_for_comparison(path);
         assert_eq!(normalized, "c:\\users\\test\\file.txt");
     }
-    
+
     #[test]
     fn test_extension_matches() {
         let path = Path::new("test.MP3");
@@ -134,7 +133,7 @@ mod tests {
         assert!(extension_matches(path, "MP3"));
         assert!(!extension_matches(path, "wav"));
     }
-    
+
     #[test]
     fn test_normalize_path() {
         let path = Path::new("./test/../file.txt");

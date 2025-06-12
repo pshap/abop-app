@@ -268,9 +268,9 @@ impl SilenceDetector {
         }
 
         let segments = self.detect_silence_segments(buffer)?;
-        let total_silence_samples: usize = segments.iter().map(|s| s.end - s.start).sum();        // Safe casting for silence percentage calculation
-        let silence_ratio = safe_progress(total_silence_samples, buffer.data.len())
-            .map_err(cast_to_audio_error)?;
+        let total_silence_samples: usize = segments.iter().map(|s| s.end - s.start).sum(); // Safe casting for silence percentage calculation
+        let silence_ratio =
+            safe_progress(total_silence_samples, buffer.data.len()).map_err(cast_to_audio_error)?;
         Ok(silence_ratio * 100.0)
     }
 

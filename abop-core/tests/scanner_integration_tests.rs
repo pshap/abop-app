@@ -69,57 +69,55 @@ mod library_scanner_tests {
 
     #[test]
     fn test_library_scanner_creation() {
-        let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
+        let db = Database::open(":memory:").expect("Failed to open in-memory database");
         let library = Library::new("Test Library", temp_dir.path());
 
         let _scanner = LibraryScanner::new(db, library);
         // Test that scanner can be created without panicking
         // This is a basic smoke test
     }
-
     #[test]
     fn test_scan_empty_directory() {
-        let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
+        let db = Database::open(":memory:").expect("Failed to open in-memory database");
         let library = Library::new("Test Library", temp_dir.path());
 
         let scanner = LibraryScanner::new(db, library);
         let scan_summary = scanner
             .scan(abop_core::scanner::ScanOptions::default())
-            .unwrap();
+            .expect("Failed to scan empty directory");
 
         assert_eq!(scan_summary.new_files.len(), 0);
         assert_eq!(scan_summary.processed, 0);
         assert_eq!(scan_summary.errors, 0);
     }
-
     #[test]
     fn test_scan_with_mixed_files() {
-        let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
+        let db = Database::open(":memory:").expect("Failed to open in-memory database");
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create test files - only supported formats should be processed
         let audio_files = ["test1.mp3", "test2.flac", "test3.m4b"];
         let non_audio_files = ["readme.txt", "image.jpg", "video.mp4"];
-
         for filename in &audio_files {
             let file_path = temp_dir.path().join(filename);
-            let mut file = File::create(file_path).unwrap();
-            file.write_all(b"fake audio data").unwrap();
+            let mut file = File::create(file_path).expect("Failed to create test audio file");
+            file.write_all(b"fake audio data")
+                .expect("Failed to write test audio data");
         }
 
         for filename in &non_audio_files {
             let file_path = temp_dir.path().join(filename);
-            let mut file = File::create(file_path).unwrap();
-            file.write_all(b"not audio data").unwrap();
+            let mut file = File::create(file_path).expect("Failed to create test non-audio file");
+            file.write_all(b"not audio data")
+                .expect("Failed to write test non-audio data");
         }
-
         let scanner = LibraryScanner::new(db, library);
         let scan_summary = scanner
             .scan(abop_core::scanner::ScanOptions::default())
-            .unwrap();
+            .expect("Failed to scan directory with mixed files");
 
         // Only audio files should be discovered and attempted to be processed
         // Since these are fake files without proper audio metadata,
@@ -164,16 +162,15 @@ mod mock_scanner_tests {
             Ok(result)
         }
     }
-
     #[test]
     fn test_mock_scanner() {
-        let db = Database::open(":memory:").unwrap();
-        let temp_dir = tempdir().unwrap();
+        let db = Database::open(":memory:").expect("Failed to open in-memory database");
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
         let library = Library::new("Test Library", temp_dir.path());
 
         // Use our mock scanner instead of the real one
         let mock_scanner = MockScanner::new(db, library);
-        let scan_result = mock_scanner.scan().unwrap();
+        let scan_result = mock_scanner.scan().expect("Mock scanner should not fail");
 
         // Verify we have the expected number of audiobooks
         assert_eq!(scan_result.new_files.len(), 2);
@@ -199,23 +196,23 @@ mod mock_scanner_tests {
 #[cfg(test)]
 mod scanner_performance_tests {
     use super::*;
-
     #[test]
     fn test_scan_large_directory_structure() {
-        let temp_dir = tempdir().unwrap();
-        let db = Database::open(":memory:").unwrap();
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
+        let db = Database::open(":memory:").expect("Failed to open in-memory database");
         let library = Library::new("Test Library", temp_dir.path());
 
         // Create a nested directory structure
         for i in 0..5 {
             let subdir = temp_dir.path().join(format!("subdir_{i}"));
-            std::fs::create_dir_all(&subdir).unwrap();
+            std::fs::create_dir_all(&subdir).expect("Failed to create test subdirectory");
 
             // Create some test files in each subdirectory
             for j in 0..3 {
                 let file_path = subdir.join(format!("test_{i}_{j}.mp3"));
-                let mut file = File::create(file_path).unwrap();
-                file.write_all(b"fake audio data").unwrap();
+                let mut file = File::create(file_path).expect("Failed to create test file");
+                file.write_all(b"fake audio data")
+                    .expect("Failed to write test data");
             }
         }
 
@@ -223,7 +220,7 @@ mod scanner_performance_tests {
         let start_time = std::time::Instant::now();
         let scan_summary = scanner
             .scan(abop_core::scanner::ScanOptions::default())
-            .unwrap();
+            .expect("Failed to scan large directory structure");
         let scan_duration = start_time.elapsed();
 
         // Verify scan completed in reasonable time (adjust threshold as needed)

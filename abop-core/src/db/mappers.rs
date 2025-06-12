@@ -71,7 +71,8 @@ impl RowMappers {
             name: get_row_field!(row, 1, "library name"),
             path: get_row_path!(row, 2, "library path"),
         })
-    }    /// Map a database row to a Progress entity
+    }
+    /// Map a database row to a Progress entity
     pub fn progress_from_row(row: &Row) -> DbResult<Progress> {
         use crate::db::datetime_serde::SqliteDateTime;
 
@@ -88,11 +89,13 @@ impl RowMappers {
             created_at: created_at.into(),
             updated_at: updated_at.into(),
         })
-    }    /// Map a database row to an Audiobook with specific column indices for optimized queries
+    }
+    /// Map a database row to an Audiobook with specific column indices for optimized queries
     pub fn audiobook_from_row_indexed(
         row: &Row,
         indices: &AudiobookColumnIndices,
-    ) -> DbResult<Audiobook> {        Ok(Audiobook {
+    ) -> DbResult<Audiobook> {
+        Ok(Audiobook {
             id: get_indexed_field!(row, indices.id, "audiobook id"),
             library_id: get_indexed_field!(row, indices.library_id, "library_id"),
             path: get_indexed_path!(row, indices.path, "path"),
@@ -104,11 +107,13 @@ impl RowMappers {
             size_bytes: get_indexed_field!(row, indices.size_bytes, "size_bytes"),
             cover_art: get_indexed_field!(row, indices.cover_art, "cover_art"),
             created_at: {
-                let datetime_str: String = get_indexed_field!(row, indices.created_at, "created_at");
+                let datetime_str: String =
+                    get_indexed_field!(row, indices.created_at, "created_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             updated_at: {
-                let datetime_str: String = get_indexed_field!(row, indices.updated_at, "updated_at");
+                let datetime_str: String =
+                    get_indexed_field!(row, indices.updated_at, "updated_at");
                 super::helpers::parse_datetime_string(&datetime_str)?
             },
             selected: row.get(indices.selected).unwrap_or(false),

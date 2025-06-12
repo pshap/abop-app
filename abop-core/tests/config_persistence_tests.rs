@@ -8,7 +8,7 @@ use tempfile::tempdir;
 
 #[test]
 fn test_save_and_load_config() {
-    let dir = tempdir().unwrap();
+    let dir = tempdir().expect("Should create temporary directory");
     let config_path = dir.path().join("config.toml");
 
     let config = Config {
@@ -31,11 +31,13 @@ fn test_save_and_load_config() {
     };
 
     // Save config to file using TOML format (as the actual Config uses)
-    let config_str = toml::to_string_pretty(&config).unwrap();
-    fs::write(&config_path, config_str).unwrap();
+    let config_str = toml::to_string_pretty(&config).expect("Should serialize config to TOML");
+    fs::write(&config_path, config_str).expect("Should write config file");
 
     // Load config from file
-    let loaded: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+    let loaded: Config =
+        toml::from_str(&fs::read_to_string(&config_path).expect("Should read config file"))
+            .expect("Should deserialize config from TOML");
 
     assert_eq!(loaded.window.min_width, config.window.min_width);
     assert_eq!(loaded.window.min_height, config.window.min_height);
@@ -45,7 +47,7 @@ fn test_save_and_load_config() {
 
 #[test]
 fn test_load_default_when_config_missing() {
-    let dir = tempdir().unwrap();
+    let dir = tempdir().expect("Should create temporary directory");
     let config_path = dir.path().join("config.toml");
 
     // Do not create the file
@@ -61,11 +63,13 @@ fn test_load_default_when_config_missing() {
 
 #[test]
 fn test_load_corrupted_config_file() {
-    let dir = tempdir().unwrap();
+    let dir = tempdir().expect("Should create temporary directory");
     let config_path = dir.path().join("config.toml");
 
-    fs::write(&config_path, b"not valid toml").unwrap();
-    let result = toml::from_str::<Config>(&fs::read_to_string(&config_path).unwrap());
+    fs::write(&config_path, b"not valid toml").expect("Should write corrupted file");
+    let result = toml::from_str::<Config>(
+        &fs::read_to_string(&config_path).expect("Should read corrupted file"),
+    );
     assert!(result.is_err());
 }
 

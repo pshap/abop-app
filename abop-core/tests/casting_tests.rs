@@ -31,8 +31,11 @@ fn test_db_count_conversion() {
 #[test]
 fn test_validate_db_count() {
     // Test valid cases
-    assert_eq!(validate_db_count(0).unwrap(), 0);
-    assert_eq!(validate_db_count(100).unwrap(), 100);
+    assert_eq!(validate_db_count(0).expect("Should validate count 0"), 0);
+    assert_eq!(
+        validate_db_count(100).expect("Should validate count 100"),
+        100
+    );
 
     // Test error cases
     assert!(validate_db_count(-1).is_err());
@@ -41,7 +44,10 @@ fn test_validate_db_count() {
     let max_safe = isize::MAX as i64;
     if cfg!(target_pointer_width = "64") {
         // On 64-bit platforms, isize::MAX should work
-        assert_eq!(validate_db_count(max_safe).unwrap(), max_safe as usize);
+        assert_eq!(
+            validate_db_count(max_safe).expect("Should validate max_safe count"),
+            max_safe as usize
+        );
 
         // On 64-bit platforms, i64::MAX should actually work too since usize is also 64-bit
         // But let's test with a value that definitely won't fit
@@ -73,8 +79,7 @@ fn test_audio_conversions() {
     // Test safe conversions
     let result = audio::safe_usize_to_f64_audio(1000);
     assert_eq!(result, 1000.0);
-
-    let result = audio::safe_f64_to_usize_samples(1000.0).unwrap();
+    let result = audio::safe_f64_to_usize_samples(1000.0).expect("Should convert 1000.0 to usize");
     assert_eq!(result, 1000);
 
     // Test error cases
@@ -85,22 +90,24 @@ fn test_audio_conversions() {
 #[test]
 fn test_duration_sample_conversions() {
     // Test safe_duration_to_samples
-    let samples = audio::safe_duration_to_samples(1.0, 44100).unwrap();
+    let samples =
+        audio::safe_duration_to_samples(1.0, 44100).expect("Should convert 1.0s to samples");
     assert_eq!(samples, 44100);
 
-    let samples = audio::safe_duration_to_samples(0.5, 48000).unwrap();
+    let samples =
+        audio::safe_duration_to_samples(0.5, 48000).expect("Should convert 0.5s to samples");
     assert_eq!(samples, 24000);
 
     // Test error cases
     assert!(audio::safe_duration_to_samples(-1.0, 44100).is_err());
     assert!(audio::safe_duration_to_samples(1.0, 0).is_err());
-    assert!(audio::safe_duration_to_samples(f32::NAN, 44100).is_err());
-
-    // Test safe_samples_to_duration
-    let duration = audio::safe_samples_to_duration(44100, 44100).unwrap();
+    assert!(audio::safe_duration_to_samples(f32::NAN, 44100).is_err()); // Test safe_samples_to_duration
+    let duration =
+        audio::safe_samples_to_duration(44100, 44100).expect("Should convert samples to duration");
     assert!((duration - 1.0).abs() < 0.001);
 
-    let duration = audio::safe_samples_to_duration(22050, 44100).unwrap();
+    let duration = audio::safe_samples_to_duration(22050, 44100)
+        .expect("Should convert half-samples to duration");
     assert!((duration - 0.5).abs() < 0.001);
 
     // Test error cases
@@ -110,13 +117,13 @@ fn test_duration_sample_conversions() {
 #[test]
 fn test_safe_progress() {
     // Test normal cases
-    let progress = audio::safe_progress(50, 100).unwrap();
+    let progress = audio::safe_progress(50, 100).expect("Should calculate 50% progress");
     assert!((progress - 0.5).abs() < 0.001);
 
-    let progress = audio::safe_progress(100, 100).unwrap();
+    let progress = audio::safe_progress(100, 100).expect("Should calculate 100% progress");
     assert!((progress - 1.0).abs() < 0.001);
 
-    let progress = audio::safe_progress(0, 100).unwrap();
+    let progress = audio::safe_progress(0, 100).expect("Should calculate 0% progress");
     assert!((progress - 0.0).abs() < 0.001);
 
     // Test error case for values over 100%
@@ -137,7 +144,10 @@ fn test_domain_specific_errors() {
     assert!(ui::safe_spacing_to_pixels(f32::NAN).is_err());
     // Note: 100_000.0 gets clamped to u16::MAX (65535), so it's actually ok
     assert!(ui::safe_spacing_to_pixels(100_000.0).is_ok());
-    assert_eq!(ui::safe_spacing_to_pixels(100_000.0).unwrap(), u16::MAX);
+    assert_eq!(
+        ui::safe_spacing_to_pixels(100_000.0).expect("Should clamp large spacing value"),
+        u16::MAX
+    );
 
     // Test database errors
     let large_value = i64::MAX;
@@ -148,19 +158,23 @@ fn test_domain_specific_errors() {
 
 #[test]
 fn test_audio_conversion_methods() {
-    let builder = CastingBuilder::for_realtime_audio(); // Use realtime preset with adaptive precision
-
-    // Test convert_sample_rate
-    let result = builder.convert_sample_rate(44100, 48000, 44100).unwrap();
+    let builder = CastingBuilder::for_realtime_audio(); // Use realtime preset with adaptive precision    // Test convert_sample_rate
+    let result = builder
+        .convert_sample_rate(44100, 48000, 44100)
+        .expect("Should convert sample rate");
     assert!(result > 44100); // Should be scaled up
 
     // Test time_to_samples
-    let samples = builder.time_to_samples(1.0, 44100).unwrap();
+    let samples = builder
+        .time_to_samples(1.0, 44100)
+        .expect("Should convert time to samples");
     assert_eq!(samples, 44100);
 
     // Test convert_audio_value (16-bit to 24-bit)
     let value = 1000.0;
-    let converted = builder.convert_audio_value(value, 16, 24).unwrap();
+    let converted = builder
+        .convert_audio_value(value, 16, 24)
+        .expect("Should convert audio value");
     assert!(converted > value as i64);
 
     // Test error cases
@@ -171,14 +185,16 @@ fn test_audio_conversion_methods() {
 
 #[test]
 fn test_ui_conversion_methods() {
-    let builder = CastingBuilder::for_ui();
-
-    // Test logical_to_physical
-    let physical = builder.logical_to_physical(100.0, 2.0).unwrap();
+    let builder = CastingBuilder::for_ui(); // Test logical_to_physical
+    let physical = builder
+        .logical_to_physical(100.0, 2.0)
+        .expect("Should convert logical to physical");
     assert_eq!(physical, 200);
 
     // Test physical_to_logical
-    let logical = builder.physical_to_logical(200, 2.0).unwrap();
+    let logical = builder
+        .physical_to_logical(200, 2.0)
+        .expect("Should convert physical to logical");
     assert!((logical - 100.0).abs() < f32::EPSILON);
 
     // Test error cases
@@ -190,17 +206,17 @@ fn test_ui_conversion_methods() {
 fn test_validate_channel_count() {
     // Test valid cases
     assert_eq!(
-        audio::validate_channel_count(1).unwrap(),
+        audio::validate_channel_count(1).expect("Single channel should be valid"),
         1,
         "Single channel should be valid"
     );
     assert_eq!(
-        audio::validate_channel_count(2).unwrap(),
+        audio::validate_channel_count(2).expect("Stereo should be valid"),
         2,
         "Stereo should be valid"
     );
     assert_eq!(
-        audio::validate_channel_count(6).unwrap(),
+        audio::validate_channel_count(6).expect("5.1 surround should be valid"),
         6,
         "5.1 surround should be valid"
     );
@@ -220,17 +236,17 @@ fn test_validate_channel_count() {
 fn test_validate_bit_depth() {
     // Test valid cases
     assert_eq!(
-        audio::validate_bit_depth(16).unwrap(),
+        audio::validate_bit_depth(16).expect("16-bit should be valid"),
         16,
         "16-bit should be valid"
     );
     assert_eq!(
-        audio::validate_bit_depth(24).unwrap(),
+        audio::validate_bit_depth(24).expect("24-bit should be valid"),
         24,
         "24-bit should be valid"
     );
     assert_eq!(
-        audio::validate_bit_depth(32).unwrap(),
+        audio::validate_bit_depth(32).expect("32-bit should be valid"),
         32,
         "32-bit should be valid"
     );
@@ -277,12 +293,12 @@ fn test_validate_audiobook_duration() {
 fn test_validate_sample_rate_audiobook() {
     // Test valid cases
     assert_eq!(
-        audio::validate_sample_rate_audiobook(44100).unwrap(),
+        audio::validate_sample_rate_audiobook(44100).expect("44.1kHz should be valid"),
         44100,
         "44.1kHz should be valid"
     );
     assert_eq!(
-        audio::validate_sample_rate_audiobook(48000).unwrap(),
+        audio::validate_sample_rate_audiobook(48000).expect("48kHz should be valid"),
         48000,
         "48kHz should be valid"
     );
@@ -301,15 +317,30 @@ fn test_validate_sample_rate_audiobook() {
 #[test]
 fn test_convenience_wrappers() {
     // Test audio convenience functions
-    assert_eq!(audio::duration_to_samples(1.0, 44100).unwrap(), 44100);
-    assert_eq!(audio::samples_to_duration(44100, 44100).unwrap(), 1.0);
+    assert_eq!(
+        audio::duration_to_samples(1.0, 44100).expect("Should convert 1.0s to 44100 samples"),
+        44100
+    );
+    assert_eq!(
+        audio::samples_to_duration(44100, 44100).expect("Should convert 44100 samples to 1.0s"),
+        1.0
+    );
     assert_eq!(audio::samples_to_f64(1000), 1000.0);
-    assert_eq!(audio::f64_to_samples(1000.0).unwrap(), 1000);
+    assert_eq!(
+        audio::f64_to_samples(1000.0).expect("Should convert 1000.0 to samples"),
+        1000
+    );
 
     // Test db convenience functions
-    assert_eq!(db_utils::count_to_usize(100).unwrap(), 100);
+    assert_eq!(
+        db_utils::count_to_usize(100).expect("Should convert count 100 to usize"),
+        100
+    );
     assert!(db_utils::count_to_usize(-1).is_err());
-    assert_eq!(db_utils::size_to_i64(100).unwrap(), 100);
+    assert_eq!(
+        db_utils::size_to_i64(100).expect("Should convert size 100 to i64"),
+        100
+    );
     assert_eq!(db_utils::count_to_size(100), 100);
 }
 
@@ -322,7 +353,7 @@ fn test_rounding_modes() {
         .with_rounding(RoundingMode::Nearest)
         .with_precision(PrecisionMode::Adaptive) // Allow rounding
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 42.5 with nearest rounding");
     assert_eq!(nearest, 43); // 42.5 rounds to 43 (away from zero)
 
     // Test with floor rounding
@@ -330,7 +361,7 @@ fn test_rounding_modes() {
         .with_rounding(RoundingMode::Floor)
         .with_precision(PrecisionMode::Adaptive)
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 42.5 with floor rounding");
     assert_eq!(floor, 42);
 
     // Test with ceiling rounding
@@ -338,7 +369,7 @@ fn test_rounding_modes() {
         .with_rounding(RoundingMode::Ceiling)
         .with_precision(PrecisionMode::Adaptive)
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 42.5 with ceiling rounding");
     assert_eq!(ceiling, 43);
 
     // Test with truncate rounding
@@ -346,7 +377,7 @@ fn test_rounding_modes() {
         .with_rounding(RoundingMode::Truncate)
         .with_precision(PrecisionMode::Adaptive)
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 42.5 with truncate rounding");
     assert_eq!(truncate, 42);
 
     // Test with different precision modes
@@ -362,13 +393,13 @@ fn test_rounding_modes() {
     let tolerant = CastingBuilder::new()
         .with_precision(PrecisionMode::Tolerant { epsilon: 0.5 }) // Allow up to 0.5 precision loss
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 1.23456789 with tolerant precision");
     assert_eq!(tolerant, 1);
 
     // Test with adaptive precision
     let adaptive = CastingBuilder::new()
         .with_precision(PrecisionMode::Adaptive)
         .float_to_int::<i32>(value)
-        .unwrap();
+        .expect("Should convert 1.23456789 with adaptive precision");
     assert_eq!(adaptive, 1);
 }

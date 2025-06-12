@@ -4,14 +4,14 @@
 //! and provides audio-specific convenience functions.
 
 // Re-export from unified casting system
-pub use crate::utils::casting::{CastError, CastResult, CastingBuilder, DomainCastError};
 pub use crate::utils::casting::domain::audio::*;
+pub use crate::utils::casting::{CastError, CastResult, CastingBuilder, DomainCastError};
 
 use crate::audio::processing::error::{AudioProcessingError, Result};
 
 /// Audio-specific error conversion utilities
 pub mod error_conversion {
-    use super::{AudioProcessingError, Result, DomainCastError};
+    use super::{AudioProcessingError, DomainCastError, Result};
 
     /// Convert a DomainCastError to an AudioProcessingError
     pub fn cast_to_audio_error(err: DomainCastError) -> AudioProcessingError {
@@ -32,7 +32,8 @@ pub mod safe_conversions {
     /// Safe conversion from database count to usize
     pub fn safe_db_count_to_usize(count: i64) -> usize {
         db::safe_db_count_to_usize(count)
-    }    /// Safe conversion from f64 to usize for sample indices
+    }
+    /// Safe conversion from f64 to usize for sample indices
     pub fn safe_f64_to_usize_samples(value: f64) -> Result<usize> {
         unified_audio::safe_f64_to_usize_samples(value)
             .map_err(|e| error_conversion::cast_to_audio_error(e.into()))
@@ -41,6 +42,13 @@ pub mod safe_conversions {
     /// Safe conversion from usize to f64 for audio calculations  
     pub fn safe_usize_to_f64_audio(value: usize) -> f64 {
         unified_audio::safe_usize_to_f64_audio(value)
+    }
+
+    /// Safe conversion from f64 to usize for resampling operations
+    /// Allows truncation of fractional parts, which is normal for resampling
+    pub fn safe_f64_to_usize_resampling(value: f64) -> Result<usize> {
+        unified_audio::safe_f64_to_usize_resampling(value)
+            .map_err(|e| error_conversion::cast_to_audio_error(e.into()))
     }
 }
 
@@ -69,7 +77,8 @@ pub mod sample_calculations {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[test]
+    use super::*;
+    #[test]
     fn test_error_conversion() {
         let cast_error = DomainCastError::Generic(CastError::Overflow);
         let audio_error = error_conversion::cast_to_audio_error(cast_error);
@@ -81,7 +90,7 @@ mod tests {
         // Test that our functions properly delegate to the unified system
         assert_eq!(safe_conversions::safe_db_count_to_usize(-1), 0);
         assert_eq!(safe_conversions::safe_db_count_to_usize(42), 42);
-        
+
         let result = safe_conversions::safe_usize_to_f64_audio(100);
         assert_eq!(result, 100.0);
     }

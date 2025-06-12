@@ -7,7 +7,9 @@
 // SIMD is used in the resample_buffer_simd function
 
 use super::{
-    casting_utils::safe_conversions::{safe_f64_to_usize_samples, safe_usize_to_f64_audio},
+    casting_utils::safe_conversions::{
+        safe_f64_to_usize_resampling, safe_f64_to_usize_samples, safe_usize_to_f64_audio,
+    },
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
@@ -122,7 +124,7 @@ impl LinearResampler {
             buffer.sample_rate,
             target_rate,
             ratio
-        );        // Calculate output length with safe conversion
+        ); // Calculate output length with safe conversion
         let input_samples_f64 =
             safe_usize_to_f64_audio(buffer.data.len()) / f64::from(buffer.channels);
         let output_samples_f64 = input_samples_f64 * ratio;
@@ -135,12 +137,13 @@ impl LinearResampler {
         let mut resampled_data = Vec::with_capacity(output_samples * channels_usize);
 
         // Simple linear resampling
-        for i in 0..output_samples {            // Calculate source position with safe bounds checking using f64 for precision
+        for i in 0..output_samples {
+            // Calculate source position with safe bounds checking using f64 for precision
             let i_f64 = safe_usize_to_f64_audio(i);
             let pos_f64 = i_f64 * f64::from(buffer.sample_rate) / f64::from(target_rate);
 
             // Safe conversion with bounds checking
-            let pos = safe_f64_to_usize_samples(pos_f64)?;
+            let pos = safe_f64_to_usize_resampling(pos_f64)?;
 
             // For each channel
             for c in 0..channels_usize {
