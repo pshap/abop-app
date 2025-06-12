@@ -12,6 +12,11 @@ use std::path::{Component, Path, PathBuf};
 #[cfg(windows)]
 use abop_core::platform::windows::path_utils as win_path_utils;
 
+/// Typical number of components in a file system path for pre-allocation optimization.
+/// Based on analysis of common file system structures, most paths have 3-8 components.
+/// This helps avoid multiple reallocations during path normalization.
+const TYPICAL_PATH_COMPONENT_COUNT: usize = 8;
+
 /// Normalizes a path for comparison, handling platform-specific cases
 ///
 /// This function:
@@ -50,7 +55,8 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
 
         // Process components while preserving drive and root information
         let mut normalized = PathBuf::new();
-        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::with_capacity(8); // Pre-allocate for typical path depth
+        // Pre-allocate for typical path depth (8 components covers most file system paths efficiently)
+        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::with_capacity(TYPICAL_PATH_COMPONENT_COUNT);
 
         for comp in sep_norm.components() {
             match comp {
