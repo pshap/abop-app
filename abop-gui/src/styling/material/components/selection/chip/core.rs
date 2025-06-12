@@ -17,7 +17,10 @@ use std::time::Duration;
 pub const MAX_CHIP_LABEL_LENGTH: usize = constants::chips::MAX_LABEL_LENGTH;
 
 /// Default animation duration for chip state transitions
-pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(constants::animation::FAST_DURATION_MS as u64);
+/// 
+/// Uses 100ms duration following Material Design 3 fast animation guidelines
+/// for immediate user feedback during chip interactions like selection changes.
+pub const DEFAULT_ANIMATION_DURATION: Duration = Duration::from_millis(100);
 
 // ============================================================================
 // Core Chip Implementation Extensions

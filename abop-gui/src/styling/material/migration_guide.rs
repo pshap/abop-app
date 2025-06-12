@@ -105,6 +105,7 @@ pub mod migration {
 }
 
 /// Migration checklist and documentation
+#[allow(clippy::mixed_attributes_style)]
 pub mod guide {
     //! # Migration Guide: From Dual MaterialColors to Unified System
     //!

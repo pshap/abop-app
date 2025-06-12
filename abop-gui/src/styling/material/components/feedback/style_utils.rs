@@ -38,11 +38,10 @@ pub fn create_action_button<'a, Message>(
 ) -> button::Button<'a, Message>
 where
     Message: Clone + 'a,
-{
-    let button_style = if is_primary {
+{    let button_style = if is_primary {
         button::Style {
             background: Some(Background::Color(tokens.colors.primary.base)),
-            text_color: tokens.colors.on_primary(),
+            text_color: tokens.colors.primary.on_base,
             border: Border {
                 radius: tokens.shapes.corner_small.radius,
                 ..Default::default()

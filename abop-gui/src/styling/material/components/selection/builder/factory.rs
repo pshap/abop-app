@@ -9,7 +9,11 @@
 //! - [`switch`] - Create a switch builder
 //! - [`chip`] - Create a chip builder
 
-use super::super::common::prelude::*;
+use super::super::common::{
+    CheckboxState, ChipVariant, SwitchState,
+};
+#[cfg(test)]
+use super::super::common::{ChipState, ComponentSize, SelectionComponent};
 use super::{
     checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
 };
