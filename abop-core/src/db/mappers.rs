@@ -54,7 +54,18 @@ macro_rules! get_indexed_path {
 pub struct RowMappers;
 
 impl RowMappers {
-    /// Map a database row to an Audiobook entity
+    /// Map a database row to an Audiobook entity using standard column layout
+    ///
+    /// This function expects columns to be in the exact order defined by AUDIOBOOK_COLUMNS.
+    /// For queries with custom column ordering, use `audiobook_from_row_indexed` instead.
+    ///
+    /// # Arguments
+    /// * `row` - The database row to map from
+    ///
+    /// # Column Order Expected
+    /// The row must contain columns in this exact order:
+    /// id, library_id, path, title, author, narrator, description,
+    /// duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
     pub fn audiobook_from_row(row: &Row) -> DbResult<Audiobook> {
         Ok(Audiobook {
             id: get_field!(row, 0, "audiobook id"),
@@ -98,7 +109,20 @@ impl RowMappers {
             updated_at: updated_at.into(),
         })
     }
-    /// Map a database row to an Audiobook with specific column indices for optimized queries
+    /// Map a database row to an Audiobook using custom column indices
+    ///
+    /// Use this version when the column order differs from the standard layout
+    /// or when optimizing performance-critical queries with custom projections.
+    /// This is particularly useful for complex JOINs or SELECT statements where
+    /// columns appear in a different order than the standard AUDIOBOOK_COLUMNS.
+    ///
+    /// # Arguments
+    /// * `row` - The database row to map from
+    /// * `indices` - Column indices specifying where each field appears in the row
+    ///
+    /// # Performance
+    /// This function provides the same functionality as `audiobook_from_row` but
+    /// allows for flexible column positioning, making it ideal for optimized queries.
     pub fn audiobook_from_row_indexed(
         row: &Row,
         indices: &AudiobookColumnIndices,
@@ -129,7 +153,22 @@ impl RowMappers {
     }
 }
 
-/// Column indices for optimized audiobook queries
+/// Column indices for optimized audiobook queries with custom column ordering
+///
+/// This struct defines where each audiobook field appears in a database row
+/// when columns are not in the standard order. Use with `audiobook_from_row_indexed`
+/// for performance-critical queries, JOINs, or custom SELECT statements.
+///
+/// # Example Usage
+/// ```ignore
+/// let indices = AudiobookColumnIndices {
+///     id: 0,
+///     title: 1,
+///     author: 2,
+///     // ... other fields as they appear in your custom query
+/// };
+/// let audiobook = RowMappers::audiobook_from_row_indexed(&row, &indices)?;
+/// ```
 #[derive(Debug, Clone)]
 pub struct AudiobookColumnIndices {
     /// Column index for audiobook ID
