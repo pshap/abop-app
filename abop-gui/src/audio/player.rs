@@ -1,7 +1,8 @@
 //! Audio player management and global player instance
 
-use abop_core::{PlayerState, audio::player::ThreadSafeAudioPlayer};
 use std::path::PathBuf;
+
+use abop_core::{PlayerState, audio::player::ThreadSafeAudioPlayer};
 
 // ================================================================================================
 // GLOBAL AUDIO PLAYER
@@ -66,11 +67,11 @@ pub fn stop_audio() {
 
 /// Get current player state
 pub fn get_player_state() -> PlayerState {
-    (*AUDIO_PLAYER).get_state()
+    AUDIO_PLAYER.get_state()
 }
 
 /// Get currently playing file path
 #[must_use]
 pub fn get_current_playing_file() -> Option<PathBuf> {
-    (*AUDIO_PLAYER).get_current_file()
+    AUDIO_PLAYER.get_current_file()
 }

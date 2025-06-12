@@ -28,7 +28,6 @@ impl Default for Route {
 #[derive(Debug, Default)]
 pub struct Router {
     current_route: Route,
-    previous_route: Option<Route>,
     history: Vec<Route>,
 }
 
@@ -37,7 +36,6 @@ impl Router {
     pub fn new() -> Self {
         Self {
             current_route: Route::default(),
-            previous_route: None,
             history: vec![Route::default()],
         }
     }
@@ -48,14 +46,26 @@ impl Router {
     }
 
     /// Navigates to the specified route
+    /// 
+    /// # Behavior
+    /// - Adds the new route to navigation history
+    /// - Updates the current route
+    /// - Returns a Task that can be used for side effects
+    /// 
+    /// # Arguments
+    /// * `route` - The target route to navigate to
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
         self.history.push(route);
-        self.previous_route = Some(self.current_route);
         self.current_route = route;
         Task::none()
     }
 
     /// Navigates back to the previous route if available
+    /// 
+    /// # Behavior
+    /// - Pops the current route from history if history has more than one entry
+    /// - Sets current route to the last item in history
+    /// - Does nothing if already at the first route in history
     pub fn navigate_back(&mut self) -> Task<Message> {
         if self.history.len() > 1 {
             self.history.pop();

@@ -1,4 +1,9 @@
 //! Windows-specific platform implementations
+//!
+//! This module provides Windows-specific functionality including:
+//! - Environment variable utilities for safe manipulation
+//! - Path handling that respects Windows path conventions
+//! - OS-specific behavior implementations
 
 pub mod env_utils;
 pub mod path_utils;
