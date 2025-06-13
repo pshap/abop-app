@@ -16,6 +16,7 @@ button_strategy! {
             .border(Color::TRANSPARENT, 0.0)
             .radius(constants::radius::MEDIUM) // Use Material Design medium radius constant
             .shadow(elevation.level1.shadow)
+            .surface_interactions() // Enable Material Design surface interaction effects
             .build()
     }
 
