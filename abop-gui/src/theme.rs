@@ -1,10 +1,17 @@
 //! Professional theme system for ABOP GUI
 //!
-//! This module provides a clean, professional theming system with two carefully
-//! crafted themes: a dark sunset theme and a matching light theme.
+//! This module provides a comprehensive theming system using Material Design 3 (MD3)
+//! color standards with multiple theme modes including dark, light, and dynamic themes.
 
 use crate::styling::material::{MaterialColors, MaterialPalette, MaterialTokens};
 use iced::{Color, Theme as IcedTheme, theme::Palette};
+
+// ================================================================================================
+// CONSTANTS
+// ================================================================================================
+
+/// Default seed color for Material Dynamic theme (rich purple)
+const DEFAULT_MATERIAL_SEED_COLOR: Color = Color::from_rgb(0.5, 0.2, 0.8);
 
 // ================================================================================================
 // THEME TYPES
@@ -51,10 +58,9 @@ impl ThemeMode {
             Self::MaterialLight => {
                 let colors = MaterialColors::light(&MaterialPalette::default());
                 material_theme_from_colors(&colors)
-            }
-            Self::MaterialDynamic => {
-                // Use a default seed color for dynamic theme
-                let seed_color = Color::from_rgb(0.5, 0.2, 0.8);
+            }            Self::MaterialDynamic => {
+                // Use a default purple seed color for dynamic theme - could be made configurable
+                let seed_color = DEFAULT_MATERIAL_SEED_COLOR;
                 let colors = MaterialColors::from_seed(seed_color, true);
                 material_theme_from_colors(&colors)
             }
@@ -88,150 +94,194 @@ impl ThemeMode {
             Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
         }
-    }
-
-    /// Get background color for the current theme mode
+    }    /// Get background color for the current theme mode
     #[must_use]
     pub fn background_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::BACKGROUND,
-            LightSunsetPalette::BACKGROUND,
-        )
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.background
     }
 
     /// Get surface color for the current theme mode
     #[must_use]
     pub fn surface_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::SURFACE, LightSunsetPalette::SURFACE)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.surface
     }
 
     /// Get surface variant color for the current theme mode
     #[must_use]
     pub fn surface_variant_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::SURFACE_VARIANT,
-            LightSunsetPalette::SURFACE_VARIANT,
-        )
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.surface_variant
     }
 
     /// Get primary color for the current theme mode
     #[must_use]
     pub fn primary_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::PRIMARY, LightSunsetPalette::PRIMARY)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.primary.base
     }
 
     /// Get primary light color for the current theme mode
     #[must_use]
     pub fn primary_light_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::PRIMARY_LIGHT,
-            LightSunsetPalette::PRIMARY_LIGHT,
-        )
-    }
-
-    /// Get secondary color for the current theme mode
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.primary.container
+    }    /// Get secondary color for the current theme mode
     #[must_use]
     pub fn secondary_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::SECONDARY, LightSunsetPalette::SECONDARY)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.secondary.base
     }
 
     /// Get primary text color for the current theme mode
     #[must_use]
     pub fn text_primary_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::TEXT_PRIMARY,
-            LightSunsetPalette::TEXT_PRIMARY,
-        )
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.on_surface
     }
 
     /// Get secondary text color for the current theme mode
     #[must_use]
     pub fn text_secondary_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::TEXT_SECONDARY,
-            LightSunsetPalette::TEXT_SECONDARY,
-        )
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.on_surface_variant
     }
 
     /// Get border color for the current theme mode
     #[must_use]
     pub fn border_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::BORDER, LightSunsetPalette::BORDER)
-    }
-
-    /// Get outline color for the current theme mode
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.outline
+    }    /// Get outline color for the current theme mode
     #[must_use]
     pub fn outline_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::OUTLINE, LightSunsetPalette::OUTLINE)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.outline_variant
     }
 
     /// Get error color for the current theme mode
     #[must_use]
     pub fn error_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::ERROR, LightSunsetPalette::ERROR)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.error.base
     }
 
     /// Get success color for the current theme mode
     #[must_use]
     pub fn success_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::SUCCESS, LightSunsetPalette::SUCCESS)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.tertiary.base // Use tertiary for success (green)
     }
 
     /// Get info color for the current theme mode
     #[must_use]
     pub fn info_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::INFO, LightSunsetPalette::INFO)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.primary.base // Use primary for info
     }
 
     /// Get orange accent color for rare/special use
     #[must_use]
     pub fn orange_accent_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::ORANGE_ACCENT,
-            LightSunsetPalette::ORANGE_ACCENT,
-        )
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+        colors.secondary.base // Use secondary for accent
     }
 
     /// Get warning color for the current theme mode
     #[must_use]
     pub fn warning_color(&self) -> Color {
-        self.resolve_palette(DarkSunsetPalette::WARNING, LightSunsetPalette::WARNING)
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };        colors.error.container // Use error container for warning
     }
 
     /// Get disabled text color for the current theme mode
     #[must_use]
     pub fn text_disabled_color(&self) -> Color {
-        self.resolve_palette(
-            DarkSunsetPalette::TEXT_DISABLED,
-            LightSunsetPalette::TEXT_DISABLED,
-        )
-    }
-
-    /// Get semantic colors for the current theme mode
-    #[must_use]
-    pub const fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
-        if self.is_dark() {
-            crate::styling::material::SemanticColors {
-                primary: iced::Color::from_rgb(0.2, 0.6, 0.8),   // Blue
-                secondary: iced::Color::from_rgb(0.5, 0.5, 0.5), // Gray
-                success: iced::Color::from_rgb(0.2, 0.7, 0.3),   // Green
-                warning: iced::Color::from_rgb(0.9, 0.6, 0.1),   // Orange
-                error: iced::Color::from_rgb(0.8, 0.2, 0.2),     // Red
-                info: iced::Color::from_rgb(0.3, 0.7, 0.9),      // Light Blue
-                surface: iced::Color::from_rgb(0.15, 0.15, 0.15), // Dark Gray
-                on_surface: iced::Color::from_rgb(0.9, 0.9, 0.9), // Light Gray
-            }
+        let colors = if self.is_dark() {
+            MaterialColors::dark_default()
         } else {
-            crate::styling::material::SemanticColors {
-                primary: iced::Color::from_rgb(0.1, 0.4, 0.7), // Darker Blue
-                secondary: iced::Color::from_rgb(0.4, 0.4, 0.4), // Dark Gray
-                success: iced::Color::from_rgb(0.1, 0.6, 0.2), // Dark Green
-                warning: iced::Color::from_rgb(0.8, 0.5, 0.0), // Dark Orange
-                error: iced::Color::from_rgb(0.7, 0.1, 0.1),   // Dark Red
-                info: iced::Color::from_rgb(0.2, 0.5, 0.8),    // Dark Blue
-                surface: iced::Color::from_rgb(0.98, 0.98, 0.98), // Off White
-                on_surface: iced::Color::from_rgb(0.1, 0.1, 0.1), // Dark Gray
-            }
+            MaterialColors::light_default()
+        };
+        colors.on_surface_variant // Use surface variant for disabled text
+    }/// Get semantic colors for the current theme mode
+    #[must_use]
+    pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
+        // Use Material Design colors for better consistency and accessibility
+        let material_colors = if self.is_dark() {
+            MaterialColors::dark_default()
+        } else {
+            MaterialColors::light_default()
+        };
+
+        crate::styling::material::SemanticColors {
+            primary: material_colors.primary.base,
+            secondary: material_colors.secondary.base,
+            success: material_colors.tertiary.base,       // Use tertiary for success (green)
+            warning: material_colors.error.container,     // Use error container for warning (orange)
+            error: material_colors.error.base,
+            info: material_colors.primary.container,      // Use primary container for info
+            surface: material_colors.surface,
+            on_surface: material_colors.on_surface,
         }
     }
 
@@ -241,10 +291,9 @@ impl ThemeMode {
     pub fn material_tokens_if_material(&self) -> Option<MaterialTokens> {
         match self {
             Self::MaterialDark => Some(MaterialTokens::dark()),
-            Self::MaterialLight => Some(MaterialTokens::light()),
-            Self::MaterialDynamic => {
+            Self::MaterialLight => Some(MaterialTokens::light()),            Self::MaterialDynamic => {
                 // Use purple seed color for dynamic Material Design theme
-                let seed_color = Color::from_rgb(0.4, 0.2, 0.8);
+                let seed_color = DEFAULT_MATERIAL_SEED_COLOR;
                 Some(MaterialTokens::from_seed_color(seed_color, true))
             }
             _ => None,
@@ -276,120 +325,34 @@ impl ThemeMode {
 }
 
 // ================================================================================================
-// COLOR PALETTES
-// ================================================================================================
-
-/// Professional dark sunset theme colors
-pub struct DarkSunsetPalette;
-
-impl DarkSunsetPalette {
-    /// Background color for main application surfaces (deep twilight blue)
-    pub const BACKGROUND: Color = Color::from_rgb(0.09, 0.10, 0.15);
-    /// Elevated surface color for panels and cards
-    pub const SURFACE: Color = Color::from_rgb(0.13, 0.14, 0.20);
-    /// Card background color for surface variants
-    pub const SURFACE_VARIANT: Color = Color::from_rgb(0.17, 0.18, 0.25);
-    /// Primary accent color (deep purple)
-    pub const PRIMARY: Color = Color::from_rgb(0.35, 0.25, 0.55);
-    /// Lighter primary accent for highlights
-    pub const PRIMARY_LIGHT: Color = Color::from_rgb(0.45, 0.35, 0.65);
-    /// Secondary accent color (muted blue)
-    pub const SECONDARY: Color = Color::from_rgb(0.20, 0.45, 0.75);
-    /// Tertiary color for special elements (very dark purple)
-    pub const TERTIARY: Color = Color::from_rgb(0.12, 0.08, 0.20);
-    /// Tertiary variant for backgrounds (even darker purple)
-    pub const TERTIARY_VARIANT: Color = Color::from_rgb(0.08, 0.05, 0.15);
-    /// Orange accent for rare/special use
-    pub const ORANGE_ACCENT: Color = Color::from_rgb(0.75, 0.35, 0.12);
-    /// Primary text color (warm white)
-    pub const TEXT_PRIMARY: Color = Color::from_rgb(0.96, 0.94, 0.97);
-    /// Secondary text color (muted text)
-    pub const TEXT_SECONDARY: Color = Color::from_rgb(0.75, 0.72, 0.78);
-    /// Disabled text color
-    pub const TEXT_DISABLED: Color = Color::from_rgb(0.55, 0.52, 0.58);
-    /// Error color for error states (muted red)
-    pub const ERROR: Color = Color::from_rgb(0.85, 0.25, 0.25);
-    /// Success color for success states (muted green)
-    pub const SUCCESS: Color = Color::from_rgb(0.30, 0.70, 0.40);
-    /// Warning color for warning states (muted orange-yellow)
-    pub const WARNING: Color = Color::from_rgb(0.80, 0.55, 0.15);
-    /// Info color for informational states (muted blue)
-    pub const INFO: Color = Color::from_rgb(0.20, 0.45, 0.75);
-    /// Border color for subtle borders
-    pub const BORDER: Color = Color::from_rgb(0.25, 0.26, 0.33);
-    /// Outline color for outlines and focus rings
-    pub const OUTLINE: Color = Color::from_rgb(0.20, 0.21, 0.28);
-}
-
-/// Professional light sunset theme colors
-pub struct LightSunsetPalette;
-
-impl LightSunsetPalette {
-    /// Background color for main application surfaces (warm white)
-    pub const BACKGROUND: Color = Color::from_rgb(0.98, 0.97, 0.95);
-    /// Elevated surface color for panels and cards
-    pub const SURFACE: Color = Color::from_rgb(0.95, 0.94, 0.92);
-    /// Card background color for surface variants
-    pub const SURFACE_VARIANT: Color = Color::from_rgb(0.92, 0.91, 0.89);
-    /// Primary accent color (deep purple)
-    pub const PRIMARY: Color = Color::from_rgb(0.40, 0.30, 0.60);
-    /// Lighter primary accent for highlights
-    pub const PRIMARY_LIGHT: Color = Color::from_rgb(0.50, 0.40, 0.70);
-    /// Secondary accent color (muted blue)
-    pub const SECONDARY: Color = Color::from_rgb(0.15, 0.40, 0.70);
-    /// Tertiary color for special elements (very dark purple)
-    pub const TERTIARY: Color = Color::from_rgb(0.08, 0.05, 0.15);
-    /// Tertiary variant for backgrounds (even darker purple)
-    pub const TERTIARY_VARIANT: Color = Color::from_rgb(0.05, 0.03, 0.12);
-    /// Orange accent for rare/special use
-    pub const ORANGE_ACCENT: Color = Color::from_rgb(0.70, 0.30, 0.08);
-    /// Primary text color (dark text)
-    pub const TEXT_PRIMARY: Color = Color::from_rgb(0.15, 0.15, 0.18);
-    /// Secondary text color (muted text)
-    pub const TEXT_SECONDARY: Color = Color::from_rgb(0.45, 0.45, 0.50);
-    /// Disabled text color
-    pub const TEXT_DISABLED: Color = Color::from_rgb(0.65, 0.65, 0.70);
-    /// Error color for error states (muted red)
-    pub const ERROR: Color = Color::from_rgb(0.75, 0.18, 0.24);
-    /// Success color for success states (muted green)
-    pub const SUCCESS: Color = Color::from_rgb(0.20, 0.60, 0.26);
-    /// Warning color for warning states (muted orange-yellow)
-    pub const WARNING: Color = Color::from_rgb(0.75, 0.45, 0.02);
-    /// Info color for informational states (muted blue)
-    pub const INFO: Color = Color::from_rgb(0.15, 0.40, 0.70);
-    /// Border color for subtle borders
-    pub const BORDER: Color = Color::from_rgb(0.80, 0.79, 0.77);
-    /// Outline color for outlines and focus rings
-    pub const OUTLINE: Color = Color::from_rgb(0.85, 0.84, 0.82);
-}
-
-// ================================================================================================
 // THEME CONSTRUCTORS
 // ================================================================================================
 
-/// Create the dark sunset theme
+/// Create the dark sunset theme using Material Design colors
 #[must_use]
 pub fn dark_sunset_theme() -> IcedTheme {
+    let colors = MaterialColors::dark(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
     let palette = Palette {
-        background: DarkSunsetPalette::BACKGROUND,
-        text: DarkSunsetPalette::TEXT_PRIMARY,
-        primary: DarkSunsetPalette::PRIMARY,
-        success: DarkSunsetPalette::SUCCESS,
-        danger: DarkSunsetPalette::ERROR,
+        background: colors.background,
+        text: colors.on_background,
+        primary: colors.primary.base,
+        success: colors.tertiary.base,
+        danger: colors.error.base,
     };
 
     IcedTheme::custom("Dark Sunset".to_string(), palette)
 }
 
-/// Create the light sunset theme
+/// Create the light sunset theme using Material Design colors
 #[must_use]
 pub fn light_sunset_theme() -> IcedTheme {
+    let colors = MaterialColors::light(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
     let palette = Palette {
-        background: LightSunsetPalette::BACKGROUND,
-        text: LightSunsetPalette::TEXT_PRIMARY,
-        primary: LightSunsetPalette::PRIMARY,
-        success: LightSunsetPalette::SUCCESS,
-        danger: LightSunsetPalette::ERROR,
+        background: colors.background,
+        text: colors.on_background,
+        primary: colors.primary.base,
+        success: colors.tertiary.base,
+        danger: colors.error.base,
     };
 
     IcedTheme::custom("Light Sunset".to_string(), palette)
