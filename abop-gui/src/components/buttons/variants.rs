@@ -6,13 +6,13 @@
 pub enum ButtonVariant {
     /// A filled button with a solid background
     Filled,
-    
+
     /// A filled button with a secondary, tonal background
     FilledTonal,
-    
+
     /// An outlined button with a border
     Outlined,
-    
+
     /// A text-only button with minimal visual treatment
     Text,
 }
@@ -23,10 +23,10 @@ pub enum ButtonVariant {
 pub enum ButtonSize {
     /// Small size, typically 24-32px height
     Small,
-    
+
     /// Medium size, typically 36-40px height (default)
     Medium,
-    
+
     /// Large size, typically 48-52px height
     Large,
 }
@@ -43,10 +43,10 @@ impl Default for ButtonSize {
 pub enum IconPosition {
     /// Icon appears before the label
     Leading,
-    
+
     /// Icon appears after the label
     Trailing,
-    
+
     /// Only the icon is shown (icon-only button)
     Only,
 }

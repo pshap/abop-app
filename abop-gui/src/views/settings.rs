@@ -101,7 +101,7 @@ where
     } else {
         SwitchState::Off
     };
-    
+
     // Create Material Design 3 Switch component
     let md3_switch = Switch::builder(switch_state)
         .label(label)
@@ -115,7 +115,7 @@ where
                 Switch::default()
             })
         });
-    
+
     // Use static MaterialColors to solve lifetime issues
     if is_dark {
         static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
@@ -131,22 +131,14 @@ where
 /// Creates a switch for theme toggling using Material Design 3 Switch component
 fn create_theme_switch(state: &UiState) -> Element<'_, Message> {
     let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
-    create_settings_switch(
-        "Dark Theme",
-        state,
-        is_dark,
-        |_| Message::ToggleTheme,
-    )
+    create_settings_switch("Dark Theme", state, is_dark, |_| Message::ToggleTheme)
 }
 
 /// Creates a switch for auto-save library setting using Material Design 3 Switch component
 fn create_auto_save_switch(state: &UiState) -> Element<'_, Message> {
-    create_settings_switch(
-        "Auto-save",
-        state,
-        state.auto_save_library,
-        |_| Message::ToggleAutoSaveLibrary,
-    )
+    create_settings_switch("Auto-save", state, state.auto_save_library, |_| {
+        Message::ToggleAutoSaveLibrary
+    })
 }
 
 /// Creates a switch for scan subdirectories setting using Material Design 3 Switch component

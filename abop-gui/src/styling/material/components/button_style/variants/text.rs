@@ -1,74 +1,21 @@
 //! Text button variant strategy implementation
 
-use super::super::constants::radius;
-use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling};
-use super::create_button_border;
-use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
-use iced::{Background, Color};
+use super::super::constants;
+use super::super::strategy::ButtonVariantConfigBuilder;
+use crate::button_strategy;
+use iced::Color;
 
-/// Strategy for text button variant (low emphasis, text-only)
-pub struct TextButtonStrategy;
+button_strategy! {
+    struct TextButtonStrategy;
+    name = "Text";
 
-impl ButtonStyleStrategy for TextButtonStrategy {
-    fn get_styling(
-        &self,
-        state: ButtonState,
-        tokens: &MaterialTokens,
-        colors: &MaterialColors,
-        _elevation: &MaterialElevation,
-        _shapes: &MaterialShapes,
-    ) -> ButtonStyling {
-        // Use on_surface color for text buttons - provides proper contrast on surface backgrounds
-        // Text buttons should use subtle, readable text that works on the app's surface
-        let text_color = colors.on_surface;
-
-        match state {
-            ButtonState::Default => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(text_color),
-            },
-            ButtonState::Hovered => ButtonStyling {
-                background: Background::Color(colors.surface_variant),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Pressed => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.1)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Disabled => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color: ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                ),
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                )),
-            },
-            ButtonState::Focused => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.05)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-        }
-    }
-
-    fn variant_name(&self) -> &'static str {
-        "Text"
+    config = |colors, _elevation, _tokens| {
+        ButtonVariantConfigBuilder::new()
+            .background(Color::TRANSPARENT)
+            .text_color(colors.on_surface)
+            .border(Color::TRANSPARENT, 0.0)
+            .radius(constants::radius::MEDIUM) // Use Material Design medium radius constant
+            .surface_interactions()
+            .build()
     }
 }

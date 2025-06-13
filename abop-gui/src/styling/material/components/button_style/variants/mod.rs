@@ -3,7 +3,7 @@
 //! This module contains the concrete implementations of `ButtonStyleStrategy`
 //! for each Material Design 3 button variant.
 
-use iced::{self, Border, Color, Shadow};
+use iced::{self, Border, Color};
 
 pub mod elevated;
 pub mod fab;
@@ -84,10 +84,4 @@ pub(crate) fn create_button_border(color: Color, width: f32, radius: f32) -> Bor
         width,
         radius: radius.into(),
     }
-}
-
-/// Helper function to create button shadows
-#[allow(dead_code)]
-const fn create_button_shadow(_elevation_level: f32) -> Option<Shadow> {
-    None
 }

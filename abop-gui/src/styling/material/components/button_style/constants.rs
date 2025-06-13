@@ -40,22 +40,22 @@ pub mod sizing {
 
 /// Border radius constants
 pub mod radius {
-    /// Small button radius
-    pub const SMALL: f32 = 20.0;
+    /// Small button radius (Material Design 3 corner small)
+    pub const SMALL: f32 = 8.0;
 
-    /// Medium button radius
-    pub const MEDIUM: f32 = 20.0;
+    /// Medium button radius (Material Design 3 corner medium - default for buttons)
+    pub const MEDIUM: f32 = 12.0;
 
-    /// Large button radius
-    pub const LARGE: f32 = 20.0;
+    /// Large button radius (Material Design 3 corner large)
+    pub const LARGE: f32 = 16.0;
 
-    /// Icon button radius (full circular)
-    pub const ICON: f32 = 50.0;
+    /// Icon button radius (circular/large for better touch targets)
+    pub const ICON: f32 = 20.0;
 
-    /// FAB radius
-    pub const FAB: f32 = 16.0;
+    /// FAB radius (Material Design 3 corner large)
+    pub const FAB: f32 = 28.0;
 
-    /// Extended FAB radius
+    /// Extended FAB radius (Material Design 3 corner large)
     pub const EXTENDED_FAB: f32 = 16.0;
 }
 
@@ -117,4 +117,13 @@ pub mod animation {
 
     /// Slow transition for complex animations
     pub const SLOW: u64 = 300;
+}
+
+/// Special opacity values for specific components
+pub mod opacity {
+    /// FAB disabled surface opacity (Material Design 3)
+    pub const FAB_DISABLED_SURFACE: f32 = 0.12;
+
+    // Note: HOVER and PRESSED constants removed to avoid duplication
+    // Use MaterialTokens::states.opacity.hover and MaterialTokens::states.opacity.pressed instead
 }

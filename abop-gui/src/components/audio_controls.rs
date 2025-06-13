@@ -57,27 +57,29 @@ impl AudioControls {
         if !selected_ids.is_empty() {
             let selected_count = selected_ids.len();
             content =
-                content.push(text(format!("{selected_count} audiobook(s) selected")).size(16));            // Add process button
+                content.push(text(format!("{selected_count} audiobook(s) selected")).size(16)); // Add process button
             content = content.push(
                 ButtonBuilder::new(material_tokens)
                     .variant(ButtonVariant::Filled)
                     .label("Process Selected")
                     .on_press(Message::ProcessSelected)
                     .build()
-                    .unwrap()
+                    .unwrap(),
             );
 
             // Add preview button if playing
-            match player_state {                PlayerState::Playing => {
+            match player_state {
+                PlayerState::Playing => {
                     content = content.push(
                         ButtonBuilder::new(material_tokens)
                             .variant(ButtonVariant::Outlined)
                             .label("Stop Preview")
                             .on_press(Message::StopPlayback)
                             .build()
-                            .unwrap()
+                            .unwrap(),
                     );
-                }                PlayerState::Stopped => {
+                }
+                PlayerState::Stopped => {
                     if selected_count == 1 {
                         content = content.push(
                             ButtonBuilder::new(material_tokens)
@@ -85,17 +87,18 @@ impl AudioControls {
                                 .label("Preview Audio")
                                 .on_press(Message::StartPlayback)
                                 .build()
-                                .unwrap()
+                                .unwrap(),
                         );
                     }
-                }                PlayerState::Paused => {
+                }
+                PlayerState::Paused => {
                     content = content.push(
                         ButtonBuilder::new(material_tokens)
                             .variant(ButtonVariant::Outlined)
                             .label("Resume Preview")
                             .on_press(Message::StartPlayback)
                             .build()
-                            .unwrap()
+                            .unwrap(),
                     );
                 }
             }
