@@ -105,6 +105,171 @@ pub struct ButtonVariantConfig {
     pub custom_pressed_background: Option<Color>,
 }
 
+/// Builder for creating button variant configurations
+#[derive(Debug, Clone)]
+pub struct ButtonVariantConfigBuilder {
+    config: ButtonVariantConfig,
+}
+
+impl ButtonVariantConfigBuilder {
+    /// Create a new config builder with sensible defaults
+    pub fn new() -> Self {
+        Self {
+            config: ButtonVariantConfig {
+                base_background: Color::TRANSPARENT,
+                text_color: Color::BLACK,
+                icon_color: Color::BLACK,
+                border_color: Color::TRANSPARENT,
+                border_width: 0.0,
+                border_radius: 12.0, // Material Design medium radius
+                shadow: None,
+                uses_surface_on_interaction: false,
+                custom_hover_background: None,
+                custom_pressed_background: None,
+            },
+        }
+    }
+
+    /// Set the base background color
+    pub fn background(mut self, color: Color) -> Self {
+        self.config.base_background = color;
+        self
+    }
+
+    /// Set text and icon colors (convenience method)
+    pub fn text_color(mut self, color: Color) -> Self {
+        self.config.text_color = color;
+        self.config.icon_color = color;
+        self
+    }
+
+    /// Set border properties
+    pub fn border(mut self, color: Color, width: f32) -> Self {
+        self.config.border_color = color;
+        self.config.border_width = width;
+        self
+    }
+
+    /// Set border radius
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.config.border_radius = radius;
+        self
+    }
+
+    /// Set shadow
+    pub fn shadow(mut self, shadow: iced::Shadow) -> Self {
+        self.config.shadow = Some(shadow);
+        self
+    }
+
+    /// Enable surface color interactions
+    pub fn surface_interactions(mut self) -> Self {
+        self.config.uses_surface_on_interaction = true;
+        self
+    }
+
+    /// Set custom hover background
+    pub fn hover_background(mut self, color: Color) -> Self {
+        self.config.custom_hover_background = Some(color);
+        self
+    }
+
+    /// Set custom pressed background
+    pub fn pressed_background(mut self, color: Color) -> Self {
+        self.config.custom_pressed_background = Some(color);
+        self
+    }
+
+    /// Build the final configuration
+    pub fn build(self) -> ButtonVariantConfig {
+        self.config
+    }
+}
+
+impl Default for ButtonVariantConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Macro to generate button strategy implementations with reduced boilerplate
+#[macro_export]
+macro_rules! button_strategy {
+    (
+        struct $strategy_name:ident;
+        name = $variant_name:literal;
+        
+        config = |$colors:ident, $elevation:ident| {
+            $($config_body:tt)*
+        }
+        
+        $(supports_elevation = $supports_elevation:expr;)?
+        $(has_border = $has_border:expr;)?
+        $(base_elevation = $base_elevation:expr;)?
+        $(
+            custom_styling = |$state:ident, $config:ident, $tokens:ident, $colors_custom:ident| {
+                $($custom_body:tt)*
+            }
+        )?
+    ) => {
+        /// Generated button strategy implementation
+        pub struct $strategy_name;
+
+        impl $crate::styling::material::components::button_style::strategy::ButtonStyleStrategy for $strategy_name {
+            fn get_styling(
+                &self,
+                state: $crate::styling::material::components::button_style::strategy::ButtonState,
+                tokens: &$crate::styling::material::MaterialTokens,
+                colors: &$crate::styling::material::MaterialColors,
+                elevation: &$crate::styling::material::MaterialElevation,
+                _shapes: &$crate::styling::material::MaterialShapes,
+            ) -> $crate::styling::material::components::button_style::strategy::ButtonStyling {
+                let $colors = colors;
+                let $elevation = elevation;
+                let config = {
+                    $($config_body)*
+                };
+
+                $(
+                    // Custom styling override if provided
+                    let $state = state;
+                    let $config = &config;
+                    let $tokens = tokens;
+                    let $colors_custom = colors;
+                    $($custom_body)*
+                )?
+                
+                #[allow(unreachable_code)]
+                $crate::styling::material::components::button_style::strategy::ButtonStateHandler::apply_state_styling(
+                    state, &config, tokens, colors
+                )
+            }
+
+            fn variant_name(&self) -> &'static str {
+                $variant_name
+            }
+
+            $(
+                fn supports_elevation(&self) -> bool {
+                    $supports_elevation
+                }
+            )?
+
+            $(
+                fn has_border(&self) -> bool {
+                    $has_border
+                }
+            )?
+
+            $(
+                fn base_elevation(&self) -> f32 {
+                    $base_elevation
+                }
+            )?
+        }
+    };
+}
+
 /// Common state handling logic for all button variants
 pub struct ButtonStateHandler;
 
