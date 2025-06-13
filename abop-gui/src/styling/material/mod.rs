@@ -34,13 +34,11 @@ pub mod themes;
 pub mod tokens;
 
 // Phase 3: Unified Material Design 3 System
-pub mod color_utilities; // Advanced color utilities
 pub mod enhanced_tokens; // Complete token system
 pub mod migration_guide;
 pub mod unified_colors; // THE unified color system // Migration helpers
 
 // Re-export the UNIFIED Material Design types (Phase 3)
-pub use color_utilities::{AccessibilityReport, ColorUtilities, ThemeUtilities};
 pub use components::*;
 pub use elevation::{ElevationLevel, MaterialElevation};
 pub use enhanced_tokens::EnhancedMaterialTokens;
