@@ -45,7 +45,11 @@ impl DynamicTheme {
         let tokens = match mode {
             ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
             ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
-            ThemeMode::System | ThemeMode::MaterialDynamic => MaterialTokens::default(),
+            ThemeMode::System => {
+                // System detection - default to dark for now
+                MaterialTokens::dark()
+            }
+            ThemeMode::MaterialDynamic => MaterialTokens::default(),
         };
 
         Self {
@@ -77,10 +81,7 @@ impl DynamicTheme {
                 // System detection - default to dark for now
                 MaterialTokens::dark()
             }
-            ThemeMode::MaterialDynamic => {
-                // Dynamic Material theme
-                MaterialTokens::default()
-            }
+            ThemeMode::MaterialDynamic => MaterialTokens::default(),
         };
     }
 
@@ -117,10 +118,7 @@ impl DynamicTheme {
                 // System detection - default to dark for now
                 MaterialTokens::dark()
             }
-            ThemeMode::MaterialDynamic => {
-                // Dynamic Material theme preview
-                MaterialTokens::default()
-            }
+            ThemeMode::MaterialDynamic => MaterialTokens::default(),
         }
     }
 }
