@@ -75,7 +75,7 @@ mod tests {
         
         assert_eq!(
             ButtonError::InvalidState("button is disabled").to_string(),
-            "Invalid button state: button is disabled"
+            "Invalid state: button is disabled"
         );
     }
 }

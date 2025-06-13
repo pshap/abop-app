@@ -187,8 +187,11 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// - The button has neither a label nor an icon
     /// - The button is enabled but no `on_press` handler is provided
     pub fn build(self) -> ButtonResult<Element<'a, M>> {
-        // Validate button configuration
-        if self.label.is_none() && self.icon.is_none() {
+        // Validate button configuration - check for both None and empty string
+        let has_label = self.label.map_or(false, |label| !label.is_empty());
+        let has_icon = self.icon.is_some();
+        
+        if !has_label && !has_icon {
             return Err(ButtonError::MissingLabelAndIcon);
         }
 
