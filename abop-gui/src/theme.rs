@@ -387,8 +387,7 @@ fn material_light_theme() -> IcedTheme {
 /// Create Material Design dynamic theme using seed color generation
 #[allow(dead_code)]
 fn material_dynamic_theme() -> IcedTheme {
-    // Use a default seed color for demonstration
-    let seed_color = Color::from_rgb(0.5, 0.2, 0.8);
-    let colors = MaterialColors::from_seed(seed_color, true);
+    // Use the default Material seed color
+    let colors = MaterialColors::from_seed(DEFAULT_MATERIAL_SEED_COLOR, true);
     material_theme_from_colors(&colors)
 }

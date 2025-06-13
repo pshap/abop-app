@@ -64,15 +64,18 @@ pub struct SemanticColors {
 
 impl Default for SemanticColors {
     fn default() -> Self {
+        // Use Material Design default colors for better consistency
+        let material_colors = crate::styling::material::MaterialColors::light_default();
+        
         Self {
-            primary: Color::from_rgb(0.2, 0.4, 0.8),    // Blue
-            secondary: Color::from_rgb(0.8, 0.2, 0.4),  // Pink
-            success: Color::from_rgb(0.2, 0.8, 0.4),    // Green
-            warning: Color::from_rgb(0.9, 0.7, 0.2),    // Amber
-            error: Color::from_rgb(0.9, 0.2, 0.2),      // Red
-            info: Color::from_rgb(0.2, 0.6, 0.9),       // Light blue
-            surface: Color::from_rgb(1.0, 1.0, 1.0),    // White
-            on_surface: Color::from_rgb(0.1, 0.1, 0.1), // Nearly black
+            primary: material_colors.primary.base,
+            secondary: material_colors.secondary.base,
+            success: material_colors.tertiary.base,    // Use tertiary for success (green)
+            warning: material_colors.error.container,  // Use error container for warning
+            error: material_colors.error.base,
+            info: material_colors.primary.container,   // Use primary container for info
+            surface: material_colors.surface,
+            on_surface: material_colors.on_surface,
         }
     }
 }
