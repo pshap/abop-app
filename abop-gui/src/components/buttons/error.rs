@@ -13,7 +13,7 @@ pub enum ButtonError {
     InvalidConfiguration(&'static str),
     
     /// The requested icon was not found
-    IconNotFound(String),
+    IconNotFound(&'static str),
     
     /// The button variant is not supported for the current operation
     UnsupportedVariant(&'static str),
@@ -45,6 +45,24 @@ impl fmt::Display for ButtonError {
 }
 
 /// A specialized `Result` type for button operations
+/// 
+/// This is a convenience type alias that represents the result of button-related operations.
+/// The success type `T` contains the expected value, while the error type is always `ButtonError`.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use abop_gui::components::buttons::{ButtonResult, ButtonError};
+/// 
+/// fn create_button_element() -> ButtonResult<SomeButtonType> {
+///     // ... button creation logic
+///     if icon_exists {
+///         Ok(button)
+///     } else {
+///         Err(ButtonError::IconNotFound("invalid_icon"))
+///     }
+/// }
+/// ```
 pub type ButtonResult<T> = Result<T, ButtonError>;
 
 #[cfg(test)]
@@ -64,7 +82,7 @@ mod tests {
         );
         
         assert_eq!(
-            ButtonError::IconNotFound("missing_icon".to_string()).to_string(),
+            ButtonError::IconNotFound("missing_icon").to_string(),
             "Icon not found: missing_icon"
         );
         

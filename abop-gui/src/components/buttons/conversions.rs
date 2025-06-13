@@ -63,14 +63,22 @@ mod tests {
             MaterialButtonSize::Small
         );
         
-        // Test using the modern From trait implementations
         assert_eq!(
-            CustomButtonSize::from(MaterialButtonSize::Small),
-            CustomButtonSize::Small
+            CustomButtonSize::from(MaterialButtonSize::Medium),
+            CustomButtonSize::Medium
         );
         assert_eq!(
-            MaterialButtonSize::from(CustomButtonSize::Small),
-            MaterialButtonSize::Small
+            MaterialButtonSize::from(CustomButtonSize::Medium),
+            MaterialButtonSize::Medium
+        );
+        
+        assert_eq!(
+            CustomButtonSize::from(MaterialButtonSize::Large),
+            CustomButtonSize::Large
+        );
+        assert_eq!(
+            MaterialButtonSize::from(CustomButtonSize::Large),
+            MaterialButtonSize::Large
         );
     }
 
@@ -86,14 +94,22 @@ mod tests {
             MaterialIconPosition::Leading
         );
         
-        // Test using the modern From trait implementations
         assert_eq!(
-            CustomIconPosition::from(MaterialIconPosition::Leading),
-            CustomIconPosition::Leading
+            CustomIconPosition::from(MaterialIconPosition::Trailing),
+            CustomIconPosition::Trailing
         );
         assert_eq!(
-            MaterialIconPosition::from(CustomIconPosition::Leading),
-            MaterialIconPosition::Leading
+            MaterialIconPosition::from(CustomIconPosition::Trailing),
+            MaterialIconPosition::Trailing
+        );
+        
+        assert_eq!(
+            CustomIconPosition::from(MaterialIconPosition::Only),
+            CustomIconPosition::Only
+        );
+        assert_eq!(
+            MaterialIconPosition::from(CustomIconPosition::Only),
+            MaterialIconPosition::Only
         );
     }
 }

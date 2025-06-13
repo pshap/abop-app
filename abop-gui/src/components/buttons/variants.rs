@@ -58,11 +58,12 @@ impl Default for IconPosition {
 }
 
 /// Icon size for different button sizes
-pub(crate) fn icon_size(size: ButtonSize) -> f32 {
+pub(crate) fn icon_size(size: ButtonSize) -> crate::components::buttons::icons::IconSize {
+    use crate::components::buttons::icons::IconSize;
     match size {
-        ButtonSize::Small => 18.0,
-        ButtonSize::Medium => 20.0,
-        ButtonSize::Large => 24.0,
+        ButtonSize::Small => IconSize::new_unchecked(18.0),
+        ButtonSize::Medium => IconSize::new_unchecked(20.0),
+        ButtonSize::Large => IconSize::new_unchecked(24.0),
     }
 }
 
@@ -82,8 +83,9 @@ mod tests {
 
     #[test]
     fn test_icon_size() {
-        assert_eq!(icon_size(ButtonSize::Small), 18.0);
-        assert_eq!(icon_size(ButtonSize::Medium), 20.0);
-        assert_eq!(icon_size(ButtonSize::Large), 24.0);
+        use crate::components::buttons::icons::IconSize;
+        assert_eq!(icon_size(ButtonSize::Small), IconSize::new_unchecked(18.0));
+        assert_eq!(icon_size(ButtonSize::Medium), IconSize::new_unchecked(20.0));
+        assert_eq!(icon_size(ButtonSize::Large), IconSize::new_unchecked(24.0));
     }
 }

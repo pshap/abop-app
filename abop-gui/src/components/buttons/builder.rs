@@ -113,10 +113,12 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Set the button's icon
-    pub fn icon(mut self, icon_name: &'a str, position: IconPosition) -> Self {
+    /// 
+    /// Note: The `position` parameter is kept for API compatibility but is currently unused.
+    /// Icon positioning is handled automatically by the button layout logic.
+    pub fn icon(mut self, icon_name: &'a str, _position: IconPosition) -> Self {
         self.icon = Some(IconConfig::new(
             icon_name,
-            position,
             super::variants::icon_size(self.size),
         ));
         self
@@ -127,7 +129,6 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
         self.size = size;
         self.icon = Some(IconConfig::new(
             icon_name,
-            IconPosition::Only,
             super::variants::icon_size(size),
         ));
         self
