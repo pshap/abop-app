@@ -1,11 +1,8 @@
 //! Elevated button variant strategy implementation
 
-use super::super::constants::{elevation, radius};
-use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling};
-use super::create_button_border;
-use crate::styling::color_utils::ColorUtils;
+use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling, ButtonVariantConfig, ButtonStateHandler};
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
-use iced::{Background, Color};
+use iced::Color;
 
 /// Strategy for elevated button variant (high emphasis with shadow)
 pub struct ElevatedButtonStrategy;
@@ -19,55 +16,30 @@ impl ButtonStyleStrategy for ElevatedButtonStrategy {
         material_elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        let base_background = colors.surface_container_low;
-        let text_color = colors.primary.on_base;
+        let config = ButtonVariantConfig {
+            base_background: colors.surface_container_low,
+            text_color: colors.primary.on_base,
+            icon_color: colors.primary.on_base,
+            border_color: Color::TRANSPARENT,
+            border_width: 0.0,
+            border_radius: 12.0, // Medium radius
+            shadow: Some(material_elevation.level1.shadow),
+            uses_surface_on_interaction: false,
+            custom_hover_background: None,
+            custom_pressed_background: None,
+        };
 
+        let mut styling = ButtonStateHandler::apply_state_styling(state, &config, tokens, colors);
+        
+        // Override shadow for different states
         match state {
-            ButtonState::Default => ButtonStyling {
-                background: Background::Color(base_background),
-                text_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: Some(material_elevation.level1.shadow),
-                icon_color: Some(text_color),
-            },
-            ButtonState::Hovered => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(base_background, 0.1)),
-                text_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: Some(material_elevation.level2.shadow),
-                icon_color: Some(text_color),
-            },
-            ButtonState::Pressed => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(base_background, 0.2)),
-                text_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: Some(material_elevation.level1.shadow),
-                icon_color: Some(text_color),
-            },
-            ButtonState::Disabled => ButtonStyling {
-                background: Background::Color(ColorUtils::with_alpha(
-                    base_background,
-                    tokens.states.opacity.disabled,
-                )),
-                text_color: ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                ),
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                )),
-            },
-            ButtonState::Focused => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(base_background, 0.05)),
-                text_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::MEDIUM),
-                shadow: Some(material_elevation.level1.shadow),
-                icon_color: Some(text_color),
-            },
+            ButtonState::Hovered => styling.shadow = Some(material_elevation.level2.shadow),
+            ButtonState::Pressed => styling.shadow = Some(material_elevation.level1.shadow),
+            ButtonState::Disabled => styling.shadow = None,
+            _ => {} // Keep default shadow
         }
+
+        styling
     }
 
     fn variant_name(&self) -> &'static str {
@@ -79,6 +51,6 @@ impl ButtonStyleStrategy for ElevatedButtonStrategy {
     }
 
     fn base_elevation(&self) -> f32 {
-        elevation::LEVEL_1
+        1.0
     }
 }

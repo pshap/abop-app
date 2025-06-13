@@ -1,11 +1,8 @@
 //! Outlined button variant strategy implementation
 
-use super::super::constants::{border, radius};
-use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling};
-use super::create_button_border;
-use crate::styling::color_utils::ColorUtils;
+use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling, ButtonVariantConfig, ButtonStateHandler};
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
-use iced::{Background, Color};
+use iced::Color;
 
 /// Strategy for outlined button variant (medium emphasis with border)
 pub struct OutlinedButtonStrategy;
@@ -19,62 +16,20 @@ impl ButtonStyleStrategy for OutlinedButtonStrategy {
         _elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        // Use on_surface color for outlined buttons - provides proper contrast on surface backgrounds
-        // Outlined buttons should use readable text that works well on the app's surface
-        let text_color = colors.on_surface;
-        let border_color = colors.outline;
+        let config = ButtonVariantConfig {
+            base_background: Color::TRANSPARENT,
+            text_color: colors.on_surface,
+            icon_color: colors.on_surface,
+            border_color: colors.outline,
+            border_width: 1.0,
+            border_radius: 12.0, // Medium radius
+            shadow: None,
+            uses_surface_on_interaction: true, // Uses surface colors on hover/press
+            custom_hover_background: None,
+            custom_pressed_background: None,
+        };
 
-        match state {
-            ButtonState::Default => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color,
-                border: create_button_border(border_color, border::STANDARD, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(text_color),
-            },
-            ButtonState::Hovered => ButtonStyling {
-                background: Background::Color(colors.surface_variant),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(border_color, border::STANDARD, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Pressed => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.1)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(border_color, border::STANDARD, radius::MEDIUM),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Disabled => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color: ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                ),
-                border: create_button_border(
-                    ColorUtils::with_alpha(colors.on_surface, tokens.states.opacity.disabled),
-                    border::STANDARD,
-                    radius::MEDIUM,
-                ),
-                shadow: None,
-                icon_color: Some(ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                )),
-            },
-            ButtonState::Focused => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.05)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(
-                    colors.primary.base,
-                    border::FOCUS_RING,
-                    radius::MEDIUM,
-                ),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-        }
+        ButtonStateHandler::apply_state_styling(state, &config, tokens, colors)
     }
 
     fn variant_name(&self) -> &'static str {

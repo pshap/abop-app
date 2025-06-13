@@ -1,11 +1,8 @@
 //! Icon button variant strategy implementation
 
-use super::super::constants::radius;
-use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling};
-use super::create_button_border;
-use crate::styling::color_utils::ColorUtils;
+use super::super::strategy::{ButtonState, ButtonStyleStrategy, ButtonStyling, ButtonVariantConfig, ButtonStateHandler};
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
-use iced::{Background, Color};
+use iced::Color;
 
 /// Strategy for icon button variant (compact, icon-only)
 pub struct IconButtonStrategy;
@@ -19,51 +16,20 @@ impl ButtonStyleStrategy for IconButtonStrategy {
         _elevation: &MaterialElevation,
         _shapes: &MaterialShapes,
     ) -> ButtonStyling {
-        let icon_color = colors.on_surface;
+        let config = ButtonVariantConfig {
+            base_background: Color::TRANSPARENT,
+            text_color: colors.on_surface,
+            icon_color: colors.on_surface,
+            border_color: Color::TRANSPARENT,
+            border_width: 0.0,
+            border_radius: 20.0, // Icon radius (typically larger for circular icons)
+            shadow: None,
+            uses_surface_on_interaction: true, // Uses surface colors on hover/press
+            custom_hover_background: None,
+            custom_pressed_background: None,
+        };
 
-        match state {
-            ButtonState::Default => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color: icon_color,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::ICON),
-                shadow: None,
-                icon_color: Some(icon_color),
-            },
-            ButtonState::Hovered => ButtonStyling {
-                background: Background::Color(colors.surface_variant),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::ICON),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Pressed => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.1)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::ICON),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-            ButtonState::Disabled => ButtonStyling {
-                background: Background::Color(Color::TRANSPARENT),
-                text_color: ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                ),
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::ICON),
-                shadow: None,
-                icon_color: Some(ColorUtils::with_alpha(
-                    colors.on_surface,
-                    tokens.states.opacity.disabled,
-                )),
-            },
-            ButtonState::Focused => ButtonStyling {
-                background: Background::Color(ColorUtils::darken(colors.surface_variant, 0.05)),
-                text_color: colors.on_surface_variant,
-                border: create_button_border(Color::TRANSPARENT, 0.0, radius::ICON),
-                shadow: None,
-                icon_color: Some(colors.on_surface_variant),
-            },
-        }
+        ButtonStateHandler::apply_state_styling(state, &config, tokens, colors)
     }
 
     fn variant_name(&self) -> &'static str {
