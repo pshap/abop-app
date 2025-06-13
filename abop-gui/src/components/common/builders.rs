@@ -298,15 +298,15 @@ pub fn primary_button_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .variant(crate::components::buttons::ButtonVariant::Filled)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build primary button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .variant(crate::components::buttons::ButtonVariant::Filled)
+            .on_press(on_press)
+            .build(),
+        "primary",
+        Some(label)
+    )
 }
 
 /// Creates a semantic secondary button using the builder pattern
@@ -322,15 +322,15 @@ pub fn secondary_button_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .variant(crate::components::buttons::ButtonVariant::Outlined)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build secondary button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .variant(crate::components::buttons::ButtonVariant::Outlined)
+            .on_press(on_press)
+            .build(),
+        "secondary",
+        Some(label)
+    )
 }
 
 /// Creates a semantic tertiary button using the builder pattern
@@ -346,15 +346,15 @@ pub fn tertiary_button<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .variant(crate::components::buttons::ButtonVariant::Text)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build tertiary button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .variant(crate::components::buttons::ButtonVariant::Text)
+            .on_press(on_press)
+            .build(),
+        "tertiary",
+        Some(label)
+    )
 }
 
 /// Creates a primary button with icon using the builder pattern
@@ -372,16 +372,16 @@ pub fn primary_button_with_icon_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .icon(icon_name, icon_position.into())
-        .variant(crate::components::buttons::ButtonVariant::Filled)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build primary icon button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .icon(icon_name, icon_position.into())
+            .variant(crate::components::buttons::ButtonVariant::Filled)
+            .on_press(on_press)
+            .build(),
+        "primary icon",
+        Some(label)
+    )
 }
 
 /// Creates a secondary button with icon using the builder pattern
@@ -399,16 +399,16 @@ pub fn secondary_button_with_icon_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .icon(icon_name, icon_position.into())
-        .variant(crate::components::buttons::ButtonVariant::Outlined)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build secondary icon button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .icon(icon_name, icon_position.into())
+            .variant(crate::components::buttons::ButtonVariant::Outlined)
+            .on_press(on_press)
+            .build(),
+        "secondary icon",
+        Some(label)
+    )
 }
 
 /// Creates a tertiary button with icon using the builder pattern
@@ -426,16 +426,16 @@ pub fn tertiary_button_with_icon<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .label(label)
-        .icon(icon_name, icon_position.into())
-        .variant(crate::components::buttons::ButtonVariant::Text)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build tertiary icon button: {}", e);
-            iced::widget::Text::new(label).into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .label(label)
+            .icon(icon_name, icon_position.into())
+            .variant(crate::components::buttons::ButtonVariant::Text)
+            .on_press(on_press)
+            .build(),
+        "tertiary icon",
+        Some(label)
+    )
 }
 
 /// Creates an icon-only button using the builder pattern
@@ -466,15 +466,15 @@ pub fn icon_button_semantic<'a, M: Clone + 'a>(
         }
     };
     
-    crate::components::buttons::button(tokens)
-        .icon_only(icon_name, size.into())
-        .variant(variant)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build icon button: {}", e);
-            iced::widget::Text::new("").into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .icon_only(icon_name, size.into())
+            .variant(variant)
+            .on_press(on_press)
+            .build(),
+        "icon",
+        Some("")
+    )
 }
 
 /// Creates a filled icon button using the builder pattern
@@ -491,15 +491,15 @@ pub fn filled_icon_button_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .icon_only(icon_name, size.into())
-        .variant(crate::components::buttons::ButtonVariant::Filled)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build filled icon button: {}", e);
-            iced::widget::Text::new("").into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .icon_only(icon_name, size.into())
+            .variant(crate::components::buttons::ButtonVariant::Filled)
+            .on_press(on_press)
+            .build(),
+        "filled icon",
+        Some("")
+    )
 }
 
 /// Creates a filled tonal icon button using the builder pattern
@@ -516,15 +516,15 @@ pub fn filled_tonal_icon_button_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .icon_only(icon_name, size.into())
-        .variant(crate::components::buttons::ButtonVariant::FilledTonal)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build filled tonal icon button: {}", e);
-            iced::widget::Text::new("").into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .icon_only(icon_name, size.into())
+            .variant(crate::components::buttons::ButtonVariant::FilledTonal)
+            .on_press(on_press)
+            .build(),
+        "filled tonal icon",
+        Some("")
+    )
 }
 
 /// Creates an outlined icon button using the builder pattern
@@ -541,15 +541,15 @@ pub fn outlined_icon_button_semantic<'a, M: Clone + 'a>(
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    crate::components::buttons::button(tokens)
-        .icon_only(icon_name, size.into())
-        .variant(crate::components::buttons::ButtonVariant::Outlined)
-        .on_press(on_press)
-        .build()
-        .unwrap_or_else(|e| {
-            log::warn!("Failed to build outlined icon button: {}", e);
-            iced::widget::Text::new("").into()
-        })
+    crate::components::buttons::create_button(
+        || crate::components::buttons::button(tokens)
+            .icon_only(icon_name, size.into())
+            .variant(crate::components::buttons::ButtonVariant::Outlined)
+            .on_press(on_press)
+            .build(),
+        "outlined icon",
+        Some("")
+    )
 }
 
 /// Creates a Material Design 3 button with an icon using the proper Widget implementation.

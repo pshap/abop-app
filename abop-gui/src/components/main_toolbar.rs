@@ -45,18 +45,16 @@ impl MainToolbar {
                 .width(Length::Fixed(material_tokens.sizing().app_title_width))
                 .align_x(iced::alignment::Horizontal::Left)
                 .center_y(Length::Fill),
+        );        // Directory controls section
+        let folder_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium.into())
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
+                .build(),
+            "folder",
+            Some("")
         );
-
-        // Directory controls section
-        let folder_button = buttons::button(material_tokens)
-            .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium.into())
-            .variant(ButtonVariant::FilledTonal)
-            .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build folder button: {}", e);
-                iced::widget::Text::new("").into()
-            });
 
         toolbar = toolbar.push(folder_button);
 
@@ -82,51 +80,45 @@ impl MainToolbar {
             .padding([0.0, 8.0])
             .height(Length::Fill)
             .center_y(Length::Fill),
+        );        // Scan button with text
+        let scan_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .label("Scan")
+                .variant(ButtonVariant::Filled)
+                .on_press(Message::ExecuteCommand(Command::ScanLibrary {
+                    library_path: current_path.to_path_buf(),
+                }))
+                .build(),
+            "scan",
+            Some("Scan")
         );
 
-        // Scan button with text
-        let scan_button = buttons::button(material_tokens)
-            .label("Scan")
-            .variant(ButtonVariant::Filled)
-            .on_press(Message::ExecuteCommand(Command::ScanLibrary {
-                library_path: current_path.to_path_buf(),
-            }))
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build scan button: {}", e);
-                iced::widget::Text::new("Scan").into()
-            });
-
-        toolbar = toolbar.push(scan_button);
-
-        // Recent directories dropdown if available
+        toolbar = toolbar.push(scan_button);        // Recent directories dropdown if available
         if !recent_dirs.is_empty() {
-            let recent_button = buttons::button(material_tokens)
-                .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium.into())
-                .variant(ButtonVariant::FilledTonal)
-                .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
-                .build()
-                .unwrap_or_else(|e| {
-                    log::warn!("Failed to build recent button: {}", e);
-                    iced::widget::Text::new("").into()
-                });
+            let recent_button = buttons::create_button(
+                || buttons::button(material_tokens)
+                    .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium.into())
+                    .variant(ButtonVariant::FilledTonal)
+                    .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
+                    .build(),
+                "recent",
+                Some("")
+            );
 
             toolbar = toolbar.push(recent_button);
         }
 
         // Add a flexible spacer to push settings button to the right
-        toolbar = toolbar.push(Space::with_width(Length::Fill));
-
-        // Settings button with icon - using filled variant
-        let settings_button = buttons::button(material_tokens)
-            .icon_only("gear", buttons::variants::ButtonSize::Medium)
-            .variant(ButtonVariant::FilledTonal)
-            .on_press(Message::ShowSettings)
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build settings button: {}", e);
-                iced::widget::Text::new("").into()
-            });
+        toolbar = toolbar.push(Space::with_width(Length::Fill));        // Settings button with icon - using filled variant
+        let settings_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .icon_only("gear", buttons::variants::ButtonSize::Medium)
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(Message::ShowSettings)
+                .build(),
+            "settings",
+            Some("")
+        );
 
         // Add padding and center the button
         toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));
