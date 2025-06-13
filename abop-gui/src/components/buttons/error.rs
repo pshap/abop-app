@@ -26,6 +26,9 @@ pub enum ButtonError {
 
     /// The button state is invalid
     InvalidState(&'static str),
+
+    /// The icon position is invalid for the current button configuration
+    InvalidIconPosition,
 }
 
 impl std::error::Error for ButtonError {}
@@ -44,6 +47,9 @@ impl fmt::Display for ButtonError {
             }
             ButtonError::MissingOnPress => write!(f, "Button must have an on_press handler"),
             ButtonError::InvalidState(msg) => write!(f, "Invalid state: {}", msg),
+            ButtonError::InvalidIconPosition => {
+                write!(f, "Invalid icon position: IconPosition::Only cannot be used with both label and icon")
+            }
         }
     }
 }

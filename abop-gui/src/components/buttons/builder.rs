@@ -182,6 +182,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// Returns `ButtonError` if:
     /// - The button has neither a label nor an icon
     /// - The button is enabled but no `on_press` handler is provided
+    /// - The button has an invalid configuration (e.g., IconPosition::Only with both label and icon)
     pub fn build(self) -> ButtonResult<Element<'a, M>> {
         // Validate button configuration - check for both None and empty string
         let has_label = self.label.map_or(false, |label| !label.is_empty());
@@ -193,6 +194,13 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
         if !self.disabled && self.on_press.is_none() {
             return Err(ButtonError::MissingOnPress);
+        }
+
+        // Validate icon position early
+        if let (Some(label), Some(icon)) = (&self.label, &self.icon) {
+            if icon.position == IconPosition::Only && !label.is_empty() {
+                return Err(ButtonError::InvalidIconPosition);
+            }
         }
 
         // Create the button content based on what's available (icon, label, or both)
@@ -221,7 +229,8 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                         .align_y(Alignment::Center)
                         .into(),
                     IconPosition::Only => {
-                        panic!("Invalid state: IconPosition::Only used with both label and icon");
+                        // This should never happen due to early validation in icon() and label() methods
+                        return Err(ButtonError::InvalidIconPosition);
                     }
                 };
 
@@ -483,5 +492,19 @@ mod tests {
             .build();
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_icon_position() {
+        let tokens = MaterialTokens::default();
+
+        // Test setting IconPosition::Only when label is already present
+        let result = ButtonBuilder::new(&tokens)
+            .label("Test")
+            .icon("favorite", IconPosition::Only)
+            .on_press(TestMessage::Clicked)
+            .build();
+
+        assert!(matches!(result, Err(ButtonError::InvalidIconPosition)));
     }
 }
