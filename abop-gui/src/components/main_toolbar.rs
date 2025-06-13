@@ -45,10 +45,12 @@ impl MainToolbar {
                 .width(Length::Fixed(material_tokens.sizing().app_title_width))
                 .align_x(iced::alignment::Horizontal::Left)
                 .center_y(Length::Fill),
-        );        // Directory controls section
+        );
+        
+        // Directory controls section
         let folder_button = buttons::create_button(
             || buttons::button(material_tokens)
-                .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium.into())
+                .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium)
                 .variant(ButtonVariant::FilledTonal)
                 .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
                 .build(),
@@ -80,7 +82,9 @@ impl MainToolbar {
             .padding([0.0, 8.0])
             .height(Length::Fill)
             .center_y(Length::Fill),
-        );        // Scan button with text
+        );
+        
+        // Scan button with text
         let scan_button = buttons::create_button(
             || buttons::button(material_tokens)
                 .label("Scan")
@@ -92,12 +96,14 @@ impl MainToolbar {
             "scan",
             Some("Scan")
         );
+        
+        toolbar = toolbar.push(scan_button);
 
-        toolbar = toolbar.push(scan_button);        // Recent directories dropdown if available
+        // Recent directories dropdown if available
         if !recent_dirs.is_empty() {
             let recent_button = buttons::create_button(
                 || buttons::button(material_tokens)
-                    .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium.into())
+                    .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium)
                     .variant(ButtonVariant::FilledTonal)
                     .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
                     .build(),
@@ -109,10 +115,12 @@ impl MainToolbar {
         }
 
         // Add a flexible spacer to push settings button to the right
-        toolbar = toolbar.push(Space::with_width(Length::Fill));        // Settings button with icon - using filled variant
+        toolbar = toolbar.push(Space::with_width(Length::Fill));
+
+        // Settings button with icon - using filled variant
         let settings_button = buttons::create_button(
             || buttons::button(material_tokens)
-                .icon_only("gear", buttons::variants::ButtonSize::Medium)
+                .icon_only("gear", ButtonSize::Medium)
                 .variant(ButtonVariant::FilledTonal)
                 .on_press(Message::ShowSettings)
                 .build(),
@@ -121,9 +129,7 @@ impl MainToolbar {
         );
 
         // Add padding and center the button
-        toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));
-
-        // Wrap toolbar in container with unified toolbar height
+        toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));        // Wrap toolbar in container with unified toolbar height
         container(
             container(toolbar)
                 .width(Length::Fill)
