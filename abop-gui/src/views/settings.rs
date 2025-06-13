@@ -108,8 +108,12 @@ where
         .size(ComponentSize::Medium)
         .build()
         .unwrap_or_else(|_| {
-            // Fallback to off state if build fails
-            Switch::off().build().expect("Default switch should build")
+            // Fallback to a basic switch without customization
+            // This should never fail as it uses minimal configuration
+            Switch::off().build().unwrap_or_else(|_| {
+                // Ultimate fallback - create a completely default switch
+                Switch::default()
+            })
         });
     
     // Use static MaterialColors to solve lifetime issues

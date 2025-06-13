@@ -66,8 +66,27 @@ pub mod icon_names {
 }
 
 /// Creates an icon with the specified size
-/// 
+///
 /// This is the base function for all icon creation - other functions are just convenience wrappers.
+///
+/// # Arguments
+/// * `icon_name` - The name of the FontAwesome icon to display
+/// * `size` - The size of the icon in pixels
+///
+/// # Note
+/// For consistent UI, prefer using the predefined size functions unless you have a specific need for custom sizing.
+/// Sizes should typically be multiples of 4px (12, 16, 20, 24) to maintain visual harmony.
+///
+/// # Examples
+/// ```rust
+/// // Prefer predefined sizes:
+/// let icon = small_icon("home");      // 12px
+/// let icon = medium_icon("search");   // 16px
+/// let icon = large_icon("settings");  // 20px
+/// 
+/// // Only use sized_icon for custom requirements:
+/// let icon = sized_icon("custom", 28.0);
+/// ```
 #[must_use]
 pub fn sized_icon<'a>(icon_name: &str, size: f32) -> Element<'a, crate::messages::Message> {
     fa_icon_solid(icon_name).size(size).into()
