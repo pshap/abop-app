@@ -241,3 +241,33 @@ pub fn validate_sample_rate_audiobook(sample_rate: u32) -> Result<u32, DomainCas
         _ => Err(AudioCastError::InvalidSampleRate(sample_rate).into()),
     }
 }
+
+/// Safe conversion from f64 to usize for resampling operations
+///
+/// This function allows truncation of fractional parts, which is normal
+/// and expected behavior for sample position calculations in resampling.
+///
+/// # Errors
+/// Returns an error if:
+/// - The input value is negative
+/// - The input value is not finite (NaN or infinity)
+/// - The input value exceeds the maximum value that can be represented by `usize`
+pub fn safe_f64_to_usize_resampling(value: f64) -> Result<usize, CastError> {
+    if !value.is_finite() {
+        return Err(CastError::NotFinite(value));
+    }
+
+    if value < 0.0 {
+        return Err(CastError::NegativeValue(value.to_string()));
+    }
+
+    if value > usize::MAX as f64 {
+        return Err(CastError::ValueTooLarge(
+            value.to_string(),
+            usize::MAX.to_string(),
+        ));
+    }
+
+    // Truncate fractional part - this is expected for resampling
+    Ok(value as usize)
+}

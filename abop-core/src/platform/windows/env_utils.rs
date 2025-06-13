@@ -142,7 +142,7 @@ mod tests {
     fn test_expand_env_vars() {
         // Set up test environment variables with unique names to avoid conflicts
         let test_var = format!("TEST_VAR_{}", std::process::id());
-        
+
         // Note: Using unsafe blocks as env::set_var/remove_var are unsafe in Rust 1.80+
         // This is acceptable in tests for controlled environment manipulation
         unsafe {
@@ -156,7 +156,7 @@ mod tests {
             "C:\\Users\\testuser\\Documents"
         );
 
-        // Test $env:VAR syntax  
+        // Test $env:VAR syntax
         assert_eq!(
             expand_env_vars("C:\\Users\\$env:USERNAME\\Documents").unwrap(),
             "C:\\Users\\testuser\\Documents"
@@ -167,7 +167,7 @@ mod tests {
             expand_env_vars("%NONEXISTENT%"),
             Err(EnvVarError::NotFound(_))
         ));
-        
+
         // Clean up test environment variables
         // Note: Using unsafe as env::remove_var is unsafe in Rust 1.80+
         unsafe {
@@ -181,7 +181,7 @@ mod tests {
         // Use unique test-specific environment variables to avoid conflicts
         let test_appdata = format!("APPDATA_{}", std::process::id());
         let test_localappdata = format!("LOCALAPPDATA_{}", std::process::id());
-        
+
         // Test with APPDATA set
         // Note: Using unsafe as env::set_var is unsafe in Rust 1.80+
         unsafe {
@@ -189,18 +189,24 @@ mod tests {
         }
         // For testing purposes, we can't directly test the actual function since it uses system vars
         // Instead, we'll test the internal logic by setting and reading our own vars
-        
+
         // Verify environment variable operations work
-        assert_eq!(env::var(&test_appdata).unwrap(), "C:\\Users\\testuser\\AppData\\Roaming");
-        
-        // Test with LOCALAPPDATA set  
+        assert_eq!(
+            env::var(&test_appdata).unwrap(),
+            "C:\\Users\\testuser\\AppData\\Roaming"
+        );
+
+        // Test with LOCALAPPDATA set
         // Note: Using unsafe as env operations are unsafe in Rust 1.80+
         unsafe {
             env::remove_var(&test_appdata);
             env::set_var(&test_localappdata, "C:\\Users\\testuser\\AppData\\Local");
         }
-        assert_eq!(env::var(&test_localappdata).unwrap(), "C:\\Users\\testuser\\AppData\\Local");
-        
+        assert_eq!(
+            env::var(&test_localappdata).unwrap(),
+            "C:\\Users\\testuser\\AppData\\Local"
+        );
+
         // Clean up test environment variables
         // Note: Using unsafe as env::remove_var is unsafe in Rust 1.80+
         unsafe {

@@ -31,8 +31,7 @@ scale_factor = 1.2
 animation_speed = 0.8
 show_tooltips = false
 "#;
-
-    let config: Config = toml::from_str(new_config_toml).unwrap();
+    let config: Config = toml::from_str(new_config_toml).expect("Should parse new config format");
     assert_eq!(config.window.min_width, 1200);
     assert_eq!(config.app.app_name, "Custom ABOP");
     assert_eq!(config.app.max_recent_files, 20);
@@ -75,10 +74,11 @@ fn test_config_serialization_roundtrip() {
     let original = Config::default();
 
     // Serialize to TOML
-    let toml_string = toml::to_string_pretty(&original).unwrap();
+    let toml_string = toml::to_string_pretty(&original).expect("Should serialize config to TOML");
 
     // Deserialize back
-    let deserialized: Config = toml::from_str(&toml_string).unwrap();
+    let deserialized: Config =
+        toml::from_str(&toml_string).expect("Should deserialize config from TOML");
 
     // Should be equal
     assert_eq!(original.window.min_width, deserialized.window.min_width);
@@ -88,7 +88,7 @@ fn test_config_serialization_roundtrip() {
 
 #[test]
 fn test_config_load_save_integration() {
-    let temp_dir = tempdir().unwrap();
+    let temp_dir = tempdir().expect("Should create temporary directory");
     let config_path = temp_dir.path().join("config.toml");
 
     // Create a config with custom values
@@ -97,12 +97,13 @@ fn test_config_load_save_integration() {
     original.ui.scale_factor = 1.5;
 
     // Save to file
-    let contents = toml::to_string_pretty(&original).unwrap();
-    fs::write(&config_path, contents).unwrap();
+    let contents = toml::to_string_pretty(&original).expect("Should serialize config to TOML");
+    fs::write(&config_path, contents).expect("Should write config file");
 
     // Load from file
-    let loaded_contents = fs::read_to_string(&config_path).unwrap();
-    let loaded: Config = toml::from_str(&loaded_contents).unwrap();
+    let loaded_contents = fs::read_to_string(&config_path).expect("Should read config file");
+    let loaded: Config =
+        toml::from_str(&loaded_contents).expect("Should deserialize config from TOML");
 
     assert_eq!(loaded.app.app_name, "Test App");
     assert_eq!(loaded.ui.scale_factor, 1.5);
@@ -171,7 +172,12 @@ fn test_validation_error_details() {
     // Check that error messages are helpful
     let width_error = result.errors.iter().find(|e| e.field == "min_width");
     assert!(width_error.is_some());
-    assert!(width_error.unwrap().suggestion.is_some());
+    assert!(
+        width_error
+            .expect("Should have validation error")
+            .suggestion
+            .is_some()
+    );
 }
 
 #[test]

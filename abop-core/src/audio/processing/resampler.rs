@@ -7,7 +7,9 @@
 // SIMD is used in the resample_buffer_simd function
 
 use super::{
-    casting_utils::safe_conversions::{safe_f64_to_usize_samples, safe_usize_to_f64_audio},
+    casting_utils::safe_conversions::{
+        safe_f64_to_usize_resampling, safe_f64_to_usize_samples, safe_usize_to_f64_audio,
+    },
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
@@ -122,11 +124,9 @@ impl LinearResampler {
             buffer.sample_rate,
             target_rate,
             ratio
-        );
-
-        // Calculate output length with safe conversion
+        ); // Calculate output length with safe conversion
         let input_samples_f64 =
-            safe_usize_to_f64_audio(buffer.data.len())? / f64::from(buffer.channels);
+            safe_usize_to_f64_audio(buffer.data.len()) / f64::from(buffer.channels);
         let output_samples_f64 = input_samples_f64 * ratio;
 
         // Safe conversion to usize with bounds checking
@@ -136,27 +136,46 @@ impl LinearResampler {
         let channels_usize = usize::from(buffer.channels);
         let mut resampled_data = Vec::with_capacity(output_samples * channels_usize);
 
-        // Simple linear resampling
+        // Linear interpolation resampling
         for i in 0..output_samples {
             // Calculate source position with safe bounds checking using f64 for precision
-            let i_f64 = safe_usize_to_f64_audio(i)?;
+            let i_f64 = safe_usize_to_f64_audio(i);
             let pos_f64 = i_f64 * f64::from(buffer.sample_rate) / f64::from(target_rate);
-
-            // Safe conversion with bounds checking
-            let pos = safe_f64_to_usize_samples(pos_f64)?;
+            
+            // Get the integer and fractional parts of the position
+            let pos_floor = pos_f64.floor();
+            let pos_frac = pos_f64 - pos_floor;
+            
+            // Convert to usize for array indexing
+            let pos0 = pos_floor as usize;
+            let pos1 = (pos_floor as usize + 1).min((input_samples_f64 - 1.0) as usize);
 
             // For each channel
             for c in 0..channels_usize {
-                let idx = pos * channels_usize + c;
-                if idx < buffer.data.len() {
-                    resampled_data.push(buffer.data[idx]);
+                // Get the two samples to interpolate between
+                let idx0 = pos0 * channels_usize + c;
+                let idx1 = pos1 * channels_usize + c;
+                
+                // Get sample values with bounds checking
+                let sample0 = if idx0 < buffer.data.len() {
+                    buffer.data[idx0]
                 } else if !buffer.data.is_empty() {
-                    // If past the end, use the last sample
-                    resampled_data.push(*buffer.data.last().unwrap());
+                    *buffer.data.last().unwrap()
                 } else {
-                    // Fallback for empty buffer
-                    resampled_data.push(0.0);
-                }
+                    0.0
+                };
+                
+                let sample1 = if idx1 < buffer.data.len() {
+                    buffer.data[idx1]
+                } else if !buffer.data.is_empty() {
+                    *buffer.data.last().unwrap()
+                } else {
+                    0.0
+                };
+                
+                // Linear interpolation: sample0 + (sample1 - sample0) * pos_frac
+                let interpolated = sample0 + (sample1 - sample0) * pos_frac as f32;
+                resampled_data.push(interpolated);
             }
         }
 

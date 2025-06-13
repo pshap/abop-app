@@ -5,7 +5,7 @@
 
 use super::{
     casting_utils::{
-        safe_conversions::safe_progress,
+        error_conversion::cast_to_audio_error,
         sample_calculations::{safe_duration_to_samples, safe_samples_to_duration},
     },
     config::{SilenceDetectorConfig, SilenceRemovalMode},
@@ -14,6 +14,7 @@ use super::{
     validation::ConfigValidator,
 };
 use crate::audio::AudioBuffer;
+use crate::utils::casting::domain::audio::safe_progress;
 
 /// Silence detection error type
 #[derive(Debug, thiserror::Error)]
@@ -267,10 +268,9 @@ impl SilenceDetector {
         }
 
         let segments = self.detect_silence_segments(buffer)?;
-        let total_silence_samples: usize = segments.iter().map(|s| s.end - s.start).sum();
-
-        // Safe casting for silence percentage calculation
-        let silence_ratio = safe_progress(total_silence_samples, buffer.data.len())?;
+        let total_silence_samples: usize = segments.iter().map(|s| s.end - s.start).sum(); // Safe casting for silence percentage calculation
+        let silence_ratio =
+            safe_progress(total_silence_samples, buffer.data.len()).map_err(cast_to_audio_error)?;
         Ok(silence_ratio * 100.0)
     }
 

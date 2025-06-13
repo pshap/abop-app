@@ -13,6 +13,7 @@
 
 pub mod casting;
 pub mod enhanced;
+pub mod path;
 pub mod size;
 pub mod time;
 pub mod timer;
@@ -20,6 +21,9 @@ pub mod timer;
 // Re-export commonly used utilities (specific items)
 pub use casting::{CastError, CastResult, CastingBuilder};
 pub use enhanced::{audio, database, file, ui};
+pub use path::{
+    extension_matches, normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
+};
 pub use size::format_bytes;
 pub use time::{TimeFormat, format_duration, format_seconds};
 pub use timer::Timer;
