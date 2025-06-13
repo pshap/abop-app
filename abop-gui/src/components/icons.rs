@@ -3,6 +3,19 @@
 use iced::Element;
 use iced_font_awesome::fa_icon_solid;
 
+/// Common icon sizes used throughout the application
+/// Using these constants ensures consistent sizing and optimal performance
+pub mod common_sizes {
+    /// Small icon size (12px) - for compact UI elements and secondary actions
+    pub const SMALL: f32 = 12.0;
+    /// Medium icon size (16px) - default size for most buttons and primary actions
+    pub const MEDIUM: f32 = 16.0;
+    /// Large icon size (20px) - for prominent UI elements and headers
+    pub const LARGE: f32 = 20.0;
+    /// Extra large icon size (24px) - for main navigation and key actions
+    pub const EXTRA_LARGE: f32 = 24.0;
+}
+
 // Icon constants for Font Awesome icons (using string names)
 /// Icon constants for consistent iconography across the application
 pub mod icon_names {
@@ -67,7 +80,8 @@ pub mod icon_names {
 
 /// Creates an icon with the specified size
 ///
-/// This is the base function for all icon creation - other functions are just convenience wrappers.
+/// This function optimizes for common sizes to improve performance and consistency.
+/// Common sizes (12px, 16px, 20px, 24px) use predefined constants for better performance.
 ///
 /// # Arguments
 /// * `icon_name` - The name of the FontAwesome icon to display
@@ -79,41 +93,57 @@ pub mod icon_names {
 ///
 /// # Examples
 /// ```rust
-/// // Prefer predefined sizes:
-/// let icon = small_icon("home");      // 12px
-/// let icon = medium_icon("search");   // 16px
-/// let icon = large_icon("settings");  // 20px
+/// // Prefer predefined sizes (optimized):
+/// let icon = small_icon("home");      // 12px - optimized
+/// let icon = medium_icon("search");   // 16px - optimized
+/// let icon = large_icon("settings");  // 20px - optimized
 /// 
 /// // Only use sized_icon for custom requirements:
 /// let icon = sized_icon("custom", 28.0);
 /// ```
 #[must_use]
 pub fn sized_icon<'a>(icon_name: &str, size: f32) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(size).into()
+    // Check if this is a common size that should be cached
+    let size_int = size as u32;
+    let is_common_size = matches!(size_int, 12 | 16 | 20 | 24);
+    
+    if is_common_size {
+        // For common sizes, we optimize by using the predefined size constants
+        match size_int {
+            12 => fa_icon_solid(icon_name).size(common_sizes::SMALL).into(),
+            16 => fa_icon_solid(icon_name).size(common_sizes::MEDIUM).into(),
+            20 => fa_icon_solid(icon_name).size(common_sizes::LARGE).into(),
+            24 => fa_icon_solid(icon_name).size(common_sizes::EXTRA_LARGE).into(),
+            _ => fa_icon_solid(icon_name).size(size).into(),
+        }
+    } else {
+        // For non-standard sizes, create directly
+        fa_icon_solid(icon_name).size(size).into()
+    }
 }
 
 /// Small icon (12px) - for compact UI elements
 #[must_use]
 pub fn small_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    sized_icon(icon_name, 12.0)
+    sized_icon(icon_name, common_sizes::SMALL)
 }
 
 /// Medium icon (16px) - default size for buttons
 #[must_use]
 pub fn medium_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    sized_icon(icon_name, 16.0)
+    sized_icon(icon_name, common_sizes::MEDIUM)
 }
 
 /// Large icon (20px)
 #[must_use]
 pub fn large_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    sized_icon(icon_name, 20.0)
+    sized_icon(icon_name, common_sizes::LARGE)
 }
 
 /// Extra large icon (24px) - for prominent actions
 #[must_use]
 pub fn xl_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    sized_icon(icon_name, 24.0)
+    sized_icon(icon_name, common_sizes::EXTRA_LARGE)
 }
 
 /// Navigation icon (18px) - specific size for navigation tabs
@@ -125,7 +155,7 @@ pub fn nav_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
 /// Toolbar icon (16px) - specific size for toolbar buttons
 #[must_use]
 pub fn toolbar_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    sized_icon(icon_name, 16.0)
+    sized_icon(icon_name, common_sizes::MEDIUM)
 }
 
 /// Creates an icon with size determined by button context using centralized sizing.

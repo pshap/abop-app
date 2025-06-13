@@ -3,7 +3,9 @@
 //! This module provides shared components that are used across multiple views
 //! and contexts within the application. Currently contains:
 //!
-//! - **progress**: Progress indicators and status components for user feedback
+//! - **progress**: Progress indicators including circular progress bars, linear progress bars,
+//!   and loading spinners for providing visual feedback during asynchronous operations
+//!   and background tasks
 //!
 //! # Design Philosophy
 //! - Follow Material Design 3 specifications for consistency

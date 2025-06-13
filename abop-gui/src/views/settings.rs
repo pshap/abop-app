@@ -86,14 +86,14 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
 }
 
 /// Helper function to create MD3 switches with consistent styling
-fn create_settings_switch<'a, F>(
+fn create_settings_switch<'a, ToggleHandler>(
     label: &'a str,
     state: &'a UiState,
     is_enabled: bool,
-    on_toggle: F,
+    on_toggle: ToggleHandler,
 ) -> Element<'a, Message>
 where
-    F: Fn(SwitchState) -> Message + 'static,
+    ToggleHandler: Fn(SwitchState) -> Message + 'static,
 {
     let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
     let switch_state = if is_enabled {
