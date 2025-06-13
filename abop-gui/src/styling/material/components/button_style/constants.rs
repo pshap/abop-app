@@ -124,11 +124,6 @@ pub mod opacity {
     /// FAB disabled surface opacity (Material Design 3)
     pub const FAB_DISABLED_SURFACE: f32 = 0.12;
     
-    /// Standard hover opacity (Material Design 3)
-    /// This matches MaterialTokens::states.opacity.hover
-    pub const HOVER: f32 = 0.08;
-    
-    /// Standard pressed opacity (Material Design 3)  
-    /// This matches MaterialTokens::states.opacity.pressed
-    pub const PRESSED: f32 = 0.12;
+    // Note: HOVER and PRESSED constants removed to avoid duplication
+    // Use MaterialTokens::states.opacity.hover and MaterialTokens::states.opacity.pressed instead
 }

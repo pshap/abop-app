@@ -9,7 +9,7 @@ button_strategy! {
     struct ElevatedButtonStrategy;
     name = "Elevated";
     
-    config = |colors, elevation| {
+    config = |colors, elevation, _tokens| {
         ButtonVariantConfigBuilder::new()
             .background(colors.surface_container_low)
             .text_color(colors.primary.on_base)

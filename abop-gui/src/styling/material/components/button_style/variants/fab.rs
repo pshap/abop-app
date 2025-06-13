@@ -8,18 +8,18 @@ use iced::Color;
 
 button_strategy! {
     struct FabButtonStrategy;
-    name = "FAB";    config = |colors, elevation| {
+    name = "FAB";    config = |colors, elevation, tokens| {
         let base_background = colors.primary.container;
         let icon_color = colors.primary.on_container;        // FAB uses special hover/press behavior with color blending using Material Design tokens
         let hover_bg = ColorUtils::blend_colors(
             base_background,
             icon_color,
-            constants::opacity::HOVER, // Material Design hover opacity constant
+            tokens.states.opacity.hover, // Use tokens instead of constants
         );
         let pressed_bg = ColorUtils::blend_colors(
             base_background,
             icon_color,
-            constants::opacity::PRESSED, // Material Design pressed opacity constant
+            tokens.states.opacity.pressed, // Use tokens instead of constants
         );
         
         ButtonVariantConfigBuilder::new()

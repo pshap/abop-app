@@ -9,7 +9,7 @@ button_strategy! {
     struct OutlinedButtonStrategy;
     name = "Outlined";
     
-    config = |colors, _elevation| {
+    config = |colors, _elevation, _tokens| {
         ButtonVariantConfigBuilder::new()
             .background(Color::TRANSPARENT)
             .text_color(colors.on_surface)

@@ -4,7 +4,9 @@
 //! to implement their own styling logic while maintaining a consistent interface.
 
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
+use crate::styling::color_utils::ColorUtils;
 use super::constants;
+use super::variants::create_button_border;
 use iced::{Background, Border, Color};
 use std::sync::LazyLock;
 use std::collections::HashMap;
@@ -203,7 +205,7 @@ macro_rules! button_strategy {
         struct $strategy_name:ident;
         name = $variant_name:literal;
         
-        config = |$colors:ident, $elevation:ident| {
+        config = |$colors:ident, $elevation:ident, $tokens:ident| {
             $($config_body:tt)*
         }
         
@@ -230,6 +232,7 @@ macro_rules! button_strategy {
             ) -> $crate::styling::material::components::button_style::strategy::ButtonStyling {
                 let $colors = colors;
                 let $elevation = elevation;
+                let $tokens = tokens;
                 let config = {
                     $($config_body)*
                 };
@@ -277,8 +280,11 @@ macro_rules! button_strategy {
     };
 }
 
-// Performance optimization: Cache for button styling calculations
-// This prevents redundant color calculations and object creation for identical states
+/// Thread-safe cache for button styling calculations to prevent redundant work
+///
+/// Uses RwLock for concurrent access and LazyLock for initialization.
+/// Limited to 1000 entries with basic LRU-like eviction to prevent unbounded growth.
+/// Cache hits avoid expensive color calculations and object allocations.
 static STYLE_CACHE: LazyLock<RwLock<HashMap<ButtonStyleCacheKey, ButtonStyling>>> = 
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -304,6 +310,14 @@ impl ButtonStyleCacheKey {
         config.border_width.to_bits().hash(&mut hasher);
         config.border_radius.to_bits().hash(&mut hasher);
         config.uses_surface_on_interaction.hash(&mut hasher);
+        
+        // Include shadow configuration in cache key
+        if let Some(shadow) = &config.shadow {
+            shadow.offset.x.to_bits().hash(&mut hasher);
+            shadow.offset.y.to_bits().hash(&mut hasher);
+            shadow.blur_radius.to_bits().hash(&mut hasher);
+            Self::hash_color(shadow.color, &mut hasher);
+        }
         
         Self {
             state,
@@ -349,13 +363,19 @@ impl ButtonStateHandler {
         // Calculate styling if not cached
         let styling = Self::calculate_styling(state, config, tokens, colors);
         
-        // Cache the result
-        {
+        // Cache the result with minimized lock duration
+        let should_clear = {
+            let cache = STYLE_CACHE.read();
+            cache.len() > 1000
+        };
+
+        if should_clear {
             let mut cache = STYLE_CACHE.write();
             // Prevent cache from growing indefinitely (simple LRU-like behavior)
-            if cache.len() > 1000 {
-                cache.clear();
-            }
+            cache.clear();
+            cache.insert(cache_key, styling.clone());
+        } else {
+            let mut cache = STYLE_CACHE.write();
             cache.insert(cache_key, styling.clone());
         }
         
@@ -372,9 +392,6 @@ impl ButtonStateHandler {
         tokens: &MaterialTokens,
         colors: &MaterialColors,
     ) -> ButtonStyling {
-        use crate::styling::color_utils::ColorUtils;
-        use super::variants::create_button_border;
-        
         match state {
             ButtonState::Default => ButtonStyling {
                 background: Background::Color(config.base_background),

@@ -7,7 +7,7 @@ use iced::Color;
 
 button_strategy! {
     struct FilledTonalButtonStrategy;
-    name = "FilledTonal";    config = |colors, _elevation| {
+    name = "FilledTonal";    config = |colors, _elevation, _tokens| {
         ButtonVariantConfigBuilder::new()
             .background(colors.secondary.container)
             .text_color(colors.secondary.on_container)
