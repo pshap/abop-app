@@ -113,13 +113,11 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Set the button's icon
-    ///
-    /// Note: The `position` parameter is kept for API compatibility but is currently unused.
-    /// Icon positioning is handled automatically by the button layout logic.
-    pub fn icon(mut self, icon_name: &'a str, _position: IconPosition) -> Self {
+    pub fn icon(mut self, icon_name: &'a str, position: IconPosition) -> Self {
         self.icon = Some(IconConfig::new(
             icon_name,
             super::variants::icon_size(self.size),
+            position,
         ));
         self
     }
@@ -127,7 +125,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// Set the button to be an icon-only button
     pub fn icon_only(mut self, icon_name: &'a str, size: ButtonSize) -> Self {
         self.size = size;
-        self.icon = Some(IconConfig::new(icon_name, super::variants::icon_size(size)));
+        self.icon = Some(IconConfig::new(icon_name, super::variants::icon_size(size), IconPosition::Only));
         self
     }
 
@@ -208,13 +206,31 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
                 let text_element: Element<'a, M> = text(label).into();
 
-                // Create a row with icon and text
-                let row: Element<'a, M> = Row::new()
-                    .spacing(8) // Add spacing between elements
-                    .push(icon_element)
-                    .push(text_element)
-                    .align_y(Alignment::Center)
-                    .into();
+                // Create a row with icon and text in the correct order based on position
+                let row: Element<'a, M> = match icon.position {
+                    IconPosition::Leading => Row::new()
+                        .spacing(8) // Add spacing between elements
+                        .push(icon_element)
+                        .push(text_element)
+                        .align_y(Alignment::Center)
+                        .into(),
+                    IconPosition::Trailing => Row::new()
+                        .spacing(8) // Add spacing between elements
+                        .push(text_element)
+                        .push(icon_element)
+                        .align_y(Alignment::Center)
+                        .into(),
+                    IconPosition::Only => {
+                        // This case shouldn't happen since we have both label and icon,
+                        // but fallback to leading position
+                        Row::new()
+                            .spacing(8)
+                            .push(icon_element)
+                            .push(text_element)
+                            .align_y(Alignment::Center)
+                            .into()
+                    }
+                };
 
                 // Apply sizing and padding if specified
                 let mut container = container(row);

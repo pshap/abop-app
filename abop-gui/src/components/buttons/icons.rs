@@ -1,6 +1,7 @@
 //! Icon-related functionality for buttons
 
 use super::error::{ButtonError, ButtonResult};
+use super::variants::IconPosition;
 use iced::Element;
 
 /// A validated icon size that ensures icons stay within reasonable bounds
@@ -87,15 +88,15 @@ pub(crate) struct IconConfig<'a> {
 
     /// The size of the icon
     pub size: IconSize,
+
+    /// The position of the icon relative to the text
+    pub position: IconPosition,
 }
 
 impl<'a> IconConfig<'a> {
     /// Create a new icon configuration
-    ///
-    /// Note: The IconPosition parameter has been removed as it was unused.
-    /// Icon positioning is now handled by the button layout logic.
-    pub fn new(name: &'a str, size: IconSize) -> Self {
-        Self { name, size }
+    pub fn new(name: &'a str, size: IconSize, position: IconPosition) -> Self {
+        Self { name, size, position }
     }
 
     /// Convert the icon configuration to an element with the given message type
@@ -136,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_icon_config_creation() {
-        let config = IconConfig::new("test-icon", IconSize::MEDIUM);
+        let config = IconConfig::new("test-icon", IconSize::MEDIUM, IconPosition::Leading);
         assert_eq!(config.name, "test-icon");
         assert_eq!(config.size, IconSize::MEDIUM);
     }
