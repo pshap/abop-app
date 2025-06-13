@@ -4,6 +4,9 @@
 //! on specific functionality within the application. All components follow consistent
 //! patterns for theme integration and state management.
 
+/// Re-export of the button components module
+pub mod buttons;
+
 /// About dialog and application information display components
 pub mod about;
 /// Audio playback controls and manipulation widgets
@@ -12,11 +15,9 @@ pub mod audio_controls;
 pub mod audio_toolbar;
 /// Shared components used across multiple views and contexts
 ///
-/// Contains Material Design 3 components organized into submodules:
-/// - buttons: Button components and variants
+/// Contains reusable Material Design 3 components:
 /// - progress: Progress indicators and status components
-/// - sizing: Component dimension constants and converters
-/// - builders: Advanced builder patterns for complex components
+/// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;

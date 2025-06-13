@@ -6,14 +6,13 @@
 use iced::widget::{Space, column, container, row, text};
 use iced::{Element, Length};
 
-use crate::components::common::create_button;
+use crate::components::buttons::builder::ButtonBuilder;
+use crate::components::buttons::variants::ButtonVariant;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::styling::container::dialog::DialogContainerStyles;
-use crate::styling::material::components::widgets::MaterialButtonVariant;
 
 // Import Material Design 3 selection components
-use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection::Switch;
 use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
@@ -71,12 +70,12 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
             // Close button row
             row![
                 Space::new(Length::Fill, 0),
-                create_button(
-                    "Close",
-                    MaterialButtonVariant::Filled,
-                    Message::CloseSettings,
-                    &state.material_tokens,
-                )
+                ButtonBuilder::new(&state.material_tokens)
+                    .label("Close")
+                    .variant(ButtonVariant::Filled)
+                    .on_press(Message::CloseSettings)
+                    .build()
+                    .unwrap_or_else(|_| text("Close").into())
             ]
         ]
         .spacing(state.material_tokens.spacing().md),
@@ -86,102 +85,76 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
     .into()
 }
 
-/// Helper function to create MaterialColors based on theme
-#[allow(dead_code)]
-fn get_material_colors(is_dark: bool) -> MaterialColors {
-    if is_dark {
-        MaterialColors::dark_default()
+/// Helper function to create MD3 switches with consistent styling
+fn create_settings_switch<'a, ToggleHandler>(
+    label: &'a str,
+    state: &'a UiState,
+    is_enabled: bool,
+    on_toggle: ToggleHandler,
+) -> Element<'a, Message>
+where
+    ToggleHandler: Fn(SwitchState) -> Message + 'static,
+{
+    let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
+    let switch_state = if is_enabled {
+        SwitchState::On
     } else {
-        MaterialColors::light_default()
+        SwitchState::Off
+    };
+    
+    // Create Material Design 3 Switch component
+    let md3_switch = Switch::builder(switch_state)
+        .label(label)
+        .size(ComponentSize::Medium)
+        .build()
+        .unwrap_or_else(|_| {
+            // Fallback to a basic switch without customization
+            // This should never fail as it uses minimal configuration
+            Switch::off().build().unwrap_or_else(|_| {
+                // Ultimate fallback - create a completely default switch
+                Switch::default()
+            })
+        });
+    
+    // Use static MaterialColors to solve lifetime issues
+    if is_dark {
+        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
+        md3_switch.view(move |_state| on_toggle(_state), &DARK_COLORS)
+    } else {
+        static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
+            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
+        md3_switch.view(move |_state| on_toggle(_state), &LIGHT_COLORS)
     }
 }
 
 /// Creates a switch for theme toggling using Material Design 3 Switch component
 fn create_theme_switch(state: &UiState) -> Element<'_, Message> {
     let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
-    let switch_state = if is_dark {
-        SwitchState::On
-    } else {
-        SwitchState::Off
-    };
-    // Create Material Design 3 Switch component
-    let md3_switch = Switch::builder(switch_state)
-        .label("Dark Theme")
-        .size(ComponentSize::Medium)
-        .build()
-        .unwrap_or_else(|_| {
-            // Fallback to off state if build fails
-            Switch::off().build().expect("Default switch should build")
-        }); // Use static MaterialColors to solve lifetime issues
-    if is_dark {
-        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
-        md3_switch.view(move |_state| Message::ToggleTheme, &DARK_COLORS)
-    } else {
-        static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-        md3_switch.view(move |_state| Message::ToggleTheme, &LIGHT_COLORS)
-    }
+    create_settings_switch(
+        "Dark Theme",
+        state,
+        is_dark,
+        |_| Message::ToggleTheme,
+    )
 }
 
 /// Creates a switch for auto-save library setting using Material Design 3 Switch component
 fn create_auto_save_switch(state: &UiState) -> Element<'_, Message> {
-    let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
-    let switch_state = if state.auto_save_library {
-        SwitchState::On
-    } else {
-        SwitchState::Off
-    };
-    // Create Material Design 3 Switch component
-    let md3_switch = Switch::builder(switch_state)
-        .label("Auto-save")
-        .size(ComponentSize::Medium)
-        .build()
-        .unwrap_or_else(|_| {
-            // Fallback to off state if build fails
-            Switch::off().build().expect("Default switch should build")
-        }); // Use static MaterialColors to solve lifetime issues
-    if is_dark {
-        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
-        md3_switch.view(move |_state| Message::ToggleAutoSaveLibrary, &DARK_COLORS)
-    } else {
-        static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-        md3_switch.view(move |_state| Message::ToggleAutoSaveLibrary, &LIGHT_COLORS)
-    }
+    create_settings_switch(
+        "Auto-save",
+        state,
+        state.auto_save_library,
+        |_| Message::ToggleAutoSaveLibrary,
+    )
 }
 
 /// Creates a switch for scan subdirectories setting using Material Design 3 Switch component
 fn create_scan_subdirs_switch(state: &UiState) -> Element<'_, Message> {
-    let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
-    let switch_state = if state.scan_subdirectories {
-        SwitchState::On
-    } else {
-        SwitchState::Off
-    };
-    // Create Material Design 3 Switch component
-    let md3_switch = Switch::builder(switch_state)
-        .label("Scan subdirectories")
-        .size(ComponentSize::Medium)
-        .build()
-        .unwrap_or_else(|_| {
-            // Fallback to off state if build fails
-            Switch::off().build().expect("Default switch should build")
-        }); // Use static MaterialColors to solve lifetime issues
-    if is_dark {
-        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
-        md3_switch.view(
-            move |_state| Message::ToggleScanSubdirectories,
-            &DARK_COLORS,
-        )
-    } else {
-        static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-        md3_switch.view(
-            move |_state| Message::ToggleScanSubdirectories,
-            &LIGHT_COLORS,
-        )
-    }
+    create_settings_switch(
+        "Scan subdirectories",
+        state,
+        state.scan_subdirectories,
+        |_| Message::ToggleScanSubdirectories,
+    )
 }

@@ -7,12 +7,12 @@ use iced::widget::{Space, container, row, text};
 use iced::{Alignment, Element, Length};
 use std::path::Path;
 
-use crate::components::common::{create_button, filled_icon_button_semantic};
+use crate::components::buttons::{self, ButtonVariant};
+use crate::components::buttons::variants::ButtonSize;
 use crate::components::icons::icon_names;
 use crate::messages::{Command, Message};
 use crate::state::DirectoryInfo;
 use crate::styling::material::MaterialTokens;
-use crate::styling::material::components::widgets::{ButtonSize, MaterialButtonVariant};
 
 /// Unified main toolbar component
 ///
@@ -46,13 +46,16 @@ impl MainToolbar {
                 .align_x(iced::alignment::Horizontal::Left)
                 .center_y(Length::Fill),
         );
-
+        
         // Directory controls section
-        let folder_button = filled_icon_button_semantic(
-            icon_names::FOLDER_OPEN,
-            ButtonSize::Medium,
-            Message::ExecuteCommand(Command::BrowseDirectory),
-            material_tokens,
+        let folder_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium)
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
+                .build(),
+            "folder",
+            Some("")
         );
 
         toolbar = toolbar.push(folder_button);
@@ -80,26 +83,32 @@ impl MainToolbar {
             .height(Length::Fill)
             .center_y(Length::Fill),
         );
-
+        
         // Scan button with text
-        let scan_button = create_button(
-            "Scan",
-            MaterialButtonVariant::Filled,
-            Message::ExecuteCommand(Command::ScanLibrary {
-                library_path: current_path.to_path_buf(),
-            }),
-            material_tokens,
+        let scan_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .label("Scan")
+                .variant(ButtonVariant::Filled)
+                .on_press(Message::ExecuteCommand(Command::ScanLibrary {
+                    library_path: current_path.to_path_buf(),
+                }))
+                .build(),
+            "scan",
+            Some("Scan")
         );
-
+        
         toolbar = toolbar.push(scan_button);
 
         // Recent directories dropdown if available
         if !recent_dirs.is_empty() {
-            let recent_button = filled_icon_button_semantic(
-                icon_names::DOWNLOAD,
-                ButtonSize::Medium,
-                Message::ShowSettings, // TODO: Replace with proper dropdown
-                material_tokens,
+            let recent_button = buttons::create_button(
+                || buttons::button(material_tokens)
+                    .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium)
+                    .variant(ButtonVariant::FilledTonal)
+                    .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
+                    .build(),
+                "recent",
+                Some("")
             );
 
             toolbar = toolbar.push(recent_button);
@@ -109,17 +118,18 @@ impl MainToolbar {
         toolbar = toolbar.push(Space::with_width(Length::Fill));
 
         // Settings button with icon - using filled variant
-        let settings_button = filled_icon_button_semantic(
-            "gear",
-            ButtonSize::Medium,
-            Message::ShowSettings,
-            material_tokens,
+        let settings_button = buttons::create_button(
+            || buttons::button(material_tokens)
+                .icon_only("gear", ButtonSize::Medium)
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(Message::ShowSettings)
+                .build(),
+            "settings",
+            Some("")
         );
 
         // Add padding and center the button
-        toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));
-
-        // Wrap toolbar in container with unified toolbar height
+        toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));        // Wrap toolbar in container with unified toolbar height
         container(
             container(toolbar)
                 .width(Length::Fill)

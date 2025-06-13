@@ -7,9 +7,7 @@
 // SIMD is used in the resample_buffer_simd function
 
 use super::{
-    casting_utils::safe_conversions::{
-        safe_f64_to_usize_resampling, safe_f64_to_usize_samples, safe_usize_to_f64_audio,
-    },
+    casting_utils::safe_conversions::{safe_f64_to_usize_samples, safe_usize_to_f64_audio},
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
