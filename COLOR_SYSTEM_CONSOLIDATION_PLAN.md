@@ -290,3 +290,9 @@
 **Current status: 1,078+ lines of dead code eliminated with ZERO breaking changes!**
 
 **🚀 AGGRESSIVE CLEANUP APPROACH**: Since we don't need backward compatibility, we can eliminate ALL legacy code immediately rather than maintaining compatibility layers. This allows for maximum cleanup and simplification.
+
+### **Critical Bug Fixes**
+- ✅ **Fixed incorrect semantic color assumptions**: Replaced tertiary=green assumption with guaranteed semantic colors
+- ✅ **Proper color semantics**: Green for success, amber for warnings, blue for info, red for errors
+- ✅ **Theme-aware semantic colors**: Different colors for dark/light themes with proper contrast
+- ✅ **Eliminated Material Design misuse**: No longer assume generated colors match semantic expectations
