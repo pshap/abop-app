@@ -3,7 +3,7 @@
 //! This module provides enhanced utilities for working with the unified MD3 color system,
 //! including accessibility helpers, color manipulation, and theme utilities.
 
-use crate::styling::material::unified_colors::{ColorRole, MaterialColors, MaterialPalette};
+use crate::styling::material::unified_colors::{MaterialColors, MaterialPalette};
 use iced::Color;
 
 /// Advanced color manipulation and accessibility utilities
@@ -260,48 +260,6 @@ pub enum Season {
     Autumn,
     /// Winter season color palette
     Winter,
-}
-
-/// Advanced color role utilities
-pub struct ColorRoleUtilities;
-
-impl ColorRoleUtilities {
-    /// Create a color role from a base color with automatic contrast calculations
-    pub fn create_role_from_base(base_color: Color, is_dark_theme: bool) -> ColorRole {
-        let on_base = ColorUtilities::get_best_text_color(base_color);
-
-        // Create container as a lighter/darker variant
-        let container = if is_dark_theme {
-            ColorUtilities::darken(base_color, 0.6)
-        } else {
-            ColorUtilities::lighten(base_color, 0.7)
-        };
-
-        let on_container = ColorUtilities::get_best_text_color(container); // Fixed variants (for consistent surfaces)
-        let fixed = ColorUtilities::lighten(base_color, 0.7); // Same for both themes intentionally
-
-        let fixed_dim = ColorUtilities::darken(fixed, 0.1);
-        let on_fixed = ColorUtilities::get_best_text_color(fixed);
-        let on_fixed_variant = ColorUtilities::blend_colors(on_fixed, base_color, 0.3);
-
-        ColorRole {
-            base: base_color,
-            on_base,
-            container,
-            on_container,
-            fixed,
-            fixed_dim,
-            on_fixed,
-            on_fixed_variant,
-        }
-    }
-
-    /// Validate that a ColorRole meets accessibility requirements
-    pub fn validate_role_accessibility(role: &ColorRole) -> bool {
-        ColorUtilities::meets_accessibility_contrast(role.on_base, role.base)
-            && ColorUtilities::meets_accessibility_contrast(role.on_container, role.container)
-            && ColorUtilities::meets_accessibility_contrast(role.on_fixed, role.fixed)
-    }
 }
 
 #[cfg(test)]

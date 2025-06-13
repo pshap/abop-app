@@ -14,7 +14,7 @@
 //! - **Factories**: Component factory patterns (Phase 3 foundation)
 
 // Core Material Design modules
-pub mod colors; // DEPRECATED - Use unified_colors instead
+// pub mod colors; // DELETED - Using unified_colors instead
 pub mod components;
 pub mod elevation;
 pub mod motion;

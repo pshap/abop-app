@@ -4,7 +4,7 @@
 //! specification. This module converts any color into a complete Material Design
 //! color system with proper tonal palettes and color harmony.
 
-use crate::styling::material::colors::{MaterialPalette, TonalPalette};
+use crate::styling::material::unified_colors::{MaterialPalette, TonalPalette};
 use iced::Color;
 use material_color_utilities_rs::htc::Hct;
 

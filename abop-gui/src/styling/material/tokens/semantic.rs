@@ -1,7 +1,8 @@
 //! Semantic color tokens for consistent color usage
 //!
 //! This module provides semantic color mappings that translate Material Design
-//! color roles into application-specific semantic meanings.
+//! color roles into application-specific semantic meanings with guaranteed
+//! color hues for semantic purposes.
 
 use iced::Color;
 
@@ -64,15 +65,45 @@ pub struct SemanticColors {
 
 impl Default for SemanticColors {
     fn default() -> Self {
+        // Default to light theme semantic colors
+        Self::light()
+    }
+}
+
+impl SemanticColors {
+    /// Creates semantic colors optimized for light theme
+    #[must_use]
+    pub fn light() -> Self {
+        let material_colors = crate::styling::material::MaterialColors::light_default();
+        
         Self {
-            primary: Color::from_rgb(0.2, 0.4, 0.8),    // Blue
-            secondary: Color::from_rgb(0.8, 0.2, 0.4),  // Pink
-            success: Color::from_rgb(0.2, 0.8, 0.4),    // Green
-            warning: Color::from_rgb(0.9, 0.7, 0.2),    // Amber
-            error: Color::from_rgb(0.9, 0.2, 0.2),      // Red
-            info: Color::from_rgb(0.2, 0.6, 0.9),       // Light blue
-            surface: Color::from_rgb(1.0, 1.0, 1.0),    // White
-            on_surface: Color::from_rgb(0.1, 0.1, 0.1), // Nearly black
+            primary: material_colors.primary.base,
+            secondary: material_colors.secondary.base,
+            // Dedicated semantic colors that are guaranteed to be the right hue
+            success: Color::from_rgb(0.0, 0.6, 0.0),    // Dark green for light theme
+            warning: Color::from_rgb(0.8, 0.5, 0.0),    // Dark amber for light theme
+            error: material_colors.error.base,          // MD3 error is correctly red
+            info: Color::from_rgb(0.0, 0.3, 0.8),       // Dark blue for light theme
+            surface: material_colors.surface,
+            on_surface: material_colors.on_surface,
+        }
+    }
+
+    /// Creates semantic colors optimized for dark theme  
+    #[must_use]
+    pub fn dark() -> Self {
+        let material_colors = crate::styling::material::MaterialColors::dark_default();
+        
+        Self {
+            primary: material_colors.primary.base,
+            secondary: material_colors.secondary.base,
+            // Dedicated semantic colors that are guaranteed to be the right hue
+            success: Color::from_rgb(0.2, 0.8, 0.2),    // Bright green for dark theme
+            warning: Color::from_rgb(1.0, 0.7, 0.0),    // Bright amber for dark theme
+            error: material_colors.error.base,          // MD3 error is correctly red
+            info: Color::from_rgb(0.4, 0.7, 1.0),       // Light blue for dark theme
+            surface: material_colors.surface,
+            on_surface: material_colors.on_surface,
         }
     }
 }
