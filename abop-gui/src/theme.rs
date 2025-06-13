@@ -209,17 +209,10 @@ impl ThemeMode {
             MaterialColors::light_default()
         };
         colors.error.base
-    }
-
-    /// Get success color for the current theme mode
+    }    /// Get success color for the current theme mode
     #[must_use]
     pub fn success_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.tertiary.base // Use tertiary for success (green)
+        self.semantic_colors().success
     }
 
     /// Get info color for the current theme mode
@@ -264,24 +257,12 @@ impl ThemeMode {
         };
         colors.on_surface_variant // Use surface variant for disabled text
     }/// Get semantic colors for the current theme mode
-    #[must_use]
-    pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
-        // Use Material Design colors for better consistency and accessibility
-        let material_colors = if self.is_dark() {
-            MaterialColors::dark_default()
+    #[must_use]    pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
+        // Use the appropriate semantic color scheme for the theme
+        if self.is_dark() {
+            crate::styling::material::SemanticColors::dark()
         } else {
-            MaterialColors::light_default()
-        };
-
-        crate::styling::material::SemanticColors {
-            primary: material_colors.primary.base,
-            secondary: material_colors.secondary.base,
-            success: material_colors.tertiary.base,       // Use tertiary for success (green)
-            warning: material_colors.error.container,     // Use error container for warning (orange)
-            error: material_colors.error.base,
-            info: material_colors.primary.container,      // Use primary container for info
-            surface: material_colors.surface,
-            on_surface: material_colors.on_surface,
+            crate::styling::material::SemanticColors::light()
         }
     }
 
@@ -332,11 +313,13 @@ impl ThemeMode {
 #[must_use]
 pub fn dark_sunset_theme() -> IcedTheme {
     let colors = MaterialColors::dark(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
+    let semantic = crate::styling::material::SemanticColors::dark();
+    
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,
         primary: colors.primary.base,
-        success: colors.tertiary.base,
+        success: semantic.success, // Use proper semantic green
         danger: colors.error.base,
     };
 
@@ -347,11 +330,13 @@ pub fn dark_sunset_theme() -> IcedTheme {
 #[must_use]
 pub fn light_sunset_theme() -> IcedTheme {
     let colors = MaterialColors::light(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
+    let semantic = crate::styling::material::SemanticColors::light();
+    
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,
         primary: colors.primary.base,
-        success: colors.tertiary.base,
+        success: semantic.success, // Use proper semantic green
         danger: colors.error.base,
     };
 
@@ -360,11 +345,18 @@ pub fn light_sunset_theme() -> IcedTheme {
 
 /// Create a Material Design theme from `MaterialColors`
 fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
+    // Use dedicated semantic colors for Iced's Palette rather than assuming tertiary=green
+    let semantic = if colors.primary.base.r < 0.5 { // Rough dark theme detection
+        crate::styling::material::SemanticColors::dark()
+    } else {
+        crate::styling::material::SemanticColors::light()
+    };
+    
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,
         primary: colors.primary.base,
-        success: colors.tertiary.base, // Using tertiary as success color
+        success: semantic.success, // Use proper semantic green
         danger: colors.error.base,
     };
     IcedTheme::custom("Material".to_string(), palette)
