@@ -51,7 +51,7 @@
     - **Migration strategy**: Provide compatibility layer during transition
     - **Impact**: ~25+ call sites need updating
 
-## � Phase 2: Design New Unified System - STARTING
+## Phase 2: Design New Unified System - STARTING
 
 ### Current Foundation Analysis - COMPLETE
 - [x] **Analyze unified_colors.rs as the base system**
