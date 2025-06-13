@@ -460,4 +460,35 @@ mod tests {
 
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_icon_positioning() {
+        let tokens = MaterialTokens::default();
+
+        // Test leading icon position
+        let result = ButtonBuilder::new(&tokens)
+            .label("Test")
+            .icon("favorite", IconPosition::Leading)
+            .on_press(TestMessage::Clicked)
+            .build();
+
+        assert!(result.is_ok());
+
+        // Test trailing icon position
+        let result = ButtonBuilder::new(&tokens)
+            .label("Test")
+            .icon("favorite", IconPosition::Trailing)
+            .on_press(TestMessage::Clicked)
+            .build();
+
+        assert!(result.is_ok());
+
+        // Test icon-only (using icon_only method)
+        let result = ButtonBuilder::new(&tokens)
+            .icon_only("favorite", ButtonSize::Medium)
+            .on_press(TestMessage::Clicked)
+            .build();
+
+        assert!(result.is_ok());
+    }
 }
