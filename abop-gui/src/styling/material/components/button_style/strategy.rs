@@ -369,13 +369,13 @@ impl ButtonStateHandler {
             cache.len() > 1000
         };
 
-        if should_clear {
+        // Single write lock acquisition to avoid multiple lock/unlock cycles
+        {
             let mut cache = STYLE_CACHE.write();
-            // Prevent cache from growing indefinitely (simple LRU-like behavior)
-            cache.clear();
-            cache.insert(cache_key, styling.clone());
-        } else {
-            let mut cache = STYLE_CACHE.write();
+            if should_clear {
+                // Prevent cache from growing indefinitely (simple LRU-like behavior)
+                cache.clear();
+            }
             cache.insert(cache_key, styling.clone());
         }
 
