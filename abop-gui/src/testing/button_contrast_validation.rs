@@ -4,7 +4,8 @@
 //! to address the reported issue of white icons/logos on light backgrounds.
 
 #[cfg(test)]
-mod button_contrast_validation {    use crate::styling::{
+mod button_contrast_validation {
+    use crate::styling::{
         color_utils::ColorUtils,
         material::{
             MaterialColors, MaterialPalette, MaterialTokens,
@@ -329,8 +330,7 @@ mod button_contrast_validation {    use crate::styling::{
         let mut issues = Vec::with_capacity(10); // Pre-allocate for typical number of contrast checks
 
         // Check if primary color on surface meets contrast
-        let primary_on_surface =
-            ColorUtils::contrast_ratio(colors.primary.base, colors.surface);
+        let primary_on_surface = ColorUtils::contrast_ratio(colors.primary.base, colors.surface);
         if primary_on_surface < 4.5 {
             issues.push(format!("Primary on surface: {:.2}:1", primary_on_surface));
         }

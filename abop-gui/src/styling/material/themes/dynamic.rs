@@ -41,7 +41,8 @@ impl DynamicTheme {
 
     /// Create a dynamic theme with a specific mode
     #[must_use]
-    pub fn with_mode(mode: ThemeMode) -> Self {        let tokens = match mode {
+    pub fn with_mode(mode: ThemeMode) -> Self {
+        let tokens = match mode {
             ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
             ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
             ThemeMode::System | ThemeMode::MaterialDynamic => MaterialTokens::default(),
@@ -68,7 +69,8 @@ impl DynamicTheme {
 
     /// Switch to a new theme mode
     pub fn switch_to_mode(&mut self, mode: ThemeMode) {
-        self.current_mode = mode;        self.current_tokens = match mode {
+        self.current_mode = mode;
+        self.current_tokens = match mode {
             ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
             ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
             ThemeMode::System => {
@@ -106,7 +108,8 @@ impl DynamicTheme {
     }
 
     /// Get a preview of what tokens would look like with a different mode
-    #[must_use]    pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
+    #[must_use]
+    pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
         match mode {
             ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
             ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
