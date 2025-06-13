@@ -70,7 +70,11 @@ impl MainToolbar {
                 Message::command(crate::messages::Command::BrowseDirectory) // Fallback if no path selected
             })
             .build()
-            .unwrap_or_else(|_| text("Scan").size(14).into());
+            .unwrap_or_else(|_| {
+                text("Scan")
+                    .size(material_tokens.typography().label_medium.size)
+                    .into()
+            });
 
         // Settings button - opens application settings
         let settings_button = buttons::button(material_tokens)
