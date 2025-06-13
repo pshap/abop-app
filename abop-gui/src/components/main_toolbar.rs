@@ -37,15 +37,7 @@ impl MainToolbar {
     /// * `material_tokens` - Material Design 3 tokens for consistent styling
     ///
     /// # Returns
-    /// 
-    /// An `Element<Message>` representing a Material Design 3 compliant toolbar containing:
-    /// - App branding (ABOP label)
-    /// - Directory selection button with folder icon
-    /// - Library scan button with appropriate icon
-    /// - Current path display that expands to fill available space
-    /// - Settings button positioned on the right side
-    /// 
-    /// The toolbar uses proper spacing, sizing, and theming according to Material Design 3 principles.
+    /// A styled toolbar element that handles directory selection and scanning operations
     #[must_use]
     pub fn view<'a>(
         _recent_dirs: &[DirectoryInfo],
