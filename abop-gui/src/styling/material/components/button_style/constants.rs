@@ -118,3 +118,17 @@ pub mod animation {
     /// Slow transition for complex animations
     pub const SLOW: u64 = 300;
 }
+
+/// Special opacity values for specific components
+pub mod opacity {
+    /// FAB disabled surface opacity (Material Design 3)
+    pub const FAB_DISABLED_SURFACE: f32 = 0.12;
+    
+    /// Standard hover opacity (Material Design 3)
+    /// This matches MaterialTokens::states.opacity.hover
+    pub const HOVER: f32 = 0.08;
+    
+    /// Standard pressed opacity (Material Design 3)  
+    /// This matches MaterialTokens::states.opacity.pressed
+    pub const PRESSED: f32 = 0.12;
+}

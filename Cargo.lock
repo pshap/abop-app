@@ -103,6 +103,7 @@ dependencies = [
  "num-complex",
  "once_cell",
  "palette",
+ "parking_lot 0.12.4",
  "proptest",
  "quickcheck",
  "rayon",

@@ -12,18 +12,16 @@ button_strategy! {
     
     config = |colors, elevation| {
         let base_background = colors.primary.container;
-        let icon_color = colors.primary.on_container;
-        
-        // FAB uses special hover/press behavior with color blending
+        let icon_color = colors.primary.on_container;        // FAB uses special hover/press behavior with color blending using Material Design tokens
         let hover_bg = ColorUtils::blend_colors(
             base_background,
             icon_color,
-            0.08, // Default hover opacity from Material tokens
+            constants::opacity::HOVER, // Material Design hover opacity constant
         );
         let pressed_bg = ColorUtils::blend_colors(
             base_background,
             icon_color,
-            0.12, // Default pressed opacity from Material tokens
+            constants::opacity::PRESSED, // Material Design pressed opacity constant
         );
         
         ButtonVariantConfigBuilder::new()
@@ -48,9 +46,8 @@ button_strategy! {
         // Override shadows and special cases for FAB
         match state {
             ButtonState::Hovered => styling.shadow = Some(tokens.elevation.level4.shadow),
-            ButtonState::Pressed => styling.shadow = Some(tokens.elevation.level3.shadow),
-            ButtonState::Disabled => {
-                styling.background = iced::Background::Color(ColorUtils::with_alpha(colors.on_surface, 0.12));
+            ButtonState::Pressed => styling.shadow = Some(tokens.elevation.level3.shadow),            ButtonState::Disabled => {
+                styling.background = iced::Background::Color(ColorUtils::with_alpha(colors.on_surface, constants::opacity::FAB_DISABLED_SURFACE));
                 styling.shadow = None;
             },
             ButtonState::Focused => {

@@ -6,9 +6,12 @@
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
 use super::constants;
 use iced::{Background, Border, Color};
+use std::sync::LazyLock;
+use std::collections::HashMap;
+use parking_lot::RwLock;
 
 /// Button state for styling calculations
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ButtonState {
     /// Default button state (no interaction)
     Default,
@@ -271,12 +274,96 @@ macro_rules! button_strategy {
     };
 }
 
+// Performance optimization: Cache for button styling calculations
+// This prevents redundant color calculations and object creation for identical states
+static STYLE_CACHE: LazyLock<RwLock<HashMap<ButtonStyleCacheKey, ButtonStyling>>> = 
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Cache key for button styling calculations
+/// Used to avoid recalculating identical styling configurations
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct ButtonStyleCacheKey {
+    state: ButtonState,
+    config_hash: u64, // Hash of the ButtonVariantConfig for fast comparison
+}
+
+impl ButtonStyleCacheKey {
+    fn new(state: ButtonState, config: &ButtonVariantConfig) -> Self {
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
+        
+        let mut hasher = DefaultHasher::new();
+        // Hash the important config fields that affect styling
+        Self::hash_color(config.base_background, &mut hasher);
+        Self::hash_color(config.text_color, &mut hasher);
+        Self::hash_color(config.icon_color, &mut hasher);
+        Self::hash_color(config.border_color, &mut hasher);
+        config.border_width.to_bits().hash(&mut hasher);
+        config.border_radius.to_bits().hash(&mut hasher);
+        config.uses_surface_on_interaction.hash(&mut hasher);
+        
+        Self {
+            state,
+            config_hash: hasher.finish(),
+        }
+    }
+    
+    /// Helper function to hash iced::Color
+    fn hash_color(color: Color, hasher: &mut impl std::hash::Hasher) {
+        use std::hash::Hash;
+        color.r.to_bits().hash(hasher);
+        color.g.to_bits().hash(hasher);
+        color.b.to_bits().hash(hasher);
+        color.a.to_bits().hash(hasher);
+    }
+}
+
 /// Common state handling logic for all button variants
 pub struct ButtonStateHandler;
 
 impl ButtonStateHandler {
-    /// Apply common state styling based on configuration
+    /// Apply common state styling based on configuration with caching
+    /// 
+    /// This method implements caching to prevent redundant color calculations
+    /// and object creation for identical button states and configurations.
     pub fn apply_state_styling(
+        state: ButtonState,
+        config: &ButtonVariantConfig,
+        tokens: &MaterialTokens,
+        colors: &MaterialColors,
+    ) -> ButtonStyling {
+        // Check cache first
+        let cache_key = ButtonStyleCacheKey::new(state, config);
+        
+        // Fast read-only cache check
+        {
+            let cache = STYLE_CACHE.read();
+            if let Some(cached_styling) = cache.get(&cache_key) {
+                return cached_styling.clone();
+            }
+        }
+        
+        // Calculate styling if not cached
+        let styling = Self::calculate_styling(state, config, tokens, colors);
+        
+        // Cache the result
+        {
+            let mut cache = STYLE_CACHE.write();
+            // Prevent cache from growing indefinitely (simple LRU-like behavior)
+            if cache.len() > 1000 {
+                cache.clear();
+            }
+            cache.insert(cache_key, styling.clone());
+        }
+        
+        styling
+    }
+    
+    /// Calculate button styling for the given state and configuration
+    /// 
+    /// This is the actual calculation logic, separated for easier testing
+    /// and to support the caching mechanism.
+    fn calculate_styling(
         state: ButtonState,
         config: &ButtonVariantConfig,
         tokens: &MaterialTokens,
@@ -296,10 +383,16 @@ impl ButtonStateHandler {
             
             ButtonState::Hovered => {
                 let (hover_bg, hover_text, hover_icon) = if config.uses_surface_on_interaction {
-                    (colors.surface_variant, colors.on_surface_variant, colors.on_surface_variant)
+                    // Use proper Material Design hover state with surface colors and tokens
+                    let hover_bg = ColorUtils::blend_colors(colors.surface, colors.on_surface, tokens.states.opacity.hover);
+                    (hover_bg, colors.on_surface, colors.on_surface)
                 } else {
                     let hover_bg = config.custom_hover_background
-                        .unwrap_or_else(|| ColorUtils::darken(config.base_background, 0.05));
+                        .unwrap_or_else(|| ColorUtils::blend_colors(
+                            config.base_background, 
+                            config.text_color, 
+                            tokens.states.opacity.hover // Use Material Design hover opacity token
+                        ));
                     (hover_bg, config.text_color, config.icon_color)
                 };
                 
@@ -314,11 +407,15 @@ impl ButtonStateHandler {
             
             ButtonState::Pressed => {
                 let (pressed_bg, pressed_text, pressed_icon) = if config.uses_surface_on_interaction {
-                    let pressed_bg = ColorUtils::darken(colors.surface_variant, 0.1);
-                    (pressed_bg, colors.on_surface_variant, colors.on_surface_variant)
+                    let pressed_bg = ColorUtils::blend_colors(colors.surface, colors.on_surface, tokens.states.opacity.pressed);
+                    (pressed_bg, colors.on_surface, colors.on_surface)
                 } else {
                     let pressed_bg = config.custom_pressed_background
-                        .unwrap_or_else(|| ColorUtils::darken(config.base_background, 0.1));
+                        .unwrap_or_else(|| ColorUtils::blend_colors(
+                            config.base_background, 
+                            config.text_color, 
+                            tokens.states.opacity.pressed // Use Material Design pressed opacity token
+                        ));
                     (pressed_bg, config.text_color, config.icon_color)
                 };
                 
@@ -356,15 +453,19 @@ impl ButtonStateHandler {
             
             ButtonState::Focused => {
                 let (focus_bg, focus_text, focus_icon) = if config.uses_surface_on_interaction {
-                    let focus_bg = ColorUtils::darken(colors.surface_variant, 0.05);
-                    (focus_bg, colors.on_surface_variant, colors.on_surface_variant)
+                    let focus_bg = ColorUtils::blend_colors(colors.surface, colors.on_surface, tokens.states.opacity.focus);
+                    (focus_bg, colors.on_surface, colors.on_surface)
                 } else {
-                    let focus_bg = ColorUtils::darken(config.base_background, 0.075);
+                    let focus_bg = ColorUtils::blend_colors(
+                        config.base_background, 
+                        config.text_color, 
+                        tokens.states.opacity.focus // Use Material Design focus opacity token
+                    );
                     (focus_bg, config.text_color, config.icon_color)
                 };
                 
                 let focus_border = if config.border_width > 0.0 {
-                    create_button_border(colors.primary.base, 2.0, config.border_radius) // Focus ring
+                    create_button_border(colors.primary.base, constants::border::FOCUS_RING, config.border_radius) // Use focus ring constant
                 } else {
                     create_button_border(config.border_color, config.border_width, config.border_radius)
                 };
