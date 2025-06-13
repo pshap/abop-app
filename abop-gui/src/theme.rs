@@ -58,7 +58,8 @@ impl ThemeMode {
             Self::MaterialLight => {
                 let colors = MaterialColors::light(&MaterialPalette::default());
                 material_theme_from_colors(&colors)
-            }            Self::MaterialDynamic => {
+            }
+            Self::MaterialDynamic => {
                 // Use a default purple seed color for dynamic theme - could be made configurable
                 let seed_color = DEFAULT_MATERIAL_SEED_COLOR;
                 let colors = MaterialColors::from_seed(seed_color, true);
@@ -94,7 +95,8 @@ impl ThemeMode {
             Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
         }
-    }    /// Get background color for the current theme mode
+    }
+    /// Get background color for the current theme mode
     #[must_use]
     pub fn background_color(&self) -> Color {
         let colors = if self.is_dark() {
@@ -147,7 +149,8 @@ impl ThemeMode {
             MaterialColors::light_default()
         };
         colors.primary.container
-    }    /// Get secondary color for the current theme mode
+    }
+    /// Get secondary color for the current theme mode
     #[must_use]
     pub fn secondary_color(&self) -> Color {
         let colors = if self.is_dark() {
@@ -189,7 +192,8 @@ impl ThemeMode {
             MaterialColors::light_default()
         };
         colors.outline
-    }    /// Get outline color for the current theme mode
+    }
+    /// Get outline color for the current theme mode
     #[must_use]
     pub fn outline_color(&self) -> Color {
         let colors = if self.is_dark() {
@@ -209,7 +213,8 @@ impl ThemeMode {
             MaterialColors::light_default()
         };
         colors.error.base
-    }    /// Get success color for the current theme mode
+    }
+    /// Get success color for the current theme mode
     #[must_use]
     pub fn success_color(&self) -> Color {
         self.semantic_colors().success
@@ -244,7 +249,8 @@ impl ThemeMode {
             MaterialColors::dark_default()
         } else {
             MaterialColors::light_default()
-        };        colors.error.container // Use error container for warning
+        };
+        colors.error.container // Use error container for warning
     }
 
     /// Get disabled text color for the current theme mode
@@ -254,7 +260,8 @@ impl ThemeMode {
             MaterialColors::dark_default()
         } else {
             MaterialColors::light_default()
-        };        colors.on_surface_variant // Use surface variant for disabled text
+        };
+        colors.on_surface_variant // Use surface variant for disabled text
     }
 
     /// Get semantic colors for the current theme mode
@@ -274,7 +281,8 @@ impl ThemeMode {
     pub fn material_tokens_if_material(&self) -> Option<MaterialTokens> {
         match self {
             Self::MaterialDark => Some(MaterialTokens::dark()),
-            Self::MaterialLight => Some(MaterialTokens::light()),            Self::MaterialDynamic => {
+            Self::MaterialLight => Some(MaterialTokens::light()),
+            Self::MaterialDynamic => {
                 // Use purple seed color for dynamic Material Design theme
                 let seed_color = DEFAULT_MATERIAL_SEED_COLOR;
                 Some(MaterialTokens::from_seed_color(seed_color, true))
@@ -308,15 +316,27 @@ impl ThemeMode {
 }
 
 /// Calculate the perceived luminance of a color using the standard formula
-/// 
+///
 /// This uses the ITU-R BT.709 standard for calculating perceived brightness
 /// which is more accurate than simple RGB averaging.
 fn calculate_luminance(color: Color) -> f32 {
     // Convert to linear RGB first (assuming sRGB input)
-    let linear_r = if color.r <= 0.03928 { color.r / 12.92 } else { ((color.r + 0.055) / 1.055).powf(2.4) };
-    let linear_g = if color.g <= 0.03928 { color.g / 12.92 } else { ((color.g + 0.055) / 1.055).powf(2.4) };
-    let linear_b = if color.b <= 0.03928 { color.b / 12.92 } else { ((color.b + 0.055) / 1.055).powf(2.4) };
-    
+    let linear_r = if color.r <= 0.03928 {
+        color.r / 12.92
+    } else {
+        ((color.r + 0.055) / 1.055).powf(2.4)
+    };
+    let linear_g = if color.g <= 0.03928 {
+        color.g / 12.92
+    } else {
+        ((color.g + 0.055) / 1.055).powf(2.4)
+    };
+    let linear_b = if color.b <= 0.03928 {
+        color.b / 12.92
+    } else {
+        ((color.b + 0.055) / 1.055).powf(2.4)
+    };
+
     // Calculate luminance using ITU-R BT.709 coefficients
     0.2126 * linear_r + 0.7152 * linear_g + 0.0722 * linear_b
 }
@@ -330,7 +350,7 @@ fn calculate_luminance(color: Color) -> f32 {
 pub fn dark_sunset_theme() -> IcedTheme {
     let colors = MaterialColors::dark(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
     let semantic = crate::styling::material::SemanticColors::dark();
-    
+
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,
@@ -347,7 +367,7 @@ pub fn dark_sunset_theme() -> IcedTheme {
 pub fn light_sunset_theme() -> IcedTheme {
     let colors = MaterialColors::light(&MaterialPalette::from_seed(DEFAULT_MATERIAL_SEED_COLOR));
     let semantic = crate::styling::material::SemanticColors::light();
-    
+
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,
@@ -364,13 +384,13 @@ fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
     // Use proper luminance-based dark theme detection instead of just red channel
     let background_luminance = calculate_luminance(colors.background);
     let is_dark = background_luminance < 0.5;
-    
+
     let semantic = if is_dark {
         crate::styling::material::SemanticColors::dark()
     } else {
         crate::styling::material::SemanticColors::light()
     };
-    
+
     let palette = Palette {
         background: colors.background,
         text: colors.on_background,

@@ -5,7 +5,8 @@
 
 use iced::Color;
 
-use crate::styling::material::{themes::theme_mode::ThemeMode, tokens::core::MaterialTokens};
+use crate::styling::material::tokens::core::MaterialTokens;
+use crate::theme::ThemeMode;
 
 /// Dynamic theme management system
 ///
@@ -38,14 +39,23 @@ impl DynamicTheme {
         }
     }
 
+    /// Private helper to get tokens for a specific theme mode
+    fn get_tokens_for_mode(mode: ThemeMode) -> MaterialTokens {
+        match mode {
+            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
+            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
+            ThemeMode::System => {
+                // System detection - default to dark for now
+                MaterialTokens::dark()
+            }
+            ThemeMode::MaterialDynamic => MaterialTokens::default(),
+        }
+    }
+
     /// Create a dynamic theme with a specific mode
     #[must_use]
     pub fn with_mode(mode: ThemeMode) -> Self {
-        let tokens = match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto | ThemeMode::Custom => MaterialTokens::default(),
-        };
+        let tokens = Self::get_tokens_for_mode(mode);
 
         Self {
             current_mode: mode,
@@ -69,18 +79,7 @@ impl DynamicTheme {
     /// Switch to a new theme mode
     pub fn switch_to_mode(&mut self, mode: ThemeMode) {
         self.current_mode = mode;
-        self.current_tokens = match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto => {
-                // Phase 3 will implement system detection
-                MaterialTokens::default()
-            }
-            ThemeMode::Custom => {
-                // Phase 3 will implement custom theme loading
-                MaterialTokens::default()
-            }
-        };
+        self.current_tokens = Self::get_tokens_for_mode(mode);
     }
 
     /// Update tokens with a seed color
@@ -109,17 +108,6 @@ impl DynamicTheme {
     /// Get a preview of what tokens would look like with a different mode
     #[must_use]
     pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
-        match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto => {
-                // Phase 3 will implement proper auto detection
-                MaterialTokens::default()
-            }
-            ThemeMode::Custom => {
-                // Phase 3 will implement custom theme preview
-                self.current_tokens.clone()
-            }
-        }
+        Self::get_tokens_for_mode(mode)
     }
 }

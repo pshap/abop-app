@@ -4,9 +4,11 @@
 //! backgrounds in dark theme that cause poor contrast.
 
 use iced::Color;
-use crate::styling::material::{
-    colors::{MaterialColors, MaterialPalette},
-    color_utilities::ColorUtilities,
+use crate::styling::{
+    color_utils::ColorUtils,
+    material::{
+        unified_colors::{MaterialColors, MaterialPalette},
+    },
 };
 
 #[cfg(test)]
@@ -52,7 +54,7 @@ mod button_contrast_tests {
 
     /// Test a specific contrast combination and report results
     fn test_contrast(name: &str, background: Color, foreground: Color) {
-        let contrast = ColorUtilities::contrast_ratio(foreground, background);
+        let contrast = ColorUtils::contrast_ratio(foreground, background);
         let aa_normal = contrast >= 4.5;
         let aa_large = contrast >= 3.0;
         let aaa = contrast >= 7.0;
@@ -82,7 +84,7 @@ mod button_contrast_tests {
             // Suggest fixes
             let suggested_fg = suggest_contrasting_color(background, foreground);
             if let Some(suggested) = suggested_fg {
-                let new_contrast = ColorUtilities::contrast_ratio(suggested, background);
+                let new_contrast = ColorUtils::contrast_ratio(suggested, background);
                 println!("  💡 Suggested foreground: rgb({:.0}, {:.0}, {:.0}) - {:.2}:1", 
                     suggested.r * 255.0, suggested.g * 255.0, suggested.b * 255.0, new_contrast);
             }
@@ -95,9 +97,8 @@ mod button_contrast_tests {
         if background == Color::TRANSPARENT {
             return None;
         }
-        
-        // Simple suggestion: use white or black based on background luminance
-        let luminance = ColorUtilities::relative_luminance(background);
+          // Simple suggestion: use white or black based on background luminance
+        let luminance = ColorUtils::luminance(background);
         if luminance > 0.5 {
             Some(Color::BLACK) // Dark text on light background
         } else {

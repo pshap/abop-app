@@ -50,7 +50,8 @@ impl MaterialPalette {
     pub fn new() -> Self {
         // Use Material Design 3 baseline color (#6750A4) for better contrast
         Self::from_seed(Color::from_rgb(0.404, 0.314, 0.643))
-    }    /// Creates a `MaterialPalette` from a seed color
+    }
+    /// Creates a `MaterialPalette` from a seed color
     #[must_use]
     pub fn from_seed(seed: Color) -> Self {
         // Use the generate_palette_from_seed function directly since types are identical

@@ -5,9 +5,12 @@
 
 #[cfg(test)]
 mod button_contrast_validation {
-    use crate::styling::material::{
-        ColorUtilities, MaterialColors, MaterialPalette, MaterialTokens,
-        components::button_style::strategy::ButtonStyleStrategy,
+    use crate::styling::{
+        color_utils::ColorUtils,
+        material::{
+            MaterialColors, MaterialPalette, MaterialTokens,
+            components::button_style::strategy::ButtonStyleStrategy,
+        },
     };
     use iced::Color;
 
@@ -253,7 +256,7 @@ mod button_contrast_validation {
 
     /// Helper function to test a contrast scenario and provide detailed feedback
     fn test_contrast_scenario(name: &str, background: Color, foreground: Color) {
-        let contrast = ColorUtilities::contrast_ratio(foreground, background);
+        let contrast = ColorUtils::contrast_ratio(foreground, background);
         let aa_normal = contrast >= 4.5;
         let aa_large = contrast >= 3.0;
         let aaa = contrast >= 7.0;
@@ -296,12 +299,12 @@ mod button_contrast_validation {
             return;
         }
 
-        let bg_luminance = ColorUtilities::relative_luminance(background);
+        let bg_luminance = ColorUtils::luminance(background);
 
         if bg_luminance > 0.5 {
             // Light background - suggest dark foreground
             let suggested = Color::from_rgb(0.1, 0.1, 0.1);
-            let new_contrast = ColorUtilities::contrast_ratio(suggested, background);
+            let new_contrast = ColorUtils::contrast_ratio(suggested, background);
             println!(
                 "  💡 Suggested: Dark foreground rgb(26, 26, 26) - {:.2}:1 contrast",
                 new_contrast
@@ -309,7 +312,7 @@ mod button_contrast_validation {
         } else {
             // Dark background - suggest light foreground
             let suggested = Color::from_rgb(0.9, 0.9, 0.9);
-            let new_contrast = ColorUtilities::contrast_ratio(suggested, background);
+            let new_contrast = ColorUtils::contrast_ratio(suggested, background);
             println!(
                 "  💡 Suggested: Light foreground rgb(230, 230, 230) - {:.2}:1 contrast",
                 new_contrast
@@ -327,15 +330,14 @@ mod button_contrast_validation {
         let mut issues = Vec::with_capacity(10); // Pre-allocate for typical number of contrast checks
 
         // Check if primary color on surface meets contrast
-        let primary_on_surface =
-            ColorUtilities::contrast_ratio(colors.primary.base, colors.surface);
+        let primary_on_surface = ColorUtils::contrast_ratio(colors.primary.base, colors.surface);
         if primary_on_surface < 4.5 {
             issues.push(format!("Primary on surface: {:.2}:1", primary_on_surface));
         }
 
         // Check surface variant combinations
         let surface_variant_contrast =
-            ColorUtilities::contrast_ratio(colors.on_surface_variant, colors.surface_variant);
+            ColorUtils::contrast_ratio(colors.on_surface_variant, colors.surface_variant);
         if surface_variant_contrast < 4.5 {
             issues.push(format!(
                 "Surface variant text: {:.2}:1",
@@ -361,7 +363,7 @@ mod button_contrast_validation {
         let black = Color::BLACK;
 
         // Black and white should have ~21:1 contrast
-        let max_contrast = ColorUtilities::contrast_ratio(black, white);
+        let max_contrast = ColorUtils::contrast_ratio(black, white);
         assert!(
             max_contrast > 20.0,
             "Max contrast should be ~21:1, got {:.2}",
@@ -369,7 +371,7 @@ mod button_contrast_validation {
         );
 
         // Same colors should have 1:1 contrast
-        let same_contrast = ColorUtilities::contrast_ratio(white, white);
+        let same_contrast = ColorUtils::contrast_ratio(white, white);
         assert!(
             (same_contrast - 1.0).abs() < 0.1,
             "Same color contrast should be ~1:1, got {:.2}",
@@ -381,8 +383,8 @@ mod button_contrast_validation {
         let black_text = Color::BLACK;
         let white_text = Color::WHITE;
 
-        let black_on_gray = ColorUtilities::contrast_ratio(black_text, gray_bg);
-        let white_on_gray = ColorUtilities::contrast_ratio(white_text, gray_bg);
+        let black_on_gray = ColorUtils::contrast_ratio(black_text, gray_bg);
+        let white_on_gray = ColorUtils::contrast_ratio(white_text, gray_bg);
 
         println!("Black on gray: {:.2}:1", black_on_gray);
         println!("White on gray: {:.2}:1", white_on_gray);

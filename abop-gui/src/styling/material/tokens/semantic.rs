@@ -75,15 +75,15 @@ impl SemanticColors {
     #[must_use]
     pub fn light() -> Self {
         let material_colors = crate::styling::material::MaterialColors::light_default();
-        
+
         Self {
             primary: material_colors.primary.base,
             secondary: material_colors.secondary.base,
             // Dedicated semantic colors that are guaranteed to be the right hue
-            success: Color::from_rgb(0.0, 0.6, 0.0),    // Dark green for light theme
-            warning: Color::from_rgb(0.8, 0.5, 0.0),    // Dark amber for light theme
-            error: material_colors.error.base,          // MD3 error is correctly red
-            info: Color::from_rgb(0.0, 0.3, 0.8),       // Dark blue for light theme
+            success: Color::from_rgb(0.0, 0.6, 0.0), // Dark green for light theme
+            warning: Color::from_rgb(0.8, 0.5, 0.0), // Dark amber for light theme
+            error: material_colors.error.base,       // MD3 error is correctly red
+            info: Color::from_rgb(0.0, 0.3, 0.8),    // Dark blue for light theme
             surface: material_colors.surface,
             on_surface: material_colors.on_surface,
         }
@@ -93,15 +93,15 @@ impl SemanticColors {
     #[must_use]
     pub fn dark() -> Self {
         let material_colors = crate::styling::material::MaterialColors::dark_default();
-        
+
         Self {
             primary: material_colors.primary.base,
             secondary: material_colors.secondary.base,
             // Dedicated semantic colors that are guaranteed to be the right hue
-            success: Color::from_rgb(0.2, 0.8, 0.2),    // Bright green for dark theme
-            warning: Color::from_rgb(1.0, 0.7, 0.0),    // Bright amber for dark theme
-            error: material_colors.error.base,          // MD3 error is correctly red
-            info: Color::from_rgb(0.4, 0.7, 1.0),       // Light blue for dark theme
+            success: Color::from_rgb(0.2, 0.8, 0.2), // Bright green for dark theme
+            warning: Color::from_rgb(1.0, 0.7, 0.0), // Bright amber for dark theme
+            error: material_colors.error.base,       // MD3 error is correctly red
+            info: Color::from_rgb(0.4, 0.7, 1.0),    // Light blue for dark theme
             surface: material_colors.surface,
             on_surface: material_colors.on_surface,
         }
