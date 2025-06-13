@@ -50,31 +50,11 @@ impl MaterialPalette {
     pub fn new() -> Self {
         // Use Material Design 3 baseline color (#6750A4) for better contrast
         Self::from_seed(Color::from_rgb(0.404, 0.314, 0.643))
-    }
-
-    /// Creates a `MaterialPalette` from a seed color
+    }    /// Creates a `MaterialPalette` from a seed color
     #[must_use]
     pub fn from_seed(seed: Color) -> Self {
-        // Convert from the other MaterialPalette type
-        let other_palette = generate_palette_from_seed(seed);
-
-        // Helper function to convert between TonalPalette types
-        fn convert_tonal_palette(
-            palette: crate::styling::material::colors::TonalPalette,
-        ) -> TonalPalette {
-            TonalPalette {
-                tones: palette.tones,
-            }
-        }
-
-        Self {
-            primary: convert_tonal_palette(other_palette.primary),
-            secondary: convert_tonal_palette(other_palette.secondary),
-            tertiary: convert_tonal_palette(other_palette.tertiary),
-            neutral: convert_tonal_palette(other_palette.neutral),
-            neutral_variant: convert_tonal_palette(other_palette.neutral_variant),
-            error: convert_tonal_palette(other_palette.error),
-        }
+        // Use the generate_palette_from_seed function directly since types are identical
+        generate_palette_from_seed(seed)
     }
 }
 
