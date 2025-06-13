@@ -254,10 +254,12 @@ impl ThemeMode {
             MaterialColors::dark_default()
         } else {
             MaterialColors::light_default()
-        };
-        colors.on_surface_variant // Use surface variant for disabled text
-    }/// Get semantic colors for the current theme mode
-    #[must_use]    pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
+        };        colors.on_surface_variant // Use surface variant for disabled text
+    }
+
+    /// Get semantic colors for the current theme mode
+    #[must_use]
+    pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
         // Use the appropriate semantic color scheme for the theme
         if self.is_dark() {
             crate::styling::material::SemanticColors::dark()
@@ -305,6 +307,20 @@ impl ThemeMode {
     }
 }
 
+/// Calculate the perceived luminance of a color using the standard formula
+/// 
+/// This uses the ITU-R BT.709 standard for calculating perceived brightness
+/// which is more accurate than simple RGB averaging.
+fn calculate_luminance(color: Color) -> f32 {
+    // Convert to linear RGB first (assuming sRGB input)
+    let linear_r = if color.r <= 0.03928 { color.r / 12.92 } else { ((color.r + 0.055) / 1.055).powf(2.4) };
+    let linear_g = if color.g <= 0.03928 { color.g / 12.92 } else { ((color.g + 0.055) / 1.055).powf(2.4) };
+    let linear_b = if color.b <= 0.03928 { color.b / 12.92 } else { ((color.b + 0.055) / 1.055).powf(2.4) };
+    
+    // Calculate luminance using ITU-R BT.709 coefficients
+    0.2126 * linear_r + 0.7152 * linear_g + 0.0722 * linear_b
+}
+
 // ================================================================================================
 // THEME CONSTRUCTORS
 // ================================================================================================
@@ -345,8 +361,11 @@ pub fn light_sunset_theme() -> IcedTheme {
 
 /// Create a Material Design theme from `MaterialColors`
 fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
-    // Use dedicated semantic colors for Iced's Palette rather than assuming tertiary=green
-    let semantic = if colors.primary.base.r < 0.5 { // Rough dark theme detection
+    // Use proper luminance-based dark theme detection instead of just red channel
+    let background_luminance = calculate_luminance(colors.background);
+    let is_dark = background_luminance < 0.5;
+    
+    let semantic = if is_dark {
         crate::styling::material::SemanticColors::dark()
     } else {
         crate::styling::material::SemanticColors::light()
