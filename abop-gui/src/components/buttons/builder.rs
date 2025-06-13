@@ -37,6 +37,12 @@ use super::{
     variants::{ButtonSize, ButtonVariant, IconPosition},
 };
 
+/// Default icon size for buttons in pixels
+const ICON_SIZE: u16 = 24;
+
+/// Default spacing between icon and text elements in pixels
+const ICON_TEXT_SPACING: u16 = 8;
+
 /// A builder for creating Material Design 3 buttons with a fluent API.
 ///
 /// # Examples
@@ -212,8 +218,8 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             (Some(label), Some(icon)) => {
                 // Button with both icon and label
                 let icon_element: Element<'a, M> = container(icon.to_element::<M>())
-                    .width(24)
-                    .height(24)
+                    .width(ICON_SIZE)
+                    .height(ICON_SIZE)
                     .into();
 
                 let text_element: Element<'a, M> = text(label).into();
@@ -221,19 +227,19 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                 // Create a row with icon and text in the correct order based on position
                 let row: Element<'a, M> = match icon.position {
                     IconPosition::Leading => Row::new()
-                        .spacing(8) // Add spacing between elements
+                        .spacing(ICON_TEXT_SPACING)
                         .push(icon_element)
                         .push(text_element)
                         .align_y(Alignment::Center)
                         .into(),
                     IconPosition::Trailing => Row::new()
-                        .spacing(8) // Add spacing between elements
+                        .spacing(ICON_TEXT_SPACING)
                         .push(text_element)
                         .push(icon_element)
                         .align_y(Alignment::Center)
                         .into(),
                     IconPosition::Only => {
-                        // This should never happen due to early validation in icon() and label() methods
+                        // This case is prevented by the early validation in the build() method
                         return Err(ButtonError::InvalidIconPosition);
                     }
                 };
@@ -285,7 +291,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
                 // Create a container for the icon with default size
                 let mut container = container(icon_element)
-                    .height(24)
+                    .height(ICON_SIZE)
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);

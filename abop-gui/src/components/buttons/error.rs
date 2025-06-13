@@ -28,6 +28,10 @@ pub enum ButtonError {
     InvalidState(&'static str),
 
     /// The icon position is invalid for the current button configuration
+    ///
+    /// This error occurs when:
+    /// - IconPosition::Only is used while both label and icon are present
+    /// - Any other invalid icon position combinations that violate button design constraints
     InvalidIconPosition,
 }
 
