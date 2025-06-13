@@ -211,7 +211,7 @@ macro_rules! button_strategy {
         $(has_border = $has_border:expr;)?
         $(base_elevation = $base_elevation:expr;)?
         $(
-            custom_styling = |$state:ident, $config:ident, $tokens:ident, $colors_custom:ident| {
+            custom_styling = |$button_state:ident, $variant_config:ident, $material_tokens:ident, $material_colors:ident| {
                 $($custom_body:tt)*
             }
         )?
@@ -234,19 +234,21 @@ macro_rules! button_strategy {
                     $($config_body)*
                 };
 
-                $(
-                    // Custom styling override if provided
-                    let $state = state;
-                    let $config = &config;
-                    let $tokens = tokens;
-                    let $colors_custom = colors;
-                    $($custom_body)*
-                )?
-                
-                #[allow(unreachable_code)]
-                $crate::styling::material::components::button_style::strategy::ButtonStateHandler::apply_state_styling(
-                    state, &config, tokens, colors
-                )
+                // Apply custom styling if provided, otherwise use default styling
+                match () {
+                    $(
+                        () => {
+                            let $button_state = state;
+                            let $variant_config = &config;
+                            let $material_tokens = tokens;
+                            let $material_colors = colors;
+                            $($custom_body)*
+                        }
+                    )?
+                    () => $crate::styling::material::components::button_style::strategy::ButtonStateHandler::apply_state_styling(
+                        state, &config, tokens, colors
+                    )
+                }
             }
 
             fn variant_name(&self) -> &'static str {

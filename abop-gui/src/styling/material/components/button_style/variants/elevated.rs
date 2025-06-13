@@ -22,19 +22,19 @@ button_strategy! {
     supports_elevation = true;
     base_elevation = 1.0;
     
-    custom_styling = |state, config, tokens, colors| {
+    custom_styling = |button_state, variant_config, material_tokens, material_colors| {
         let mut styling = super::super::strategy::ButtonStateHandler::apply_state_styling(
-            state, config, tokens, colors
+            button_state, variant_config, material_tokens, material_colors
         );
         
         // Override shadow for different states
-        match state {
-            ButtonState::Hovered => styling.shadow = Some(tokens.elevation.level2.shadow),
-            ButtonState::Pressed => styling.shadow = Some(tokens.elevation.level1.shadow),
+        match button_state {
+            ButtonState::Hovered => styling.shadow = Some(material_tokens.elevation.level2.shadow),
+            ButtonState::Pressed => styling.shadow = Some(material_tokens.elevation.level1.shadow),
             ButtonState::Disabled => styling.shadow = None,
             _ => {} // Keep default shadow
         }
 
-        return styling;
+        styling
     }
 }

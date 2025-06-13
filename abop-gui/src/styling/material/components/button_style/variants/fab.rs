@@ -37,30 +37,30 @@ button_strategy! {
     
     supports_elevation = true;
     base_elevation = 3.0;
-    
-    custom_styling = |state, config, tokens, colors| {
+      custom_styling = |button_state, variant_config, material_tokens, material_colors| {
         let mut styling = super::super::strategy::ButtonStateHandler::apply_state_styling(
-            state, config, tokens, colors
+            button_state, variant_config, material_tokens, material_colors
         );
         
         // Override shadows and special cases for FAB
-        match state {
-            ButtonState::Hovered => styling.shadow = Some(tokens.elevation.level4.shadow),
-            ButtonState::Pressed => styling.shadow = Some(tokens.elevation.level3.shadow),            ButtonState::Disabled => {
-                styling.background = iced::Background::Color(ColorUtils::with_alpha(colors.on_surface, constants::opacity::FAB_DISABLED_SURFACE));
+        match button_state {
+            ButtonState::Hovered => styling.shadow = Some(material_tokens.elevation.level4.shadow),
+            ButtonState::Pressed => styling.shadow = Some(material_tokens.elevation.level3.shadow),
+            ButtonState::Disabled => {
+                styling.background = iced::Background::Color(ColorUtils::with_alpha(material_colors.on_surface, constants::opacity::FAB_DISABLED_SURFACE));
                 styling.shadow = None;
             },
             ButtonState::Focused => {
                 styling.background = iced::Background::Color(ColorUtils::blend_colors(
-                    config.base_background,
-                    config.icon_color,
-                    tokens.states.opacity.focus,
+                    variant_config.base_background,
+                    variant_config.icon_color,
+                    material_tokens.states.opacity.focus,
                 ));
-                styling.shadow = Some(tokens.elevation.level3.shadow);
+                styling.shadow = Some(material_tokens.elevation.level3.shadow);
             },
             _ => {} // Keep default
         }
 
-        return styling;
+        styling
     }
 }
