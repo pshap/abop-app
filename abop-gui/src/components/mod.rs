@@ -15,10 +15,9 @@ pub mod audio_controls;
 pub mod audio_toolbar;
 /// Shared components used across multiple views and contexts
 ///
-/// Contains Material Design 3 components organized into submodules:
+/// Contains reusable Material Design 3 components:
 /// - progress: Progress indicators and status components
-/// - sizing: Component dimension constants and converters
-/// Note: Button-related functionality has been moved to the `buttons` module
+/// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;
