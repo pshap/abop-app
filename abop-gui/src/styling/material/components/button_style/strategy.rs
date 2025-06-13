@@ -235,6 +235,7 @@ macro_rules! button_strategy {
                 };
 
                 // Apply custom styling if provided, otherwise use default styling
+                #[allow(unreachable_patterns)]
                 match () {
                     $(
                         () => {
