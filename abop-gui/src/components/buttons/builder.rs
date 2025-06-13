@@ -221,14 +221,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                         .align_y(Alignment::Center)
                         .into(),
                     IconPosition::Only => {
-                        // This case shouldn't happen since we have both label and icon,
-                        // but fallback to leading position
-                        Row::new()
-                            .spacing(8)
-                            .push(icon_element)
-                            .push(text_element)
-                            .align_y(Alignment::Center)
-                            .into()
+                        panic!("Invalid state: IconPosition::Only used with both label and icon");
                     }
                 };
 
