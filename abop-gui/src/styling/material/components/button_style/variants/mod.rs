@@ -3,7 +3,7 @@
 //! This module contains the concrete implementations of `ButtonStyleStrategy`
 //! for each Material Design 3 button variant.
 
-use iced::{self, Border, Color, Shadow};
+use iced::{self, Border, Color};
 
 pub mod elevated;
 pub mod fab;
