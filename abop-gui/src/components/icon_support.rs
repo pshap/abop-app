@@ -11,6 +11,16 @@ use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::button_style::{ButtonSizeVariant, ButtonStyleVariant};
 use crate::styling::material::components::widgets::{IconPosition, MaterialButtonVariant};
 
+/// Creates a simple icon element with the specified size
+///
+/// # Arguments
+/// * `icon_name` - The icon name to use from Font Awesome
+/// * `size` - The size of the icon in pixels
+#[must_use]
+pub fn icon<'a, Message>(icon_name: &str, size: f32) -> Element<'a, Message> {
+    fa_icon_solid(icon_name).size(size).into()
+}
+
 /// Creates button content with an icon positioned relative to text
 ///
 /// # Arguments

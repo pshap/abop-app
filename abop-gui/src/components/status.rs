@@ -1,12 +1,10 @@
-use iced::Element;
-use iced::Length;
+use iced::{Element, Length};
 use iced::widget::{column, container, row, text};
 use std::path::PathBuf;
 
 use abop_core::PlayerState;
 use abop_core::scanner::ScanProgress;
 
-use crate::components::common::create_progress_indicator;
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
@@ -97,29 +95,31 @@ impl StatusDisplay {
         _current_playing_file: Option<&PathBuf>,
         _selected_count: usize, // Mark as intentionally unused
         _total_count: usize,    // Mark as intentionally unused
-        theme: ThemeMode,
-        tokens: &MaterialTokens,
+        _theme: ThemeMode,
+        tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
         let mut status_column = column![];
 
         // Show scanning progress if active
         if scanning {
-            status_column = status_column.push(create_progress_indicator(
-                scan_progress,
-                "Scanning library...",
-                theme,
-                tokens,
-            ));
+            let scan_label = String::from("Scanning library...");
+            let progress_text = if let Some(progress) = scan_progress {
+                format!("{:.1}% - {}", progress * 100.0, scan_label)
+            } else {
+                scan_label
+            };
+            status_column = status_column.push(text(progress_text));
         }
 
         // Show audio processing progress if active
         if processing_audio {
-            status_column = status_column.push(create_progress_indicator(
-                processing_progress,
-                processing_status.unwrap_or("Processing audio..."),
-                theme,
-                tokens,
-            ));
+            let processing_label = processing_status.unwrap_or("Processing audio...").to_string();
+            let progress_text = if let Some(progress) = processing_progress {
+                format!("{:.1}% - {}", progress * 100.0, processing_label)
+            } else {
+                processing_label
+            };
+            status_column = status_column.push(text(progress_text));
         }
 
         status_column.spacing(tokens.spacing().md as u16).into()
@@ -143,88 +143,64 @@ impl StatusDisplay {
     #[must_use]
     pub fn enhanced_view<'a>(
         params: EnhancedStatusDisplayParams<'a>,
-        tokens: &MaterialTokens,
+        tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-        let mut status_column = column![]; // Show enhanced scanning progress if active
+        let mut status_column = column![];
+
+        // Show enhanced scanning progress if active
         if params.scanning {
             if let Some(progress) = &params.scan_progress {
                 // Extract information from ScanProgress enum
                 let (progress_percentage, processed, total, current_file) = match progress {
                     abop_core::scanner::ScanProgress::Started { total_files } => {
-                        (0.0, 0, *total_files, None)
+                        (0.0, 0, *total_files, "Starting scan...")
                     }
                     abop_core::scanner::ScanProgress::FileProcessed {
                         current,
                         total,
                         file_name,
                         progress_percentage,
-                    } => (
-                        *progress_percentage,
-                        *current,
-                        *total,
-                        Some(file_name.clone()),
-                    ),
-                    abop_core::scanner::ScanProgress::BatchCommitted {
-                        total_processed, ..
                     } => {
-                        (0.5, *total_processed, *total_processed, None) // Assume 50% progress for batches
+                        (*progress_percentage, *current, *total, file_name.as_str())
+                    }
+                    abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
+                        (0.5, *total_processed, *total_processed, "Processing batch...")
                     }
                     abop_core::scanner::ScanProgress::Complete { processed, .. } => {
-                        (1.0, *processed, *processed, None)
+                        (1.0, *processed, *processed, "Scan completed!")
                     }
                     abop_core::scanner::ScanProgress::Cancelled { processed, .. } => {
-                        (0.0, *processed, *processed, None)
+                        (0.0, *processed, *processed, "Scan cancelled")
                     }
                 };
 
-                let progress_text = current_file.as_ref().map_or_else(
-                    || format!("Scanning library... ({processed}/{total})",),
-                    |current_file| {
-                        format!(
-                            "Scanning: {} ({}/{})",
-                            current_file
-                                .split(std::path::MAIN_SEPARATOR)
-                                .next_back()
-                                .unwrap_or(current_file),
-                            processed,
-                            total,
-                        )
-                    },
+                let progress_text = text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12);
+                let scan_label = format!(
+                    "Scanning: {} of {} files\nCurrent: {}",
+                    processed, total, current_file
                 );
+                let progress_display = text(scan_label);
+                let progress_row = column![
+                    progress_display,
+                    row![progress_text].spacing(tokens.spacing().md as u16)
+                ].spacing(tokens.spacing().sm as u16);
 
-                status_column = status_column.push(
-                    column![
-                        create_progress_indicator(
-                            Some(progress_percentage),
-                            &progress_text,
-                            params.theme,
-                            tokens,
-                        ),
-                        row![
-                            text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12),
-                        ]
-                        .spacing(tokens.spacing().md as u16)
-                    ]
-                    .spacing(tokens.spacing().sm as u16),
-                );
+                status_column = status_column.push(progress_row);
             } else {
-                status_column = status_column.push(create_progress_indicator(
-                    None,
-                    "Scanning library...",
-                    params.theme,
-                    tokens,
-                ));
+                let scan_label = String::from("Scanning library...");
+                status_column = status_column.push(text(scan_label));
             }
         }
 
         // Show audio processing progress if active
         if params.processing_audio {
-            status_column = status_column.push(create_progress_indicator(
-                params.processing_progress,
-                params.processing_status.unwrap_or("Processing audio..."),
-                params.theme,
-                tokens,
-            ));
+            let processing_status = params.processing_status.unwrap_or("Processing audio...").to_string();
+            let progress_text = if let Some(progress) = params.processing_progress {
+                format!("{:.1}% - {}", progress * 100.0, processing_status)
+            } else {
+                processing_status
+            };
+            status_column = status_column.push(text(progress_text));
         }
 
         status_column.spacing(tokens.spacing().md as u16).into()

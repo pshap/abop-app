@@ -5,11 +5,11 @@
 use iced::widget::{container, row};
 use iced::{Alignment, Element, Length};
 
+use crate::components::buttons::{self, ButtonVariant};
+use crate::components::buttons::variants::ButtonSize;
 use crate::components::icons::icon_names;
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
-use crate::styling::material::components::widgets::ButtonSize;
-use crate::styling::material::components::widgets::MaterialButtonVariant;
 
 /// Audio toolbar component for playback controls
 #[derive(Debug, Clone, Default)]
@@ -38,39 +38,45 @@ impl AudioToolbar {
             icon_names::PLAY
         };
 
-        use crate::components::common::material_icon_button_widget;
+        let play_button = buttons::button(material_tokens)
+            .icon_only(play_icon, ButtonSize::Small)
+            .variant(ButtonVariant::Outlined)
+            .on_press(Message::PlayPause)
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build play button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
-        let play_button = material_icon_button_widget(
-            play_icon,
-            MaterialButtonVariant::Outlined,
-            ButtonSize::Small,
-            Message::PlayPause,
-            material_tokens,
-        );
+        let stop_button = buttons::button(material_tokens)
+            .icon_only(icon_names::STOP, ButtonSize::Small)
+            .variant(ButtonVariant::Outlined)
+            .on_press(Message::Stop)
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build stop button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
-        let stop_button = material_icon_button_widget(
-            icon_names::STOP,
-            MaterialButtonVariant::Outlined,
-            ButtonSize::Small,
-            Message::Stop,
-            material_tokens,
-        );
+        let previous_button = buttons::button(material_tokens)
+            .icon_only(icon_names::SKIP_PREVIOUS, ButtonSize::Small)
+            .variant(ButtonVariant::Outlined)
+            .on_press(Message::Previous)
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build previous button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
-        let previous_button = material_icon_button_widget(
-            icon_names::SKIP_PREVIOUS,
-            MaterialButtonVariant::Outlined,
-            ButtonSize::Small,
-            Message::Previous,
-            material_tokens,
-        );
-
-        let next_button = material_icon_button_widget(
-            icon_names::SKIP_NEXT,
-            MaterialButtonVariant::Outlined,
-            ButtonSize::Small,
-            Message::Next,
-            material_tokens,
-        );
+        let next_button = buttons::button(material_tokens)
+            .icon_only(icon_names::SKIP_NEXT, ButtonSize::Small)
+            .variant(ButtonVariant::Outlined)
+            .on_press(Message::Next)
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build next button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
         // Audio controls with proper spacing and alignment
         container(

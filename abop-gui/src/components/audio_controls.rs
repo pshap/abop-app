@@ -7,9 +7,8 @@ use std::collections::HashSet;
 use abop_core::PlayerState;
 use abop_core::models::Audiobook;
 
-use crate::components::common::create_button;
+use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;
-use crate::styling::material::components::widgets::MaterialButtonVariant;
 use crate::styling::material::{MaterialSurface, MaterialTokens, SurfaceVariant};
 
 /// Audio playback controls and manipulation component
@@ -58,43 +57,46 @@ impl AudioControls {
         if !selected_ids.is_empty() {
             let selected_count = selected_ids.len();
             content =
-                content.push(text(format!("{selected_count} audiobook(s) selected")).size(16));
-
-            // Add process button
-            content = content.push(create_button(
-                "Process Selected",
-                MaterialButtonVariant::Filled,
-                Message::ProcessSelected,
-                material_tokens,
-            ));
+                content.push(text(format!("{selected_count} audiobook(s) selected")).size(16));            // Add process button
+            content = content.push(
+                ButtonBuilder::new(material_tokens)
+                    .variant(ButtonVariant::Filled)
+                    .label("Process Selected")
+                    .on_press(Message::ProcessSelected)
+                    .build()
+                    .unwrap()
+            );
 
             // Add preview button if playing
-            match player_state {
-                PlayerState::Playing => {
-                    content = content.push(create_button(
-                        "Stop Preview",
-                        MaterialButtonVariant::Outlined,
-                        Message::StopPlayback,
-                        material_tokens,
-                    ));
-                }
-                PlayerState::Stopped => {
+            match player_state {                PlayerState::Playing => {
+                    content = content.push(
+                        ButtonBuilder::new(material_tokens)
+                            .variant(ButtonVariant::Outlined)
+                            .label("Stop Preview")
+                            .on_press(Message::StopPlayback)
+                            .build()
+                            .unwrap()
+                    );
+                }                PlayerState::Stopped => {
                     if selected_count == 1 {
-                        content = content.push(create_button(
-                            "Preview Audio",
-                            MaterialButtonVariant::Outlined,
-                            Message::StartPlayback,
-                            material_tokens,
-                        ));
+                        content = content.push(
+                            ButtonBuilder::new(material_tokens)
+                                .variant(ButtonVariant::Outlined)
+                                .label("Preview Audio")
+                                .on_press(Message::StartPlayback)
+                                .build()
+                                .unwrap()
+                        );
                     }
-                }
-                PlayerState::Paused => {
-                    content = content.push(create_button(
-                        "Resume Preview",
-                        MaterialButtonVariant::Outlined,
-                        Message::StartPlayback,
-                        material_tokens,
-                    ));
+                }                PlayerState::Paused => {
+                    content = content.push(
+                        ButtonBuilder::new(material_tokens)
+                            .variant(ButtonVariant::Outlined)
+                            .label("Resume Preview")
+                            .on_press(Message::StartPlayback)
+                            .build()
+                            .unwrap()
+                    );
                 }
             }
         }

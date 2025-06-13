@@ -6,11 +6,11 @@
 use iced::widget::{Space, column, container, row, text};
 use iced::{Element, Length};
 
-use crate::components::common::create_button;
+use crate::components::buttons::builder::ButtonBuilder;
+use crate::components::buttons::variants::ButtonVariant;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::styling::container::dialog::DialogContainerStyles;
-use crate::styling::material::components::widgets::MaterialButtonVariant;
 
 // Import Material Design 3 selection components
 use crate::styling::material::MaterialColors;
@@ -71,12 +71,12 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
             // Close button row
             row![
                 Space::new(Length::Fill, 0),
-                create_button(
-                    "Close",
-                    MaterialButtonVariant::Filled,
-                    Message::CloseSettings,
-                    &state.material_tokens,
-                )
+                ButtonBuilder::new(&state.material_tokens)
+                    .label("Close")
+                    .variant(ButtonVariant::Filled)
+                    .on_press(Message::CloseSettings)
+                    .build()
+                    .unwrap_or_else(|_| text("Close").into())
             ]
         ]
         .spacing(state.material_tokens.spacing().md),

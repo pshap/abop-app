@@ -3,7 +3,15 @@
 use iced::{Element, Length, Padding};
 use thiserror::Error;
 
+use crate::components::buttons::variants::{IconPosition as CustomIconPosition, ButtonSize as CustomButtonSize};
 use crate::styling::material::MaterialTokens;
+use crate::styling::material::components::widgets::material_button::MaterialButtonVariant;
+use crate::styling::material::components::widgets::MaterialButton;
+use crate::styling::material::components::widgets::{
+    ButtonSize as MaterialButtonSize, 
+    IconPosition as MaterialIconPosition
+};
+
 
 /// Errors that can occur during button building
 #[derive(Debug, Error, Clone)]
@@ -16,8 +24,6 @@ pub enum ButtonBuildError {
     #[error("Invalid configuration: {0}")]
     InvalidConfiguration(&'static str),
 }
-use crate::styling::material::components::widgets::{ButtonSize, IconPosition};
-use crate::styling::material::components::widgets::{MaterialButton, MaterialButtonVariant};
 
 use crate::components::icon_support;
 
@@ -28,9 +34,9 @@ use crate::components::icon_support;
 pub struct ButtonBuilder<'a, M: Clone + 'a> {
     label: Option<&'a str>,
     icon_name: Option<&'a str>,
-    icon_position: IconPosition,
+    icon_position: CustomIconPosition,
     variant: MaterialButtonVariant,
-    size: Option<ButtonSize>,
+    size: Option<MaterialButtonSize>,
     width: Option<Length>,
     height: Option<Length>,
     padding: Option<Padding>,
@@ -45,7 +51,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
         Self {
             label: None,
             icon_name: None,
-            icon_position: IconPosition::Leading,
+            icon_position: CustomIconPosition::Leading,
             variant: MaterialButtonVariant::Filled,
             size: None,
             width: None,
@@ -64,9 +70,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Set the icon name and position
-    pub const fn icon(mut self, icon_name: &'a str, position: IconPosition) -> Self {
+    pub fn icon(mut self, icon_name: &'a str, position: impl Into<CustomIconPosition>) -> Self {
         self.icon_name = Some(icon_name);
-        self.icon_position = position;
+        self.icon_position = position.into();
         self
     }
 
@@ -77,8 +83,8 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     }
 
     /// Set the button size
-    pub const fn size(mut self, size: ButtonSize) -> Self {
-        self.size = Some(size);
+    pub fn size(mut self, size: impl Into<MaterialButtonSize>) -> Self {
+        self.size = Some(size.into());
         self
     }
 
@@ -121,39 +127,51 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// - Button is enabled but no `on_press` handler is provided
     /// - Both `on_press` and `disabled` are set
     pub fn build(self) -> Result<Element<'a, M>, ButtonBuildError> {
-        // Validate button has either label or icon
+        // Validate button configuration
         if self.label.is_none() && self.icon_name.is_none() {
             return Err(ButtonBuildError::MissingField("label or icon"));
         }
 
-        // Validate on_press and disabled states
-        if let (Some(_), true) = (self.on_press.as_ref(), self.disabled) {
+        if !self.disabled && self.on_press.is_none() {
+            return Err(ButtonBuildError::MissingField("on_press"));
+        }
+
+        if self.disabled && self.on_press.is_some() {
             return Err(ButtonBuildError::InvalidConfiguration(
-                "Cannot set both on_press and disabled",
+                "Cannot have both `on_press` and `disabled` set",
             ));
         }
 
         // Create the button based on configuration
-        if let (Some(label), Some(icon_name)) = (self.label, self.icon_name) {
-            // Button with both text and icon
-            let on_press = match (self.on_press, self.disabled) {
-                (Some(msg), false) => msg,
-                (None, false) => {
-                    return Err(ButtonBuildError::MissingField(
-                        "on_press for enabled button",
-                    ));
-                }
-                _ => unreachable!(), // Handled by validation above
-            };
+        if let Some(icon_name) = self.icon_name {
+            if let Some(label) = self.label {
+                // Button with both icon and label
+                let button = material_button_with_icon_widget(
+                    label,
+                    icon_name,
+                    self.icon_position.into(),
+                    self.variant,
+                    self.on_press.unwrap_or_else(|| {
+                        panic!("Button with label '{}' and icon '{}' is enabled but has no on_press handler", label, icon_name)
+                    }),
+                    self.tokens,
+                );
 
-            Ok(material_button_with_icon_widget(
-                label,
-                icon_name,
-                self.icon_position,
-                self.variant,
-                on_press,
-                self.tokens,
-            ))
+                Ok(button)
+            } else {
+                // Icon-only button
+                let button = material_icon_button_widget(
+                    icon_name,
+                    self.variant,
+                    self.size.unwrap_or(MaterialButtonSize::Medium),
+                    self.on_press.unwrap_or_else(|| {
+                        panic!("Icon button with icon '{}' is enabled but has no on_press handler", icon_name)
+                    }),
+                    self.tokens,
+                );
+
+                Ok(button)
+            }
         } else if let Some(label) = self.label {
             // Text-only button
             let mut btn = MaterialButton::new(label, self.tokens).variant(self.variant);
@@ -184,20 +202,17 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             // Icon-only button
             if self.disabled {
                 // Get the size or default to Medium
-                let button_size = self.size.unwrap_or(ButtonSize::Medium);
+                let button_size = self.size.unwrap_or(MaterialButtonSize::Medium);
 
-                // Map to size variant for icon support
-                let size_variant = icon_support::map_button_size(button_size);
-
-                // Create icon content
+                // Create icon content using the material button size directly
                 let content = icon_support::create_icon_button_content::<M>(
                     icon_name,
                     self.variant,
-                    size_variant,
+                    map_material_size_to_style_size(button_size),
                     self.tokens,
                 );
 
-                // Use centralized size calculation with the same size
+                // Use centralized size calculation
                 let button_size_px = super::sizing::button_size_to_pixels(button_size);
 
                 // Create disabled button
@@ -217,7 +232,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                 Ok(material_icon_button_widget(
                     icon_name,
                     self.variant,
-                    self.size.unwrap_or(ButtonSize::Medium),
+                    self.size.unwrap_or(MaterialButtonSize::Medium),
                     on_press,
                     self.tokens,
                 ))
@@ -271,173 +286,270 @@ pub const fn button_builder<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> Bu
 }
 
 /// Creates a semantic primary button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").variant(ButtonVariant::Filled).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").variant(ButtonVariant::Filled).on_press(message).build()?` instead"
+)]
 pub fn primary_button_semantic<'a, M: Clone + 'a>(
     label: &'a str,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .variant(MaterialButtonVariant::Filled)
+        .variant(crate::components::buttons::ButtonVariant::Filled)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Primary button build error: {e}")).into()
+            log::warn!("Failed to build primary button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates a semantic secondary button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").variant(ButtonVariant::Outlined).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").variant(ButtonVariant::Outlined).on_press(message).build()?` instead"
+)]
 pub fn secondary_button_semantic<'a, M: Clone + 'a>(
     label: &'a str,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .variant(MaterialButtonVariant::Outlined)
+        .variant(crate::components::buttons::ButtonVariant::Outlined)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Secondary button build error: {e}")).into()
+            log::warn!("Failed to build secondary button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates a semantic tertiary button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").variant(ButtonVariant::Text).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").variant(ButtonVariant::Text).on_press(message).build()?` instead"
+)]
 pub fn tertiary_button<'a, M: Clone + 'a>(
     label: &'a str,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .variant(MaterialButtonVariant::Text)
+        .variant(crate::components::buttons::ButtonVariant::Text)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Tertiary button build error: {e}")).into()
+            log::warn!("Failed to build tertiary button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates a primary button with icon using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").icon("icon", position).variant(ButtonVariant::Filled).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").icon(\"icon\", position).variant(ButtonVariant::Filled).on_press(message).build()?` instead"
+)]
 pub fn primary_button_with_icon_semantic<'a, M: Clone + 'a>(
     label: &'a str,
     icon_name: &'a str,
-    icon_position: IconPosition,
+    icon_position: CustomIconPosition,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .icon(icon_name, icon_position)
-        .variant(MaterialButtonVariant::Filled)
+        .icon(icon_name, icon_position.into())
+        .variant(crate::components::buttons::ButtonVariant::Filled)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Primary icon button build error: {e}")).into()
+            log::warn!("Failed to build primary icon button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates a secondary button with icon using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").icon("icon", position).variant(ButtonVariant::Outlined).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").icon(\"icon\", position).variant(ButtonVariant::Outlined).on_press(message).build()?` instead"
+)]
 pub fn secondary_button_with_icon_semantic<'a, M: Clone + 'a>(
     label: &'a str,
     icon_name: &'a str,
-    icon_position: IconPosition,
+    icon_position: CustomIconPosition,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .icon(icon_name, icon_position)
-        .variant(MaterialButtonVariant::Outlined)
+        .icon(icon_name, icon_position.into())
+        .variant(crate::components::buttons::ButtonVariant::Outlined)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Secondary icon button build error: {e}")).into()
+            log::warn!("Failed to build secondary icon button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates a tertiary button with icon using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).label("text").icon("icon", position).variant(ButtonVariant::Text).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).label(\"text\").icon(\"icon\", position).variant(ButtonVariant::Text).on_press(message).build()?` instead"
+)]
 pub fn tertiary_button_with_icon<'a, M: Clone + 'a>(
     label: &'a str,
     icon_name: &'a str,
-    icon_position: IconPosition,
+    icon_position: CustomIconPosition,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
+    crate::components::buttons::button(tokens)
         .label(label)
-        .icon(icon_name, icon_position)
-        .variant(MaterialButtonVariant::Text)
+        .icon(icon_name, icon_position.into())
+        .variant(crate::components::buttons::ButtonVariant::Text)
         .on_press(on_press)
         .build()
         .unwrap_or_else(|e| {
-            iced::widget::Text::new(format!("Tertiary icon button build error: {e}")).into()
+            log::warn!("Failed to build tertiary icon button: {}", e);
+            iced::widget::Text::new(label).into()
         })
 }
 
 /// Creates an icon-only button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).icon_only("icon", size).variant(variant).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).icon_only(\"icon\", size).variant(variant).on_press(message).build()?` instead"
+)]
 pub fn icon_button_semantic<'a, M: Clone + 'a>(
     icon_name: &'a str,
     variant: MaterialButtonVariant,
-    size: ButtonSize,
+    size: CustomButtonSize,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    button_builder(tokens)
-        .icon(icon_name, IconPosition::Only)
+    use crate::components::buttons::ButtonVariant as NewVariant;
+    
+    let variant = match variant {
+        MaterialButtonVariant::Filled => NewVariant::Filled,
+        MaterialButtonVariant::FilledTonal => NewVariant::FilledTonal,
+        MaterialButtonVariant::Outlined => NewVariant::Outlined,
+        MaterialButtonVariant::Text => NewVariant::Text,
+        _ => {
+            log::warn!("Unsupported button variant for icon button");
+            NewVariant::Filled
+        }
+    };
+    
+    crate::components::buttons::button(tokens)
+        .icon_only(icon_name, size.into())
         .variant(variant)
-        .size(size)
         .on_press(on_press)
         .build()
-        .unwrap_or_else(|e| iced::widget::Text::new(format!("Icon button build error: {e}")).into())
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to build icon button: {}", e);
+            iced::widget::Text::new("").into()
+        })
 }
 
 /// Creates a filled icon button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).icon_only("icon", size).variant(ButtonVariant::Filled).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).icon_only(\"icon\", size).variant(ButtonVariant::Filled).on_press(message).build()?` instead"
+)]
 pub fn filled_icon_button_semantic<'a, M: Clone + 'a>(
     icon_name: &'a str,
-    size: ButtonSize,
+    size: CustomButtonSize,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    icon_button_semantic(
-        icon_name,
-        MaterialButtonVariant::Filled,
-        size,
-        on_press,
-        tokens,
-    )
+    crate::components::buttons::button(tokens)
+        .icon_only(icon_name, size.into())
+        .variant(crate::components::buttons::ButtonVariant::Filled)
+        .on_press(on_press)
+        .build()
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to build filled icon button: {}", e);
+            iced::widget::Text::new("").into()
+        })
 }
 
 /// Creates a filled tonal icon button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).icon_only("icon", size).variant(ButtonVariant::FilledTonal).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).icon_only(\"icon\", size).variant(ButtonVariant::FilledTonal).on_press(message).build()?` instead"
+)]
 pub fn filled_tonal_icon_button_semantic<'a, M: Clone + 'a>(
     icon_name: &'a str,
-    size: ButtonSize,
+    size: CustomButtonSize,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    icon_button_semantic(
-        icon_name,
-        MaterialButtonVariant::FilledTonal,
-        size,
-        on_press,
-        tokens,
-    )
+    crate::components::buttons::button(tokens)
+        .icon_only(icon_name, size.into())
+        .variant(crate::components::buttons::ButtonVariant::FilledTonal)
+        .on_press(on_press)
+        .build()
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to build filled tonal icon button: {}", e);
+            iced::widget::Text::new("").into()
+        })
 }
 
 /// Creates an outlined icon button using the builder pattern
+///
+/// # Deprecated
+/// Use `buttons::button(tokens).icon_only("icon", size).variant(ButtonVariant::Outlined).on_press(message).build()?` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use `buttons::button(tokens).icon_only(\"icon\", size).variant(ButtonVariant::Outlined).on_press(message).build()?` instead"
+)]
 pub fn outlined_icon_button_semantic<'a, M: Clone + 'a>(
     icon_name: &'a str,
-    size: ButtonSize,
+    size: CustomButtonSize,
     on_press: M,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, M> {
-    icon_button_semantic(
-        icon_name,
-        MaterialButtonVariant::Outlined,
-        size,
-        on_press,
-        tokens,
-    )
+    crate::components::buttons::button(tokens)
+        .icon_only(icon_name, size.into())
+        .variant(crate::components::buttons::ButtonVariant::Outlined)
+        .on_press(on_press)
+        .build()
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to build outlined icon button: {}", e);
+            iced::widget::Text::new("").into()
+        })
 }
 
 /// Creates a Material Design 3 button with an icon using the proper Widget implementation.
@@ -454,7 +566,7 @@ pub fn outlined_icon_button_semantic<'a, M: Clone + 'a>(
 pub fn material_button_with_icon_widget<'a, Message: Clone + 'a>(
     label: &'a str,
     icon_name: &'a str,
-    icon_position: IconPosition,
+    icon_position: MaterialIconPosition,
     variant: MaterialButtonVariant,
     message: Message,
     tokens: &'a MaterialTokens,
@@ -474,7 +586,7 @@ pub fn material_button_with_icon_widget<'a, Message: Clone + 'a>(
         .on_press(message);
 
     // Adjust button sizing based on icon position
-    if icon_position == IconPosition::Only {
+    if icon_position == MaterialIconPosition::Only {
         // Icon-only buttons should be square
         let size = 40.0; // Default medium size
         button = button
@@ -502,18 +614,15 @@ pub fn material_button_with_icon_widget<'a, Message: Clone + 'a>(
 pub fn material_icon_button_widget<'a, Message: Clone + 'a>(
     icon_name: &'a str,
     variant: MaterialButtonVariant,
-    size: ButtonSize,
+    size: MaterialButtonSize,
     message: Message,
     tokens: &'a MaterialTokens,
 ) -> Element<'a, Message> {
-    // Map our button size to the button size variant
-    let size_variant = icon_support::map_button_size(size);
-
     // Create icon content using our helper
     let content = icon_support::create_icon_button_content::<Message>(
         icon_name,
         variant,
-        size_variant,
+        map_material_size_to_style_size(size),
         tokens,
     );
 
@@ -568,4 +677,25 @@ pub fn create_button<'a, Message: Clone + 'a>(
         .on_press(message)
         .build()
         .unwrap_or_else(|e| iced::widget::Text::new(format!("Button build error: {e}")).into())
+}
+
+// Helper conversion functions to bridge between different type systems
+fn map_material_variant_to_style_variant(variant: MaterialButtonVariant) -> crate::styling::material::components::button_style::ButtonStyleVariant {
+    use crate::styling::material::components::button_style::ButtonStyleVariant;
+    match variant {
+        MaterialButtonVariant::Filled => ButtonStyleVariant::Filled,
+        MaterialButtonVariant::FilledTonal => ButtonStyleVariant::FilledTonal,
+        MaterialButtonVariant::Outlined => ButtonStyleVariant::Outlined,
+        MaterialButtonVariant::Text => ButtonStyleVariant::Text,
+        MaterialButtonVariant::Elevated => ButtonStyleVariant::Elevated,
+    }
+}
+
+fn map_material_size_to_style_size(size: MaterialButtonSize) -> crate::styling::material::components::button_style::ButtonSizeVariant {
+    use crate::styling::material::components::button_style::ButtonSizeVariant;
+    match size {
+        MaterialButtonSize::Small => ButtonSizeVariant::Small,
+        MaterialButtonSize::Medium => ButtonSizeVariant::Medium,
+        MaterialButtonSize::Large => ButtonSizeVariant::Large,
+    }
 }

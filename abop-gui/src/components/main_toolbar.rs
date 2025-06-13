@@ -7,12 +7,12 @@ use iced::widget::{Space, container, row, text};
 use iced::{Alignment, Element, Length};
 use std::path::Path;
 
-use crate::components::common::{create_button, filled_icon_button_semantic};
+use crate::components::buttons::{self, ButtonVariant};
+use crate::components::buttons::variants::ButtonSize;
 use crate::components::icons::icon_names;
 use crate::messages::{Command, Message};
 use crate::state::DirectoryInfo;
 use crate::styling::material::MaterialTokens;
-use crate::styling::material::components::widgets::{ButtonSize, MaterialButtonVariant};
 
 /// Unified main toolbar component
 ///
@@ -48,12 +48,15 @@ impl MainToolbar {
         );
 
         // Directory controls section
-        let folder_button = filled_icon_button_semantic(
-            icon_names::FOLDER_OPEN,
-            ButtonSize::Medium,
-            Message::ExecuteCommand(Command::BrowseDirectory),
-            material_tokens,
-        );
+        let folder_button = buttons::button(material_tokens)
+            .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium.into())
+            .variant(ButtonVariant::FilledTonal)
+            .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build folder button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
         toolbar = toolbar.push(folder_button);
 
@@ -82,25 +85,31 @@ impl MainToolbar {
         );
 
         // Scan button with text
-        let scan_button = create_button(
-            "Scan",
-            MaterialButtonVariant::Filled,
-            Message::ExecuteCommand(Command::ScanLibrary {
+        let scan_button = buttons::button(material_tokens)
+            .label("Scan")
+            .variant(ButtonVariant::Filled)
+            .on_press(Message::ExecuteCommand(Command::ScanLibrary {
                 library_path: current_path.to_path_buf(),
-            }),
-            material_tokens,
-        );
+            }))
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build scan button: {}", e);
+                iced::widget::Text::new("Scan").into()
+            });
 
         toolbar = toolbar.push(scan_button);
 
         // Recent directories dropdown if available
         if !recent_dirs.is_empty() {
-            let recent_button = filled_icon_button_semantic(
-                icon_names::DOWNLOAD,
-                ButtonSize::Medium,
-                Message::ShowSettings, // TODO: Replace with proper dropdown
-                material_tokens,
-            );
+            let recent_button = buttons::button(material_tokens)
+                .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium.into())
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
+                .build()
+                .unwrap_or_else(|e| {
+                    log::warn!("Failed to build recent button: {}", e);
+                    iced::widget::Text::new("").into()
+                });
 
             toolbar = toolbar.push(recent_button);
         }
@@ -109,12 +118,15 @@ impl MainToolbar {
         toolbar = toolbar.push(Space::with_width(Length::Fill));
 
         // Settings button with icon - using filled variant
-        let settings_button = filled_icon_button_semantic(
-            "gear",
-            ButtonSize::Medium,
-            Message::ShowSettings,
-            material_tokens,
-        );
+        let settings_button = buttons::button(material_tokens)
+            .icon_only("gear", buttons::variants::ButtonSize::Medium)
+            .variant(ButtonVariant::FilledTonal)
+            .on_press(Message::ShowSettings)
+            .build()
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to build settings button: {}", e);
+                iced::widget::Text::new("").into()
+            });
 
         // Add padding and center the button
         toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill));
