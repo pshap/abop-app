@@ -37,7 +37,15 @@ impl MainToolbar {
     /// * `material_tokens` - Material Design 3 tokens for consistent styling
     ///
     /// # Returns
-    /// A properly styled toolbar element that handles directory selection and scanning
+    /// 
+    /// An `Element<Message>` representing a Material Design 3 compliant toolbar containing:
+    /// - App branding (ABOP label)
+    /// - Directory selection button with folder icon
+    /// - Library scan button with appropriate icon
+    /// - Current path display that expands to fill available space
+    /// - Settings button positioned on the right side
+    /// 
+    /// The toolbar uses proper spacing, sizing, and theming according to Material Design 3 principles.
     #[must_use]
     pub fn view<'a>(
         _recent_dirs: &[DirectoryInfo],
@@ -52,7 +60,11 @@ impl MainToolbar {
             .variant(ButtonVariant::FilledTonal)
             .on_press(Message::command(crate::messages::Command::BrowseDirectory))
             .build()
-            .unwrap_or_else(|_| text("📁").size(16).into()); // Fallback to emoji if icon fails
+            .unwrap_or_else(|_| {
+                text("📁")
+                    .size(material_tokens.typography().label_medium.size)
+                    .into()
+            }); // Fallback to emoji if icon fails
 
         // Scan button - initiates library scanning of current path
         let scan_button = buttons::button(material_tokens)
@@ -74,7 +86,11 @@ impl MainToolbar {
             .variant(ButtonVariant::FilledTonal)
             .on_press(Message::ShowSettings)
             .build()
-            .unwrap_or_else(|_| text("⚙").size(16).into());
+            .unwrap_or_else(|_| {
+                text("⚙")
+                    .size(material_tokens.typography().label_medium.size)
+                    .into()
+            });
 
         // === Path Display ===
 
@@ -96,7 +112,9 @@ impl MainToolbar {
         // [App Title] [Folder] [Scan] [Path Display] ... [Settings]
         let toolbar_row = row![
             // App branding - fixed width for consistent layout
-            text("ABOP").size(16).width(Length::Fixed(60.0)),
+            text("ABOP")
+                .size(material_tokens.typography().label_large.size)
+                .width(Length::Fixed(material_tokens.spacing().lg * 4.0)),
             // Directory controls group - logically related actions
             folder_button,
             scan_button,
