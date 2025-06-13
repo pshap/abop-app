@@ -360,24 +360,13 @@ impl ButtonStateHandler {
             }
         }
 
-        // Calculate styling if not cached
+        // Calculate and cache styling with LRU-like behavior (max 1000 entries)
         let styling = Self::calculate_styling(state, config, tokens, colors);
-
-        // Cache the result with minimized lock duration
-        let should_clear = {
-            let cache = STYLE_CACHE.read();
-            cache.len() > 1000
-        };
-
-        // Single write lock acquisition to avoid multiple lock/unlock cycles
-        {
-            let mut cache = STYLE_CACHE.write();
-            if should_clear {
-                // Prevent cache from growing indefinitely (simple LRU-like behavior)
-                cache.clear();
-            }
-            cache.insert(cache_key, styling.clone());
+        let mut cache = STYLE_CACHE.write();
+        if cache.len() > 1000 {
+            cache.clear();
         }
+        cache.insert(cache_key, styling.clone());
 
         styling
     }
