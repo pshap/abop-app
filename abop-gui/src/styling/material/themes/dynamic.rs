@@ -39,10 +39,9 @@ impl DynamicTheme {
         }
     }
 
-    /// Create a dynamic theme with a specific mode
-    #[must_use]
-    pub fn with_mode(mode: ThemeMode) -> Self {
-        let tokens = match mode {
+    /// Private helper to get tokens for a specific theme mode
+    fn get_tokens_for_mode(mode: ThemeMode) -> MaterialTokens {
+        match mode {
             ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
             ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
             ThemeMode::System => {
@@ -50,7 +49,13 @@ impl DynamicTheme {
                 MaterialTokens::dark()
             }
             ThemeMode::MaterialDynamic => MaterialTokens::default(),
-        };
+        }
+    }
+
+    /// Create a dynamic theme with a specific mode
+    #[must_use]
+    pub fn with_mode(mode: ThemeMode) -> Self {
+        let tokens = Self::get_tokens_for_mode(mode);
 
         Self {
             current_mode: mode,
@@ -74,15 +79,7 @@ impl DynamicTheme {
     /// Switch to a new theme mode
     pub fn switch_to_mode(&mut self, mode: ThemeMode) {
         self.current_mode = mode;
-        self.current_tokens = match mode {
-            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
-            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
-            ThemeMode::System => {
-                // System detection - default to dark for now
-                MaterialTokens::dark()
-            }
-            ThemeMode::MaterialDynamic => MaterialTokens::default(),
-        };
+        self.current_tokens = Self::get_tokens_for_mode(mode);
     }
 
     /// Update tokens with a seed color
@@ -111,14 +108,6 @@ impl DynamicTheme {
     /// Get a preview of what tokens would look like with a different mode
     #[must_use]
     pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
-        match mode {
-            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
-            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
-            ThemeMode::System => {
-                // System detection - default to dark for now
-                MaterialTokens::dark()
-            }
-            ThemeMode::MaterialDynamic => MaterialTokens::default(),
-        }
+        Self::get_tokens_for_mode(mode)
     }
 }
