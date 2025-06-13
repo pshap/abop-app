@@ -125,7 +125,11 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// Set the button to be an icon-only button
     pub fn icon_only(mut self, icon_name: &'a str, size: ButtonSize) -> Self {
         self.size = size;
-        self.icon = Some(IconConfig::new(icon_name, super::variants::icon_size(size), IconPosition::Only));
+        self.icon = Some(IconConfig::new(
+            icon_name,
+            super::variants::icon_size(size),
+            IconPosition::Only,
+        ));
         self
     }
 

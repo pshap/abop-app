@@ -12,7 +12,7 @@ button_strategy! {
     config = |colors, elevation, tokens| {
         let base_background = colors.primary.container;
         let icon_color = colors.primary.on_container;
-        
+
         // FAB uses special hover/press behavior with color blending using Material Design tokens
         let hover_bg = ColorUtils::blend_colors(
             base_background,

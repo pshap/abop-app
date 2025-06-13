@@ -96,7 +96,11 @@ pub(crate) struct IconConfig<'a> {
 impl<'a> IconConfig<'a> {
     /// Create a new icon configuration
     pub fn new(name: &'a str, size: IconSize, position: IconPosition) -> Self {
-        Self { name, size, position }
+        Self {
+            name,
+            size,
+            position,
+        }
     }
 
     /// Convert the icon configuration to an element with the given message type

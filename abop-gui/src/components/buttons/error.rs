@@ -48,7 +48,10 @@ impl fmt::Display for ButtonError {
             ButtonError::MissingOnPress => write!(f, "Button must have an on_press handler"),
             ButtonError::InvalidState(msg) => write!(f, "Invalid state: {}", msg),
             ButtonError::InvalidIconPosition => {
-                write!(f, "Invalid icon position: IconPosition::Only cannot be used with both label and icon")
+                write!(
+                    f,
+                    "Invalid icon position: IconPosition::Only cannot be used with both label and icon"
+                )
             }
         }
     }
