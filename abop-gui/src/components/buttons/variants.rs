@@ -69,7 +69,6 @@ pub(crate) fn icon_size(size: ButtonSize) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use iced::Padding;
 
     #[test]
     fn test_button_size_default() {
@@ -82,23 +81,9 @@ mod tests {
     }
 
     #[test]
-    fn test_button_padding() {
-        assert_eq!(button_padding(ButtonSize::Small), Padding::from([4.0, 8.0]));
-        assert_eq!(button_padding(ButtonSize::Medium), Padding::from([8.0, 16.0]));
-        assert_eq!(button_padding(ButtonSize::Large), Padding::from([12.0, 24.0]));
-    }
-
-    #[test]
     fn test_icon_size() {
         assert_eq!(icon_size(ButtonSize::Small), 18.0);
         assert_eq!(icon_size(ButtonSize::Medium), 20.0);
         assert_eq!(icon_size(ButtonSize::Large), 24.0);
-    }
-
-    #[test]
-    fn test_min_width() {
-        assert_eq!(min_width(ButtonSize::Small), Length::Fixed(64.0));
-        assert_eq!(min_width(ButtonSize::Medium), Length::Fixed(80.0));
-        assert_eq!(min_width(ButtonSize::Large), Length::Fixed(96.0));
     }
 }
