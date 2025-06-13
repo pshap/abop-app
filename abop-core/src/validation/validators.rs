@@ -178,8 +178,7 @@ impl MetadataValidator {
         result: &mut ValidationResult,
     ) {
         // Check for missing critical metadata
-        let is_title_empty = audiobook.title.as_ref().is_none_or(|t| t.trim().is_empty());
-        if is_title_empty {
+        if audiobook.title.as_ref().is_none_or(|t| t.trim().is_empty()) {
             result.add_issue(
                 ValidationError::info("metadata", "Audiobook is missing title")
                     .with_file_path(audiobook.path.clone())
