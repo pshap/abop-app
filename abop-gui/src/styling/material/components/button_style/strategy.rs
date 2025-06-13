@@ -4,6 +4,7 @@
 //! to implement their own styling logic while maintaining a consistent interface.
 
 use crate::styling::material::{MaterialColors, MaterialElevation, MaterialShapes, MaterialTokens};
+use super::constants;
 use iced::{Background, Border, Color};
 
 /// Button state for styling calculations
@@ -115,13 +116,13 @@ impl ButtonVariantConfigBuilder {
     /// Create a new config builder with sensible defaults
     pub fn new() -> Self {
         Self {
-            config: ButtonVariantConfig {
+            config:            ButtonVariantConfig {
                 base_background: Color::TRANSPARENT,
                 text_color: Color::BLACK,
                 icon_color: Color::BLACK,
                 border_color: Color::TRANSPARENT,
                 border_width: 0.0,
-                border_radius: 12.0, // Material Design medium radius
+                border_radius: constants::radius::MEDIUM, // Use Material Design medium radius constant
                 shadow: None,
                 uses_surface_on_interaction: false,
                 custom_hover_background: None,

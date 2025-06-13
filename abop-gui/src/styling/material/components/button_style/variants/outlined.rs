@@ -1,6 +1,7 @@
 //! Outlined button variant strategy implementation
 
 use super::super::strategy::ButtonVariantConfigBuilder;
+use super::super::constants;
 use crate::button_strategy;
 use iced::Color;
 
@@ -12,7 +13,8 @@ button_strategy! {
         ButtonVariantConfigBuilder::new()
             .background(Color::TRANSPARENT)
             .text_color(colors.on_surface)
-            .border(colors.outline, 1.0)
+            .border(colors.outline, constants::border::STANDARD)
+            .radius(constants::radius::MEDIUM) // Use Material Design medium radius constant
             .surface_interactions()
             .build()
     }

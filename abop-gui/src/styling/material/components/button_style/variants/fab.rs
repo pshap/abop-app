@@ -1,6 +1,7 @@
 //! FAB (Floating Action Button) variant strategy implementation
 
 use super::super::strategy::{ButtonState, ButtonVariantConfigBuilder};
+use super::super::constants;
 use crate::styling::color_utils::ColorUtils;
 use crate::button_strategy;
 use iced::Color;
@@ -29,7 +30,7 @@ button_strategy! {
             .background(base_background)
             .text_color(icon_color)
             .border(Color::TRANSPARENT, 0.0)
-            .radius(28.0) // FAB radius (large, circular)
+            .radius(constants::radius::FAB) // Use Material Design FAB radius constant
             .shadow(elevation.level3.shadow)
             .hover_background(hover_bg)
             .pressed_background(pressed_bg)
