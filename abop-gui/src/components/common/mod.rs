@@ -51,11 +51,9 @@
 //! ```
 
 // Re-export submodules
-pub mod builders;
 pub mod progress;
 pub mod sizing;
 
 // Re-export commonly used items for convenience
-pub use self::builders::*;
 pub use self::progress::*;
 pub use self::sizing::*;

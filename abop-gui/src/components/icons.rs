@@ -65,40 +65,48 @@ pub mod icon_names {
     pub const SORT: &str = "arrow-up-z-a";
 }
 
+/// Creates an icon with the specified size
+/// 
+/// This is the base function for all icon creation - other functions are just convenience wrappers.
+#[must_use]
+pub fn sized_icon<'a>(icon_name: &str, size: f32) -> Element<'a, crate::messages::Message> {
+    fa_icon_solid(icon_name).size(size).into()
+}
+
 /// Small icon (12px) - for compact UI elements
 #[must_use]
 pub fn small_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(12.0).into()
+    sized_icon(icon_name, 12.0)
 }
 
 /// Medium icon (16px) - default size for buttons
 #[must_use]
 pub fn medium_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(16.0).into()
+    sized_icon(icon_name, 16.0)
 }
 
 /// Large icon (20px)
 #[must_use]
 pub fn large_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(20.0).into()
+    sized_icon(icon_name, 20.0)
 }
 
 /// Extra large icon (24px) - for prominent actions
 #[must_use]
 pub fn xl_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(24.0).into()
+    sized_icon(icon_name, 24.0)
 }
 
 /// Navigation icon (18px) - specific size for navigation tabs
 #[must_use]
 pub fn nav_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(18.0).into()
+    sized_icon(icon_name, 18.0)
 }
 
 /// Toolbar icon (16px) - specific size for toolbar buttons
 #[must_use]
 pub fn toolbar_icon<'a>(icon_name: &str) -> Element<'a, crate::messages::Message> {
-    fa_icon_solid(icon_name).size(16.0).into()
+    sized_icon(icon_name, 16.0)
 }
 
 /// Creates an icon with size determined by button context using centralized sizing.

@@ -18,8 +18,7 @@ pub mod audio_toolbar;
 /// Contains Material Design 3 components organized into submodules:
 /// - progress: Progress indicators and status components
 /// - sizing: Component dimension constants and converters
-/// - builders: Advanced builder patterns for complex components
-#[deprecated(note = "Button-related functionality has been moved to the `buttons` module")]
+/// Note: Button-related functionality has been moved to the `buttons` module
 pub mod common;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;
