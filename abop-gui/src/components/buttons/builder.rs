@@ -239,8 +239,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
                 // Create a container for the text to handle padding and sizing
                 let mut container = container(text_widget)
-                    .center_x(Length::Fill)
-                    .center_y(Length::Fill);
+                    .width(Length::Shrink) // Use Shrink instead of Fill for compact buttons
+                    .align_x(Alignment::Center)
+                    .align_y(Alignment::Center);
 
                 if let Some(width) = self.width {
                     container = container.width(width);
@@ -263,8 +264,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                 // Create a container for the icon with default size
                 let mut container = container(icon_element)
                     .height(24)
-                    .center_x(Length::Fill)
-                    .center_y(Length::Fill);
+                    .width(Length::Shrink) // Use Shrink instead of Fill for compact buttons
+                    .align_x(Alignment::Center)
+                    .align_y(Alignment::Center);
 
                 // Apply custom sizing if specified
                 if let Some(width) = self.width {

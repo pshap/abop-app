@@ -9,8 +9,7 @@ use std::path::Path;
 
 use crate::components::buttons::variants::ButtonSize;
 use crate::components::buttons::{self, ButtonVariant};
-use crate::components::icons::icon_names;
-use crate::messages::{Command, Message};
+use crate::messages::Message;
 use crate::state::DirectoryInfo;
 use crate::styling::material::MaterialTokens;
 
@@ -29,40 +28,45 @@ impl MainToolbar {
     /// * `material_tokens` - Material Design 3 tokens for styling
     #[must_use]
     pub fn view<'a>(
-        recent_dirs: &[DirectoryInfo],
+        _recent_dirs: &[DirectoryInfo],
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-        let mut toolbar = row![]
-            .spacing(material_tokens.spacing().xs) // Use extra small spacing between toolbar items
-            .align_y(Alignment::Center)
-            .width(Length::Fill)
-            .height(Length::Fill);
+        // FINAL: Organize toolbar with logical grouping - directory controls on left, settings on right
+        
+        log::warn!("🔧 TOOLBAR DEBUG: Creating final organized toolbar layout");
+        
+        // Create folder button with proper message
+        let folder_button = buttons::button(material_tokens)
+            .icon_only("folder-open", ButtonSize::Medium)
+            .variant(ButtonVariant::FilledTonal)
+            .on_press(Message::command(crate::messages::Command::BrowseDirectory))
+            .build()
+            .unwrap_or_else(|_| text("📁").size(16).into());
 
-        // App title/logo - more professional styling
-        toolbar = toolbar.push(
-            container(text("ABOP").size(16))
-                .width(Length::Fixed(material_tokens.sizing().app_title_width))
-                .align_x(iced::alignment::Horizontal::Left)
-                .center_y(Length::Fill),
-        );
+        // Create scan button with proper message
+        let scan_button = buttons::button(material_tokens)
+            .label("Scan")
+            .variant(ButtonVariant::Filled)
+            .on_press(if !current_path.as_os_str().is_empty() {
+                Message::command(crate::messages::Command::ScanLibrary {
+                    library_path: current_path.to_path_buf(),
+                })
+            } else {
+                Message::command(crate::messages::Command::BrowseDirectory) // Fallback if no path
+            })
+            .build()
+            .unwrap_or_else(|_| text("Scan").size(14).into());
 
-        // Directory controls section
-        let folder_button = buttons::create_button(
-            || {
-                buttons::button(material_tokens)
-                    .icon_only(icon_names::FOLDER_OPEN, ButtonSize::Medium)
-                    .variant(ButtonVariant::FilledTonal)
-                    .on_press(Message::ExecuteCommand(Command::BrowseDirectory))
-                    .build()
-            },
-            "folder",
-            Some(""),
-        );
+        // Create settings button
+        let settings_button = buttons::button(material_tokens)
+            .icon_only("gear", ButtonSize::Medium)
+            .variant(ButtonVariant::FilledTonal)
+            .on_press(Message::ShowSettings)
+            .build()
+            .unwrap_or_else(|_| text("⚙").size(16).into());
 
-        toolbar = toolbar.push(folder_button);
-
-        // Current path display - moved next to folder button
+        // Use actual path data
         let path_display = if current_path.as_os_str().is_empty() {
             "No directory selected".to_string()
         } else {
@@ -73,79 +77,38 @@ impl MainToolbar {
                 .unwrap_or("Invalid path")
                 .to_string()
         };
+        
+        // Create a row with logical grouping: [App Title] [Folder] [Scan] [Path] ... [Settings]
+        let toolbar_row = row![
+            // App branding
+            text("ABOP")
+                .size(16)
+                .width(Length::Fixed(60.0)),
+            
+            // Directory controls group
+            folder_button,
+            scan_button,
+            text(path_display)
+                .size(12)
+                .width(Length::Fill), // Path expands to fill available space
+            
+            // Flexible spacer to push settings to the right
+            Space::with_width(Length::Fill),
+            
+            // Settings
+            settings_button,
+        ]
+        .spacing(material_tokens.spacing().sm) // Use proper Material spacing
+        .align_y(Alignment::Center);
 
-        // Add the path with minimal spacing next to folder button
-        toolbar = toolbar.push(
-            container(
-                text(path_display)
-                    .size(material_tokens.typography().label_small.size)
-                    .width(Length::Shrink),
-            )
-            .padding([0.0, 8.0])
-            .height(Length::Fill)
-            .center_y(Length::Fill),
-        );
+        log::warn!("🔧 TOOLBAR DEBUG: Created final organized toolbar layout");
 
-        // Scan button with text
-        let scan_button = buttons::create_button(
-            || {
-                buttons::button(material_tokens)
-                    .label("Scan")
-                    .variant(ButtonVariant::Filled)
-                    .on_press(Message::ExecuteCommand(Command::ScanLibrary {
-                        library_path: current_path.to_path_buf(),
-                    }))
-                    .build()
-            },
-            "scan",
-            Some("Scan"),
-        );
-
-        toolbar = toolbar.push(scan_button);
-
-        // Recent directories dropdown if available
-        if !recent_dirs.is_empty() {
-            let recent_button = buttons::create_button(
-                || {
-                    buttons::button(material_tokens)
-                        .icon_only(icon_names::DOWNLOAD, ButtonSize::Medium)
-                        .variant(ButtonVariant::FilledTonal)
-                        .on_press(Message::ShowSettings) // TODO: Replace with proper dropdown
-                        .build()
-                },
-                "recent",
-                Some(""),
-            );
-
-            toolbar = toolbar.push(recent_button);
-        }
-
-        // Add a flexible spacer to push settings button to the right
-        toolbar = toolbar.push(Space::with_width(Length::Fill));
-
-        // Settings button with icon - using filled variant
-        let settings_button = buttons::create_button(
-            || {
-                buttons::button(material_tokens)
-                    .icon_only("gear", ButtonSize::Medium)
-                    .variant(ButtonVariant::FilledTonal)
-                    .on_press(Message::ShowSettings)
-                    .build()
-            },
-            "settings",
-            Some(""),
-        );
-
-        // Add padding and center the button
-        toolbar = toolbar.push(container(settings_button).padding(4).center_y(Length::Fill)); // Wrap toolbar in container with unified toolbar height
-        container(
-            container(toolbar)
-                .width(Length::Fill)
-                .center_y(Length::Fill),
-        )
-        .height(Length::Fixed(material_tokens.sizing().toolbar_height))
-        .width(Length::Fill)
-        .padding([0.0, material_tokens.spacing().md])
-        .into()
+        // Wrap in container with proper height and padding using Material tokens
+        container(toolbar_row)
+            .height(Length::Fixed(material_tokens.sizing().toolbar_height))
+            .width(Length::Fill)
+            .padding([0.0, material_tokens.spacing().md])
+            .align_y(Alignment::Center)
+            .into()
     }
 }

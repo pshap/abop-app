@@ -106,10 +106,16 @@ pub fn create_button<'a, M: Clone + 'a>(
     button_name: &str,
     fallback_text: Option<&'a str>,
 ) -> Element<'a, M> {
-    build_fn().unwrap_or_else(|e| {
-        log::warn!("Failed to build {} button: {}", button_name, e);
-        iced::widget::Text::new(fallback_text.unwrap_or("⚠️")).into()
-    })
+    match build_fn() {
+        Ok(element) => {
+            log::warn!("✅ Successfully built {} button", button_name);
+            element
+        }
+        Err(e) => {
+            log::warn!("❌ Failed to build {} button: {}", button_name, e);
+            iced::widget::Text::new(fallback_text.unwrap_or("⚠️")).into()
+        }
+    }
 }
 
 #[cfg(test)]
