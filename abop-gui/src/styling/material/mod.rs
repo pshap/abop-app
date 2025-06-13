@@ -60,7 +60,7 @@ pub use helpers::{AnimationHelpers, ComponentHelpers, ElevationHelpers};
 // Re-export Phase 3 preparation infrastructure
 pub use builders::{MaterialTokensBuilder, ThemeBuilder};
 pub use factories::MaterialComponentFactory;
-pub use themes::{DynamicTheme, ThemeMode};
+pub use themes::DynamicTheme;
 
 // Re-export Material Design 3 selection components
 pub use components::{

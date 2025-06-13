@@ -4,9 +4,10 @@
 //! with advanced configuration options. This is the foundation for Phase 3.
 
 use crate::styling::material::{
-    builders::tokens_builder::MaterialTokensBuilder, themes::theme_mode::ThemeMode,
+    builders::tokens_builder::MaterialTokensBuilder,
     tokens::core::MaterialTokens,
 };
+use crate::theme::ThemeMode;
 
 /// Builder for creating customized Material Design themes
 ///

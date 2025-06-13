@@ -5,7 +5,8 @@
 
 use iced::Color;
 
-use crate::styling::material::{themes::theme_mode::ThemeMode, tokens::core::MaterialTokens};
+use crate::styling::material::tokens::core::MaterialTokens;
+use crate::theme::ThemeMode;
 
 /// Dynamic theme management system
 ///
@@ -40,11 +41,10 @@ impl DynamicTheme {
 
     /// Create a dynamic theme with a specific mode
     #[must_use]
-    pub fn with_mode(mode: ThemeMode) -> Self {
-        let tokens = match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto | ThemeMode::Custom => MaterialTokens::default(),
+    pub fn with_mode(mode: ThemeMode) -> Self {        let tokens = match mode {
+            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
+            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
+            ThemeMode::System | ThemeMode::MaterialDynamic => MaterialTokens::default(),
         };
 
         Self {
@@ -68,16 +68,15 @@ impl DynamicTheme {
 
     /// Switch to a new theme mode
     pub fn switch_to_mode(&mut self, mode: ThemeMode) {
-        self.current_mode = mode;
-        self.current_tokens = match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto => {
-                // Phase 3 will implement system detection
-                MaterialTokens::default()
+        self.current_mode = mode;        self.current_tokens = match mode {
+            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
+            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
+            ThemeMode::System => {
+                // System detection - default to dark for now
+                MaterialTokens::dark()
             }
-            ThemeMode::Custom => {
-                // Phase 3 will implement custom theme loading
+            ThemeMode::MaterialDynamic => {
+                // Dynamic Material theme
                 MaterialTokens::default()
             }
         };
@@ -107,18 +106,17 @@ impl DynamicTheme {
     }
 
     /// Get a preview of what tokens would look like with a different mode
-    #[must_use]
-    pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
+    #[must_use]    pub fn preview_mode(&self, mode: ThemeMode) -> MaterialTokens {
         match mode {
-            ThemeMode::Light => MaterialTokens::light(),
-            ThemeMode::Dark => MaterialTokens::dark(),
-            ThemeMode::Auto => {
-                // Phase 3 will implement proper auto detection
-                MaterialTokens::default()
+            ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
+            ThemeMode::Dark | ThemeMode::MaterialDark => MaterialTokens::dark(),
+            ThemeMode::System => {
+                // System detection - default to dark for now
+                MaterialTokens::dark()
             }
-            ThemeMode::Custom => {
-                // Phase 3 will implement custom theme preview
-                self.current_tokens.clone()
+            ThemeMode::MaterialDynamic => {
+                // Dynamic Material theme preview
+                MaterialTokens::default()
             }
         }
     }
