@@ -1,8 +1,8 @@
 //! Conversion traits and functions between material and custom button types
 
 use super::variants::{ButtonSize as CustomButtonSize, IconPosition as CustomIconPosition};
-use crate::styling::material::components::widgets::{
-    material_button::{ButtonSize as MaterialButtonSize, IconPosition as MaterialIconPosition},
+use crate::styling::material::components::widgets::material_button::{
+    ButtonSize as MaterialButtonSize, IconPosition as MaterialIconPosition,
 };
 
 // Implement From trait for bidirectional conversion between custom and material ButtonSize
@@ -62,7 +62,7 @@ mod tests {
             MaterialButtonSize::from(CustomButtonSize::Small),
             MaterialButtonSize::Small
         );
-        
+
         assert_eq!(
             CustomButtonSize::from(MaterialButtonSize::Medium),
             CustomButtonSize::Medium
@@ -71,7 +71,7 @@ mod tests {
             MaterialButtonSize::from(CustomButtonSize::Medium),
             MaterialButtonSize::Medium
         );
-        
+
         assert_eq!(
             CustomButtonSize::from(MaterialButtonSize::Large),
             CustomButtonSize::Large
@@ -93,7 +93,7 @@ mod tests {
             MaterialIconPosition::from(CustomIconPosition::Leading),
             MaterialIconPosition::Leading
         );
-        
+
         assert_eq!(
             CustomIconPosition::from(MaterialIconPosition::Trailing),
             CustomIconPosition::Trailing
@@ -102,7 +102,7 @@ mod tests {
             MaterialIconPosition::from(CustomIconPosition::Trailing),
             MaterialIconPosition::Trailing
         );
-        
+
         assert_eq!(
             CustomIconPosition::from(MaterialIconPosition::Only),
             CustomIconPosition::Only

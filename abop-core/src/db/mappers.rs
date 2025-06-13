@@ -135,7 +135,12 @@ impl RowMappers {
             author: get_field!(row, indices.author, "author", optional),
             narrator: get_field!(row, indices.narrator, "narrator", optional),
             description: get_field!(row, indices.description, "description", optional),
-            duration_seconds: get_field!(row, indices.duration_seconds, "duration_seconds", optional),
+            duration_seconds: get_field!(
+                row,
+                indices.duration_seconds,
+                "duration_seconds",
+                optional
+            ),
             size_bytes: get_field!(row, indices.size_bytes, "size_bytes", optional),
             cover_art: get_field!(row, indices.cover_art, "cover_art", optional),
             created_at: {

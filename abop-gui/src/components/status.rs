@@ -1,5 +1,5 @@
-use iced::{Element, Length};
 use iced::widget::{column, container, row, text};
+use iced::{Element, Length};
 use std::path::PathBuf;
 
 use abop_core::PlayerState;
@@ -113,7 +113,9 @@ impl StatusDisplay {
 
         // Show audio processing progress if active
         if processing_audio {
-            let processing_label = processing_status.unwrap_or("Processing audio...").to_string();
+            let processing_label = processing_status
+                .unwrap_or("Processing audio...")
+                .to_string();
             let progress_text = if let Some(progress) = processing_progress {
                 format!("{:.1}% - {}", progress * 100.0, processing_label)
             } else {
@@ -160,12 +162,15 @@ impl StatusDisplay {
                         total,
                         file_name,
                         progress_percentage,
-                    } => {
-                        (*progress_percentage, *current, *total, file_name.as_str())
-                    }
-                    abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
-                        (0.5, *total_processed, *total_processed, "Processing batch...")
-                    }
+                    } => (*progress_percentage, *current, *total, file_name.as_str()),
+                    abop_core::scanner::ScanProgress::BatchCommitted {
+                        total_processed, ..
+                    } => (
+                        0.5,
+                        *total_processed,
+                        *total_processed,
+                        "Processing batch...",
+                    ),
                     abop_core::scanner::ScanProgress::Complete { processed, .. } => {
                         (1.0, *processed, *processed, "Scan completed!")
                     }
@@ -174,7 +179,8 @@ impl StatusDisplay {
                     }
                 };
 
-                let progress_text = text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12);
+                let progress_text =
+                    text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12);
                 let scan_label = format!(
                     "Scanning: {} of {} files\nCurrent: {}",
                     processed, total, current_file
@@ -183,7 +189,8 @@ impl StatusDisplay {
                 let progress_row = column![
                     progress_display,
                     row![progress_text].spacing(tokens.spacing().md as u16)
-                ].spacing(tokens.spacing().sm as u16);
+                ]
+                .spacing(tokens.spacing().sm as u16);
 
                 status_column = status_column.push(progress_row);
             } else {
@@ -194,7 +201,10 @@ impl StatusDisplay {
 
         // Show audio processing progress if active
         if params.processing_audio {
-            let processing_status = params.processing_status.unwrap_or("Processing audio...").to_string();
+            let processing_status = params
+                .processing_status
+                .unwrap_or("Processing audio...")
+                .to_string();
             let progress_text = if let Some(progress) = params.processing_progress {
                 format!("{:.1}% - {}", progress * 100.0, processing_status)
             } else {

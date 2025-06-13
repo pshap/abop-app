@@ -123,7 +123,7 @@ pub mod animation {
 pub mod opacity {
     /// FAB disabled surface opacity (Material Design 3)
     pub const FAB_DISABLED_SURFACE: f32 = 0.12;
-    
+
     // Note: HOVER and PRESSED constants removed to avoid duplication
     // Use MaterialTokens::states.opacity.hover and MaterialTokens::states.opacity.pressed instead
 }

@@ -1,7 +1,7 @@
 //! Filled tonal button variant strategy implementation
 
-use super::super::strategy::ButtonVariantConfigBuilder;
 use super::super::constants;
+use super::super::strategy::ButtonVariantConfigBuilder;
 use crate::button_strategy;
 use iced::Color;
 

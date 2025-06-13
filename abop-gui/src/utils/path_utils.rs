@@ -56,7 +56,8 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
         // Process components while preserving drive and root information
         let mut normalized = PathBuf::new();
         // Pre-allocate for typical path depth (8 components covers most file system paths efficiently)
-        let mut components_stack: Vec<&std::ffi::OsStr> = Vec::with_capacity(TYPICAL_PATH_COMPONENT_COUNT);
+        let mut components_stack: Vec<&std::ffi::OsStr> =
+            Vec::with_capacity(TYPICAL_PATH_COMPONENT_COUNT);
 
         for comp in sep_norm.components() {
             match comp {

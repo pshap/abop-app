@@ -97,7 +97,7 @@ pub mod icon_names {
 /// let icon = small_icon("home");      // 12px - optimized
 /// let icon = medium_icon("search");   // 16px - optimized
 /// let icon = large_icon("settings");  // 20px - optimized
-/// 
+///
 /// // Only use sized_icon for custom requirements:
 /// let icon = sized_icon("custom", 28.0);
 /// ```
@@ -106,14 +106,16 @@ pub fn sized_icon<'a>(icon_name: &str, size: f32) -> Element<'a, crate::messages
     // Check if this is a common size that should be cached
     let size_int = size as u32;
     let is_common_size = matches!(size_int, 12 | 16 | 20 | 24);
-    
+
     if is_common_size {
         // For common sizes, we optimize by using the predefined size constants
         match size_int {
             12 => fa_icon_solid(icon_name).size(common_sizes::SMALL).into(),
             16 => fa_icon_solid(icon_name).size(common_sizes::MEDIUM).into(),
             20 => fa_icon_solid(icon_name).size(common_sizes::LARGE).into(),
-            24 => fa_icon_solid(icon_name).size(common_sizes::EXTRA_LARGE).into(),
+            24 => fa_icon_solid(icon_name)
+                .size(common_sizes::EXTRA_LARGE)
+                .into(),
             _ => fa_icon_solid(icon_name).size(size).into(),
         }
     } else {

@@ -139,11 +139,11 @@ impl LinearResampler {
             // Calculate source position with safe bounds checking using f64 for precision
             let i_f64 = safe_usize_to_f64_audio(i);
             let pos_f64 = i_f64 * f64::from(buffer.sample_rate) / f64::from(target_rate);
-            
+
             // Get the integer and fractional parts of the position
             let pos_floor = pos_f64.floor();
             let pos_frac = pos_f64 - pos_floor;
-            
+
             // Convert to usize for array indexing
             let pos0 = pos_floor as usize;
             let pos1 = (pos_floor as usize + 1).min((input_samples_f64 - 1.0) as usize);
@@ -153,7 +153,7 @@ impl LinearResampler {
                 // Get the two samples to interpolate between
                 let idx0 = pos0 * channels_usize + c;
                 let idx1 = pos1 * channels_usize + c;
-                
+
                 // Get sample values with bounds checking
                 let sample0 = if idx0 < buffer.data.len() {
                     buffer.data[idx0]
@@ -162,7 +162,7 @@ impl LinearResampler {
                 } else {
                     0.0
                 };
-                
+
                 let sample1 = if idx1 < buffer.data.len() {
                     buffer.data[idx1]
                 } else if !buffer.data.is_empty() {
@@ -170,7 +170,7 @@ impl LinearResampler {
                 } else {
                     0.0
                 };
-                
+
                 // Linear interpolation: sample0 + (sample1 - sample0) * pos_frac
                 let interpolated = sample0 + (sample1 - sample0) * pos_frac as f32;
                 resampled_data.push(interpolated);

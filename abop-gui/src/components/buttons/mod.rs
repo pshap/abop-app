@@ -1,5 +1,5 @@
 //! A modern, type-safe button builder for Material Design 3 buttons.
-//! 
+//!
 //! This module provides a flexible and type-safe API for creating Material Design 3
 //! buttons with consistent styling and behavior.
 //!
@@ -38,10 +38,10 @@
 //! ```
 
 pub mod builder;
-pub mod error;
-pub mod variants;
-pub mod icons;
 pub mod conversions;
+pub mod error;
+pub mod icons;
+pub mod variants;
 
 #[doc(inline)]
 pub use builder::ButtonBuilder;
@@ -102,9 +102,9 @@ pub fn button<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a
 /// # }
 /// ```
 pub fn create_button<'a, M: Clone + 'a>(
-    build_fn: impl FnOnce() -> Result<Element<'a, M>, ButtonError>, 
+    build_fn: impl FnOnce() -> Result<Element<'a, M>, ButtonError>,
     button_name: &str,
-    fallback_text: Option<&'a str>
+    fallback_text: Option<&'a str>,
 ) -> Element<'a, M> {
     build_fn().unwrap_or_else(|e| {
         log::warn!("Failed to build {} button: {}", button_name, e);
@@ -117,12 +117,14 @@ mod tests {
     use super::*;
 
     #[derive(Debug, Clone)]
-    enum TestMessage { Action }
+    enum TestMessage {
+        Action,
+    }
 
     #[test]
     fn test_button_creation() {
         let tokens = MaterialTokens::default();
-        
+
         // Test basic button creation
         let button = button(&tokens)
             .label("Test")
@@ -130,7 +132,7 @@ mod tests {
             .on_press(TestMessage::Action)
             .build()
             .unwrap();
-            
+
         // Just verify it compiles and runs without panicking
         // Note: Element doesn't have a public Widget variant we can match against
         // so we just ensure the button was created successfully
@@ -140,35 +142,39 @@ mod tests {
     #[test]
     fn test_create_button_helper_success() {
         let tokens = MaterialTokens::default();
-        
+
         // Test successful button creation with helper
         let button = create_button::<TestMessage>(
-            || button(&tokens)
-                .label("Test")
-                .variant(ButtonVariant::Filled)
-                .on_press(TestMessage::Action)
-                .build(),
+            || {
+                button(&tokens)
+                    .label("Test")
+                    .variant(ButtonVariant::Filled)
+                    .on_press(TestMessage::Action)
+                    .build()
+            },
             "test",
-            Some("Test")
+            Some("Test"),
         );
-        
+
         std::mem::drop(button); // Verify it's valid
     }
 
     #[test]
     fn test_create_button_helper_fallback() {
         let tokens = MaterialTokens::default();
-        
+
         // Test button creation that fails and falls back to text
         let button = create_button::<TestMessage>(
-            || button(&tokens)
-                .variant(ButtonVariant::Filled)
-                // Missing both label and on_press, should fail
-                .build(),
+            || {
+                button(&tokens)
+                    .variant(ButtonVariant::Filled)
+                    // Missing both label and on_press, should fail
+                    .build()
+            },
             "test",
-            Some("Fallback")
+            Some("Fallback"),
         );
-        
+
         std::mem::drop(button); // Verify it's valid (should be text widget)
     }
 }

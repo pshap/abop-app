@@ -5,8 +5,8 @@
 use iced::widget::{container, row};
 use iced::{Alignment, Element, Length};
 
-use crate::components::buttons::{self, ButtonVariant};
 use crate::components::buttons::variants::ButtonSize;
+use crate::components::buttons::{self, ButtonVariant};
 use crate::components::icons::icon_names;
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;

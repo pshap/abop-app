@@ -3,8 +3,8 @@
 //! This module provides centralized path operations that are aware of Windows
 //! path conventions including case-insensitive comparisons and proper path normalization.
 
-use std::path::{Path, PathBuf};
 use log;
+use std::path::{Path, PathBuf};
 
 /// Compare two paths for equality with platform-aware rules
 ///

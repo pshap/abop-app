@@ -1,9 +1,9 @@
 //! FAB (Floating Action Button) variant strategy implementation
 
-use super::super::strategy::{ButtonState, ButtonVariantConfigBuilder};
 use super::super::constants;
-use crate::styling::color_utils::ColorUtils;
+use super::super::strategy::{ButtonState, ButtonVariantConfigBuilder};
 use crate::button_strategy;
+use crate::styling::color_utils::ColorUtils;
 use iced::Color;
 
 button_strategy! {
@@ -21,7 +21,7 @@ button_strategy! {
             icon_color,
             tokens.states.opacity.pressed, // Use tokens instead of constants
         );
-        
+
         ButtonVariantConfigBuilder::new()
             .background(base_background)
             .text_color(icon_color)
@@ -31,14 +31,14 @@ button_strategy! {
             .pressed_background(pressed_bg)
             .build()
     }
-    
+
     supports_elevation = true;
     base_elevation = 3.0;
       custom_styling = |button_state, variant_config, material_tokens, material_colors| {
         let mut styling = super::super::strategy::ButtonStateHandler::apply_state_styling(
             button_state, variant_config, material_tokens, material_colors
         );
-        
+
         // Override shadows and special cases for FAB
         match button_state {
             ButtonState::Hovered => styling.shadow = Some(material_tokens.elevation.level4.shadow),

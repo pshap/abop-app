@@ -1,14 +1,14 @@
 //! Outlined button variant strategy implementation
 
-use super::super::strategy::ButtonVariantConfigBuilder;
 use super::super::constants;
+use super::super::strategy::ButtonVariantConfigBuilder;
 use crate::button_strategy;
 use iced::Color;
 
 button_strategy! {
     struct OutlinedButtonStrategy;
     name = "Outlined";
-    
+
     config = |colors, _elevation, _tokens| {
         ButtonVariantConfigBuilder::new()
             .background(Color::TRANSPARENT)
@@ -18,6 +18,6 @@ button_strategy! {
             .surface_interactions()
             .build()
     }
-    
+
     has_border = true;
 }

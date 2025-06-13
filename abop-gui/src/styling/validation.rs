@@ -25,11 +25,12 @@ impl Default for ValidationResult {
     }
 }
 
-impl ValidationResult {    /// Create a new validation result
+impl ValidationResult {
+    /// Create a new validation result
     #[must_use]
     pub fn new() -> Self {
         Self {
-            errors: Vec::with_capacity(4),   // Pre-allocate for common validation error count
+            errors: Vec::with_capacity(4), // Pre-allocate for common validation error count
             warnings: Vec::with_capacity(8), // Pre-allocate for common validation warning count
             score: 1.0,
         }
