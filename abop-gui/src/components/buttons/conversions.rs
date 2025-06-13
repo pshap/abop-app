@@ -47,31 +47,6 @@ impl From<CustomIconPosition> for MaterialIconPosition {
     }
 }
 
-// Keep the old conversion functions for backward compatibility
-/// Convert from material ButtonSize to custom ButtonSize
-#[deprecated(note = "Use `CustomButtonSize::from()` instead")]
-pub fn from_material_button_size(size: MaterialButtonSize) -> CustomButtonSize {
-    size.into()
-}
-
-/// Convert from custom ButtonSize to material ButtonSize
-#[deprecated(note = "Use `MaterialButtonSize::from()` instead")]
-pub fn to_material_button_size(size: CustomButtonSize) -> MaterialButtonSize {
-    size.into()
-}
-
-/// Convert from material IconPosition to custom IconPosition
-#[deprecated(note = "Use `CustomIconPosition::from()` instead")]
-pub fn from_material_icon_position(pos: MaterialIconPosition) -> CustomIconPosition {
-    pos.into()
-}
-
-/// Convert from custom IconPosition to material IconPosition
-#[deprecated(note = "Use `MaterialIconPosition::from()` instead")]
-pub fn to_material_icon_position(pos: CustomIconPosition) -> MaterialIconPosition {
-    pos.into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,13 +63,13 @@ mod tests {
             MaterialButtonSize::Small
         );
         
-        // Test the deprecated functions for backward compatibility
+        // Test using the modern From trait implementations
         assert_eq!(
-            from_material_button_size(MaterialButtonSize::Small),
+            CustomButtonSize::from(MaterialButtonSize::Small),
             CustomButtonSize::Small
         );
         assert_eq!(
-            to_material_button_size(CustomButtonSize::Small),
+            MaterialButtonSize::from(CustomButtonSize::Small),
             MaterialButtonSize::Small
         );
     }
@@ -111,13 +86,13 @@ mod tests {
             MaterialIconPosition::Leading
         );
         
-        // Test the deprecated functions for backward compatibility
+        // Test using the modern From trait implementations
         assert_eq!(
-            from_material_icon_position(MaterialIconPosition::Leading),
+            CustomIconPosition::from(MaterialIconPosition::Leading),
             CustomIconPosition::Leading
         );
         assert_eq!(
-            to_material_icon_position(CustomIconPosition::Leading),
+            MaterialIconPosition::from(CustomIconPosition::Leading),
             MaterialIconPosition::Leading
         );
     }
