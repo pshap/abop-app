@@ -1,31 +1,28 @@
 # ABOP - Audiobook Organizer & Processor
 
-*A personal project for organizing and processing audiobooks*
+*A modern Rust audiobook management system with advanced processing capabilities*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🚧 Development Status
 
-**This application is currently in active development with significant functionality already implemented.** The core audio processing engine, library scanning, basic audio playback, and Material Design 3 GUI foundation are all working. While still evolving toward a complete release, ABOP provides functional audiobook library management and basic playback capabilities.
+**Active development with core functionality implemented.** The audio processing pipeline, library scanning system, and GUI foundation are functional. The application can scan directories, extract metadata, and manage audiobook libraries with a modern Material Design 3 interface.
 
 ### What's Implemented
-- ✅ **Core Audio Processing Pipeline**: Complete framework with resampling, channel mixing, normalization, and silence detection
-- ✅ **Material Design 3 Translation**: Comprehensive design system adapted from TypeScript to Rust
-- ✅ **Database Layer**: SQLite integration with connection pooling and health monitoring  
-- ✅ **GUI Foundation**: Iced-based interface with component architecture and theming
-- ✅ **Configuration System**: Type-safe, validated processing parameters
-- ✅ **Test Suite**: Extensive testing across audio processing components
-- ✅ **Library Scanner**: File system traversal and audiobook discovery with metadata extraction
-- ✅ **Audio Playback**: Basic audio player with playback controls and state management
-- ✅ **File Management UI**: Directory scanning and audiobook library management interface
-- ✅ **Progress Tracking**: State persistence and progress monitoring for long-running operations
+- ✅ **Audio Processing Pipeline**: Resampling, channel mixing, normalization, silence detection
+- ✅ **Library Scanner**: Multi-threaded directory traversal with metadata extraction
+- ✅ **Database Layer**: SQLite with connection pooling and performance monitoring
+- ✅ **GUI Foundation**: Iced-based interface with Material Design 3 theming
+- ✅ **Configuration System**: Type-safe settings with validation
+- ✅ **Progress Tracking**: Real-time scanning progress with cancellation support
+- ✅ **Audio Playback**: Basic player with state management
+- ✅ **Format Support**: MP3, M4A, M4B, FLAC, OGG, WAV, AAC
 
-### What's Coming Next
-- 🔲 **Complete Application Integration**: Connecting all pieces into a polished, cohesive experience
-- 🔲 **Advanced Audio Processing**: Enhanced batch processing with customizable quality presets
-- 🔲 **Enhanced Playback Features**: Chapter navigation, bookmarks, and advanced playback controls
-- 🔲 **CLI Interface**: Command-line tools for headless operation and automation
-- 🔲 **Export/Import**: Backup and restore functionality for library databases
+### Current Limitations
+- 🔲 Cover art display and thumbnail generation
+- 🔲 Chapter navigation and bookmarking
+- 🔲 Batch processing automation
+- 🔲 CLI interface for headless operation
 
 ## 🎯 Design Principles
 
@@ -55,45 +52,45 @@ ABOP balances modern Rust best practices with Iced GUI framework capabilities an
 ## 🛠️ Core Technologies
 
 ### Audio Processing
-- **[Symphonia 0.5.4](https://github.com/pdeljanov/Symphonia)**: Pure Rust audio decoding for MP3, FLAC, AAC, OGG, WAV, M4B, M4A
-- **[Rayon 1.10.0](https://github.com/rayon-rs/rayon)**: Data parallelism for batch processing operations
-- **Custom Pipeline**: Modular processing with configurable quality settings
+- **[Symphonia 0.5.x](https://github.com/pdeljanov/Symphonia)**: Pure Rust audio decoding for multiple formats
+- **[Rodio 0.17.x](https://github.com/RustAudio/rodio)**: Audio playback and streaming
+- **[Rayon 1.x](https://github.com/rayon-rs/rayon)**: Parallel processing for batch operations
 
 ### User Interface  
-- **[Iced 0.13.1](https://github.com/iced-rs/iced)**: Cross-platform GUI framework with component architecture
-- **[Iced Font Awesome 0.2.1](https://github.com/iced-rs/iced_aw)**: Icon system integration
-- **[Palette 0.7.6](https://github.com/Ogeon/palette)**: Color science for Material Design 3 theming
+- **[Iced 0.13.1](https://github.com/iced-rs/iced)**: Cross-platform GUI with component architecture
+- **Material Design 3**: Comprehensive theming system and design tokens
 
 ### Data & Configuration
-- **[SQLite](https://www.sqlite.org/)** via **[rusqlite](https://github.com/rusqlite/rusqlite)**: Embedded database with full-text search
-- **[Serde](https://serde.rs/)**: Type-safe serialization for configuration persistence
-- **[UUID v4/v7](https://github.com/uuid-rs/uuid)**: Unique identification for files and database records
+- **[SQLite](https://www.sqlite.org/)** via **[rusqlite 0.31.x](https://github.com/rusqlite/rusqlite)**: Embedded database with connection pooling
+- **[Serde](https://serde.rs/)**: Type-safe configuration serialization
+- **[UUID v4](https://github.com/uuid-rs/uuid)**: File and record identification
 
 ### Development & Quality
 - **Rust 2024 Edition**: Latest language features and safety improvements  
-- **[Tracing](https://tracing.rs/)**: Structured logging and diagnostics
-- **Comprehensive Testing**: Unit tests across all processing components
+- **[Tracing](https://tracing.rs/)**: Structured logging and performance monitoring
+- **Comprehensive Testing**: Unit and integration tests across all components
 
 ## 📁 Project Architecture
 
 ```
-abop-iced/
-├── abop-core/                 # Audio processing engine
-│   ├── src/audio/            # Audio pipeline and processing
-│   │   └── processing/       # Resampling, mixing, normalization
-│   ├── src/db/               # Database operations and health
-│   ├── src/models/           # Domain models and business logic
-│   └── src/scanner.rs        # File system traversal
+abop/
+├── abop-core/                    # Core audio processing and library management
+│   ├── src/audio/               # Audio pipeline, playback, and metadata
+│   │   └── processing/          # Resampling, mixing, normalization, silence detection
+│   ├── src/db/                  # SQLite operations with connection pooling
+│   ├── src/scanner/             # Multi-threaded directory scanning and orchestration
+│   ├── src/models/              # Domain models and business logic
+│   └── src/config/              # Configuration management and validation
 │
-├── abop-gui/                 # Iced GUI application  
-│   ├── src/components/       # Reusable UI components
-│   ├── src/styling/          # Material Design 3 implementation
-│   │   └── material/         # Design tokens and theme system
-│   ├── src/views/            # Application screens and layouts
-│   └── src/handlers/         # Message processing and state updates
+├── abop-gui/                    # Iced GUI application  
+│   ├── src/components/          # Reusable UI components
+│   ├── src/library/             # Library scanning and management UI
+│   ├── src/audio/               # Audio player interface
+│   ├── src/commands/            # Async command handlers
+│   └── src/theme/               # Material Design 3 implementation
 │
-├── abop-cli/                 # Command-line interface (planned)
-└── material-web-clean/       # Material Components reference
+├── abop-cli/                    # Command-line interface (in progress)
+└── docs/                        # Architecture and best practices documentation
 ```
 
 ## 🚀 Getting Started
@@ -109,8 +106,8 @@ abop-iced/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/abop-iced.git
-cd abop-iced
+git clone https://github.com/yourusername/abop.git
+cd abop
 
 # Build the workspace
 cargo build
@@ -118,8 +115,11 @@ cargo build
 # Run tests to verify setup
 cargo test --workspace
 
-# Start the GUI (functional library management and basic playback)
+# Start the GUI application
 cargo run -p abop-gui
+
+# Run CLI (basic functionality)
+cargo run -p abop-cli
 
 # Generate documentation
 cargo doc --workspace --open
@@ -129,8 +129,10 @@ cargo doc --workspace --open
 
 ```rust
 use abop_core::audio::processing::{AudioProcessingPipeline, ProcessingConfig};
-use abop_core::audio::ChannelMixerConfig;
+use abop_core::audio::processing::ChannelMixerConfig;
+use abop_core::scanner::{LibraryScanner, ScanOptions};
 
+// Audio processing example
 let config = ProcessingConfig {
     channel_mixer: Some(ChannelMixerConfig {
         target_channels: Some(1), // Convert to mono
@@ -140,7 +142,12 @@ let config = ProcessingConfig {
 };
 
 let pipeline = AudioProcessingPipeline::new(config)?;
-// Process audiobooks - core functionality is implemented
+pipeline.process_file_with_output(&input_path, &output_path)?;
+
+// Library scanning example
+let scanner = LibraryScanner::new(database, library);
+let scan_result = scanner.scan(ScanOptions::default())?;
+println!("Found {} audiobooks", scan_result.new_files.len());
 ```
 
 ## 📄 License
@@ -150,12 +157,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 *Built with modern Rust for performance, safety, and maintainability*
-
-## Feature Limitations
-
-The following features are intentionally not supported at this time:
-- Cover art extraction or display
-- Additional audio formats beyond MP3, M4B, and FLAC
-- Online metadata fetching or enrichment
-
-These limitations are by design to maintain focus on core functionality and performance.
