@@ -13,6 +13,7 @@ button_strategy! {
             .text_color(colors.secondary.on_container)
             .border(Color::TRANSPARENT, 0.0)
             .radius(constants::radius::MEDIUM) // Use Material Design medium radius constant
+            .surface_interactions() // Enable Material Design surface interaction effects
             .build()
     }
 }
