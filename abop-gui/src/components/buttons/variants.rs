@@ -1,7 +1,5 @@
 //! Button variants and related types
 
-use iced::{Length, Padding};
-
 /// The visual variant of a button
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -59,30 +57,12 @@ impl Default for IconPosition {
     }
 }
 
-/// Padding values for different button sizes
-pub(crate) fn button_padding(size: ButtonSize) -> Padding {
-    match size {
-        ButtonSize::Small => Padding::from([4.0, 8.0]),
-        ButtonSize::Medium => Padding::from([8.0, 16.0]),
-        ButtonSize::Large => Padding::from([12.0, 24.0]),
-    }
-}
-
 /// Icon size for different button sizes
 pub(crate) fn icon_size(size: ButtonSize) -> f32 {
     match size {
         ButtonSize::Small => 18.0,
         ButtonSize::Medium => 20.0,
         ButtonSize::Large => 24.0,
-    }
-}
-
-/// Minimum width for different button sizes
-pub(crate) fn min_width(size: ButtonSize) -> Length {
-    match size {
-        ButtonSize::Small => Length::Fixed(64.0),
-        ButtonSize::Medium => Length::Fixed(80.0),
-        ButtonSize::Large => Length::Fixed(96.0),
     }
 }
 

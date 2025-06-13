@@ -680,17 +680,6 @@ pub fn create_button<'a, Message: Clone + 'a>(
 }
 
 // Helper conversion functions to bridge between different type systems
-fn map_material_variant_to_style_variant(variant: MaterialButtonVariant) -> crate::styling::material::components::button_style::ButtonStyleVariant {
-    use crate::styling::material::components::button_style::ButtonStyleVariant;
-    match variant {
-        MaterialButtonVariant::Filled => ButtonStyleVariant::Filled,
-        MaterialButtonVariant::FilledTonal => ButtonStyleVariant::FilledTonal,
-        MaterialButtonVariant::Outlined => ButtonStyleVariant::Outlined,
-        MaterialButtonVariant::Text => ButtonStyleVariant::Text,
-        MaterialButtonVariant::Elevated => ButtonStyleVariant::Elevated,
-    }
-}
-
 fn map_material_size_to_style_size(size: MaterialButtonSize) -> crate::styling::material::components::button_style::ButtonSizeVariant {
     use crate::styling::material::components::button_style::ButtonSizeVariant;
     match size {
