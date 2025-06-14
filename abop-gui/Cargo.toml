@@ -60,10 +60,4 @@ bytemuck.workspace = true
 material-color-utilities-rs = "^0.2.0"
 
 [dev-dependencies]
-approx = "0.5.1"
-# Test dependencies for comprehensive testing framework
-quickcheck = "1.0"
-proptest = "1.4"
-criterion = "0.5"
-fake = "2.9"
-test-case = "3.3"
+approx = "0.5.1"  # For floating-point comparisons in tests
