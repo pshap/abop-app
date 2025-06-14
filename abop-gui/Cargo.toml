@@ -47,7 +47,7 @@ rayon.workspace = true
 bytemuck.workspace = true
 
 # Direct dependencies (not in workspace)
-material-color-utilities-rs = "^0.2.0"
+material-color-utilities-rs = "*"
 
 [dev-dependencies]
-approx = "0.5.1"  # For floating-point comparisons in tests
+approx = "0.5"  # For floating-point comparisons in tests
