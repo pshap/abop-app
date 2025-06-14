@@ -3,13 +3,11 @@
 //! This tool checks the content of the centralized database without modifying it.
 
 use abop_core::db::Database;
-use anyhow::{Context, Result};
+use abop_core::error::{Result, ErrorContext};
 
 fn main() -> Result<()> {
     println!("🔍 Checking Centralized Database Content");
-    println!("=======================================");
-
-    // Get the database path
+    println!("=======================================");    // Get the database path
     let db_path = Database::get_app_database_path().context("Failed to get app database path")?;
 
     println!("Database path: {}", db_path.display());
@@ -51,10 +49,9 @@ fn main() -> Result<()> {
         println!();
     }
     // Get total stats
-    let repo = db.audiobook_repository();
-    let total_audiobooks = repo
+    let repo = db.audiobook_repository();    let total_audiobooks = repo
         .find_all()
-        .map_err(|e| anyhow::anyhow!("Failed to get all audiobooks: {}", e))?;
+        .map_err(|e| abop_core::error::AppError::Other(format!("Failed to get all audiobooks: {}", e)))?;
 
     println!("📊 Total Statistics:");
     println!("   Libraries: {}", libraries.len());

@@ -175,6 +175,12 @@ impl From<&str> for AppError {
     }
 }
 
+impl From<rusqlite::Error> for AppError {
+    fn from(err: rusqlite::Error) -> Self {
+        Self::from_sqlite(err)
+    }
+}
+
 // Helper methods for error conversions
 impl AppError {
     /// Convert a rusqlite::Error to AppError

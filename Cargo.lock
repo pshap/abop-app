@@ -34,7 +34,6 @@ dependencies = [
 name = "abop-core"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "approx",
  "async-trait",
  "bitflags 2.9.1",
