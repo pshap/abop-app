@@ -261,9 +261,10 @@ fn show_scan_results(db: &Database) -> Result<()> {
                     "  {}. {} - {}",
                     i + 1,
                     book.title.as_deref().unwrap_or(UNKNOWN_TITLE),
-                    book.author.as_deref().unwrap_or(UNKNOWN_AUTHOR)
-                );
-            }            if total_count > 5 {
+                    book.author.as_deref().unwrap_or(UNKNOWN_AUTHOR)                );
+            }
+
+            if total_count > 5 {
                 info!("  ... and {} more", total_count - 5);
             }
         }
