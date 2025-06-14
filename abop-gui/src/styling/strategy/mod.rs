@@ -28,6 +28,9 @@
 pub mod traits;
 pub mod button;
 pub mod checkbox;
+pub mod radio;
+pub mod switch;
+pub mod chip;
 pub mod states;
 pub mod styling;
 pub mod examples;
@@ -36,5 +39,8 @@ pub mod examples;
 pub use traits::{ComponentStyleStrategy, ComponentState};
 pub use button::{ButtonStyleVariant, ButtonStyling};
 pub use checkbox::{CheckboxStyleStrategy, CheckboxStyleVariant};
+pub use radio::{RadioStyleStrategy, RadioStyleVariant};
+pub use switch::{SwitchStyleStrategy, SwitchStyleVariant};
+pub use chip::{ChipStyleStrategy, ChipStyleVariant};
 pub use states::{ButtonState, CheckboxState, InteractionState, ComponentInteractionState};
 pub use styling::ComponentStyling;
