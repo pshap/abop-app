@@ -10,7 +10,7 @@ use rand::{Rng, rng};
 fn generate_test_audio(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
     let samples = (sample_rate as f32 * duration_secs) as usize * channels as usize;
     let mut rng = rng();
-    let data: Vec<f32> = (0..samples).map(|_| rng.gen_range(-1.0..=1.0)).collect();
+    let data: Vec<f32> = (0..samples).map(|_| rng.random_range(-1.0..=1.0)).collect();
 
     AudioBuffer {
         data,
