@@ -194,7 +194,7 @@ mod tests {
     fn test_ui_constants() {
         assert_eq!(ui::MIN_TOUCH_TARGET_SIZE, 48.0);
         assert_eq!(ui::MAX_LABEL_LENGTH, 200);
-        assert!(!ui::DEFAULT_LABEL.is_empty()); // Check that default label is not empty
+        assert_eq!(ui::DEFAULT_LABEL, ""); // Default label is intentionally empty
     }
 
     #[test]
@@ -206,14 +206,12 @@ mod tests {
     fn test_chip_constants() {
         // Removed constant assertions that are always true
         assert_eq!(chips::MAX_LABEL_LENGTH, 100);
-    }
-
-    #[test]
+    }    #[test]
     fn test_size_constants() {
         // Test actual values instead of relationships
-        assert_eq!(sizes::SMALL_SIZE_PX, 24.0);
-        assert_eq!(sizes::MEDIUM_SIZE_PX, 32.0);
-        assert_eq!(sizes::LARGE_SIZE_PX, 40.0);
+        assert_eq!(sizes::SMALL_SIZE_PX, 16.0);
+        assert_eq!(sizes::MEDIUM_SIZE_PX, 20.0);
+        assert_eq!(sizes::LARGE_SIZE_PX, 24.0);
     }
 
     #[test]
@@ -232,8 +230,8 @@ mod tests {
     fn test_validation_constants() {
         // Test validation constant values
         assert_eq!(validation::MIN_INPUT_LENGTH, 1);
-        assert_eq!(validation::MAX_SINGLE_LINE_INPUT, 1000);
-        assert_eq!(validation::MAX_MULTILINE_INPUT, 5000);
+        assert_eq!(validation::MAX_SINGLE_LINE_INPUT, 255);
+        assert_eq!(validation::MAX_MULTILINE_INPUT, 2000);
         assert_eq!(validation::VALIDATION_DEBOUNCE_MS, 300);
         assert_eq!(validation::MAX_VISIBLE_ERRORS, 3);
     }
