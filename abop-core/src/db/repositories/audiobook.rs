@@ -169,28 +169,15 @@ impl AudiobookRepository {
     pub fn find_by_library_paginated(&self, library_id: &str, limit: Option<usize>, offset: usize) -> Result<Vec<Audiobook>> {
         let library_id = library_id.to_string();
         self.execute_query(move |conn| {
-            let query = match limit {
-                Some(limit_value) => format!(
+            let audiobooks = if let Some(limit_value) = limit {
+                let mut stmt = conn.prepare(
                     "SELECT id, library_id, path, title, author, narrator, description,
                             duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
                      FROM audiobooks WHERE library_id = ?1 
                      ORDER BY title ASC 
-                     LIMIT {} OFFSET {}",
-                    limit_value, offset
-                ),
-                None => format!(
-                    "SELECT id, library_id, path, title, author, narrator, description,
-                            duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
-                     FROM audiobooks WHERE library_id = ?1 
-                     ORDER BY title ASC 
-                     OFFSET {}",
-                    offset
-                ),
-            };
-            
-            let mut stmt = conn.prepare(&query)?;
-            let audiobooks = stmt
-                .query_map([&library_id], |row| {
+                     LIMIT ?2 OFFSET ?3"
+                )?;
+                let rows = stmt.query_map(rusqlite::params![library_id, limit_value as i64, offset as i64], |row| {
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -203,11 +190,37 @@ impl AudiobookRepository {
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
                         created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
-                        selected: row.get(12)?,
-                    })
-                })?
-                .collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
+                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,                    selected: row.get(12)?,
+                })
+                })?;
+                rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
+            } else {
+                let mut stmt = conn.prepare(
+                    "SELECT id, library_id, path, title, author, narrator, description,
+                            duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
+                     FROM audiobooks WHERE library_id = ?1 
+                     ORDER BY title ASC 
+                     OFFSET ?2"
+                )?;
+                let rows = stmt.query_map(rusqlite::params![library_id, offset as i64], |row| {
+                    Ok(Audiobook {
+                        id: row.get(0)?,
+                        library_id: row.get(1)?,
+                        path: PathBuf::from(row.get::<_, String>(2)?),
+                        title: row.get(3)?,
+                        author: row.get(4)?,
+                        narrator: row.get(5)?,
+                        description: row.get(6)?,
+                        duration_seconds: row.get(7)?,
+                        size_bytes: row.get(8)?,
+                        cover_art: row.get(9)?,
+                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
+                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,                    selected: row.get(12)?,
+                })
+                })?;
+                rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
+            };
+            
             Ok(audiobooks)
         })
         .map_err(AppError::from)

@@ -320,17 +320,25 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
     if total_count == 0 {
         info!("No audiobooks found in database. Try scanning a library directory first.");
     } else {
-        info!("Found {} audiobooks:", total_count);
+        // Use configurable pagination to avoid loading too many audiobooks into memory at once
+        // Default to 100, but allow environment variable override for performance tuning
+        let page_size = std::env::var("ABOP_PAGE_SIZE")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(100)
+            .max(1)  // Ensure minimum page size of 1
+            .min(1000); // Cap at reasonable maximum to prevent memory issues
+            
+        info!("Found {} audiobooks in library {} (page_size={})", total_count, library_id, page_size);
         
-        // Use pagination to avoid loading too many audiobooks into memory at once
-        const PAGE_SIZE: usize = 100;
+        debug!("Using page size: {}", page_size);
         let mut offset = 0;
         let mut displayed = 0;
         
         while offset < total_count {
-            debug!("Loading audiobooks with offset: {offset}, limit: {PAGE_SIZE}");
+            debug!("Loading audiobooks with offset: {offset}, limit: {page_size}");
             let audiobooks = db
-                .get_audiobooks_in_library_paginated(library_id, Some(PAGE_SIZE), offset)
+                .get_audiobooks_in_library_paginated(library_id, Some(page_size), offset)
                 .context("Failed to get audiobooks")?;
             
             for book in audiobooks {
@@ -344,7 +352,7 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
                 );
             }
             
-            offset += PAGE_SIZE;
+            offset += page_size;
         }
     }
     Ok(())
