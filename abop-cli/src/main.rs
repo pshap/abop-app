@@ -234,8 +234,8 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
         return Ok(0);
     }
 
-    // Use the first available library, or default to "1"
-    let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
+    // Use the first available library
+    let library_id = libraries.first().unwrap().id.as_str();
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -247,24 +247,28 @@ fn show_scan_results(db: &Database) -> Result<()> {
     if count == 0 {
         warn!("No audiobooks found in the library");
     } else {
-        info!("📚 Total audiobooks found: {count}"); // Get all libraries and use the first one, or default to "1"
+        info!("📚 Total audiobooks found: {count}");
+        
+        // Get libraries to show audiobook examples
         let libraries = db.get_libraries()?;
-        let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
+        if !libraries.is_empty() {
+            let library_id = libraries.first().unwrap().id.as_str();
 
-        // Show first few audiobooks as examples
-        let audiobooks = db.get_audiobooks_in_library(library_id)?;
-        info!("Sample audiobooks:");
-        for (i, book) in audiobooks.iter().take(5).enumerate() {
-            info!(
-                "  {}. {} - {}",
-                i + 1,
-                book.title.as_deref().unwrap_or("Unknown Title"),
-                book.author.as_deref().unwrap_or("Unknown")
-            );
-        }
+            // Show first few audiobooks as examples
+            let audiobooks = db.get_audiobooks_in_library(library_id)?;
+            info!("Sample audiobooks:");
+            for (i, book) in audiobooks.iter().take(5).enumerate() {
+                info!(
+                    "  {}. {} - {}",
+                    i + 1,
+                    book.title.as_deref().unwrap_or("Unknown Title"),
+                    book.author.as_deref().unwrap_or("Unknown")
+                );
+            }
 
-        if audiobooks.len() > 5 {
-            info!("  ... and {} more", audiobooks.len() - 5);
+            if audiobooks.len() > 5 {
+                info!("  ... and {} more", audiobooks.len() - 5);
+            }
         }
     }
 

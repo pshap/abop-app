@@ -30,10 +30,8 @@ impl DataRepository {
     #[must_use]
     pub const fn data(&self) -> &AppData {
         &self.data
-    }
-
-    /// Gets a mutable reference to the underlying data
-    pub const fn data_mut(&mut self) -> &mut AppData {
+    }    /// Gets a mutable reference to the underlying data
+    pub fn data_mut(&mut self) -> &mut AppData {
         &mut self.data
     }
 

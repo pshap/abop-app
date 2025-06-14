@@ -242,10 +242,12 @@ mod tests {
 
     #[test]
     fn test_accessibility_constants() {
-        // Test accessibility contrast ratio values
+        // Test accessibility contrast ratio values according to WCAG guidelines
+        // WCAG AA requires 4.5:1 for normal text and 3.0:1 for large text
         assert_eq!(accessibility::MIN_CONTRAST_NORMAL, 4.5);
         assert_eq!(accessibility::MIN_CONTRAST_LARGE, 3.0);
         assert_eq!(accessibility::MIN_CONTRAST_UI, 3.0);
+        // WCAG AAA requires 7.0:1 for enhanced accessibility
         assert_eq!(accessibility::MIN_CONTRAST_AAA, 7.0);
     }
 }

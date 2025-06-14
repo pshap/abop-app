@@ -209,12 +209,3 @@ impl AppError {
     }
 }
 
-// Helper function to convert rusqlite::Error to AppError
-/// Converts rusqlite errors to AppError
-///
-/// This function provides a centralized way to convert SQLite errors
-/// into the application's error type hierarchy.
-#[must_use]
-pub fn sqlite_to_app_error(err: rusqlite::Error) -> AppError {
-    AppError::from_sqlite(err)
-}

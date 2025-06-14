@@ -59,10 +59,4 @@ impl IssuePattern {
     }
 }
 
-impl ValidationError {
-    /// Get the issue pattern for this validation error
-    #[must_use]
-    pub fn pattern(&self) -> IssuePattern {
-        IssuePattern::from_message(&self.message)
-    }
-}
+
