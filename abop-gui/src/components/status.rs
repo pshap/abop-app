@@ -41,10 +41,14 @@ pub struct EnhancedStatusDisplayParams<'a> {
     pub scanning: bool,
     /// Enhanced scan progress information
     pub scan_progress: Option<ScanProgress>,
+    /// Cached scan progress text to avoid frequent formatting
+    pub cached_scan_progress_text: Option<&'a str>,
     /// Whether audio is being processed
     pub processing_audio: bool,
     /// Progress of audio processing
     pub processing_progress: Option<f32>,
+    /// Cached processing progress text to avoid frequent formatting
+    pub cached_processing_progress_text: Option<&'a str>,
     /// Status message for processing
     pub processing_status: Option<&'a str>,
     /// Current audio player state
@@ -179,8 +183,12 @@ impl StatusDisplay {
                     }
                 };
 
-                let progress_text =
-                    text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12);
+                // Use cached progress text if available, otherwise fall back to formatting
+                let progress_text = if let Some(cached_text) = params.cached_scan_progress_text {
+                    text(cached_text).size(12)
+                } else {
+                    text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12)
+                };
                 let scan_label =
                     format!("Scanning: {processed} of {total} files\nCurrent: {current_file}");
                 let progress_display = text(scan_label);
@@ -203,7 +211,11 @@ impl StatusDisplay {
                 .processing_status
                 .unwrap_or("Processing audio...")
                 .to_string();
-            let progress_text = if let Some(progress) = params.processing_progress {
+            let progress_text = if let Some(cached_text) = params.cached_processing_progress_text {
+                // Use cached percentage text with status
+                format!("{} - {}", cached_text, processing_status)
+            } else if let Some(progress) = params.processing_progress {
+                // Fall back to direct formatting if no cache available
                 format!("{:.1}% - {}", progress * 100.0, processing_status)
             } else {
                 processing_status

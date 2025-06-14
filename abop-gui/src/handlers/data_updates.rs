@@ -66,9 +66,14 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
                     Some(Task::none())
                 }
             }
-        }
-        Message::ScanProgress(progress) => {
+        }        Message::ScanProgress(progress) => {
             state.scan_progress = Some(progress);
+            // Update cached scan progress text to avoid frequent formatting
+            if state.last_scan_progress.is_none() 
+                || (state.last_scan_progress.unwrap() - progress).abs() >= 0.001 {
+                state.last_scan_progress = Some(progress);
+                state.cached_scan_progress_text = Some(format!("Progress: {:.1}%", progress * 100.0));
+            }
             Some(Task::none())
         }
         Message::ScanProgressEnhanced(progress) => {
@@ -86,18 +91,22 @@ pub fn handle_core_operation(state: &mut UiState, message: Message) -> Task<Mess
             log::info!(
                 "Scan complete: {} books found in {:?}",
                 result.audiobooks.len(),
-                result.scan_duration
-            );
+                result.scan_duration            );
             state.scanning = false;
             state.scan_progress = None;
+            // Clear scan progress cache when scan completes
+            state.cached_scan_progress_text = None;
+            state.last_scan_progress = None;
             state.audiobooks = result.audiobooks;
             state.scanner_state = ScannerState::Complete;
             Task::none()
         }
-        Message::ScanComplete(Err(e)) => {
-            log::error!("Scan failed: {e}");
+        Message::ScanComplete(Err(e)) => {            log::error!("Scan failed: {e}");
             state.scanning = false;
             state.scan_progress = None;
+            // Clear scan progress cache when scan fails
+            state.cached_scan_progress_text = None;
+            state.last_scan_progress = None;
             state.scanner_state = ScannerState::Error;
             Task::none()
         }
