@@ -41,20 +41,13 @@ use super::{
 const ICON_TEXT_SPACING: f32 = 8.0;
 
 /// Macro to apply common container properties (width, height, padding)
-/// This reduces code duplication without borrow checker issues
+/// Uses method chaining to avoid intermediate assignments when possible
 macro_rules! apply_container_properties {
     ($container:expr, $width:expr, $height:expr, $padding:expr) => {{
-        let mut container = $container;
-        if let Some(width) = $width {
-            container = container.width(width);
-        }
-        if let Some(height) = $height {
-            container = container.height(height);
-        }
-        if let Some(padding) = $padding {
-            container = container.padding(padding);
-        }
-        container
+        let result = $container;
+        let result = if let Some(w) = $width { result.width(w) } else { result };
+        let result = if let Some(h) = $height { result.height(h) } else { result };
+        if let Some(p) = $padding { result.padding(p) } else { result }
     }};
 }
 
