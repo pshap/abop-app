@@ -17,12 +17,10 @@ pub enum RadioStyleVariant {
 /// Radio button style strategy implementation
 /// 
 /// Manages styling for Material Design 3 radio buttons with proper state handling.
-/// The variant field is kept for future extensibility when different radio styles
-/// may be needed (e.g., compact radio buttons, or custom visual variants).
+/// Uses the variant enum to control behavior, eliminating redundant state tracking.
 pub struct RadioStyleStrategy {
-    variant: RadioStyleVariant, // Future-proofing for style variants
+    variant: RadioStyleVariant,
     selected: bool,
-    error: bool,
 }
 
 impl RadioStyleStrategy {
@@ -31,7 +29,6 @@ impl RadioStyleStrategy {
         Self {
             variant: RadioStyleVariant::Standard,
             selected: false,
-            error: false,
         }
     }
 
@@ -40,7 +37,6 @@ impl RadioStyleStrategy {
         Self {
             variant: RadioStyleVariant::Error,
             selected: false,
-            error: true,
         }
     }
 
@@ -48,7 +44,14 @@ impl RadioStyleStrategy {
     pub fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self
-    }    /// Calculate background color based on state
+    }    /// Check if this radio button is in error state
+    /// 
+    /// Uses the variant enum to determine error state, eliminating redundant tracking
+    fn is_error(&self) -> bool {
+        matches!(self.variant, RadioStyleVariant::Error)
+    }
+
+    /// Calculate background color based on state
     /// 
     /// Radio button background follows Material Design 3 specifications:
     /// - Error state: Uses error color when selected, transparent when unselected
@@ -57,9 +60,8 @@ impl RadioStyleStrategy {
     /// - Unselected state: Transparent background (only border visible)
     fn background_color(&self, state: ComponentState, tokens: &MaterialTokens) -> Color {
         let colors = &tokens.colors;
-        
-        // Error state takes precedence over all other states
-        if self.error {
+          // Error state takes precedence over all other states
+        if self.is_error() {
             return if self.selected {
                 colors.error.base // Filled with error color when selected
             } else {
@@ -87,8 +89,7 @@ impl RadioStyleStrategy {
     /// Calculate border for radio button
     fn border_style(&self, state: ComponentState, tokens: &MaterialTokens) -> Border {
         let colors = &tokens.colors;
-        
-        let color = if self.error {
+          let color = if self.is_error() {
             colors.error.base
         } else if matches!(state, ComponentState::Disabled) {
             ColorUtils::with_alpha(colors.on_surface, 0.38)
@@ -110,8 +111,7 @@ impl RadioStyleStrategy {
     /// Calculate foreground (dot) color
     fn foreground_color(&self, state: ComponentState, tokens: &MaterialTokens) -> Color {
         let colors = &tokens.colors;
-        
-        if self.error && self.selected {
+          if self.is_error() && self.selected {
             return colors.on_error();
         }
 
