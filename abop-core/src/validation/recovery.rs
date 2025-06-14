@@ -38,8 +38,9 @@ pub struct RepairContext {
     pub max_backups: usize,
 }
 
-impl RepairContext {    /// Create a new repair context from validation results
-    /// 
+impl RepairContext {
+    /// Create a new repair context from validation results
+    ///
     /// Creates a context with default settings: auto-repair critical issues enabled,
     /// auto-repair warnings disabled, and a maximum of 3 backups.
     #[must_use]
@@ -66,8 +67,9 @@ impl RepairContext {    /// Create a new repair context from validation results
             auto_repair_warnings,
             max_backups,
         }
-    }    /// Get issues that should be auto-repaired based on settings
-    /// 
+    }
+    /// Get issues that should be auto-repaired based on settings
+    ///
     /// Returns a filtered list of validation errors based on severity levels
     /// configured for auto-repair (critical errors and warnings separately).
     #[must_use]

@@ -14,7 +14,7 @@ use crate::styling::material::{MaterialSurface, SurfaceVariant};
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
 pub fn library_view(state: &UiState) -> iced::Element<'_, Message> {
-    log::debug!("LIBRARY VIEW RENDER: {} audiobooks", state.audiobooks.len());    // Use the enhanced StatusDisplay component with detailed progress information
+    log::debug!("LIBRARY VIEW RENDER: {} audiobooks", state.audiobooks.len()); // Use the enhanced StatusDisplay component with detailed progress information
     let status_display = StatusDisplay::enhanced_view(
         EnhancedStatusDisplayParams {
             scanning: state.scanning,

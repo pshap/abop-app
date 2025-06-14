@@ -88,7 +88,8 @@ pub struct UiState {
     /// Progress of the current state save (0.0 to 1.0)
     pub save_progress: Option<f32>,
     /// Whether audio processing is in progress
-    pub processing_audio: bool,    /// Progress of the current audio processing (0.0 to 1.0)
+    pub processing_audio: bool,
+    /// Progress of the current audio processing (0.0 to 1.0)
     pub processing_progress: Option<f32>,
     /// Current audio processing status message
     pub processing_status: Option<String>,
@@ -142,7 +143,8 @@ impl UiState {
             scan_progress: None,
             enhanced_scan_progress: None,
             saving: false,
-            save_progress: None,            processing_audio: false,
+            save_progress: None,
+            processing_audio: false,
             processing_progress: None,
             processing_status: None,
             cached_scan_progress_text: None,
@@ -313,34 +315,42 @@ impl UiState {
 
     /// Get cached scan progress text, updating cache if needed
     /// This avoids frequent float-to-string formatting in UI renders
-    pub fn get_scan_progress_text(&mut self, progress_percentage: f32) -> String {        // Only update cache if progress changed meaningfully (0.1% threshold)
-        if self.last_scan_progress.is_none() 
-            || (self.last_scan_progress.unwrap() - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD {
+    pub fn get_scan_progress_text(&mut self, progress_percentage: f32) -> String {
+        // Only update cache if progress changed meaningfully (0.1% threshold)
+        if self.last_scan_progress.is_none()
+            || (self.last_scan_progress.unwrap() - progress_percentage).abs()
+                >= PROGRESS_CACHE_THRESHOLD
+        {
             self.last_scan_progress = Some(progress_percentage);
-            self.cached_scan_progress_text = Some(format!("Progress: {:.1}%", progress_percentage * 100.0));
+            self.cached_scan_progress_text =
+                Some(format!("Progress: {:.1}%", progress_percentage * 100.0));
         }
-        
+
         self.cached_scan_progress_text
             .as_ref()
             .unwrap_or(&"Progress: 0.0%".to_string())
             .clone()
     }
-    
+
     /// Get cached processing progress text, updating cache if needed
     /// This avoids frequent float-to-string formatting in UI renders
-    pub fn get_processing_progress_text(&mut self, progress_percentage: f32) -> String {        // Only update cache if progress changed meaningfully (0.1% threshold)
-        if self.last_processing_progress.is_none() 
-            || (self.last_processing_progress.unwrap() - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD {
+    pub fn get_processing_progress_text(&mut self, progress_percentage: f32) -> String {
+        // Only update cache if progress changed meaningfully (0.1% threshold)
+        if self.last_processing_progress.is_none()
+            || (self.last_processing_progress.unwrap() - progress_percentage).abs()
+                >= PROGRESS_CACHE_THRESHOLD
+        {
             self.last_processing_progress = Some(progress_percentage);
-            self.cached_processing_progress_text = Some(format!("{:.1}%", progress_percentage * 100.0));
+            self.cached_processing_progress_text =
+                Some(format!("{:.1}%", progress_percentage * 100.0));
         }
-        
+
         self.cached_processing_progress_text
             .as_ref()
             .unwrap_or(&"0.0%".to_string())
             .clone()
     }
-    
+
     /// Clear progress caches when scan starts/stops
     pub fn clear_progress_caches(&mut self) {
         self.cached_scan_progress_text = None;

@@ -247,7 +247,7 @@ impl SqlQueries {
     pub fn audiobook_select(where_clause: Option<&str>) -> String {
         let base = format!("SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS);
         match where_clause {
-            Some(clause) => format!("{} WHERE {}", base, clause),
+            Some(clause) => format!("{base} WHERE {clause}"),
             None => base,
         }
     }
@@ -257,7 +257,7 @@ impl SqlQueries {
     pub fn library_select(where_clause: Option<&str>) -> String {
         let base = format!("SELECT {} FROM libraries", Self::LIBRARY_COLUMNS);
         match where_clause {
-            Some(clause) => format!("{} WHERE {}", base, clause),
+            Some(clause) => format!("{base} WHERE {clause}"),
             None => base,
         }
     }

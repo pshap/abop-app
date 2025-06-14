@@ -115,13 +115,13 @@ where
                 Switch::default()
             })
         });
-    
+
     // Use static MaterialColors to solve lifetime issues
     static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
         std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
     static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
         std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-    
+
     let colors = if is_dark { &DARK_COLORS } else { &LIGHT_COLORS };
     md3_switch.view(on_toggle, colors)
 }

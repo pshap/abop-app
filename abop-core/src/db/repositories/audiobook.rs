@@ -157,7 +157,7 @@ impl AudiobookRepository {
     /// Find audiobooks by library with pagination support
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `library_id` - The library ID to search in
     /// * `limit` - Maximum number of audiobooks to return (None for no limit)
     /// * `offset` - Number of audiobooks to skip (for pagination)
@@ -166,7 +166,12 @@ impl AudiobookRepository {
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
-    pub fn find_by_library_paginated(&self, library_id: &str, limit: Option<usize>, offset: usize) -> Result<Vec<Audiobook>> {
+    pub fn find_by_library_paginated(
+        &self,
+        library_id: &str,
+        limit: Option<usize>,
+        offset: usize,
+    ) -> Result<Vec<Audiobook>> {
         let library_id = library_id.to_string();
         self.execute_query(move |conn| {
             let audiobooks = if let Some(limit_value) = limit {
@@ -220,7 +225,6 @@ impl AudiobookRepository {
                 })?;
                 rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
             };
-            
             Ok(audiobooks)
         })
         .map_err(AppError::from)
@@ -444,7 +448,6 @@ impl AudiobookRepository {
             Ok(rows_affected)
         })
     }
-
 
     /// Check if an audiobook exists
     ///
