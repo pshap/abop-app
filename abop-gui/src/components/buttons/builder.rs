@@ -37,13 +37,26 @@ use super::{
     variants::{ButtonSize, ButtonVariant, IconPosition},
 };
 
-/// Default icon size for buttons in pixels (equivalent to Large size)
-/// Note: Using 24px (Large size) to maintain visual consistency with existing design
-/// This matches ButtonSize::Large from variants.rs for icon-text combination buttons
-const DEFAULT_ICON_SIZE: u16 = 24;
-
 /// Default spacing between icon and text elements in pixels
-const ICON_TEXT_SPACING: u16 = 8;
+const ICON_TEXT_SPACING: f32 = 8.0;
+
+/// Macro to apply common container properties (width, height, padding)
+/// This reduces code duplication without borrow checker issues
+macro_rules! apply_container_properties {
+    ($container:expr, $width:expr, $height:expr, $padding:expr) => {{
+        let mut container = $container;
+        if let Some(width) = $width {
+            container = container.width(width);
+        }
+        if let Some(height) = $height {
+            container = container.height(height);
+        }
+        if let Some(padding) = $padding {
+            container = container.padding(padding);
+        }
+        container
+    }};
+}
 
 /// A builder for creating Material Design 3 buttons with a fluent API.
 ///
@@ -179,9 +192,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
-    }
-
-    /// Set the message to send when the button is pressed
+    }    /// Set the message to send when the button is pressed
     pub fn on_press(mut self, message: M) -> Self {
         self.on_press = Some(message);
         self
@@ -212,14 +223,19 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             && !label.is_empty()
         {
             return Err(ButtonError::InvalidIconPosition);
-        }
-
-        // Create the button content based on what's available (icon, label, or both)
-        let content: Element<'a, M> = match (self.label, self.icon) {
-            (Some(label), Some(icon)) => {                // Button with both icon and label
+        }        // Create the button content based on what's available (icon, label, or both)
+        let label = self.label;
+        let icon = self.icon;
+        let width = self.width;
+        let height = self.height;
+        let padding = self.padding;
+        
+        let content: Element<'a, M> = match (label, icon) {
+            (Some(label), Some(icon)) => {
+                // Button with both icon and label
                 let icon_element: Element<'a, M> = container(icon.to_element::<M>())
-                    .width(DEFAULT_ICON_SIZE)
-                    .height(DEFAULT_ICON_SIZE)
+                    .width(icon.size.value())
+                    .height(icon.size.value())
                     .into();
 
                 let text_element: Element<'a, M> = text(label).into();
@@ -242,68 +258,35 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                         // This case is prevented by the early validation in the build() method
                         return Err(ButtonError::InvalidIconPosition);
                     }
-                };                // Apply sizing and padding if specified
-                let mut container = container(row);
+                };
 
-                if let Some(width) = self.width {
-                    container = container.width(width);
-                }
-
-                if let Some(height) = self.height {
-                    container = container.height(height);
-                }
-
-                if let Some(padding) = self.padding {
-                    container = container.padding(padding);
-                }
-
-                container.into()
+                // Apply sizing and padding using the macro
+                apply_container_properties!(container(row), width, height, padding).into()
             }
             (Some(label), None) => {
                 // Button with label only
-                let text_widget: Element<'a, M> = text(label).into();                // Create a container for the text to handle padding and sizing
-                let mut container = container(text_widget)
+                let text_widget: Element<'a, M> = text(label).into();
+
+                // Create a container for the text and apply properties using the macro
+                let container_with_alignment = container(text_widget)
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);
-
-                if let Some(width) = self.width {
-                    container = container.width(width);
-                }
-
-                if let Some(height) = self.height {
-                    container = container.height(height);
-                }
-
-                if let Some(padding) = self.padding {
-                    container = container.padding(padding);
-                }
-
-                container.into()
+                
+                apply_container_properties!(container_with_alignment, width, height, padding).into()
             }
             (None, Some(icon)) => {
                 // Icon-only button
-                let icon_element = icon.to_element::<M>();                // Create a container for the icon with default size
-                let mut container = container(icon_element)
-                    .height(DEFAULT_ICON_SIZE)
+                let icon_element = icon.to_element::<M>();
+
+                // Create a container for the icon and apply properties using the macro
+                let container_with_alignment = container(icon_element)
+                    .height(icon.size.value())
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);
-
-                // Apply custom sizing if specified
-                if let Some(width) = self.width {
-                    container = container.width(width);
-                }
-
-                if let Some(height) = self.height {
-                    container = container.height(height);
-                }
-
-                if let Some(padding) = self.padding {
-                    container = container.padding(padding);
-                }
-
-                container.into()
+                
+                apply_container_properties!(container_with_alignment, width, height, padding).into()
             }
             (None, None) => unreachable!(), // Already validated above
         };
