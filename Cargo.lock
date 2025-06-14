@@ -39,10 +39,8 @@ dependencies = [
  "async-trait",
  "bitflags 2.9.1",
  "bytemuck",
- "cfg_aliases 0.1.1",
  "chrono",
  "criterion",
- "crossbeam-channel",
  "directories",
  "dirs 5.0.1",
  "fontdb 0.16.2",
@@ -52,13 +50,9 @@ dependencies = [
  "hound",
  "humantime-serde",
  "iced",
- "id3",
- "kurbo 0.9.5",
  "libloading 0.8.8",
  "log",
  "lru",
- "mp4ameta",
- "num-complex",
  "num_cpus",
  "once_cell",
  "r2d2",
@@ -68,17 +62,14 @@ dependencies = [
  "rodio",
  "rusqlite",
  "serde",
- "serde_json",
  "symphonia",
  "tempfile",
  "thiserror",
  "tokio",
- "tokio-stream",
  "tokio-test",
  "tokio-util",
  "toml",
  "tracing",
- "tracing-subscriber",
  "uuid",
  "walkdir",
 ]
@@ -112,8 +103,6 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
- "strum",
- "strum_macros",
  "symphonia",
  "test-case",
  "thiserror",
@@ -1193,15 +1182,6 @@ checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
  "itertools 0.10.5",
-]
-
-[[package]]
-name = "crossbeam-channel"
-version = "0.5.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
-dependencies = [
- "crossbeam-utils",
 ]
 
 [[package]]
@@ -2450,17 +2430,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "id3"
-version = "1.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aadb14a5ba1a0d58ecd4a29bfc9b8f1d119eee24aa01a62c1ec93eb9630a1d86"
-dependencies = [
- "bitflags 2.9.1",
- "byteorder",
- "flate2",
-]
-
-[[package]]
 name = "idna"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2641,15 +2610,6 @@ name = "khronos_api"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
-
-[[package]]
-name = "kurbo"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd85a5776cd9500c2e2059c8c76c3b01528566b7fcbaf8098b55a33fc298849b"
-dependencies = [
- "arrayvec",
-]
 
 [[package]]
 name = "kurbo"
@@ -2953,22 +2913,6 @@ dependencies = [
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
 ]
-
-[[package]]
-name = "mp4ameta"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a45c248a6ff110934e59064d5f150886012719ef8dfffa2848e5e03f01810f78"
-dependencies = [
- "byteorder",
- "mp4ameta_proc",
-]
-
-[[package]]
-name = "mp4ameta_proc"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ae83441f6b67e3b7f009295618e90f03228b0f1a149f56ee8cd0f6bb5602c5"
 
 [[package]]
 name = "mutate_once"
@@ -4631,28 +4575,6 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
-
-[[package]]
-name = "strum"
-version = "0.26.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
-dependencies = [
- "strum_macros",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.26.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.103",
-]
 
 [[package]]
 name = "svg_fmt"
