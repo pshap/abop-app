@@ -120,11 +120,18 @@ pub fn create_button<'a, M: Clone + 'a>(
 ///
 /// This is a specialized helper for toolbar buttons that reduces code duplication
 /// across toolbar components.
+///
+/// # Arguments
+/// * `tokens` - Material Design tokens for theming
+/// * `icon_name` - The name of the icon to display
+/// * `message` - The message to send when the button is pressed
+/// * `fallback_text` - Text to display if the button fails to build (can be emoji, text, or empty)
+/// * `button_name` - Descriptive name for logging purposes
 pub fn create_toolbar_button<'a, M: Clone + 'a>(
     tokens: &'a MaterialTokens,
     icon_name: &'a str,
     message: M,
-    fallback_emoji: &'a str,
+    fallback_text: &'a str,
     button_name: &str,
 ) -> Element<'a, M> {
     create_button(
@@ -136,7 +143,7 @@ pub fn create_toolbar_button<'a, M: Clone + 'a>(
                 .build()
         },
         button_name,
-        Some(fallback_emoji),
+        Some(fallback_text),
     )
 }
 

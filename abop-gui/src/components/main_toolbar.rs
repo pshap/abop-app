@@ -42,16 +42,14 @@ impl MainToolbar {
         _recent_dirs: &[DirectoryInfo],
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
-    ) -> Element<'a, Message> {        // === Button Creation ===
-
-        // Folder browser button - opens directory selection dialog
+    ) -> Element<'a, Message> {        // === Button Creation ===        // Folder browser button - opens directory selection dialog
         let folder_button = buttons::create_toolbar_button(
             material_tokens,
             "folder-open",
             Message::command(crate::messages::Command::BrowseDirectory),
             "📁",
             "folder browser",
-        );        // Scan button - initiates library scanning of current path
+        );// Scan button - initiates library scanning of current path
         let scan_button = buttons::create_button(
             || {
                 buttons::button(material_tokens)
@@ -68,7 +66,7 @@ impl MainToolbar {
             },
             "scan library",
             Some("Scan"),
-        );// Settings button - opens application settings
+        );        // Settings button - opens application settings
         let settings_button = buttons::create_toolbar_button(
             material_tokens,
             "gear",
