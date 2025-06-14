@@ -95,125 +95,72 @@ impl ThemeMode {
             Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
         }
-    }
-    /// Get background color for the current theme mode
+    }    /// Get background color for the current theme mode
     #[must_use]
     pub fn background_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.background
+        self.get_colors().background
     }
 
     /// Get surface color for the current theme mode
     #[must_use]
     pub fn surface_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.surface
+        self.get_colors().surface
     }
 
     /// Get surface variant color for the current theme mode
     #[must_use]
     pub fn surface_variant_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.surface_variant
+        self.get_colors().surface_variant
     }
 
     /// Get primary color for the current theme mode
     #[must_use]
     pub fn primary_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.primary.base
+        self.get_colors().primary.base
     }
 
     /// Get primary light color for the current theme mode
     #[must_use]
     pub fn primary_light_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.primary.container
+        self.get_colors().primary.container
     }
+
     /// Get secondary color for the current theme mode
     #[must_use]
     pub fn secondary_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.secondary.base
+        self.get_colors().secondary.base
     }
 
     /// Get primary text color for the current theme mode
     #[must_use]
     pub fn text_primary_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.on_surface
+        self.get_colors().on_surface
     }
 
     /// Get secondary text color for the current theme mode
     #[must_use]
     pub fn text_secondary_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.on_surface_variant
+        self.get_colors().on_surface_variant
     }
 
     /// Get border color for the current theme mode
     #[must_use]
     pub fn border_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.outline
+        self.get_colors().outline
     }
+
     /// Get outline color for the current theme mode
     #[must_use]
     pub fn outline_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.outline_variant
+        self.get_colors().outline_variant
     }
 
     /// Get error color for the current theme mode
     #[must_use]
     pub fn error_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.error.base
+        self.get_colors().error.base
     }
+
     /// Get success color for the current theme mode
     #[must_use]
     pub fn success_color(&self) -> Color {
@@ -223,45 +170,36 @@ impl ThemeMode {
     /// Get info color for the current theme mode
     #[must_use]
     pub fn info_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.primary.base // Use primary for info
+        self.get_colors().primary.base // Use primary for info
     }
 
     /// Get orange accent color for rare/special use
     #[must_use]
     pub fn orange_accent_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.secondary.base // Use secondary for accent
+        self.get_colors().secondary.base // Use secondary for accent
     }
 
     /// Get warning color for the current theme mode
     #[must_use]
     pub fn warning_color(&self) -> Color {
-        let colors = if self.is_dark() {
-            MaterialColors::dark_default()
-        } else {
-            MaterialColors::light_default()
-        };
-        colors.error.container // Use error container for warning
+        self.get_colors().error.container // Use error container for warning
     }
 
     /// Get disabled text color for the current theme mode
     #[must_use]
     pub fn text_disabled_color(&self) -> Color {
-        let colors = if self.is_dark() {
+        self.get_colors().on_surface_variant // Use surface variant for disabled text
+    }
+
+    /// Helper method to get the appropriate MaterialColors for this theme mode
+    /// This centralizes the dark/light theme color selection logic
+    #[must_use]
+    fn get_colors(&self) -> MaterialColors {
+        if self.is_dark() {
             MaterialColors::dark_default()
         } else {
             MaterialColors::light_default()
-        };
-        colors.on_surface_variant // Use surface variant for disabled text
+        }
     }
 
     /// Get semantic colors for the current theme mode
@@ -401,24 +339,4 @@ fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
     IcedTheme::custom("Material".to_string(), palette)
 }
 
-/// Create Material Design dark theme
-#[allow(dead_code)]
-fn material_dark_theme() -> IcedTheme {
-    let colors = MaterialColors::dark(&MaterialPalette::default());
-    material_theme_from_colors(&colors)
-}
 
-/// Create Material Design light theme
-#[allow(dead_code)]
-fn material_light_theme() -> IcedTheme {
-    let colors = MaterialColors::light(&MaterialPalette::default());
-    material_theme_from_colors(&colors)
-}
-
-/// Create Material Design dynamic theme using seed color generation
-#[allow(dead_code)]
-fn material_dynamic_theme() -> IcedTheme {
-    // Use the default Material seed color
-    let colors = MaterialColors::from_seed(DEFAULT_MATERIAL_SEED_COLOR, true);
-    material_theme_from_colors(&colors)
-}
