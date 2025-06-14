@@ -206,7 +206,8 @@ pub struct AudiobookColumnIndices {
 
 impl AudiobookColumnIndices {
     /// Standard column indices for full audiobook queries
-    #[must_use] pub const fn standard() -> Self {
+    #[must_use]
+    pub const fn standard() -> Self {
         Self {
             id: 0,
             library_id: 1,
@@ -242,7 +243,8 @@ impl SqlQueries {
         "id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at";
 
     /// Generate a standard audiobook SELECT query with optional WHERE clause
-    #[must_use] pub fn audiobook_select(where_clause: Option<&str>) -> String {
+    #[must_use]
+    pub fn audiobook_select(where_clause: Option<&str>) -> String {
         let base = format!("SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS);
         match where_clause {
             Some(where_clause) => format!("{base} WHERE {where_clause}"),
@@ -251,7 +253,8 @@ impl SqlQueries {
     }
 
     /// Generate a standard library SELECT query with optional WHERE clause
-    #[must_use] pub fn library_select(where_clause: Option<&str>) -> String {
+    #[must_use]
+    pub fn library_select(where_clause: Option<&str>) -> String {
         let base = format!("SELECT {} FROM libraries", Self::LIBRARY_COLUMNS);
         match where_clause {
             Some(where_clause) => format!("{base} WHERE {where_clause}"),
@@ -260,7 +263,8 @@ impl SqlQueries {
     }
 
     /// Generate a standard progress SELECT query with optional WHERE clause
-    #[must_use] pub fn progress_select(where_clause: Option<&str>) -> String {
+    #[must_use]
+    pub fn progress_select(where_clause: Option<&str>) -> String {
         let base = format!("SELECT {} FROM progress", Self::PROGRESS_COLUMNS);
         match where_clause {
             Some(where_clause) => format!("{base} WHERE {where_clause}"),

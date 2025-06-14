@@ -386,7 +386,8 @@ impl ButtonStateHandler {
                 background: Background::Color(config.base_background),
                 text_color: config.text_color,
                 border: create_button_border(
-                    config.border_color,                    config.border_width,
+                    config.border_color,
+                    config.border_width,
                     config.border_radius,
                 ),
                 shadow: config.shadow,
@@ -416,7 +417,8 @@ impl ButtonStateHandler {
                 ButtonStyling {
                     background: Background::Color(hover_bg),
                     text_color: hover_text,
-                    border: create_button_border(                        config.border_color,
+                    border: create_button_border(
+                        config.border_color,
                         config.border_width,
                         config.border_radius,
                     ),
@@ -451,7 +453,8 @@ impl ButtonStateHandler {
                     border: create_button_border(
                         config.border_color,
                         config.border_width,
-                        config.border_radius,                    ),
+                        config.border_radius,
+                    ),
                     shadow: config.shadow,
                     icon_color: Some(pressed_icon),
                 }
@@ -516,7 +519,8 @@ impl ButtonStateHandler {
                 };
 
                 ButtonStyling {
-                    background: Background::Color(focus_bg),                    text_color: focus_text,
+                    background: Background::Color(focus_bg),
+                    text_color: focus_text,
                     border: focus_border,
                     shadow: config.shadow,
                     icon_color: Some(focus_icon),

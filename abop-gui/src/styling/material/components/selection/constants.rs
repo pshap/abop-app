@@ -190,7 +190,8 @@ pub mod accessibility {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[test]
+    use super::*;
+    #[test]
     fn test_ui_constants() {
         assert_eq!(ui::MIN_TOUCH_TARGET_SIZE, 48.0);
         assert_eq!(ui::MAX_LABEL_LENGTH, 200);
@@ -202,11 +203,13 @@ mod tests {
         assert_eq!(animation::DEFAULT_DURATION_MS, 200);
         assert_eq!(animation::REDUCED_MOTION_DURATION_MS, 0);
         // Validate duration relationships - removed assertions that are always true
-    }    #[test]
+    }
+    #[test]
     fn test_chip_constants() {
         // Removed constant assertions that are always true
         assert_eq!(chips::MAX_LABEL_LENGTH, 100);
-    }    #[test]
+    }
+    #[test]
     fn test_size_constants() {
         // Test actual values instead of relationships
         assert_eq!(sizes::SMALL_SIZE_PX, 16.0);
@@ -226,7 +229,8 @@ mod tests {
 
         // Test count matches
         assert_eq!(metadata_keys::ALL_SUPPORTED.len(), 6);
-    }    #[test]
+    }
+    #[test]
     fn test_validation_constants() {
         // Test validation constant values
         assert_eq!(validation::MIN_INPUT_LENGTH, 1);

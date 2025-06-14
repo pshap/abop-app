@@ -77,7 +77,10 @@ pub struct DatabaseHelpers;
 
 impl DatabaseHelpers {
     /// Create a new DatabaseOperations instance from a connection pool
-    #[must_use] pub const fn operations_from_pool(pool: Arc<Pool<SqliteConnectionManager>>) -> DatabaseOperations {
+    #[must_use]
+    pub const fn operations_from_pool(
+        pool: Arc<Pool<SqliteConnectionManager>>,
+    ) -> DatabaseOperations {
         DatabaseOperations::new(pool)
     }
     /// Execute a simple query and return the count of affected rows

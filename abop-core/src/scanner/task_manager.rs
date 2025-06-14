@@ -31,7 +31,8 @@ pub struct TaskManager {
 
 impl TaskManager {
     /// Create a new task manager with default settings
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             max_concurrent_tasks: 4,
             max_concurrent_db_operations: 2,
@@ -40,7 +41,8 @@ impl TaskManager {
     }
 
     /// Create a new task manager with custom settings
-    #[must_use] pub fn with_settings(max_concurrent_tasks: usize, max_concurrent_db_operations: usize) -> Self {
+    #[must_use]
+    pub fn with_settings(max_concurrent_tasks: usize, max_concurrent_db_operations: usize) -> Self {
         Self {
             max_concurrent_tasks,
             max_concurrent_db_operations,

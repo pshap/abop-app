@@ -24,8 +24,8 @@
 //! # }
 //! ```
 
-use crate::styling::material::MaterialTokens;
 use crate::styling::material::MaterialButton;
+use crate::styling::material::MaterialTokens;
 use iced::{
     Alignment, Element, Length, Padding,
     widget::{Row, container, text},
@@ -204,11 +204,13 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
         if !self.disabled && self.on_press.is_none() {
             return Err(ButtonError::MissingOnPress);
-        }        // Validate icon position early
+        } // Validate icon position early
         if let (Some(label), Some(icon)) = (&self.label, &self.icon)
-            && icon.position == IconPosition::Only && !label.is_empty() {
-                return Err(ButtonError::InvalidIconPosition);
-            }
+            && icon.position == IconPosition::Only
+            && !label.is_empty()
+        {
+            return Err(ButtonError::InvalidIconPosition);
+        }
 
         // Create the button content based on what's available (icon, label, or both)
         let content: Element<'a, M> = match (self.label, self.icon) {
@@ -328,9 +330,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 }
 
 // Conversion from our ButtonVariant to the MaterialButtonVariant
-impl From<ButtonVariant>
-    for crate::styling::material::MaterialButtonVariant
-{
+impl From<ButtonVariant> for crate::styling::material::MaterialButtonVariant {
     fn from(variant: ButtonVariant) -> Self {
         use crate::styling::material::MaterialButtonVariant as MBV;
 

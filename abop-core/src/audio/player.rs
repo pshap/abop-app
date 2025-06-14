@@ -81,7 +81,8 @@ impl ThreadSafeAudioPlayer {
     /// Gets the current player state
     ///
     /// See `AudioPlayer::get_state` for details.
-    #[must_use] pub fn get_state(&self) -> PlayerState {
+    #[must_use]
+    pub fn get_state(&self) -> PlayerState {
         self.inner
             .lock()
             .map(|player| player.get_state())
@@ -91,7 +92,8 @@ impl ThreadSafeAudioPlayer {
     /// Gets the currently playing file path
     ///
     /// See `AudioPlayer::get_current_file` for details.
-    #[must_use] pub fn get_current_file(&self) -> Option<PathBuf> {
+    #[must_use]
+    pub fn get_current_file(&self) -> Option<PathBuf> {
         self.inner
             .lock()
             .map(|player| player.get_current_file())

@@ -52,7 +52,8 @@ pub struct AppState {
 
 impl AppState {
     /// Create a new AppState with all dependencies
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         let mut state = Self::default();
         state.initialize_components();
         state
@@ -249,14 +250,16 @@ impl AppState {
     // === Utility Methods ===
 
     /// Check if the state has been modified since last save
-    #[must_use] pub const fn is_dirty(&self) -> bool {
+    #[must_use]
+    pub const fn is_dirty(&self) -> bool {
         // This would be implemented with change tracking in a full implementation
         // For now, we'll always return false to maintain compatibility
         false
     }
 
     /// Get a summary of the current state
-    #[must_use] pub fn get_summary(&self) -> String {
+    #[must_use]
+    pub fn get_summary(&self) -> String {
         format!(
             "AppState: view={:?}, audiobooks={}, libraries={}, selected={:?}",
             self.current_view,
@@ -276,37 +279,44 @@ impl AppState {
 // === Getters for read-only access ===
 impl AppState {
     /// Get current view
-    #[must_use] pub const fn current_view(&self) -> &ViewType {
+    #[must_use]
+    pub const fn current_view(&self) -> &ViewType {
         &self.current_view
     }
 
     /// Get selected audiobook ID
-    #[must_use] pub const fn selected_audiobook_id(&self) -> Option<&String> {
+    #[must_use]
+    pub const fn selected_audiobook_id(&self) -> Option<&String> {
         self.selected_audiobook_id.as_ref()
     }
 
     /// Get user preferences
-    #[must_use] pub const fn user_preferences(&self) -> &UserPreferences {
+    #[must_use]
+    pub const fn user_preferences(&self) -> &UserPreferences {
         &self.user_preferences
     }
 
     /// Get window configuration
-    #[must_use] pub const fn window_config(&self) -> &WindowConfig {
+    #[must_use]
+    pub const fn window_config(&self) -> &WindowConfig {
         &self.window_config
     }
 
     /// Get theme configuration
-    #[must_use] pub const fn theme_config(&self) -> &ThemeConfig {
+    #[must_use]
+    pub const fn theme_config(&self) -> &ThemeConfig {
         &self.theme_config
     }
 
     /// Get playback configuration
-    #[must_use] pub const fn playback_config(&self) -> &PlaybackConfig {
+    #[must_use]
+    pub const fn playback_config(&self) -> &PlaybackConfig {
         &self.playback_config
     }
 
     /// Get application data
-    #[must_use] pub const fn app_data(&self) -> &AppData {
+    #[must_use]
+    pub const fn app_data(&self) -> &AppData {
         &self.app_data
     }
 }

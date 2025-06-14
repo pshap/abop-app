@@ -242,7 +242,8 @@ impl<T: Clone + Default> AudioBufferPool<T> {
     /// # Returns
     ///
     /// An `AudioBuffer<T>` that can be used for processing
-    #[must_use] pub fn acquire(&self) -> AudioBuffer<T> {
+    #[must_use]
+    pub fn acquire(&self) -> AudioBuffer<T> {
         // Try to get a buffer from the pool
         if let Ok(mut buffers) = self.buffers.lock()
             && let Some(mut buffer) = buffers.pop()

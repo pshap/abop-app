@@ -21,7 +21,8 @@ impl Default for FileSizePrecision {
 
 impl FileSizePrecision {
     /// Get the number of decimal places for this precision mode
-    #[must_use] pub const fn decimal_places(self) -> usize {
+    #[must_use]
+    pub const fn decimal_places(self) -> usize {
         match self {
             Self::Exact => 0,
             Self::Standard => 2,
@@ -39,7 +40,8 @@ impl FileSizePrecision {
 ///
 /// # Returns
 /// A formatted string like "1.23 MB" or "512 B"
-#[must_use] pub fn format_file_size(bytes: u64, precision: FileSizePrecision) -> String {
+#[must_use]
+pub fn format_file_size(bytes: u64, precision: FileSizePrecision) -> String {
     const UNITS: [&str; 9] = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
     if bytes == 0 {
@@ -59,12 +61,14 @@ impl FileSizePrecision {
 }
 
 /// Format a file size with standard precision (2 decimal places)
-#[must_use] pub fn format_file_size_standard(bytes: u64) -> String {
+#[must_use]
+pub fn format_file_size_standard(bytes: u64) -> String {
     format_file_size(bytes, FileSizePrecision::Standard)
 }
 
 /// Format a file size with exact precision (no decimals)
-#[must_use] pub fn format_file_size_exact(bytes: u64) -> String {
+#[must_use]
+pub fn format_file_size_exact(bytes: u64) -> String {
     format_file_size(bytes, FileSizePrecision::Exact)
 }
 

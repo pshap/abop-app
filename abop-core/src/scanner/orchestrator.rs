@@ -70,7 +70,8 @@ pub struct ScanOrchestrator {
 
 impl ScanOrchestrator {
     /// Creates a new scan orchestrator
-    #[must_use] pub fn new(database: Arc<Database>, library: Library, config: ScannerConfig) -> Self {
+    #[must_use]
+    pub fn new(database: Arc<Database>, library: Library, config: ScannerConfig) -> Self {
         let core_scanner = CoreScanner::with_config(config.clone());
 
         Self {
@@ -91,7 +92,8 @@ impl ScanOrchestrator {
     }
 
     /// Sets the performance monitor
-    #[must_use] pub fn with_performance_monitor(mut self, monitor: Arc<PerformanceMonitor>) -> Self {
+    #[must_use]
+    pub fn with_performance_monitor(mut self, monitor: Arc<PerformanceMonitor>) -> Self {
         self.performance_monitor = Some(monitor);
         self
     }

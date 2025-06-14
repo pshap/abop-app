@@ -20,7 +20,8 @@ use crate::audio::processing::casting_utils::sample_calculations::{
 ///
 /// # Returns
 /// An `AudioBuffer` containing a sine wave test signal
-#[must_use] pub fn create_test_buffer(
+#[must_use]
+pub fn create_test_buffer(
     sample_rate: u32,
     channels: u16,
     duration_secs: f32,
@@ -61,7 +62,8 @@ use crate::audio::processing::casting_utils::sample_calculations::{
 ///
 /// # Returns
 /// An `AudioBuffer` containing a sine wave with a silence segment
-#[must_use] pub fn create_test_buffer_with_silence(
+#[must_use]
+pub fn create_test_buffer_with_silence(
     sample_rate: u32,
     channels: u16,
     duration_secs: f32,
@@ -106,7 +108,8 @@ use crate::audio::processing::casting_utils::sample_calculations::{
 ///
 /// # Returns
 /// An `AudioBuffer` containing stereo test signals
-#[must_use] pub fn create_stereo_test_buffer(sample_rate: u32, duration_secs: f32) -> AudioBuffer<f32> {
+#[must_use]
+pub fn create_stereo_test_buffer(sample_rate: u32, duration_secs: f32) -> AudioBuffer<f32> {
     let num_samples = safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
     let mut data = Vec::with_capacity(num_samples * 2); // Generate a simple sine wave test signal
     for i in 0..num_samples {

@@ -317,9 +317,7 @@ mod tests {
             );
         }
 
-        println!(
-            "  📊 Current: {current_contrast:.2}:1 | Target: 4.5:1 minimum"
-        );
+        println!("  📊 Current: {current_contrast:.2}:1 | Target: 4.5:1 minimum");
     }
 
     /// Check for potential contrast issues in the color scheme

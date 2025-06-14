@@ -9,7 +9,8 @@ use log::warn;
 /// f64 can exactly represent all integers up to 2^53. For values within
 /// this range, the conversion is exact. For larger values, some precision
 /// loss may occur, but this is acceptable for audio processing.
-#[must_use] pub fn safe_usize_to_f64_audio(value: usize) -> f64 {
+#[must_use]
+pub fn safe_usize_to_f64_audio(value: usize) -> f64 {
     const MAX_EXACT: usize = 1 << 53; // 2^53
 
     if value > MAX_EXACT {
@@ -74,7 +75,8 @@ pub const fn safe_usize_to_f32_rms(sample_count: usize) -> Result<f32, CastError
 /// # Note
 /// For very large file sizes, some precision loss may occur, but this is
 /// acceptable for display purposes.
-#[must_use] pub fn safe_u64_to_f64_size(bytes: u64) -> f64 {
+#[must_use]
+pub fn safe_u64_to_f64_size(bytes: u64) -> f64 {
     const MAX_EXACT: u64 = 1 << 53; // 2^53
 
     if bytes > MAX_EXACT {
