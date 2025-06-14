@@ -235,7 +235,7 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
     }
 
     // Use the first available library
-    let library_id = libraries.first().unwrap().id.as_str();
+    let library_id = libraries.first().expect("First library should exist as we checked libraries.is_empty()").id.as_str();
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -252,7 +252,7 @@ fn show_scan_results(db: &Database) -> Result<()> {
         // Get libraries to show audiobook examples
         let libraries = db.get_libraries()?;
         if !libraries.is_empty() {
-            let library_id = libraries.first().unwrap().id.as_str();
+            let library_id = libraries.first().expect("First library should exist as we checked !libraries.is_empty()").id.as_str();
 
             // Show first few audiobooks as examples
             let audiobooks = db.get_audiobooks_in_library(library_id)?;
