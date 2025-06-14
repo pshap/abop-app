@@ -4,7 +4,7 @@
 //! to address the reported issue of white icons/logos on light backgrounds.
 
 #[cfg(test)]
-mod button_contrast_validation {
+mod tests {
     use crate::styling::{
         color_utils::ColorUtils,
         material::{

@@ -228,29 +228,22 @@ mod tests {
 
         // Test count matches
         assert_eq!(metadata_keys::ALL_SUPPORTED.len(), 6);
-    }
-
-    #[test]
+    }    #[test]
     fn test_validation_constants() {
-        // Test validation constant relationships
-        assert!(validation::MIN_INPUT_LENGTH > 0);
-        assert!(validation::MAX_SINGLE_LINE_INPUT < validation::MAX_MULTILINE_INPUT);
-        assert!(validation::MAX_SINGLE_LINE_INPUT > ui::MAX_LABEL_LENGTH);
-        assert!(validation::VALIDATION_DEBOUNCE_MS > 0);
-        assert!(validation::MAX_VISIBLE_ERRORS >= 1);
+        // Test validation constant values
+        assert_eq!(validation::MIN_INPUT_LENGTH, 1);
+        assert_eq!(validation::MAX_SINGLE_LINE_INPUT, 1000);
+        assert_eq!(validation::MAX_MULTILINE_INPUT, 5000);
+        assert_eq!(validation::VALIDATION_DEBOUNCE_MS, 300);
+        assert_eq!(validation::MAX_VISIBLE_ERRORS, 3);
     }
 
     #[test]
     fn test_accessibility_constants() {
-        // Test accessibility contrast ratios follow WCAG guidelines
-        assert!(accessibility::MIN_CONTRAST_NORMAL >= 4.5);
-        assert!(accessibility::MIN_CONTRAST_LARGE >= 3.0);
-        assert!(accessibility::MIN_CONTRAST_UI >= 3.0);
-        assert!(accessibility::MIN_CONTRAST_AAA >= 7.0);
-
-        // Test relationships between contrast levels
-        assert!(accessibility::MIN_CONTRAST_AAA > accessibility::MIN_CONTRAST_NORMAL);
-        assert!(accessibility::MIN_CONTRAST_NORMAL > accessibility::MIN_CONTRAST_LARGE);
-        assert!(accessibility::MIN_CONTRAST_NORMAL >= accessibility::MIN_CONTRAST_UI);
+        // Test accessibility contrast ratio values
+        assert_eq!(accessibility::MIN_CONTRAST_NORMAL, 4.5);
+        assert_eq!(accessibility::MIN_CONTRAST_LARGE, 3.0);
+        assert_eq!(accessibility::MIN_CONTRAST_UI, 3.0);
+        assert_eq!(accessibility::MIN_CONTRAST_AAA, 7.0);
     }
 }
