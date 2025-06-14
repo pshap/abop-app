@@ -27,11 +27,14 @@
 
 pub mod traits;
 pub mod button;
+pub mod checkbox;
 pub mod states;
 pub mod styling;
+pub mod examples;
 
 // Re-export main strategy components
 pub use traits::{ComponentStyleStrategy, ComponentState};
 pub use button::{ButtonStyleVariant, ButtonStyling};
-pub use states::{ButtonState, ComponentInteractionState};
+pub use checkbox::{CheckboxStyleStrategy, CheckboxStyleVariant};
+pub use states::{ButtonState, CheckboxState, InteractionState, ComponentInteractionState};
 pub use styling::ComponentStyling;

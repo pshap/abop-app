@@ -3,7 +3,6 @@
 //! This module defines the fundamental traits and interfaces that make up
 //! the strategy pattern implementation for component styling.
 
-use iced::{Color, Background, Border};
 use crate::styling::material::MaterialTokens;
 
 /// Core trait for component styling strategies
