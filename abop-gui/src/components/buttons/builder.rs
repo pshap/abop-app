@@ -37,8 +37,10 @@ use super::{
     variants::{ButtonSize, ButtonVariant, IconPosition},
 };
 
-/// Default icon size for buttons in pixels (equivalent to Medium size)
-const DEFAULT_ICON_SIZE: u16 = 20;
+/// Default icon size for buttons in pixels (equivalent to Large size)
+/// Note: Using 24px (Large size) to maintain visual consistency with existing design
+/// This matches ButtonSize::Large from variants.rs for icon-text combination buttons
+const DEFAULT_ICON_SIZE: u16 = 24;
 
 /// Default spacing between icon and text elements in pixels
 const ICON_TEXT_SPACING: u16 = 8;

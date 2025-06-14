@@ -45,7 +45,7 @@ impl AudioToolbar {
                     .build()
             },
             "play/pause",
-            Some(""),
+            Some("Play"),
         );
 
         let stop_button = buttons::create_button(
@@ -57,7 +57,7 @@ impl AudioToolbar {
                     .build()
             },
             "stop",
-            Some(""),
+            Some("Stop"),
         );
 
         let previous_button = buttons::button(material_tokens)
