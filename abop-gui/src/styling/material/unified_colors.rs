@@ -203,8 +203,13 @@ impl MaterialColors {
             Self::create_dark_scheme(palette)
         } else {
             Self::create_light_scheme(palette)
-        }
-    }    /// Creates light theme color scheme with proper tone mappings
+        }    }    /// Creates light theme color scheme with proper tone mappings
+    /// 
+    /// Maps Material Design 3 tonal palette to semantic color roles for light themes.
+    /// Tone values follow MD3 specifications:
+    /// - Surface colors use high tones (90-100) for bright backgrounds
+    /// - Text colors use low tones (10-30) for sufficient contrast
+    /// - Container surfaces use mid-high tones (85-95) for subtle elevation
     fn create_light_scheme(palette: &MaterialPalette) -> Self {
         Self {
             // Color roles using helper function
@@ -213,30 +218,30 @@ impl MaterialColors {
             tertiary: Self::create_light_color_role(&palette.tertiary),
             error: Self::create_light_color_role(&palette.error),
 
-            // Surface and background colors
-            surface: palette.neutral.tones[19],   // tone 98
-            on_surface: palette.neutral.tones[3], // tone 10
-            surface_variant: palette.neutral_variant.tones[16], // tone 90
-            on_surface_variant: palette.neutral_variant.tones[9], // tone 30
-            background: palette.neutral.tones[19], // tone 98
-            on_background: palette.neutral.tones[3], // tone 10
+            // Surface and background colors - MD3 light theme specification
+            surface: palette.neutral.tones[19],   // tone 98 - main surface, very light
+            on_surface: palette.neutral.tones[3], // tone 10 - text on surface, high contrast
+            surface_variant: palette.neutral_variant.tones[16], // tone 90 - subtle surface variation
+            on_surface_variant: palette.neutral_variant.tones[9], // tone 30 - lower contrast text
+            background: palette.neutral.tones[19], // tone 98 - app background, matches surface
+            on_background: palette.neutral.tones[3], // tone 10 - text on background
 
-            // Outline colors
-            outline: palette.neutral_variant.tones[10], // tone 50
-            outline_variant: palette.neutral_variant.tones[14], // tone 80
+            // Outline colors for borders and dividers
+            outline: palette.neutral_variant.tones[10], // tone 50 - medium contrast borders
+            outline_variant: palette.neutral_variant.tones[14], // tone 80 - subtle borders
 
-            // Inverse colors
-            inverse_surface: palette.neutral.tones[6], // tone 20
-            inverse_on_surface: palette.neutral.tones[17], // tone 95
-            inverse_primary: palette.primary.tones[14], // tone 80
+            // Inverse colors for high-contrast elements (dark-on-light inversion)
+            inverse_surface: palette.neutral.tones[6], // tone 20 - dark surface for contrast
+            inverse_on_surface: palette.neutral.tones[17], // tone 95 - light text on dark
+            inverse_primary: palette.primary.tones[14], // tone 80 - accessible primary on dark
 
-            // System colors
-            shadow: palette.neutral.tones[0],        // tone 0
-            scrim: palette.neutral.tones[0],         // tone 0
-            surface_tint: palette.primary.tones[10], // tone 40
+            // System colors for shadows and overlays
+            shadow: palette.neutral.tones[0],        // tone 0 - pure black for shadows
+            scrim: palette.neutral.tones[0],         // tone 0 - overlay backgrounds
+            surface_tint: palette.primary.tones[10], // tone 40 - primary color for elevation tinting
 
-            // Surface container variants (light theme)
-            surface_container: palette.neutral.tones[15], // tone 94
+            // Surface container variants for different elevation levels
+            surface_container: palette.neutral.tones[15], // tone 94 - elevated containers
             surface_container_low: palette.neutral.tones[17], // tone 96
             surface_container_lowest: palette.neutral.tones[20], // tone 100
             surface_container_high: palette.neutral.tones[13], // tone 92
@@ -245,8 +250,9 @@ impl MaterialColors {
             // Additional surface variants
             surface_dim: palette.neutral.tones[14], // tone 87
             surface_bright: palette.neutral.tones[19], // tone 98
-        }
-    }    /// Creates dark theme color scheme with proper tone mappings
+        }    }
+
+    /// Creates dark theme color scheme with proper tone mappings
     fn create_dark_scheme(palette: &MaterialPalette) -> Self {
         Self {
             // Color roles using helper function

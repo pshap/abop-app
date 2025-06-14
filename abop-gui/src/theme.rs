@@ -94,8 +94,9 @@ impl ThemeMode {
         match self {
             Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
-        }
-    }    /// Get background color for the current theme mode
+        }    }
+
+    /// Get background color for the current theme mode
     #[must_use]
     pub fn background_color(&self) -> Color {
         self.get_colors().background
