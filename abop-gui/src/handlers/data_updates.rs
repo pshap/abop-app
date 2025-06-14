@@ -8,6 +8,10 @@ use crate::state::UiState;
 use abop_core::scanner::ScannerState;
 use iced::Task;
 
+/// Minimum progress change threshold for updating cached progress text (0.1%)
+/// This prevents excessive string formatting on every UI render frame
+const PROGRESS_CACHE_THRESHOLD: f32 = 0.001;
+
 /// Handles GUI messages that require async operations
 #[must_use]
 pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<Message>> {
@@ -70,7 +74,7 @@ pub fn handle_gui_message(state: &mut UiState, message: Message) -> Option<Task<
             state.scan_progress = Some(progress);
             // Update cached scan progress text to avoid frequent formatting
             if state.last_scan_progress.is_none() 
-                || (state.last_scan_progress.unwrap() - progress).abs() >= 0.001 {
+                || (state.last_scan_progress.unwrap() - progress).abs() >= PROGRESS_CACHE_THRESHOLD {
                 state.last_scan_progress = Some(progress);
                 state.cached_scan_progress_text = Some(format!("Progress: {:.1}%", progress * 100.0));
             }

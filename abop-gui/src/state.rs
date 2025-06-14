@@ -18,6 +18,10 @@ use crate::utils::platform;
 use abop_core::audio::player::PlayerState;
 use abop_core::models::Audiobook;
 
+/// Minimum progress change threshold for updating cached progress text (0.1%)
+/// This prevents excessive string formatting on every UI render frame
+const PROGRESS_CACHE_THRESHOLD: f32 = 0.001;
+
 // ================================================================================================
 // HELPER FUNCTIONS
 // ================================================================================================
@@ -309,10 +313,9 @@ impl UiState {
 
     /// Get cached scan progress text, updating cache if needed
     /// This avoids frequent float-to-string formatting in UI renders
-    pub fn get_scan_progress_text(&mut self, progress_percentage: f32) -> String {
-        // Only update cache if progress changed meaningfully (0.1% threshold)
+    pub fn get_scan_progress_text(&mut self, progress_percentage: f32) -> String {        // Only update cache if progress changed meaningfully (0.1% threshold)
         if self.last_scan_progress.is_none() 
-            || (self.last_scan_progress.unwrap() - progress_percentage).abs() >= 0.001 {
+            || (self.last_scan_progress.unwrap() - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD {
             self.last_scan_progress = Some(progress_percentage);
             self.cached_scan_progress_text = Some(format!("Progress: {:.1}%", progress_percentage * 100.0));
         }
@@ -325,10 +328,9 @@ impl UiState {
     
     /// Get cached processing progress text, updating cache if needed
     /// This avoids frequent float-to-string formatting in UI renders
-    pub fn get_processing_progress_text(&mut self, progress_percentage: f32) -> String {
-        // Only update cache if progress changed meaningfully (0.1% threshold)
+    pub fn get_processing_progress_text(&mut self, progress_percentage: f32) -> String {        // Only update cache if progress changed meaningfully (0.1% threshold)
         if self.last_processing_progress.is_none() 
-            || (self.last_processing_progress.unwrap() - progress_percentage).abs() >= 0.001 {
+            || (self.last_processing_progress.unwrap() - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD {
             self.last_processing_progress = Some(progress_percentage);
             self.cached_processing_progress_text = Some(format!("{:.1}%", progress_percentage * 100.0));
         }

@@ -9,6 +9,12 @@ use rand::{Rng, rng};
 use std::hint::black_box;
 
 /// Audio signal types for more realistic benchmarking
+/// 
+/// Different audio signal types stress the resampler in different ways:
+/// - Random noise tests worst-case performance with high-frequency content
+/// - Pure tones test filter accuracy and ringing artifacts  
+/// - Multi-tone signals simulate musical content with harmonics
+/// - Speech-like signals test performance with typical audio content
 #[derive(Debug, Clone, Copy)]
 enum AudioSignalType {
     /// Pure random noise (original behavior)
