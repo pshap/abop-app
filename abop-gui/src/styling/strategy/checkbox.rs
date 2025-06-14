@@ -148,7 +148,7 @@ impl ComponentStyleStrategy for CheckboxStyleStrategy {    fn get_styling(&self,
             border: self.border_style(state, tokens),
             shadow: None, // Checkboxes don't use elevation
             icon_color: Some(self.foreground_color(state, tokens)),
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: self.state_layer_opacity(state),
         }
     }
 }
