@@ -8,7 +8,6 @@ use iced::widget::{Space, container, row, text};
 use iced::{Alignment, Element, Length};
 use std::path::Path;
 
-use crate::components::buttons::variants::ButtonSize;
 use crate::components::buttons::{self, ButtonVariant};
 use crate::messages::Message;
 use crate::state::DirectoryInfo;
@@ -43,50 +42,40 @@ impl MainToolbar {
         _recent_dirs: &[DirectoryInfo],
         current_path: &Path,
         material_tokens: &'a MaterialTokens,
-    ) -> Element<'a, Message> {
-        // === Button Creation ===
+    ) -> Element<'a, Message> {        // === Button Creation ===
 
         // Folder browser button - opens directory selection dialog
-        let folder_button = buttons::button(material_tokens)
-            .icon_only("folder-open", ButtonSize::Medium)
-            .variant(ButtonVariant::FilledTonal)
-            .on_press(Message::command(crate::messages::Command::BrowseDirectory))
-            .build()
-            .unwrap_or_else(|_| {
-                text("📁")
-                    .size(material_tokens.typography().label_medium.size)
-                    .into()
-            }); // Fallback to emoji if icon fails
-
-        // Scan button - initiates library scanning of current path
-        let scan_button = buttons::button(material_tokens)
-            .label("Scan")
-            .variant(ButtonVariant::Filled)
-            .on_press(if !current_path.as_os_str().is_empty() {
-                Message::command(crate::messages::Command::ScanLibrary {
-                    library_path: current_path.to_path_buf(),
-                })
-            } else {
-                Message::command(crate::messages::Command::BrowseDirectory) // Fallback if no path selected
-            })
-            .build()
-            .unwrap_or_else(|_| {
-                text("Scan")
-                    .size(material_tokens.typography().label_medium.size)
-                    .into()
-            });
-
-        // Settings button - opens application settings
-        let settings_button = buttons::button(material_tokens)
-            .icon_only("gear", ButtonSize::Medium)
-            .variant(ButtonVariant::FilledTonal)
-            .on_press(Message::ShowSettings)
-            .build()
-            .unwrap_or_else(|_| {
-                text("⚙")
-                    .size(material_tokens.typography().label_medium.size)
-                    .into()
-            });
+        let folder_button = buttons::create_toolbar_button(
+            material_tokens,
+            "folder-open",
+            Message::command(crate::messages::Command::BrowseDirectory),
+            "📁",
+            "folder browser",
+        );        // Scan button - initiates library scanning of current path
+        let scan_button = buttons::create_button(
+            || {
+                buttons::button(material_tokens)
+                    .label("Scan")
+                    .variant(ButtonVariant::Filled)
+                    .on_press(if !current_path.as_os_str().is_empty() {
+                        Message::command(crate::messages::Command::ScanLibrary {
+                            library_path: current_path.to_path_buf(),
+                        })
+                    } else {
+                        Message::command(crate::messages::Command::BrowseDirectory) // Fallback if no path selected
+                    })
+                    .build()
+            },
+            "scan library",
+            Some("Scan"),
+        );// Settings button - opens application settings
+        let settings_button = buttons::create_toolbar_button(
+            material_tokens,
+            "gear",
+            Message::ShowSettings,
+            "⚙",
+            "settings",
+        );
 
         // === Path Display ===
 

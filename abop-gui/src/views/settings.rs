@@ -8,6 +8,7 @@ use iced::{Element, Length};
 
 use crate::components::buttons::builder::ButtonBuilder;
 use crate::components::buttons::variants::ButtonVariant;
+use crate::components::buttons;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::styling::container::dialog::DialogContainerStyles;
@@ -16,6 +17,9 @@ use crate::styling::container::dialog::DialogContainerStyles;
 use crate::styling::material::components::selection::Switch;
 use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
+
+/// Standard width for settings dialogs
+const SETTINGS_DIALOG_WIDTH: f32 = 400.0;
 
 /// Creates the enhanced settings view with Material Design 3 selection components
 #[must_use]
@@ -27,12 +31,12 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
 
     // Create the settings content with proper spacing
     let settings_content = column![
-        text("Application Settings").size(20),
+        text("Application Settings").size(state.material_tokens.typography().title_medium.size),
         // Theme Setting
         row![
             column![
-                text("Theme").size(16),
-                text("Switch between light and dark theme").size(12)
+                text("Theme").size(state.material_tokens.typography().label_large.size),
+                text("Switch between light and dark theme").size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             theme_switch
@@ -42,8 +46,8 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         // Auto-save Library Setting
         row![
             column![
-                text("Auto-save Library").size(16),
-                text("Automatically save library changes").size(12)
+                text("Auto-save Library").size(state.material_tokens.typography().label_large.size),
+                text("Automatically save library changes").size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             auto_save_switch
@@ -53,8 +57,8 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         // Scan Subdirectories Setting
         row![
             column![
-                text("Scan Subdirectories").size(16),
-                text("Include subdirectories when scanning for audiobooks").size(12)
+                text("Scan Subdirectories").size(state.material_tokens.typography().label_large.size),
+                text("Include subdirectories when scanning for audiobooks").size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             scan_subdirs_switch
@@ -70,17 +74,20 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
             // Close button row
             row![
                 Space::new(Length::Fill, 0),
-                ButtonBuilder::new(&state.material_tokens)
-                    .label("Close")
-                    .variant(ButtonVariant::Filled)
-                    .on_press(Message::CloseSettings)
-                    .build()
-                    .unwrap_or_else(|_| text("Close").into())
+                buttons::create_button(
+                    || ButtonBuilder::new(&state.material_tokens)
+                        .label("Close")
+                        .variant(ButtonVariant::Filled)
+                        .on_press(Message::CloseSettings)
+                        .build(),
+                    "close settings",
+                    Some("Close"),
+                )
             ]
         ]
         .spacing(state.material_tokens.spacing().md),
     )
-    .width(Length::Fixed(400.0))
+    .width(Length::Fixed(SETTINGS_DIALOG_WIDTH))
     .style(DialogContainerStyles::modal(state.theme_mode))
     .into()
 }

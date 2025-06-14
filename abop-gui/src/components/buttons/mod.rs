@@ -49,7 +49,7 @@ pub use builder::ButtonBuilder;
 #[doc(inline)]
 pub use error::ButtonError;
 #[doc(inline)]
-pub use variants::ButtonVariant;
+pub use variants::{ButtonVariant, ButtonSize};
 
 use crate::styling::material::MaterialTokens;
 use iced::Element;
@@ -114,6 +114,30 @@ pub fn create_button<'a, M: Clone + 'a>(
             iced::widget::Text::new(fallback_text.unwrap_or("⚠️")).into()
         }
     }
+}
+
+/// Create a toolbar button with consistent styling and error handling.
+///
+/// This is a specialized helper for toolbar buttons that reduces code duplication
+/// across toolbar components.
+pub fn create_toolbar_button<'a, M: Clone + 'a>(
+    tokens: &'a MaterialTokens,
+    icon_name: &'a str,
+    message: M,
+    fallback_emoji: &'a str,
+    button_name: &str,
+) -> Element<'a, M> {
+    create_button(
+        || {
+            button(tokens)
+                .icon_only(icon_name, ButtonSize::Medium)
+                .variant(ButtonVariant::FilledTonal)
+                .on_press(message)
+                .build()
+        },
+        button_name,
+        Some(fallback_emoji),
+    )
 }
 
 #[cfg(test)]
