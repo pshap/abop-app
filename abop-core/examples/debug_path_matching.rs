@@ -3,7 +3,7 @@ use abop_core::db::Database;
 use abop_core::utils::path::{
     normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
 };
-use anyhow::Result;
+use abop_core::error::Result;
 use std::path::PathBuf;
 
 fn main() -> Result<()> {

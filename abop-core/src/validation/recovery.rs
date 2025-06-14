@@ -38,8 +38,10 @@ pub struct RepairContext {
     pub max_backups: usize,
 }
 
-impl RepairContext {
-    /// Create a new repair context from validation results
+impl RepairContext {    /// Create a new repair context from validation results
+    /// 
+    /// Creates a context with default settings: auto-repair critical issues enabled,
+    /// auto-repair warnings disabled, and a maximum of 3 backups.
     #[must_use]
     pub fn new(validation_result: &ValidationResult) -> Self {
         Self {
@@ -64,9 +66,10 @@ impl RepairContext {
             auto_repair_warnings,
             max_backups,
         }
-    }
-
-    /// Get issues that should be auto-repaired based on settings
+    }    /// Get issues that should be auto-repaired based on settings
+    /// 
+    /// Returns a filtered list of validation errors based on severity levels
+    /// configured for auto-repair (critical errors and warnings separately).
     #[must_use]
     pub fn auto_repairable_issues(&self) -> Vec<&ValidationError> {
         self.issues

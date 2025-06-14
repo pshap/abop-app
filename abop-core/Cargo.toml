@@ -24,11 +24,9 @@ chrono.workspace = true
 uuid.workspace = true
 once_cell.workspace = true
 bitflags.workspace = true
-cfg_aliases.workspace = true
 fontdb.workspace = true
 getrandom.workspace = true
 hashbrown.workspace = true
-kurbo.workspace = true
 libloading.workspace = true
 dirs.workspace = true
 walkdir.workspace = true
@@ -36,37 +34,28 @@ r2d2.workspace = true
 r2d2_sqlite.workspace = true
 symphonia.workspace = true
 rodio.workspace = true
-num-complex.workspace = true
 hound.workspace = true
 rayon.workspace = true
 bytemuck.workspace = true
 rand.workspace = true
 async-trait.workspace = true
 humantime-serde.workspace = true
-tokio-stream.workspace = true
 tempfile.workspace = true
 rusqlite.workspace = true
+tokio.workspace = true
+futures.workspace = true
+tokio-util.workspace = true
+lru.workspace = true
+tracing.workspace = true
+serde.workspace = true
+num_cpus.workspace = true
 
 # Platform-specific dependencies
-directories = { version = "5.0.0", default-features = false }
+directories = { version = "*", default-features = false }
 
-# Non-workspace dependencies that override workspace versions
-iced = { version = "0.13.1", features = ["tokio", "advanced"] }
-crossbeam-channel = "0.5"
-tokio = { version = "1.36", features = ["full"] }
-serde_json = "1.0"
-futures = "0.3"
-tokio-util = "0.7"
-lru = "0.12"
-anyhow = "1.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-id3 = "1.12"
-mp4ameta = "0.4"
-serde = { version = "1.0", features = ["derive"] }
-num_cpus = "1.16"
+# Core-specific dependencies that override workspace versions for specific features
+iced = { workspace = true, features = ["tokio", "advanced"] }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-approx = "0.5.1"  # For floating-point comparisons in tests
-tokio-test.workspace = true
+criterion = { version = "*", features = ["html_reports"] }
+approx = "*"  # For floating-point comparisons in tests
