@@ -201,9 +201,7 @@ impl ThemeMode {
         } else {
             MaterialColors::light_default()
         }
-    }
-
-    /// Get semantic colors for the current theme mode
+    }    /// Get semantic colors for the current theme mode
     #[must_use]
     pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
         // Use the appropriate semantic color scheme for the theme
