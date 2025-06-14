@@ -30,22 +30,38 @@ fn test_database_path_consistency() -> Result<()> {
     println!("-----------------------------------");
 
     // Get the expected database path
-    let db_path = Database::get_app_database_path().context("Failed to get app database path")?;
-
-    println!("Expected database path: {}", db_path.display());    // Check if parent directory structure makes sense
+    let db_path = Database::get_app_database_path().context("Failed to get app database path")?;    println!("Expected database path: {}", db_path.display());
+    
+    // Check if parent directory structure makes sense
     let parent = db_path
         .parent()
-        .ok_or_else(|| abop_core::error::AppError::Other("Database path has no parent directory".to_string()))?;
+        .ok_or_else(|| {
+            let error_msg = "Database path has no parent directory - this indicates an invalid path structure";
+            eprintln!("ERROR: {}", error_msg);
+            abop_core::error::AppError::Other(error_msg.to_string())
+        })?;
 
     println!("Database directory: {}", parent.display());
-
+    
     // Verify this is in the correct location (should be in AppData)
-    let data_dir = dirs::data_dir().ok_or_else(|| abop_core::error::AppError::Other("Could not find data directory".to_string()))?;    if db_path.starts_with(&data_dir) {
+    let data_dir = dirs::data_dir().ok_or_else(|| {
+        let error_msg = "Could not determine the system's data directory. This might indicate a platform compatibility issue or insufficient permissions.";
+        eprintln!("ERROR: {}", error_msg);
+        abop_core::error::AppError::Other(error_msg.to_string())
+    })?;
+    
+    if db_path.starts_with(&data_dir) {
         println!("✅ Database path is correctly located in user data directory");
     } else {
+        let error_msg = format!(
+            "Database path location is incorrect. Expected path to be under '{}', but found '{}'", 
+            data_dir.display(), 
+            db_path.display()
+        );
+        eprintln!("ERROR: {}", error_msg);
         println!("❌ Database path is NOT in user data directory");
         println!("   Expected prefix: {}", data_dir.display());
-        return Err(abop_core::error::AppError::Other("Database path location is incorrect".to_string()));
+        return Err(abop_core::error::AppError::Other(error_msg));
     }
 
     println!("✅ Database path consistency test passed");
@@ -105,8 +121,7 @@ fn test_database_operations() -> Result<()> {
 
         if migrations_exist > 0 {
             // Check migration records
-            let migration_count: i64 = conn
-                .query_row(
+            let migration_count: i64 = conn                .query_row(
                     "SELECT COUNT(*) FROM migrations WHERE applied = 1",
                     [],
                     |row| row.get(0),
@@ -114,7 +129,11 @@ fn test_database_operations() -> Result<()> {
                 .unwrap_or(0);
 
             println!("Applied migrations count: {migration_count}");
-        }        return Err(abop_core::error::AppError::Other("Database schema not properly initialized".to_string()));
+        }
+        
+        let error_msg = "Database schema not properly initialized - migrations table not found or corrupted";
+        eprintln!("ERROR: {}", error_msg);
+        return Err(abop_core::error::AppError::Other(error_msg.to_string()));
     }
 
     // Test getting libraries (should work even if empty)
@@ -206,12 +225,16 @@ fn test_library_operations() -> Result<()> {
                         row.get::<_, String>(2)?,
                     ))
                 })
-                .optional()?;
-
-            println!("🔍 Direct SQL query result: {found_via_sql:?}");            // Verify we can find it
+                .optional()?;            println!("🔍 Direct SQL query result: {found_via_sql:?}");
+            
+            // Verify we can find it
             let created_library = db
                 .find_library_by_path(&test_path)?
-                .ok_or_else(|| abop_core::error::AppError::Other("Library not found after creation".to_string()))?;
+                .ok_or_else(|| {
+                    let error_msg = format!("Library not found after creation at path: {}", test_path.display());
+                    eprintln!("ERROR: {}", error_msg);
+                    abop_core::error::AppError::Other(error_msg)
+                })?;
 
             println!(
                 "✅ Successfully retrieved created library: {}",
@@ -219,11 +242,17 @@ fn test_library_operations() -> Result<()> {
             );
 
             // Test library repository operations
-            let repo = db.libraries();            // Find by ID
+            let repo = db.libraries();
+            
+            // Find by ID
             let found_by_id = repo
                 .find_by_id(&library_id)
                 .context("Failed to find library by ID")?
-                .ok_or_else(|| abop_core::error::AppError::Other("Library not found by ID".to_string()))?;
+                .ok_or_else(|| {
+                    let error_msg = format!("Library not found by ID: {}", library_id);
+                    eprintln!("ERROR: {}", error_msg);
+                    abop_core::error::AppError::Other(error_msg)
+                })?;
 
             println!("✅ Found library by ID: {}", found_by_id.name);
 
