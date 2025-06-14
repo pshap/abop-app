@@ -45,30 +45,30 @@ tempfile = "3"
 rfd = "0.14"
 
 # Audio processing
-symphonia = "0.5"
-rodio = "0.17"
-hound = "3"
-id3 = "1"
-mp4ameta = "0.4"
+symphonia = "*"
+rodio = "*"
+hound = "*"
+id3 = "*"
+mp4ameta = "*"
 
 # Database
 rusqlite = { version = "0.31", features = ["bundled"] }
-r2d2 = "0.8"
+r2d2 = "*"
 r2d2_sqlite = "0.24"
 
 # Performance and utilities
-rayon = "1.0"
-num_cpus = "1.0"
-lru = "0.12"
-once_cell = "1.0"
-bitflags = "2.0"
-bytemuck = "1.0"
-rand = "0.8"
+rayon = "*"
+num_cpus = "*"
+lru = "*"
+once_cell = "1"
+bitflags = "2"
+bytemuck = "*"
+rand = "*"
 
 # Graphics and fonts
-fontdb = "0.16"
-palette = "0.7"
-kurbo = "0.9"
+fontdb = "*"
+palette = "*"
+kurbo = "*"
 
 # System and platform
 getrandom = "0.2"
@@ -77,14 +77,14 @@ libloading = "0.8"
 parking_lot = "0.12"
 
 # CLI tools
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "*", features = ["derive"] }
 env_logger = "0.10"
 
 # Math
 num-complex = "0.4"
 
 # Development tools
-cfg_aliases = "0.1"
+cfg_aliases = "*"
 
 [workspace.lints.clippy]
 # Promote important lints to warnings (keeping best practices)
