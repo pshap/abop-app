@@ -52,9 +52,9 @@ id3 = "*"
 mp4ameta = "*"
 
 # Database
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "*", features = ["bundled"] }
 r2d2 = "*"
-r2d2_sqlite = "0.24"
+r2d2_sqlite = "*"
 
 # Performance and utilities
 rayon = "*"
