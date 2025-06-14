@@ -37,8 +37,10 @@ use super::{
     variants::{ButtonSize, ButtonVariant, IconPosition},
 };
 
-/// Default icon size for buttons in pixels
-const ICON_SIZE: u16 = 24;
+/// Default icon size for buttons in pixels (equivalent to Large size)
+/// Note: Using 24px (Large size) to maintain visual consistency with existing design
+/// This matches ButtonSize::Large from variants.rs for icon-text combination buttons
+const DEFAULT_ICON_SIZE: u16 = 24;
 
 /// Default spacing between icon and text elements in pixels
 const ICON_TEXT_SPACING: u16 = 8;
@@ -214,11 +216,10 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
         // Create the button content based on what's available (icon, label, or both)
         let content: Element<'a, M> = match (self.label, self.icon) {
-            (Some(label), Some(icon)) => {
-                // Button with both icon and label
+            (Some(label), Some(icon)) => {                // Button with both icon and label
                 let icon_element: Element<'a, M> = container(icon.to_element::<M>())
-                    .width(ICON_SIZE)
-                    .height(ICON_SIZE)
+                    .width(DEFAULT_ICON_SIZE)
+                    .height(DEFAULT_ICON_SIZE)
                     .into();
 
                 let text_element: Element<'a, M> = text(label).into();
@@ -241,9 +242,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                         // This case is prevented by the early validation in the build() method
                         return Err(ButtonError::InvalidIconPosition);
                     }
-                };
-
-                // Apply sizing and padding if specified
+                };                // Apply sizing and padding if specified
                 let mut container = container(row);
 
                 if let Some(width) = self.width {
@@ -262,9 +261,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             }
             (Some(label), None) => {
                 // Button with label only
-                let text_widget: Element<'a, M> = text(label).into();
-
-                // Create a container for the text to handle padding and sizing
+                let text_widget: Element<'a, M> = text(label).into();                // Create a container for the text to handle padding and sizing
                 let mut container = container(text_widget)
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
@@ -286,11 +283,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             }
             (None, Some(icon)) => {
                 // Icon-only button
-                let icon_element = icon.to_element::<M>();
-
-                // Create a container for the icon with default size
+                let icon_element = icon.to_element::<M>();                // Create a container for the icon with default size
                 let mut container = container(icon_element)
-                    .height(ICON_SIZE)
+                    .height(DEFAULT_ICON_SIZE)
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);

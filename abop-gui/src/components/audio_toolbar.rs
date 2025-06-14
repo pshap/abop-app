@@ -36,27 +36,29 @@ impl AudioToolbar {
             icon_names::PAUSE
         } else {
             icon_names::PLAY
-        };
+        };        let play_button = buttons::create_button(
+            || {
+                buttons::button(material_tokens)
+                    .icon_only(play_icon, ButtonSize::Small)
+                    .variant(ButtonVariant::Outlined)
+                    .on_press(Message::PlayPause)
+                    .build()
+            },
+            "play/pause",
+            Some("Play"),
+        );
 
-        let play_button = buttons::button(material_tokens)
-            .icon_only(play_icon, ButtonSize::Small)
-            .variant(ButtonVariant::Outlined)
-            .on_press(Message::PlayPause)
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build play button: {e}");
-                iced::widget::Text::new("").into()
-            });
-
-        let stop_button = buttons::button(material_tokens)
-            .icon_only(icon_names::STOP, ButtonSize::Small)
-            .variant(ButtonVariant::Outlined)
-            .on_press(Message::Stop)
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build stop button: {e}");
-                iced::widget::Text::new("").into()
-            });
+        let stop_button = buttons::create_button(
+            || {
+                buttons::button(material_tokens)
+                    .icon_only(icon_names::STOP, ButtonSize::Small)
+                    .variant(ButtonVariant::Outlined)
+                    .on_press(Message::Stop)
+                    .build()
+            },
+            "stop",
+            Some("Stop"),
+        );
 
         let previous_button = buttons::button(material_tokens)
             .icon_only(icon_names::SKIP_PREVIOUS, ButtonSize::Small)
