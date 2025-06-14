@@ -189,7 +189,6 @@ pub mod guide {
     //!    //! **Before:**
     //! ```rust,ignore
     //! use crate::styling::material::MaterialColors;
-    //! use crate::styling::material::md3_color::MaterialColors; // Conflict!
     //! ```
     //!
     //! **After:**
@@ -244,13 +243,9 @@ pub mod guide {
     pub struct MigrationPatterns;
 
     impl MigrationPatterns {
-        /// Pattern 1: Simple color access
-        #[allow(dead_code)]
+        /// Pattern 1: Simple color access        #[allow(dead_code)]
         pub fn example_basic_access() {
             // OLD WAY (multiple approaches, confusing):
-            // let colors1 = old_md3_color::MaterialColors::light();
-            // let primary1 = colors1.primary(); // method call
-            //
             // let colors2 = old_colors::MaterialColors::light_default();
             // let primary2 = colors2.primary.base; // field access
 
