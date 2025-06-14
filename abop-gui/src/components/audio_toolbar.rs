@@ -60,25 +60,29 @@ impl AudioToolbar {
             Some("Stop"),
         );
 
-        let previous_button = buttons::button(material_tokens)
-            .icon_only(icon_names::SKIP_PREVIOUS, ButtonSize::Small)
-            .variant(ButtonVariant::Outlined)
-            .on_press(Message::Previous)
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build previous button: {e}");
-                iced::widget::Text::new("").into()
-            });
+        let previous_button = buttons::create_button(
+            || {
+                buttons::button(material_tokens)
+                    .icon_only(icon_names::SKIP_PREVIOUS, ButtonSize::Small)
+                    .variant(ButtonVariant::Outlined)
+                    .on_press(Message::Previous)
+                    .build()
+            },
+            "previous",
+            Some("⏮️"),
+        );
 
-        let next_button = buttons::button(material_tokens)
-            .icon_only(icon_names::SKIP_NEXT, ButtonSize::Small)
-            .variant(ButtonVariant::Outlined)
-            .on_press(Message::Next)
-            .build()
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to build next button: {e}");
-                iced::widget::Text::new("").into()
-            });
+        let next_button = buttons::create_button(
+            || {
+                buttons::button(material_tokens)
+                    .icon_only(icon_names::SKIP_NEXT, ButtonSize::Small)
+                    .variant(ButtonVariant::Outlined)
+                    .on_press(Message::Next)
+                    .build()
+            },
+            "next",
+            Some("⏭️"),
+        );
 
         // Audio controls with proper spacing and alignment
         container(
