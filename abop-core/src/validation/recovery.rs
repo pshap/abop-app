@@ -40,6 +40,7 @@ pub struct RepairContext {
 
 impl RepairContext {
     /// Create a new repair context from validation results
+    #[must_use]
     pub fn new(validation_result: &ValidationResult) -> Self {
         Self {
             issues: validation_result.issues.clone(),
@@ -50,6 +51,7 @@ impl RepairContext {
     }
 
     /// Create a repair context with custom settings
+    #[must_use]
     pub fn with_settings(
         validation_result: &ValidationResult,
         auto_repair_critical: bool,
@@ -65,6 +67,7 @@ impl RepairContext {
     }
 
     /// Get issues that should be auto-repaired based on settings
+    #[must_use]
     pub fn auto_repairable_issues(&self) -> Vec<&ValidationError> {
         self.issues
             .iter()
@@ -126,6 +129,7 @@ impl std::fmt::Display for RepairActionType {
 
 impl RepairAction {
     /// Create a successful repair action
+    #[must_use]
     pub const fn success(
         action_type: RepairActionType,
         description: String,
@@ -141,6 +145,7 @@ impl RepairAction {
     }
 
     /// Create a failed repair action
+    #[must_use]
     pub const fn failure(
         action_type: RepairActionType,
         description: String,
@@ -157,6 +162,7 @@ impl RepairAction {
     }
 
     /// Add additional details to the repair action
+    #[must_use]
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
         self

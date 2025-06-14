@@ -29,9 +29,7 @@ pub fn to_extended_path<P: AsRef<Path>>(path: P) -> PathBuf {
         path.to_path_buf()
     } else {
         // Get current directory and join with relative path
-        std::env::current_dir()
-            .map(|cwd| cwd.join(path))
-            .unwrap_or_else(|_| path.to_path_buf())
+        std::env::current_dir().map_or_else(|_| path.to_path_buf(), |cwd| cwd.join(path))
     };
 
     // Convert to extended format if needed
@@ -56,8 +54,7 @@ pub fn to_extended_path<P: AsRef<Path>>(path: P) -> PathBuf {
 /// Checks if a path is in extended-length format
 fn is_extended(path: &Path) -> bool {
     path.to_str()
-        .map(|s| s.starts_with(EXTENDED_PATH_PREFIX))
-        .unwrap_or(false)
+        .is_some_and(|s| s.starts_with(EXTENDED_PATH_PREFIX))
 }
 
 /// Checks if a path needs the extended-length prefix
@@ -70,10 +67,8 @@ fn needs_extended_prefix(path: &Path) -> bool {
     // Check if the path is a UNC path
     if let Some(unc) = path.to_str().and_then(|s| s.strip_prefix(r"\\")) {
         return unc.len() > 2 && unc.contains('\\');
-    }
-
-    // Check if the path is too long
-    path.to_str().map(|s| s.len() >= MAX_PATH).unwrap_or(false)
+    } // Check if the path is too long
+    path.to_str().is_some_and(|s| s.len() >= MAX_PATH)
 }
 
 /// Converts a path to use the proper Windows path separators
@@ -111,8 +106,7 @@ fn is_reserved_device_name(path: &Path) -> bool {
 
     path.file_stem()
         .and_then(OsStr::to_str)
-        .map(|name| RESERVED_NAMES.contains(&name.to_uppercase().as_str()))
-        .unwrap_or(false)
+        .is_some_and(|name| RESERVED_NAMES.contains(&name.to_uppercase().as_str()))
 }
 
 #[cfg(test)]

@@ -18,7 +18,7 @@ pub trait RepairHandler {
 }
 
 /// Helper function to create a successful repair action
-pub fn create_repair_action_success(
+pub const fn create_repair_action_success(
     action_type: RepairActionType,
     description: String,
     target: String,

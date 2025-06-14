@@ -91,6 +91,7 @@ pub struct RepositoryManager {
 
 impl RepositoryManager {
     /// Create a new repository manager with enhanced connection support
+    #[must_use]
     pub fn with_enhanced_connection(enhanced_connection: Arc<EnhancedConnection>) -> Self {
         Self {
             audiobook_repo: AudiobookRepository::new(enhanced_connection.clone()),

@@ -210,11 +210,11 @@ mod tests {
         let path2 = Path::new("C:\\TEST\\FILE.TXT");
 
         // The result should be true on Windows, false on Unix
-        assert_eq!(paths_equal(&path1, &path2)?, cfg!(windows));
+        assert_eq!(paths_equal(path1, path2)?, cfg!(windows));
 
         // Same case should always be equal
-        assert!(paths_equal(&path1, &path1)?);
-        assert!(paths_equal(&path2, &path2)?);
+        assert!(paths_equal(path1, path1)?);
+        assert!(paths_equal(path2, path2)?);
 
         // Test with long paths on Windows
         #[cfg(windows)]

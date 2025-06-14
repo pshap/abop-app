@@ -234,8 +234,8 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
         return Ok(0);
     }
 
-    // Use the first available library, or default to "1"
-    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+    // Use the first available library
+    let library_id = libraries.first().expect("First library should exist as we checked libraries.is_empty()").id.as_str();
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -249,24 +249,26 @@ fn show_scan_results(db: &Database) -> Result<()> {
     } else {
         info!("📚 Total audiobooks found: {count}");
 
-        // Get all libraries and use the first one, or default to "1"
+        // Get libraries to show audiobook examples
         let libraries = db.get_libraries()?;
-        let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+        if !libraries.is_empty() {
+            let library_id = libraries.first().expect("First library should exist as we checked !libraries.is_empty()").id.as_str();
 
-        // Show first few audiobooks as examples
-        let audiobooks = db.get_audiobooks_in_library(library_id)?;
-        info!("Sample audiobooks:");
-        for (i, book) in audiobooks.iter().take(5).enumerate() {
-            info!(
-                "  {}. {} - {}",
-                i + 1,
-                book.title.as_deref().unwrap_or("Unknown Title"),
-                book.author.as_deref().unwrap_or("Unknown")
-            );
-        }
+            // Show first few audiobooks as examples
+            let audiobooks = db.get_audiobooks_in_library(library_id)?;
+            info!("Sample audiobooks:");
+            for (i, book) in audiobooks.iter().take(5).enumerate() {
+                info!(
+                    "  {}. {} - {}",
+                    i + 1,
+                    book.title.as_deref().unwrap_or("Unknown Title"),
+                    book.author.as_deref().unwrap_or("Unknown")
+                );
+            }
 
-        if audiobooks.len() > 5 {
-            info!("  ... and {} more", audiobooks.len() - 5);
+            if audiobooks.len() > 5 {
+                info!("  ... and {} more", audiobooks.len() - 5);
+            }
         }
     }
 
@@ -304,10 +306,8 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
     if libraries.is_empty() {
         info!("No libraries found in database. You may need to scan a library first.");
         return Ok(());
-    }
-
-    // Use the first available library, or default to "1"
-    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+    } // Use the first available library, or default to "1"
+    let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
     debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
     let audiobooks = db

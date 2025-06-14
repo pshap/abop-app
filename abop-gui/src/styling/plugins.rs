@@ -226,12 +226,10 @@ impl StylePluginRegistry {
         Ok(removed)
     }
 
-    /// Get component style from plugins
-    ///
+    /// Get component style from plugins    ///
     /// # Panics
     ///
     /// Panics if the internal plugin registry mutex is poisoned.
-    #[must_use]
     pub fn get_plugin_style(
         &self,
         component: &str,

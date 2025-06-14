@@ -390,7 +390,7 @@ impl ButtonStateHandler {
                     config.border_width,
                     config.border_radius,
                 ),
-                shadow: config.shadow.clone(),
+                shadow: config.shadow,
                 icon_color: Some(config.icon_color),
             },
 
@@ -422,7 +422,7 @@ impl ButtonStateHandler {
                         config.border_width,
                         config.border_radius,
                     ),
-                    shadow: config.shadow.clone(),
+                    shadow: config.shadow,
                     icon_color: Some(hover_icon),
                 }
             }
@@ -455,7 +455,7 @@ impl ButtonStateHandler {
                         config.border_width,
                         config.border_radius,
                     ),
-                    shadow: config.shadow.clone(),
+                    shadow: config.shadow,
                     icon_color: Some(pressed_icon),
                 }
             }
@@ -522,7 +522,7 @@ impl ButtonStateHandler {
                     background: Background::Color(focus_bg),
                     text_color: focus_text,
                     border: focus_border,
-                    shadow: config.shadow.clone(),
+                    shadow: config.shadow,
                     icon_color: Some(focus_icon),
                 }
             }

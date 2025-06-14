@@ -74,7 +74,7 @@ impl PreferencesRepairHandler {
         initial_count - state.user_preferences.recent_directories.len()
     }
 
-    fn reset_window_size(state: &mut AppState) -> bool {
+    const fn reset_window_size(state: &mut AppState) -> bool {
         let window_config = &mut state.user_preferences.window_config;
         if window_config.width < defaults::MIN_WINDOW_SIZE
             || window_config.height < defaults::MIN_WINDOW_SIZE

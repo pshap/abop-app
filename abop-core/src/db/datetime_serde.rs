@@ -80,11 +80,13 @@ pub fn datetime_from_sql(s: &str) -> Result<DateTime<Utc>, DateTimeError> {
 }
 
 /// Convert DateTime<Utc> to ToSqlOutput
+#[must_use]
 pub fn datetime_to_sql_output(dt: &DateTime<Utc>) -> ToSqlOutput<'_> {
     ToSqlOutput::from(dt.to_rfc3339())
 }
 
 /// Convert Option<DateTime<Utc>> to ToSqlOutput
+#[must_use]
 pub fn optional_datetime_to_sql_output(dt: &Option<DateTime<Utc>>) -> ToSqlOutput<'_> {
     dt.as_ref().map_or_else(
         || ToSqlOutput::from(rusqlite::types::Null),

@@ -181,10 +181,8 @@ impl StatusDisplay {
 
                 let progress_text =
                     text(format!("Progress: {:.1}%", progress_percentage * 100.0)).size(12);
-                let scan_label = format!(
-                    "Scanning: {} of {} files\nCurrent: {}",
-                    processed, total, current_file
-                );
+                let scan_label =
+                    format!("Scanning: {processed} of {total} files\nCurrent: {current_file}");
                 let progress_display = text(scan_label);
                 let progress_row = column![
                     progress_display,

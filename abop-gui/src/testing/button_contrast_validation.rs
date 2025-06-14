@@ -4,7 +4,7 @@
 //! to address the reported issue of white icons/logos on light backgrounds.
 
 #[cfg(test)]
-mod button_contrast_validation {
+mod tests {
     use crate::styling::{
         color_utils::ColorUtils,
         material::{
@@ -271,7 +271,7 @@ mod button_contrast_validation {
             "FAIL ❌"
         };
 
-        println!("{:35}: {:5.2}:1 [{}]", name, contrast, status);
+        println!("{name:35}: {contrast:5.2}:1 [{status}]");
 
         // Add color information for debugging
         if background != Color::TRANSPARENT {
@@ -306,23 +306,18 @@ mod button_contrast_validation {
             let suggested = Color::from_rgb(0.1, 0.1, 0.1);
             let new_contrast = ColorUtils::contrast_ratio(suggested, background);
             println!(
-                "  💡 Suggested: Dark foreground rgb(26, 26, 26) - {:.2}:1 contrast",
-                new_contrast
+                "  💡 Suggested: Dark foreground rgb(26, 26, 26) - {new_contrast:.2}:1 contrast"
             );
         } else {
             // Dark background - suggest light foreground
             let suggested = Color::from_rgb(0.9, 0.9, 0.9);
             let new_contrast = ColorUtils::contrast_ratio(suggested, background);
             println!(
-                "  💡 Suggested: Light foreground rgb(230, 230, 230) - {:.2}:1 contrast",
-                new_contrast
+                "  💡 Suggested: Light foreground rgb(230, 230, 230) - {new_contrast:.2}:1 contrast"
             );
         }
 
-        println!(
-            "  📊 Current: {:.2}:1 | Target: 4.5:1 minimum",
-            current_contrast
-        );
+        println!("  📊 Current: {current_contrast:.2}:1 | Target: 4.5:1 minimum");
     }
 
     /// Check for potential contrast issues in the color scheme
@@ -332,7 +327,7 @@ mod button_contrast_validation {
         // Check if primary color on surface meets contrast
         let primary_on_surface = ColorUtils::contrast_ratio(colors.primary.base, colors.surface);
         if primary_on_surface < 4.5 {
-            issues.push(format!("Primary on surface: {:.2}:1", primary_on_surface));
+            issues.push(format!("Primary on surface: {primary_on_surface:.2}:1"));
         }
 
         // Check surface variant combinations
@@ -340,8 +335,7 @@ mod button_contrast_validation {
             ColorUtils::contrast_ratio(colors.on_surface_variant, colors.surface_variant);
         if surface_variant_contrast < 4.5 {
             issues.push(format!(
-                "Surface variant text: {:.2}:1",
-                surface_variant_contrast
+                "Surface variant text: {surface_variant_contrast:.2}:1"
             ));
         }
 
@@ -350,7 +344,7 @@ mod button_contrast_validation {
         } else {
             println!("❌ Potential issues found:");
             for issue in issues {
-                println!("   • {}", issue);
+                println!("   • {issue}");
             }
         }
     }
@@ -366,16 +360,14 @@ mod button_contrast_validation {
         let max_contrast = ColorUtils::contrast_ratio(black, white);
         assert!(
             max_contrast > 20.0,
-            "Max contrast should be ~21:1, got {:.2}",
-            max_contrast
+            "Max contrast should be ~21:1, got {max_contrast:.2}"
         );
 
         // Same colors should have 1:1 contrast
         let same_contrast = ColorUtils::contrast_ratio(white, white);
         assert!(
             (same_contrast - 1.0).abs() < 0.1,
-            "Same color contrast should be ~1:1, got {:.2}",
-            same_contrast
+            "Same color contrast should be ~1:1, got {same_contrast:.2}"
         );
 
         // Test WCAG standards
@@ -386,8 +378,8 @@ mod button_contrast_validation {
         let black_on_gray = ColorUtils::contrast_ratio(black_text, gray_bg);
         let white_on_gray = ColorUtils::contrast_ratio(white_text, gray_bg);
 
-        println!("Black on gray: {:.2}:1", black_on_gray);
-        println!("White on gray: {:.2}:1", white_on_gray);
+        println!("Black on gray: {black_on_gray:.2}:1");
+        println!("White on gray: {white_on_gray:.2}:1");
 
         // At least one should pass WCAG AA
         assert!(

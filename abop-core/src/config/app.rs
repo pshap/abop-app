@@ -19,16 +19,16 @@ fn default_data_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("./data"))
         .join("abop-iced")
 }
-fn default_debug_mode() -> bool {
+const fn default_debug_mode() -> bool {
     cfg!(debug_assertions)
 }
-fn default_max_recent_files() -> usize {
+const fn default_max_recent_files() -> usize {
     10
 }
-fn default_auto_save_interval() -> u64 {
+const fn default_auto_save_interval() -> u64 {
     300
 }
-fn default_crash_reporting() -> bool {
+const fn default_crash_reporting() -> bool {
     true
 }
 

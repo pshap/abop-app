@@ -27,6 +27,7 @@ pub enum IssuePattern {
 
 impl IssuePattern {
     /// Extract pattern from validation error message
+    #[must_use]
     pub fn from_message(message: &str) -> Self {
         use super::repair_constants::error_patterns as patterns;
 
@@ -52,14 +53,8 @@ impl IssuePattern {
     }
 
     /// Extract pattern from a validation error
+    #[must_use]
     pub fn from_validation_error(error: &ValidationError) -> Option<Self> {
         Some(Self::from_message(&error.message))
-    }
-}
-
-impl ValidationError {
-    /// Get the issue pattern for this validation error
-    pub fn pattern(&self) -> IssuePattern {
-        IssuePattern::from_message(&self.message)
     }
 }

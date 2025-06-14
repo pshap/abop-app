@@ -40,17 +40,17 @@ impl std::error::Error for ButtonError {}
 impl fmt::Display for ButtonError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ButtonError::MissingField(field) => write!(f, "Missing required field: {}", field),
-            ButtonError::InvalidConfiguration(msg) => write!(f, "Invalid configuration: {}", msg),
-            ButtonError::IconNotFound(icon) => write!(f, "Icon not found: {}", icon),
+            ButtonError::MissingField(field) => write!(f, "Missing required field: {field}"),
+            ButtonError::InvalidConfiguration(msg) => write!(f, "Invalid configuration: {msg}"),
+            ButtonError::IconNotFound(icon) => write!(f, "Icon not found: {icon}"),
             ButtonError::UnsupportedVariant(variant) => {
-                write!(f, "Unsupported variant: {}", variant)
+                write!(f, "Unsupported variant: {variant}")
             }
             ButtonError::MissingLabelAndIcon => {
                 write!(f, "Button must have either a label or an icon")
             }
             ButtonError::MissingOnPress => write!(f, "Button must have an on_press handler"),
-            ButtonError::InvalidState(msg) => write!(f, "Invalid state: {}", msg),
+            ButtonError::InvalidState(msg) => write!(f, "Invalid state: {msg}"),
             ButtonError::InvalidIconPosition => {
                 write!(
                     f,

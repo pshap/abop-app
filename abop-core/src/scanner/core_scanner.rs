@@ -37,7 +37,7 @@ impl CoreScanner {
 
     /// Creates a new core scanner with custom configuration
     #[must_use]
-    pub fn with_config(config: ScannerConfig) -> Self {
+    pub const fn with_config(config: ScannerConfig) -> Self {
         Self { config }
     }
 

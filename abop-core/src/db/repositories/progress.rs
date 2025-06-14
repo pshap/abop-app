@@ -18,6 +18,7 @@ pub struct ProgressRepository {
 
 impl ProgressRepository {
     /// Create a new progress repository
+    #[must_use]
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
         Self {
             enhanced_connection,

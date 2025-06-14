@@ -19,7 +19,8 @@ pub struct DatabaseOperations {
 
 impl DatabaseOperations {
     /// Create a new database operations manager
-    pub fn new(pool: Arc<Pool<SqliteConnectionManager>>) -> Self {
+    #[must_use]
+    pub const fn new(pool: Arc<Pool<SqliteConnectionManager>>) -> Self {
         Self { pool }
     }
 
@@ -121,7 +122,8 @@ impl DatabaseOperations {
         })
     }
     /// Get access to the connection pool for direct access if needed
-    pub fn pool(&self) -> &Arc<Pool<SqliteConnectionManager>> {
+    #[must_use]
+    pub const fn pool(&self) -> &Arc<Pool<SqliteConnectionManager>> {
         &self.pool
     }
 }

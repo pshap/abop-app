@@ -60,7 +60,11 @@ pub mod interaction_helpers {
 /// Public API helpers for advanced data table functionality
 pub mod data_table_helpers {
     use super::super::table::MaterialDataTable;
-    use super::*;
+    use super::{
+        ColumnWidth, Container, DataTableConfig, Element, Length, MaterialTokens, SortDirection,
+        SortState, TableColumn, TableDensity, column_width_to_length, interaction_helpers,
+        performance_helpers,
+    };
 
     /// Create optimized table configuration for large datasets
     pub fn create_large_dataset_config(
@@ -159,22 +163,10 @@ pub mod data_table_helpers {
             .map(|(col_index, column)| {
                 if let Some(data) = row_data.get(col_index) {
                     let cell_content = format_cell(data, column, row_index);
-                    data_table_helpers::create_responsive_cell(
-                        cell_content,
-                        column,
-                        tokens,
-                        config.density,
-                    )
-                    .into()
+                    create_responsive_cell(cell_content, column, tokens, config.density).into()
                 } else {
                     let empty_content = MaterialDataTable::body_text("", tokens);
-                    data_table_helpers::create_responsive_cell(
-                        empty_content,
-                        column,
-                        tokens,
-                        config.density,
-                    )
-                    .into()
+                    create_responsive_cell(empty_content, column, tokens, config.density).into()
                 }
             })
             .collect()

@@ -75,13 +75,13 @@ impl StatePersistence {
 
     /// Creates a state persistence handler with a custom path
     #[must_use]
-    pub fn with_path(state_path: PathBuf) -> Self {
+    pub const fn with_path(state_path: PathBuf) -> Self {
         Self { state_path }
     }
 
     /// Gets the current state file path
     #[must_use]
-    pub fn state_path(&self) -> &PathBuf {
+    pub const fn state_path(&self) -> &PathBuf {
         &self.state_path
     }
 

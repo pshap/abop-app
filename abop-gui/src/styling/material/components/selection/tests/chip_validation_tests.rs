@@ -28,12 +28,10 @@ mod validation_tests {
         // Test maximum valid length
         let max_valid = "a".repeat(MAX_LABEL_LENGTH);
         let result = ChipBuilder::filter(&max_valid).build();
-        assert!(result.is_ok(), "Maximum length label should be valid");
-
-        // Test oversized label
+        assert!(result.is_ok(), "Maximum length label should be valid"); // Test oversized label
         let oversized = oversized_label();
         let result = ChipBuilder::filter(&oversized).build();
-        assert_label_validation_error(result, MAX_LABEL_LENGTH + 1);
+        assert_label_validation_error(&result, MAX_LABEL_LENGTH + 1);
     }
 
     #[test]

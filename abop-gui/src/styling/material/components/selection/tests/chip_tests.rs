@@ -98,12 +98,10 @@ mod chip_basic_tests {
     #[test]
     fn test_chip_validation() {
         let valid_chip = ChipBuilder::assist("Valid Label").build();
-        assert!(valid_chip.is_ok());
-
-        // Test max length
+        assert!(valid_chip.is_ok()); // Test max length
         let long_label = "a".repeat(MAX_LABEL_LENGTH + 1);
         let result = ChipBuilder::assist(&long_label).build();
-        assert_label_validation_error(result, MAX_LABEL_LENGTH + 1);
+        assert_label_validation_error(&result, MAX_LABEL_LENGTH + 1);
 
         // Test valid max length
         let max_label = "a".repeat(MAX_LABEL_LENGTH);

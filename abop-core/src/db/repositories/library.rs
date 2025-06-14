@@ -19,6 +19,7 @@ pub struct LibraryRepository {
 
 impl LibraryRepository {
     /// Create a new library repository
+    #[must_use]
     pub const fn new(enhanced_connection: Arc<EnhancedConnection>) -> Self {
         Self {
             enhanced_connection,

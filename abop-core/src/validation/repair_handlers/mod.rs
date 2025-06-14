@@ -18,6 +18,7 @@ pub use progress::ProgressRepairHandler;
 pub use repair_handler::RepairHandler;
 
 /// Get all available repair handlers
+#[must_use]
 pub fn get_all_handlers() -> Vec<Box<dyn RepairHandler>> {
     vec![
         Box::new(LibraryRepairHandler),

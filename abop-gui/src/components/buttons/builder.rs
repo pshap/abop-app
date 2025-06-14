@@ -24,8 +24,8 @@
 //! # }
 //! ```
 
+use crate::styling::material::MaterialButton;
 use crate::styling::material::MaterialTokens;
-use crate::styling::material::components::widgets::material_button::MaterialButton;
 use iced::{
     Alignment, Element, Length, Padding,
     widget::{Row, container, text},
@@ -195,7 +195,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     /// - The button has an invalid configuration (e.g., IconPosition::Only with both label and icon)
     pub fn build(self) -> ButtonResult<Element<'a, M>> {
         // Validate button configuration - check for both None and empty string
-        let has_label = self.label.map_or(false, |label| !label.is_empty());
+        let has_label = self.label.is_some_and(|label| !label.is_empty());
         let has_icon = self.icon.is_some();
 
         if !has_label && !has_icon {
@@ -204,13 +204,12 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 
         if !self.disabled && self.on_press.is_none() {
             return Err(ButtonError::MissingOnPress);
-        }
-
-        // Validate icon position early
-        if let (Some(label), Some(icon)) = (&self.label, &self.icon) {
-            if icon.position == IconPosition::Only && !label.is_empty() {
-                return Err(ButtonError::InvalidIconPosition);
-            }
+        } // Validate icon position early
+        if let (Some(label), Some(icon)) = (&self.label, &self.icon)
+            && icon.position == IconPosition::Only
+            && !label.is_empty()
+        {
+            return Err(ButtonError::InvalidIconPosition);
         }
 
         // Create the button content based on what's available (icon, label, or both)
@@ -331,11 +330,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
 }
 
 // Conversion from our ButtonVariant to the MaterialButtonVariant
-impl From<ButtonVariant>
-    for crate::styling::material::components::widgets::material_button::MaterialButtonVariant
-{
+impl From<ButtonVariant> for crate::styling::material::MaterialButtonVariant {
     fn from(variant: ButtonVariant) -> Self {
-        use crate::styling::material::components::widgets::material_button::MaterialButtonVariant as MBV;
+        use crate::styling::material::MaterialButtonVariant as MBV;
 
         match variant {
             ButtonVariant::Filled => MBV::Filled,

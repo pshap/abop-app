@@ -7,59 +7,59 @@ use crate::config::validation::{ConfigValidation, ValidationResult, validate_ran
 use serde::{Deserialize, Serialize};
 
 // Default value functions for serde
-fn default_initial_width() -> u32 {
+const fn default_initial_width() -> u32 {
     1200
 }
-fn default_initial_height() -> u32 {
+const fn default_initial_height() -> u32 {
     800
 }
-fn default_remember_position() -> bool {
+const fn default_remember_position() -> bool {
     true
 }
-fn default_remember_size() -> bool {
+const fn default_remember_size() -> bool {
     true
 }
-fn default_show_decorations() -> bool {
+const fn default_show_decorations() -> bool {
     true
 }
-fn default_resizable() -> bool {
+const fn default_resizable() -> bool {
     true
 }
-fn default_opacity() -> f32 {
+const fn default_opacity() -> f32 {
     1.0
 }
 
-fn default_scale_factor() -> f32 {
+const fn default_scale_factor() -> f32 {
     1.0
 }
-fn default_animation_speed() -> f32 {
+const fn default_animation_speed() -> f32 {
     1.0
 }
-fn default_show_tooltips() -> bool {
+const fn default_show_tooltips() -> bool {
     true
 }
-fn default_tooltip_delay() -> u32 {
+const fn default_tooltip_delay() -> u32 {
     500
 }
-fn default_use_native_dialogs() -> bool {
+const fn default_use_native_dialogs() -> bool {
     true
 }
-fn default_confirm_destructive_actions() -> bool {
+const fn default_confirm_destructive_actions() -> bool {
     true
 }
-fn default_items_per_page() -> usize {
+const fn default_items_per_page() -> usize {
     50
 }
-fn default_show_progress_bars() -> bool {
+const fn default_show_progress_bars() -> bool {
     true
 }
-fn default_show_file_warnings() -> bool {
+const fn default_show_file_warnings() -> bool {
     true
 }
-fn default_continue_on_errors() -> bool {
+const fn default_continue_on_errors() -> bool {
     true
 }
-fn default_max_error_display() -> usize {
+const fn default_max_error_display() -> usize {
     10
 }
 

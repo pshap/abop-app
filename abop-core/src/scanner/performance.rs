@@ -74,6 +74,7 @@ pub struct PerformanceMonitor {
 
 impl PerformanceMonitor {
     /// Create a new performance monitor
+    #[must_use]
     pub fn new() -> Self {
         Self {
             start_time: Instant::now(),
@@ -84,6 +85,7 @@ impl PerformanceMonitor {
     }
 
     /// Record the start of an operation
+    #[must_use]
     pub fn start_operation(
         &self,
         file_path: &str,
@@ -127,6 +129,7 @@ impl PerformanceMonitor {
     }
 
     /// Get current performance metrics
+    #[must_use]
     pub fn get_metrics(&self) -> PerformanceMetrics {
         let mut metrics = self.metrics.lock().unwrap().clone();
         metrics.total_duration = self.start_time.elapsed();
@@ -186,6 +189,7 @@ impl PerformanceMonitor {
     }
 
     /// Get performance recommendations
+    #[must_use]
     pub fn get_recommendations(&self) -> Vec<String> {
         let metrics = self.get_metrics();
         let mut recommendations = Vec::new();
@@ -300,6 +304,7 @@ impl PerformanceMetrics {
     }
 
     /// Get a human-readable summary
+    #[must_use]
     pub fn summary(&self) -> String {
         format!(
             "Processed {} files in {:?} ({:.2} files/sec, {} errors)\nAvg time per file: {:?}\nSlowest operations: {}",

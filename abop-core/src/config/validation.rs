@@ -32,7 +32,8 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     /// Create a new validation result
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             errors: Vec::new(),
             warnings: Vec::new(),
@@ -60,12 +61,14 @@ impl ValidationResult {
     }
 
     /// Check if there are any errors
-    pub fn has_errors(&self) -> bool {
+    #[must_use]
+    pub const fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
 
     /// Check if there are any warnings
-    pub fn has_warnings(&self) -> bool {
+    #[must_use]
+    pub const fn has_warnings(&self) -> bool {
         !self.warnings.is_empty()
     }
 }
