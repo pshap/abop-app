@@ -204,58 +204,14 @@ impl MaterialColors {
         } else {
             Self::create_light_scheme(palette)
         }
-    }
-
-    /// Creates light theme color scheme with proper tone mappings
+    }    /// Creates light theme color scheme with proper tone mappings
     fn create_light_scheme(palette: &MaterialPalette) -> Self {
         Self {
-            // Primary colors (light theme tones)
-            primary: ColorRole {
-                base: palette.primary.tones[10],            // tone 40
-                on_base: palette.primary.tones[23],         // tone 100
-                container: palette.primary.tones[16],       // tone 90
-                on_container: palette.primary.tones[3],     // tone 10
-                fixed: palette.primary.tones[16],           // tone 90
-                fixed_dim: palette.primary.tones[14],       // tone 80
-                on_fixed: palette.primary.tones[3],         // tone 10
-                on_fixed_variant: palette.primary.tones[7], // tone 30
-            },
-
-            // Secondary colors (light theme tones)
-            secondary: ColorRole {
-                base: palette.secondary.tones[10],            // tone 40
-                on_base: palette.secondary.tones[23],         // tone 100
-                container: palette.secondary.tones[16],       // tone 90
-                on_container: palette.secondary.tones[3],     // tone 10
-                fixed: palette.secondary.tones[16],           // tone 90
-                fixed_dim: palette.secondary.tones[14],       // tone 80
-                on_fixed: palette.secondary.tones[3],         // tone 10
-                on_fixed_variant: palette.secondary.tones[7], // tone 30
-            },
-
-            // Tertiary colors (light theme tones)
-            tertiary: ColorRole {
-                base: palette.tertiary.tones[10],            // tone 40
-                on_base: palette.tertiary.tones[23],         // tone 100
-                container: palette.tertiary.tones[16],       // tone 90
-                on_container: palette.tertiary.tones[3],     // tone 10
-                fixed: palette.tertiary.tones[16],           // tone 90
-                fixed_dim: palette.tertiary.tones[14],       // tone 80
-                on_fixed: palette.tertiary.tones[3],         // tone 10
-                on_fixed_variant: palette.tertiary.tones[7], // tone 30
-            },
-
-            // Error colors (light theme tones)
-            error: ColorRole {
-                base: palette.error.tones[10],            // tone 40
-                on_base: palette.error.tones[23],         // tone 100
-                container: palette.error.tones[16],       // tone 90
-                on_container: palette.error.tones[3],     // tone 10
-                fixed: palette.error.tones[16],           // tone 90
-                fixed_dim: palette.error.tones[14],       // tone 80
-                on_fixed: palette.error.tones[3],         // tone 10
-                on_fixed_variant: palette.error.tones[7], // tone 30
-            },
+            // Color roles using helper function
+            primary: Self::create_light_color_role(&palette.primary),
+            secondary: Self::create_light_color_role(&palette.secondary),
+            tertiary: Self::create_light_color_role(&palette.tertiary),
+            error: Self::create_light_color_role(&palette.error),
 
             // Surface and background colors
             surface: palette.neutral.tones[19],   // tone 98
@@ -290,58 +246,14 @@ impl MaterialColors {
             surface_dim: palette.neutral.tones[14], // tone 87
             surface_bright: palette.neutral.tones[19], // tone 98
         }
-    }
-
-    /// Creates dark theme color scheme with proper tone mappings
+    }    /// Creates dark theme color scheme with proper tone mappings
     fn create_dark_scheme(palette: &MaterialPalette) -> Self {
         Self {
-            // Primary colors (dark theme tones)
-            primary: ColorRole {
-                base: palette.primary.tones[14],            // tone 80
-                on_base: palette.primary.tones[5],          // tone 20
-                container: palette.primary.tones[7],        // tone 30
-                on_container: palette.primary.tones[16],    // tone 90
-                fixed: palette.primary.tones[16],           // tone 90
-                fixed_dim: palette.primary.tones[14],       // tone 80
-                on_fixed: palette.primary.tones[3],         // tone 10
-                on_fixed_variant: palette.primary.tones[7], // tone 30
-            },
-
-            // Secondary colors (dark theme tones)
-            secondary: ColorRole {
-                base: palette.secondary.tones[14],            // tone 80
-                on_base: palette.secondary.tones[5],          // tone 20
-                container: palette.secondary.tones[7],        // tone 30
-                on_container: palette.secondary.tones[16],    // tone 90
-                fixed: palette.secondary.tones[16],           // tone 90
-                fixed_dim: palette.secondary.tones[14],       // tone 80
-                on_fixed: palette.secondary.tones[3],         // tone 10
-                on_fixed_variant: palette.secondary.tones[7], // tone 30
-            },
-
-            // Tertiary colors (dark theme tones)
-            tertiary: ColorRole {
-                base: palette.tertiary.tones[14],            // tone 80
-                on_base: palette.tertiary.tones[5],          // tone 20
-                container: palette.tertiary.tones[7],        // tone 30
-                on_container: palette.tertiary.tones[16],    // tone 90
-                fixed: palette.tertiary.tones[16],           // tone 90
-                fixed_dim: palette.tertiary.tones[14],       // tone 80
-                on_fixed: palette.tertiary.tones[3],         // tone 10
-                on_fixed_variant: palette.tertiary.tones[7], // tone 30
-            },
-
-            // Error colors (dark theme tones)
-            error: ColorRole {
-                base: palette.error.tones[14],            // tone 80
-                on_base: palette.error.tones[5],          // tone 20
-                container: palette.error.tones[7],        // tone 30
-                on_container: palette.error.tones[16],    // tone 90
-                fixed: palette.error.tones[16],           // tone 90
-                fixed_dim: palette.error.tones[14],       // tone 80
-                on_fixed: palette.error.tones[3],         // tone 10
-                on_fixed_variant: palette.error.tones[7], // tone 30
-            },
+            // Color roles using helper function
+            primary: Self::create_dark_color_role(&palette.primary),
+            secondary: Self::create_dark_color_role(&palette.secondary),
+            tertiary: Self::create_dark_color_role(&palette.tertiary),
+            error: Self::create_dark_color_role(&palette.error),
 
             // Surface and background colors
             surface: palette.neutral.tones[2],     // tone 6
@@ -375,6 +287,34 @@ impl MaterialColors {
             // Additional surface variants
             surface_dim: palette.neutral.tones[2],    // tone 6
             surface_bright: palette.neutral.tones[8], // tone 24
+        }
+    }
+
+    /// Helper function to create a ColorRole with proper tone mappings for light theme
+    fn create_light_color_role(palette: &TonalPalette) -> ColorRole {
+        ColorRole {
+            base: palette.tones[10],            // tone 40
+            on_base: palette.tones[23],         // tone 100
+            container: palette.tones[16],       // tone 90
+            on_container: palette.tones[3],     // tone 10
+            fixed: palette.tones[16],           // tone 90
+            fixed_dim: palette.tones[14],       // tone 80
+            on_fixed: palette.tones[3],         // tone 10
+            on_fixed_variant: palette.tones[7], // tone 30
+        }
+    }
+
+    /// Helper function to create a ColorRole with proper tone mappings for dark theme
+    fn create_dark_color_role(palette: &TonalPalette) -> ColorRole {
+        ColorRole {
+            base: palette.tones[14],            // tone 80
+            on_base: palette.tones[5],          // tone 20
+            container: palette.tones[7],        // tone 30
+            on_container: palette.tones[16],    // tone 90
+            fixed: palette.tones[16],           // tone 90
+            fixed_dim: palette.tones[14],       // tone 80
+            on_fixed: palette.tones[3],         // tone 10
+            on_fixed_variant: palette.tones[7], // tone 30
         }
     }
 }
