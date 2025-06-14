@@ -51,11 +51,11 @@ serde.workspace = true
 num_cpus.workspace = true
 
 # Platform-specific dependencies
-directories = { version = "5.0", default-features = false }
+directories = { version = "*", default-features = false }
 
 # Core-specific dependencies that override workspace versions for specific features
 iced = { workspace = true, features = ["tokio", "advanced"] }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-approx = "0.5.1"  # For floating-point comparisons in tests
+criterion = { version = "*", features = ["html_reports"] }
+approx = "*"  # For floating-point comparisons in tests

@@ -6,6 +6,7 @@ use abop_core::audio::{
 };
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use rand::{Rng, rng};
+use std::hint::black_box;
 
 fn generate_test_audio(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
     let samples = (sample_rate as f32 * duration_secs) as usize * channels as usize;
@@ -39,11 +40,10 @@ fn bench_resampler(c: &mut Criterion) {
         group.bench_function(
             format!("public_api_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"),
             |b| {
-                let mut resampler = LinearResampler::with_target_rate(*dst_rate).unwrap();
-                b.iter(|| {
+                let mut resampler = LinearResampler::with_target_rate(*dst_rate).unwrap();                b.iter(|| {
                     let mut buffer = buffer.clone();
                     resampler.process(&mut buffer).unwrap();
-                    criterion::black_box(&buffer);
+                    black_box(&buffer);
                 })
             },
         );
@@ -53,11 +53,10 @@ fn bench_resampler(c: &mut Criterion) {
             format!(
                 "direct_scalar_{src_rate}Hz_to_{dst_rate}Hz_{channels}ch"
             ),
-            |b| {
-                b.iter(|| {
+            |b| {                b.iter(|| {
                     let mut buffer = buffer.clone();
                     abop_core::audio::processing::resampler::LinearResampler::resample_buffer_scalar(&mut buffer, *dst_rate).unwrap();
-                    criterion::black_box(&buffer);
+                    black_box(&buffer);
                 })
             },
         );
