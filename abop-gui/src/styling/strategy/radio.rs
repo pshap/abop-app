@@ -15,9 +15,12 @@ pub enum RadioStyleVariant {
 }
 
 /// Radio button style strategy implementation
+/// 
+/// Manages styling for Material Design 3 radio buttons with proper state handling.
+/// The variant field is kept for future extensibility when different radio styles
+/// may be needed (e.g., compact radio buttons, or custom visual variants).
 pub struct RadioStyleStrategy {
-    #[allow(dead_code)] // Used for future variant-specific behavior
-    variant: RadioStyleVariant,
+    variant: RadioStyleVariant, // Future-proofing for style variants
     selected: bool,
     error: bool,
 }
@@ -45,32 +48,39 @@ impl RadioStyleStrategy {
     pub fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self
-    }
-
-    /// Calculate background color based on state
+    }    /// Calculate background color based on state
+    /// 
+    /// Radio button background follows Material Design 3 specifications:
+    /// - Error state: Uses error color when selected, transparent when unselected
+    /// - Disabled state: Low opacity surface color when selected, transparent when unselected
+    /// - Selected state: Primary color for the filled circle
+    /// - Unselected state: Transparent background (only border visible)
     fn background_color(&self, state: ComponentState, tokens: &MaterialTokens) -> Color {
         let colors = &tokens.colors;
         
+        // Error state takes precedence over all other states
         if self.error {
             return if self.selected {
-                colors.error.base
+                colors.error.base // Filled with error color when selected
             } else {
-                Color::TRANSPARENT
+                Color::TRANSPARENT // Transparent background, error border only
             };
         }
 
+        // Disabled state has reduced opacity
         if matches!(state, ComponentState::Disabled) {
             return if self.selected {
-                ColorUtils::with_alpha(colors.on_surface, 0.12)
+                ColorUtils::with_alpha(colors.on_surface, 0.12) // Low opacity when disabled+selected
             } else {
-                Color::TRANSPARENT
+                Color::TRANSPARENT // No background when disabled+unselected
             };
         }
 
+        // Normal states: filled when selected, transparent when unselected
         if self.selected {
-            colors.primary.base
+            colors.primary.base // Primary color for selected radio dot
         } else {
-            Color::TRANSPARENT
+            Color::TRANSPARENT // Only border visible when unselected
         }
     }
 
@@ -122,26 +132,38 @@ impl RadioStyleStrategy {
             Color::TRANSPARENT
         }
     }    /// Get state layer opacity for interaction states
-    #[allow(dead_code)] // Future enhancement
+    /// 
+    /// Returns opacity values following Material Design 3 state layer specifications:
+    /// - Pressed: 0.12 (12%) - High feedback for direct interaction
+    /// - Hovered: 0.08 (8%) - Subtle hover indication
+    /// - Focused: 0.10 (10%) - Clear focus visibility for accessibility
+    /// - Loading: 0.08 (8%) - Similar to hover for loading states
+    /// - Disabled/Default: 0.0 (0%) - No state layer overlay
+    /// 
+    /// Note: This will be used in future implementation of interactive state overlays
+    /// to provide visual feedback during user interactions with radio buttons.
     fn state_layer_opacity(&self, state: ComponentState) -> f32 {
         match state {
-            ComponentState::Pressed => 0.12,
-            ComponentState::Hovered => 0.08,
-            ComponentState::Focused => 0.10,
-            ComponentState::Loading => 0.08,
-            ComponentState::Disabled => 0.0,
-            ComponentState::Default => 0.0,
+            ComponentState::Pressed => 0.12,  // MD3: Strong press feedback
+            ComponentState::Hovered => 0.08,  // MD3: Subtle hover indication
+            ComponentState::Focused => 0.10,  // MD3: Accessibility-focused visibility
+            ComponentState::Loading => 0.08,  // MD3: Loading state indication
+            ComponentState::Disabled => 0.0,  // MD3: No overlay for disabled
+            ComponentState::Default => 0.0,   // MD3: No overlay in default state
         }
     }
 }
 
 impl ComponentStyleStrategy for RadioStyleStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
+        // Calculate colors once to avoid redundant calculations
+        let foreground = self.foreground_color(state, tokens);
+        
         ComponentStyling {
             background: Background::Color(self.background_color(state, tokens)),
             border: self.border_style(state, tokens),
-            text_color: self.foreground_color(state, tokens),
-            icon_color: Some(self.foreground_color(state, tokens)),
+            text_color: foreground,
+            icon_color: Some(foreground),
             shadow: None, // Radio buttons typically don't have shadows
             opacity: 1.0,
         }
