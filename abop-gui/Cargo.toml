@@ -50,4 +50,4 @@ bytemuck.workspace = true
 material-color-utilities-rs = "*"
 
 [dev-dependencies]
-approx = "0.5"  # For floating-point comparisons in tests
+approx = "*"  # For floating-point comparisons in tests
