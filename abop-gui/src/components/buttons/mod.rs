@@ -38,7 +38,8 @@
 //! ```
 
 pub mod builder;
-pub mod conversions;
+// TODO: Remove unused conversions module - no active imports found
+// pub mod conversions;
 pub mod error;
 pub mod icons;
 pub mod variants;
