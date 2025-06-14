@@ -116,19 +116,7 @@ impl SwitchStyleStrategy {
 
         Border {
             color,
-            width: if self.enabled { 0.0 } else { 2.0 },
-            radius: 16.0.into(), // Switches have rounded track
-        }
-    }    /// Get state layer opacity for interaction states
-    #[allow(dead_code)] // Future enhancement
-    fn state_layer_opacity(&self, state: ComponentState) -> f32 {
-        match state {
-            ComponentState::Pressed => 0.12,
-            ComponentState::Hovered => 0.08,
-            ComponentState::Focused => 0.10,
-            ComponentState::Loading => 0.08,
-            ComponentState::Disabled => 0.0,
-            ComponentState::Default => 0.0,
+            width: if self.enabled { 0.0 } else { 2.0 },            radius: 16.0.into(), // Switches have rounded track
         }
     }
 }

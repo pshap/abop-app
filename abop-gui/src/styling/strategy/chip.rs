@@ -202,29 +202,8 @@ impl ChipStyleStrategy {
                 } else {
                     colors.on_surface_variant       // Lower emphasis when unselected
                 }
-            }
-            ChipStyleVariant::Input => colors.on_surface,      // User content text
+            }            ChipStyleVariant::Input => colors.on_surface,      // User content text
             ChipStyleVariant::Suggestion => colors.on_surface_variant, // Secondary text for suggestions
-        }
-    }/// Get state layer opacity for interaction states
-    /// 
-    /// Returns opacity values following Material Design 3 state layer specifications:
-    /// - Pressed: 0.12 (12%) - Strong feedback for tap/click interactions
-    /// - Hovered: 0.08 (8%) - Subtle indication on hover (desktop/mouse interactions)
-    /// - Focused: 0.10 (10%) - Clear focus visibility for keyboard navigation
-    /// - Loading: 0.08 (8%) - Loading state indication, similar to hover
-    /// - Disabled/Default: 0.0 (0%) - No overlay in these states
-    /// 
-    /// These values ensure consistent interaction feedback across all chip variants
-    /// while maintaining Material Design's accessibility and usability guidelines.
-    fn state_layer_opacity(&self, state: ComponentState) -> f32 {
-        match state {
-            ComponentState::Pressed => 0.12,  // MD3: Strong press feedback
-            ComponentState::Hovered => 0.08,  // MD3: Subtle hover indication  
-            ComponentState::Focused => 0.10,  // MD3: Accessibility focus
-            ComponentState::Loading => 0.08,  // MD3: Loading state indication
-            ComponentState::Disabled => 0.0,  // MD3: No overlay for disabled
-            ComponentState::Default => 0.0,   // MD3: No overlay in default state
         }
     }
 
