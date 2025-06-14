@@ -81,7 +81,7 @@ impl ThreadSafeAudioPlayer {
     /// Gets the current player state
     ///
     /// See `AudioPlayer::get_state` for details.
-    pub fn get_state(&self) -> PlayerState {
+    #[must_use] pub fn get_state(&self) -> PlayerState {
         self.inner
             .lock()
             .map(|player| player.get_state())
@@ -91,7 +91,7 @@ impl ThreadSafeAudioPlayer {
     /// Gets the currently playing file path
     ///
     /// See `AudioPlayer::get_current_file` for details.
-    pub fn get_current_file(&self) -> Option<PathBuf> {
+    #[must_use] pub fn get_current_file(&self) -> Option<PathBuf> {
         self.inner
             .lock()
             .map(|player| player.get_current_file())
@@ -105,7 +105,7 @@ impl AudioPlayer {
     /// # Errors
     ///
     /// Returns [`AppError::Audio`] if audio system initialization fails.
-    pub fn new() -> Result<Self> {
+    pub const fn new() -> Result<Self> {
         Ok(Self {
             sink: None,
             state: PlayerState::Stopped,
@@ -220,7 +220,7 @@ impl AudioPlayer {
 
     /// Gets the current volume (0.0 to 1.0)
     #[must_use]
-    pub fn get_volume(&self) -> f32 {
+    pub const fn get_volume(&self) -> f32 {
         self.volume
     }
 

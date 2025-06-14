@@ -75,7 +75,7 @@ pub mod audio {
         ///
         /// # Returns
         /// The number of bits used to represent each sample in this format
-        pub fn bit_depth(self) -> u8 {
+        #[must_use] pub const fn bit_depth(self) -> u8 {
             match self {
                 Self::Int16 => 16,
                 Self::Int24 => 24,
@@ -258,7 +258,7 @@ pub mod ui {
         /// # Panics
         /// This function does not panic for any input, but values outside [0.0, 1.0]
         /// may produce unexpected results as they're outside the standard easing range
-        pub fn apply(self, t: f32) -> f32 {
+        #[must_use] pub fn apply(self, t: f32) -> f32 {
             match self {
                 Self::Linear => t,
                 Self::EaseIn => t * t,
@@ -280,7 +280,7 @@ pub mod file {
     use super::*;
     use std::path::Path;
     /// Calculate safe file copy buffer size based on file size
-    pub fn calculate_copy_buffer_size(file_size: u64) -> Result<usize> {
+    pub const fn calculate_copy_buffer_size(file_size: u64) -> Result<usize> {
         // Use different buffer sizes based on file size
         let buffer_size = if file_size < 1024 * 1024 {
             // < 1MB

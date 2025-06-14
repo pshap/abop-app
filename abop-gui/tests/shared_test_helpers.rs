@@ -41,7 +41,7 @@ pub mod color_test_utils {
     use super::Color;
 
     /// Calculate relative luminance according to WCAG 2.1
-    pub fn calculate_luminance(color: Color) -> f32 {
+    #[must_use] pub fn calculate_luminance(color: Color) -> f32 {
         fn gamma_correct(c: f32) -> f32 {
             if c <= 0.03928 {
                 c / 12.92
@@ -58,7 +58,7 @@ pub mod color_test_utils {
     }
 
     /// Calculate contrast ratio between two colors using WCAG 2.1 formula
-    pub fn calculate_contrast_ratio(color1: Color, color2: Color) -> f32 {
+    #[must_use] pub fn calculate_contrast_ratio(color1: Color, color2: Color) -> f32 {
         let luminance1 = calculate_luminance(color1);
         let luminance2 = calculate_luminance(color2);
 
@@ -72,12 +72,12 @@ pub mod color_test_utils {
     }
 
     /// Check if contrast ratio meets WCAG AA standards
-    pub fn meets_wcag_aa_contrast(color1: Color, color2: Color) -> bool {
+    #[must_use] pub fn meets_wcag_aa_contrast(color1: Color, color2: Color) -> bool {
         calculate_contrast_ratio(color1, color2) >= 4.5
     }
 
     /// Check if contrast ratio meets WCAG AA standards for large text/UI components
-    pub fn meets_wcag_aa_large_contrast(color1: Color, color2: Color) -> bool {
+    #[must_use] pub fn meets_wcag_aa_large_contrast(color1: Color, color2: Color) -> bool {
         calculate_contrast_ratio(color1, color2) >= 3.0
     }
 }

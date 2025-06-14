@@ -14,6 +14,6 @@ use abop_core::AppState;
 /// let app_state = create_test_app_state();
 /// assert_eq!(app_state.libraries().len(), 0);
 /// ```
-pub fn create_test_app_state() -> AppState {
+#[must_use] pub fn create_test_app_state() -> AppState {
     AppState::default()
 }

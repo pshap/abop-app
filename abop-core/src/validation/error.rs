@@ -46,7 +46,7 @@ pub struct ValidationError {
 
 impl ValidationError {
     /// Create a new validation error
-    pub fn new(severity: ValidationSeverity, category: &str, message: &str) -> Self {
+    #[must_use] pub fn new(severity: ValidationSeverity, category: &str, message: &str) -> Self {
         Self {
             severity,
             category: category.to_string(),
@@ -58,50 +58,50 @@ impl ValidationError {
     }
 
     /// Create a critical validation error
-    pub fn critical(category: &str, message: &str) -> Self {
+    #[must_use] pub fn critical(category: &str, message: &str) -> Self {
         Self::new(ValidationSeverity::Critical, category, message)
     }
 
     /// Create an error-level validation issue
-    pub fn error(category: &str, message: &str) -> Self {
+    #[must_use] pub fn error(category: &str, message: &str) -> Self {
         Self::new(ValidationSeverity::Error, category, message)
     }
 
     /// Create a warning-level validation issue
-    pub fn warning(category: &str, message: &str) -> Self {
+    #[must_use] pub fn warning(category: &str, message: &str) -> Self {
         Self::new(ValidationSeverity::Warning, category, message)
     }
 
     /// Create an info-level validation issue
-    pub fn info(category: &str, message: &str) -> Self {
+    #[must_use] pub fn info(category: &str, message: &str) -> Self {
         Self::new(ValidationSeverity::Info, category, message)
     }
 
     /// Set the file path associated with this error
-    pub fn with_file_path(mut self, path: PathBuf) -> Self {
+    #[must_use] pub fn with_file_path(mut self, path: PathBuf) -> Self {
         self.file_path = Some(path);
         self
     }
 
     /// Set the field name associated with this error
-    pub fn with_field(mut self, field: &str) -> Self {
+    #[must_use] pub fn with_field(mut self, field: &str) -> Self {
         self.field = Some(field.to_string());
         self
     }
 
     /// Set a suggested fix for this error
-    pub fn with_suggestion(mut self, suggestion: &str) -> Self {
+    #[must_use] pub fn with_suggestion(mut self, suggestion: &str) -> Self {
         self.suggestion = Some(suggestion.to_string());
         self
     }
 
     /// Check if this is a critical error
-    pub fn is_critical(&self) -> bool {
+    #[must_use] pub fn is_critical(&self) -> bool {
         self.severity == ValidationSeverity::Critical
     }
 
     /// Check if this is an error (not just warning or info)
-    pub const fn is_error(&self) -> bool {
+    #[must_use] pub const fn is_error(&self) -> bool {
         matches!(
             self.severity,
             ValidationSeverity::Error | ValidationSeverity::Critical
@@ -159,7 +159,7 @@ pub struct ValidationSummary {
 
 impl ValidationResult {
     /// Create a new empty validation result
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             issues: Vec::new(),
             is_valid: true,
@@ -191,17 +191,17 @@ impl ValidationResult {
     }
 
     /// Check if there are any critical issues
-    pub const fn has_critical_issues(&self) -> bool {
+    #[must_use] pub const fn has_critical_issues(&self) -> bool {
         self.has_critical_issues
     }
 
     /// Check if the state is considered valid for use
-    pub const fn is_valid(&self) -> bool {
+    #[must_use] pub const fn is_valid(&self) -> bool {
         self.is_valid
     }
 
     /// Get all issues of a specific severity
-    pub fn issues_by_severity(&self, severity: ValidationSeverity) -> Vec<&ValidationError> {
+    #[must_use] pub fn issues_by_severity(&self, severity: ValidationSeverity) -> Vec<&ValidationError> {
         self.issues
             .iter()
             .filter(|issue| issue.severity == severity)
@@ -209,17 +209,17 @@ impl ValidationResult {
     }
 
     /// Get all critical issues
-    pub fn critical_issues(&self) -> Vec<&ValidationError> {
+    #[must_use] pub fn critical_issues(&self) -> Vec<&ValidationError> {
         self.issues_by_severity(ValidationSeverity::Critical)
     }
 
     /// Get all error-level issues
-    pub fn error_issues(&self) -> Vec<&ValidationError> {
+    #[must_use] pub fn error_issues(&self) -> Vec<&ValidationError> {
         self.issues_by_severity(ValidationSeverity::Error)
     }
 
     /// Get issues by category
-    pub fn issues_by_category(&self, category: &str) -> Vec<&ValidationError> {
+    #[must_use] pub fn issues_by_category(&self, category: &str) -> Vec<&ValidationError> {
         self.issues
             .iter()
             .filter(|issue| issue.category == category)
@@ -227,7 +227,7 @@ impl ValidationResult {
     }
 
     /// Create a summary report of all issues
-    pub fn summary_report(&self) -> String {
+    #[must_use] pub fn summary_report(&self) -> String {
         if self.issues.is_empty() {
             return "No validation issues found.".to_string();
         }

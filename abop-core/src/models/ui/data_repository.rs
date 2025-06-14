@@ -22,7 +22,7 @@ impl DataRepository {
 
     /// Creates a data repository from existing data
     #[must_use]
-    pub fn from_data(data: AppData) -> Self {
+    pub const fn from_data(data: AppData) -> Self {
         Self { data }
     }
 
@@ -33,7 +33,7 @@ impl DataRepository {
     }
 
     /// Gets a mutable reference to the underlying data
-    pub fn data_mut(&mut self) -> &mut AppData {
+    pub const fn data_mut(&mut self) -> &mut AppData {
         &mut self.data
     }
 
@@ -211,7 +211,7 @@ impl DataRepository {
 
     /// Gets the total number of items in the repository
     #[must_use]
-    pub fn item_counts(&self) -> (usize, usize, usize) {
+    pub const fn item_counts(&self) -> (usize, usize, usize) {
         (
             self.data.libraries.len(),
             self.data.audiobooks.len(),
@@ -228,7 +228,7 @@ impl DataRepository {
 
     /// Checks if the repository is empty
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.data.libraries.is_empty()
             && self.data.audiobooks.is_empty()
             && self.data.progress.is_empty()

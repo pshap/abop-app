@@ -98,3 +98,6 @@ abop-gui/assets/fonts/roboto/Roboto-Bold.woff2
 abop-gui/assets/fonts/roboto/Roboto-Medium.woff2
 abop-gui/assets/fonts/roboto/Roboto-Regular.woff2
 abop-gui/assets/fonts/roboto.zip
+fix_high_priority.py
+parse_clippy_concise.py
+parse_clippy.py

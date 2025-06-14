@@ -44,7 +44,7 @@ impl AudioToolbar {
             .on_press(Message::PlayPause)
             .build()
             .unwrap_or_else(|e| {
-                log::warn!("Failed to build play button: {}", e);
+                log::warn!("Failed to build play button: {e}");
                 iced::widget::Text::new("").into()
             });
 
@@ -54,7 +54,7 @@ impl AudioToolbar {
             .on_press(Message::Stop)
             .build()
             .unwrap_or_else(|e| {
-                log::warn!("Failed to build stop button: {}", e);
+                log::warn!("Failed to build stop button: {e}");
                 iced::widget::Text::new("").into()
             });
 
@@ -64,7 +64,7 @@ impl AudioToolbar {
             .on_press(Message::Previous)
             .build()
             .unwrap_or_else(|e| {
-                log::warn!("Failed to build previous button: {}", e);
+                log::warn!("Failed to build previous button: {e}");
                 iced::widget::Text::new("").into()
             });
 
@@ -74,7 +74,7 @@ impl AudioToolbar {
             .on_press(Message::Next)
             .build()
             .unwrap_or_else(|e| {
-                log::warn!("Failed to build next button: {}", e);
+                log::warn!("Failed to build next button: {e}");
                 iced::widget::Text::new("").into()
             });
 

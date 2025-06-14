@@ -14,7 +14,7 @@ pub mod error_conversion {
     use super::{AudioProcessingError, DomainCastError, Result};
 
     /// Convert a DomainCastError to an AudioProcessingError
-    pub fn cast_to_audio_error(err: DomainCastError) -> AudioProcessingError {
+    #[must_use] pub fn cast_to_audio_error(err: DomainCastError) -> AudioProcessingError {
         AudioProcessingError::buffer(format!("Casting error: {err}"))
     }
 
@@ -30,7 +30,7 @@ pub mod safe_conversions {
     use crate::utils::casting::domain::{audio as unified_audio, db};
 
     /// Safe conversion from database count to usize
-    pub fn safe_db_count_to_usize(count: i64) -> usize {
+    #[must_use] pub fn safe_db_count_to_usize(count: i64) -> usize {
         db::safe_db_count_to_usize(count)
     }
     /// Safe conversion from f64 to usize for sample indices
@@ -40,7 +40,7 @@ pub mod safe_conversions {
     }
 
     /// Safe conversion from usize to f64 for audio calculations  
-    pub fn safe_usize_to_f64_audio(value: usize) -> f64 {
+    #[must_use] pub fn safe_usize_to_f64_audio(value: usize) -> f64 {
         unified_audio::safe_usize_to_f64_audio(value)
     }
 
@@ -58,7 +58,7 @@ pub mod sample_calculations {
     use crate::utils::casting::domain::audio as unified_audio;
 
     /// Calculate sample rate as f32 with safety checks
-    pub fn sample_rate_to_f32(rate: u32) -> Result<f32> {
+    pub const fn sample_rate_to_f32(rate: u32) -> Result<f32> {
         Ok(rate as f32)
     }
 

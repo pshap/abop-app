@@ -204,10 +204,9 @@ where
 // ============================================================================
 
 /// Test that label validation works correctly
-pub fn assert_label_validation_error(result: Result<Chip, SelectionError>, expected_len: usize) {
-    match result {
+pub fn assert_label_validation_error(result: &Result<Chip, SelectionError>, expected_len: usize) {    match result {
         Err(SelectionError::LabelTooLong { len, max: _ }) => {
-            assert_eq!(len, expected_len);
+            assert_eq!(*len, expected_len);
         }
         _ => panic!("Expected LabelTooLong error"),
     }

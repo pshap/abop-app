@@ -164,7 +164,7 @@ pub struct ErrorChain {
 
 impl ErrorChain {
     /// Create a new error chain
-    pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self { errors: Vec::new() }
     }
 
@@ -175,13 +175,13 @@ impl ErrorChain {
     }
 
     /// Add a context message to the chain
-    pub fn context(mut self, context: &str) -> Self {
+    #[must_use] pub fn context(mut self, context: &str) -> Self {
         self.errors.push(context.to_string());
         self
     }
 
     /// Convert to an AppError
-    pub fn into_error(self) -> crate::error::AppError {
+    #[must_use] pub fn into_error(self) -> crate::error::AppError {
         crate::error::AppError::Other(self.errors.join(" -> "))
     }
 }

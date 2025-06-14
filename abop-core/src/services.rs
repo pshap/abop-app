@@ -26,12 +26,12 @@ impl TaskHandle {
     }
 
     /// Get the task ID
-    pub fn id(&self) -> u64 {
+    #[must_use] pub const fn id(&self) -> u64 {
         self.id
     }
 
     /// Get the task name
-    pub fn name(&self) -> &str {
+    #[must_use] pub fn name(&self) -> &str {
         &self.name
     }
 

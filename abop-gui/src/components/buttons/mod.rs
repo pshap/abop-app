@@ -109,7 +109,7 @@ pub fn create_button<'a, M: Clone + 'a>(
     match build_fn() {
         Ok(element) => element,
         Err(e) => {
-            log::warn!("❌ Failed to build {} button: {}", button_name, e);
+            log::warn!("❌ Failed to build {button_name} button: {e}");
             iced::widget::Text::new(fallback_text.unwrap_or("⚠️")).into()
         }
     }

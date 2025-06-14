@@ -45,19 +45,15 @@ impl DefaultFileDiscoverer {
                 .collect(),
         }
     }
-
     /// Check if a file has one of the allowed extensions (case-insensitive)
     fn has_valid_extension(path: &Path, extensions: &[String]) -> bool {
-        path.extension()
-            .and_then(OsStr::to_str)
-            .map(|ext| {
-                // Convert both the file extension and allowed extensions to lowercase for comparison
-                let ext_lower = ext.to_lowercase();
-                extensions
-                    .iter()
-                    .any(|allowed| allowed.to_lowercase() == ext_lower)
-            })
-            .unwrap_or(false)
+        path.extension().and_then(OsStr::to_str).is_some_and(|ext| {
+            // Convert both the file extension and allowed extensions to lowercase for comparison
+            let ext_lower = ext.to_lowercase();
+            extensions
+                .iter()
+                .any(|allowed| allowed.to_lowercase() == ext_lower)
+        })
     }
 
     /// Find audio files synchronously (used internally)

@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 ///
 /// On Windows, this performs case-insensitive comparison.
 /// On other platforms, this performs case-sensitive comparison.
-pub fn paths_equal(path1: &Path, path2: &Path) -> bool {
+#[must_use] pub fn paths_equal(path1: &Path, path2: &Path) -> bool {
     #[cfg(windows)]
     {
         paths_equal_case_insensitive(path1, path2)
@@ -22,7 +22,7 @@ pub fn paths_equal(path1: &Path, path2: &Path) -> bool {
 }
 
 /// Compare two paths for equality with case-insensitive comparison
-pub fn paths_equal_case_insensitive(path1: &Path, path2: &Path) -> bool {
+#[must_use] pub fn paths_equal_case_insensitive(path1: &Path, path2: &Path) -> bool {
     normalize_path_for_comparison(path1) == normalize_path_for_comparison(path2)
 }
 
@@ -30,7 +30,7 @@ pub fn paths_equal_case_insensitive(path1: &Path, path2: &Path) -> bool {
 ///
 /// This converts the path to a lowercase string representation for
 /// consistent comparison across different path formats.
-pub fn normalize_path_for_comparison(path: &Path) -> String {
+#[must_use] pub fn normalize_path_for_comparison(path: &Path) -> String {
     path.to_string_lossy().to_lowercase()
 }
 
@@ -38,7 +38,7 @@ pub fn normalize_path_for_comparison(path: &Path) -> String {
 ///
 /// This attempts to resolve `.` and `..` components and canonicalize the path
 /// if possible, falling back to the original path on error.
-pub fn normalize_path(path: &Path) -> PathBuf {
+#[must_use] pub fn normalize_path(path: &Path) -> PathBuf {
     match path.canonicalize() {
         Ok(canonical) => canonical,
         Err(_) => {
@@ -67,7 +67,7 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 ///
 /// This is useful for Windows where file names are case-insensitive
 /// but the exact case might not match.
-pub fn path_exists_case_insensitive(path: &Path) -> bool {
+#[must_use] pub fn path_exists_case_insensitive(path: &Path) -> bool {
     #[cfg(windows)]
     {
         if path.exists() {
@@ -108,17 +108,15 @@ pub fn path_exists_case_insensitive(path: &Path) -> bool {
 }
 
 /// Get the file extension in a case-insensitive manner
-pub fn get_extension_case_insensitive(path: &Path) -> Option<String> {
+#[must_use] pub fn get_extension_case_insensitive(path: &Path) -> Option<String> {
     path.extension()
         .and_then(|ext| ext.to_str())
         .map(|ext| ext.to_lowercase())
 }
 
 /// Compare file extensions case-insensitively
-pub fn extension_matches(path: &Path, expected_ext: &str) -> bool {
-    get_extension_case_insensitive(path)
-        .map(|ext| ext == expected_ext.to_lowercase())
-        .unwrap_or(false)
+#[must_use] pub fn extension_matches(path: &Path, expected_ext: &str) -> bool {
+    get_extension_case_insensitive(path).is_some_and(|ext| ext == expected_ext.to_lowercase())
 }
 
 #[cfg(test)]

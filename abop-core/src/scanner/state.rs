@@ -25,17 +25,17 @@ impl Default for ScannerState {
 
 impl ScannerState {
     /// Check if the scanner is in an active state
-    pub const fn is_active(&self) -> bool {
+    #[must_use] pub const fn is_active(&self) -> bool {
         matches!(self, Self::Scanning | Self::Paused)
     }
 
     /// Check if the scanner is finished (completed, error, or cancelled)
-    pub const fn is_finished(&self) -> bool {
+    #[must_use] pub const fn is_finished(&self) -> bool {
         matches!(self, Self::Complete | Self::Error | Self::Cancelled)
     }
 
     /// Check if the scanner can be started
-    pub const fn can_start(&self) -> bool {
+    #[must_use] pub const fn can_start(&self) -> bool {
         matches!(
             self,
             Self::Idle | Self::Complete | Self::Error | Self::Cancelled
@@ -43,17 +43,17 @@ impl ScannerState {
     }
 
     /// Check if the scanner can be paused
-    pub const fn can_pause(&self) -> bool {
+    #[must_use] pub const fn can_pause(&self) -> bool {
         matches!(self, Self::Scanning)
     }
 
     /// Check if the scanner can be resumed
-    pub const fn can_resume(&self) -> bool {
+    #[must_use] pub const fn can_resume(&self) -> bool {
         matches!(self, Self::Paused)
     }
 
     /// Check if the scanner can be cancelled
-    pub const fn can_cancel(&self) -> bool {
+    #[must_use] pub const fn can_cancel(&self) -> bool {
         matches!(self, Self::Scanning | Self::Paused)
     }
 }

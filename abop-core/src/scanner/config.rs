@@ -88,7 +88,7 @@ fn default_extensions() -> Vec<String> {
 
 impl ScannerConfig {
     /// Creates a configuration optimized for large libraries
-    pub fn for_large_libraries() -> Self {
+    #[must_use] pub fn for_large_libraries() -> Self {
         let cpu_count = std::thread::available_parallelism()
             .map(|n| n.get() * 2)
             .unwrap_or(DEFAULT_CONCURRENCY * 2);
@@ -105,7 +105,7 @@ impl ScannerConfig {
     }
 
     /// Creates a configuration optimized for small libraries
-    pub fn for_small_libraries() -> Self {
+    #[must_use] pub fn for_small_libraries() -> Self {
         Self {
             max_concurrent_tasks: DEFAULT_CONCURRENCY / 2,
             max_concurrent_db_operations: 1, // Very conservative for small libraries
@@ -118,7 +118,7 @@ impl ScannerConfig {
     }
 
     /// Creates a conservative configuration for resource-constrained environments
-    pub fn conservative() -> Self {
+    #[must_use] pub fn conservative() -> Self {
         Self {
             max_concurrent_tasks: 2,
             max_concurrent_db_operations: 1, // Single-threaded database access for safety

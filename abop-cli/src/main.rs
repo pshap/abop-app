@@ -235,7 +235,7 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
     }
 
     // Use the first available library, or default to "1"
-    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+    let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -247,11 +247,9 @@ fn show_scan_results(db: &Database) -> Result<()> {
     if count == 0 {
         warn!("No audiobooks found in the library");
     } else {
-        info!("📚 Total audiobooks found: {count}");
-
-        // Get all libraries and use the first one, or default to "1"
+        info!("📚 Total audiobooks found: {count}"); // Get all libraries and use the first one, or default to "1"
         let libraries = db.get_libraries()?;
-        let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+        let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
         // Show first few audiobooks as examples
         let audiobooks = db.get_audiobooks_in_library(library_id)?;
@@ -304,10 +302,8 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
     if libraries.is_empty() {
         info!("No libraries found in database. You may need to scan a library first.");
         return Ok(());
-    }
-
-    // Use the first available library, or default to "1"
-    let library_id = libraries.first().map(|lib| lib.id.as_str()).unwrap_or("1");
+    } // Use the first available library, or default to "1"
+    let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
     debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
     let audiobooks = db
