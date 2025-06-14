@@ -568,6 +568,20 @@ impl Database {
         repo.find_by_library(library_id)
     }
 
+    /// Gets audiobooks in a specific library with pagination support
+    #[instrument(skip(self, library_id))]
+    pub fn get_audiobooks_in_library_paginated(&self, library_id: &str, limit: Option<usize>, offset: usize) -> Result<Vec<Audiobook>> {
+        let repo = self.audiobook_repository();
+        repo.find_by_library_paginated(library_id, limit, offset)
+    }
+
+    /// Counts total audiobooks in a specific library
+    #[instrument(skip(self, library_id))]
+    pub fn count_audiobooks_in_library(&self, library_id: &str) -> Result<usize> {
+        let repo = self.audiobook_repository();
+        repo.count_by_library(library_id)
+    }
+
     /// Gets a library repository for more complex operations
     #[must_use]
     pub fn libraries(&self) -> LibraryRepository {

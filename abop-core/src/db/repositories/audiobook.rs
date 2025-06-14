@@ -154,6 +154,84 @@ impl AudiobookRepository {
         .map_err(AppError::from)
     }
 
+    /// Find audiobooks by library with pagination support
+    ///
+    /// # Arguments
+    /// 
+    /// * `library_id` - The library ID to search in
+    /// * `limit` - Maximum number of audiobooks to return (None for no limit)
+    /// * `offset` - Number of audiobooks to skip (for pagination)
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn find_by_library_paginated(&self, library_id: &str, limit: Option<usize>, offset: usize) -> Result<Vec<Audiobook>> {
+        let library_id = library_id.to_string();
+        self.execute_query(move |conn| {
+            let query = match limit {
+                Some(limit_value) => format!(
+                    "SELECT id, library_id, path, title, author, narrator, description,
+                            duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
+                     FROM audiobooks WHERE library_id = ?1 
+                     ORDER BY title ASC 
+                     LIMIT {} OFFSET {}",
+                    limit_value, offset
+                ),
+                None => format!(
+                    "SELECT id, library_id, path, title, author, narrator, description,
+                            duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
+                     FROM audiobooks WHERE library_id = ?1 
+                     ORDER BY title ASC 
+                     OFFSET {}",
+                    offset
+                ),
+            };
+            
+            let mut stmt = conn.prepare(&query)?;
+            let audiobooks = stmt
+                .query_map([&library_id], |row| {
+                    Ok(Audiobook {
+                        id: row.get(0)?,
+                        library_id: row.get(1)?,
+                        path: PathBuf::from(row.get::<_, String>(2)?),
+                        title: row.get(3)?,
+                        author: row.get(4)?,
+                        narrator: row.get(5)?,
+                        description: row.get(6)?,
+                        duration_seconds: row.get(7)?,
+                        size_bytes: row.get(8)?,
+                        cover_art: row.get(9)?,
+                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
+                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        selected: row.get(12)?,
+                    })
+                })?
+                .collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
+            Ok(audiobooks)
+        })
+        .map_err(AppError::from)
+    }
+
+    /// Count total audiobooks in a library
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
+    /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
+    pub fn count_by_library(&self, library_id: &str) -> Result<usize> {
+        let library_id = library_id.to_string();
+        self.execute_query(move |conn| {
+            let count: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM audiobooks WHERE library_id = ?1",
+                [&library_id],
+                |row| row.get(0),
+            )?;
+            Ok(count as usize)
+        })
+        .map_err(AppError::from)
+    }
+
     /// Find audiobooks by author
     ///
     /// # Errors
@@ -354,23 +432,6 @@ impl AudiobookRepository {
         })
     }
 
-    /// Count audiobooks in a library
-    ///
-    /// # Errors
-    ///
-    /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
-    /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
-    pub fn count_by_library(&self, library_id: &str) -> DbResult<usize> {
-        let library_id = library_id.to_string();
-        self.execute_query(move |conn| {
-            let count: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM audiobooks WHERE library_id = ?1",
-                [&library_id],
-                |row| row.get(0),
-            )?;
-            Ok(count as usize)
-        })
-    }
 
     /// Check if an audiobook exists
     ///

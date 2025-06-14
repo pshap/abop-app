@@ -254,10 +254,12 @@ fn show_scan_results(db: &Database) -> Result<()> {
         if !libraries.is_empty() {
             let library_id = libraries.first().expect("Library list should not be empty").id.as_str();
 
-            // Show first few audiobooks as examples
-            let audiobooks = db.get_audiobooks_in_library(library_id)?;
+            // Show first few audiobooks as examples (efficiently load only what we need)
+            let sample_audiobooks = db.get_audiobooks_in_library_paginated(library_id, Some(5), 0)?;
+            let total_count = db.count_audiobooks_in_library(library_id)?;
+            
             info!("Sample audiobooks:");
-            for (i, book) in audiobooks.iter().take(5).enumerate() {
+            for (i, book) in sample_audiobooks.iter().enumerate() {
                 info!(
                     "  {}. {} - {}",
                     i + 1,
@@ -266,8 +268,8 @@ fn show_scan_results(db: &Database) -> Result<()> {
                 );
             }
 
-            if audiobooks.len() > 5 {
-                info!("  ... and {} more", audiobooks.len() - 5);
+            if total_count > 5 {
+                info!("  ... and {} more", total_count - 5);
             }
         }
     }
@@ -309,27 +311,40 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
     } // Use the first available library, or default to "1"
     let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
-    debug!("About to call get_audiobooks_in_library() with library_id: {library_id}");
-    let audiobooks = db
-        .get_audiobooks_in_library(library_id)
-        .context("Failed to get audiobooks")?;
-    debug!(
-        "get_audiobooks_in_library() completed, found {} audiobooks",
-        audiobooks.len()
-    );
+    debug!("About to call count_audiobooks_in_library() with library_id: {library_id}");
+    let total_count = db
+        .count_audiobooks_in_library(library_id)
+        .context("Failed to count audiobooks")?;
+    debug!("count_audiobooks_in_library() completed, found {} total audiobooks", total_count);
 
-    if audiobooks.is_empty() {
+    if total_count == 0 {
         info!("No audiobooks found in database. Try scanning a library directory first.");
     } else {
-        info!("Found {} audiobooks:", audiobooks.len());
-        for (i, book) in audiobooks.iter().enumerate() {
-            println!(
-                "{}. {} - {} ({})",
-                i + 1,
-                book.title.as_deref().unwrap_or("Unknown Title"),
-                book.author.as_deref().unwrap_or("Unknown"),
-                book.path.display()
-            );
+        info!("Found {} audiobooks:", total_count);
+        
+        // Use pagination to avoid loading too many audiobooks into memory at once
+        const PAGE_SIZE: usize = 100;
+        let mut offset = 0;
+        let mut displayed = 0;
+        
+        while offset < total_count {
+            debug!("Loading audiobooks with offset: {offset}, limit: {PAGE_SIZE}");
+            let audiobooks = db
+                .get_audiobooks_in_library_paginated(library_id, Some(PAGE_SIZE), offset)
+                .context("Failed to get audiobooks")?;
+            
+            for book in audiobooks {
+                displayed += 1;
+                println!(
+                    "{}. {} - {} ({})",
+                    displayed,
+                    book.title.as_deref().unwrap_or(UNKNOWN_TITLE),
+                    book.author.as_deref().unwrap_or(UNKNOWN_AUTHOR),
+                    book.path.display()
+                );
+            }
+            
+            offset += PAGE_SIZE;
         }
     }
     Ok(())
