@@ -271,7 +271,7 @@ impl ComponentStyleStrategy for ChipStyleStrategy {
             text_color,
             icon_color: Some(text_color),
             shadow: self.elevation_shadow(state, tokens), // Implement elevation for chips
-            opacity: 1.0,
+            opacity: self.state_layer_opacity(state), // Use calculated state layer opacity
         }
     }
 }

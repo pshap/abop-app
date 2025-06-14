@@ -165,7 +165,7 @@ impl ComponentStyleStrategy for RadioStyleStrategy {
             text_color: foreground,
             icon_color: Some(foreground),
             shadow: None, // Radio buttons typically don't have shadows
-            opacity: 1.0,
+            opacity: self.state_layer_opacity(state), // Use calculated state layer opacity
         }
     }
 }

@@ -141,7 +141,7 @@ impl ComponentStyleStrategy for SwitchStyleStrategy {
             text_color: self.thumb_color(state, tokens), // Using text_color for thumb
             icon_color: Some(self.thumb_color(state, tokens)),
             shadow: None, // Switches typically don't have shadows on track
-            opacity: 1.0,
+            opacity: self.state_layer_opacity(state), // Use calculated state layer opacity
         }
     }
 }
