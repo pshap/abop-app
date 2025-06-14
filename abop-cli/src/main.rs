@@ -235,7 +235,7 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
     }
 
     // Use the first available library
-    let library_id = libraries.first().expect("First library should exist as we checked libraries.is_empty()").id.as_str();
+    let library_id = libraries.first().expect("Library list should not be empty").id.as_str();
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -252,7 +252,7 @@ fn show_scan_results(db: &Database) -> Result<()> {
         // Get libraries to show audiobook examples
         let libraries = db.get_libraries()?;
         if !libraries.is_empty() {
-            let library_id = libraries.first().expect("First library should exist as we checked !libraries.is_empty()").id.as_str();
+            let library_id = libraries.first().expect("Library list should not be empty").id.as_str();
 
             // Show first few audiobooks as examples
             let audiobooks = db.get_audiobooks_in_library(library_id)?;
@@ -261,8 +261,8 @@ fn show_scan_results(db: &Database) -> Result<()> {
                 info!(
                     "  {}. {} - {}",
                     i + 1,
-                    book.title.as_deref().unwrap_or("Unknown Title"),
-                    book.author.as_deref().unwrap_or("Unknown")
+                    book.title.as_deref().unwrap_or(UNKNOWN_TITLE),
+                    book.author.as_deref().unwrap_or(UNKNOWN_AUTHOR)
                 );
             }
 
@@ -358,3 +358,7 @@ fn handle_db_clean(database_path: PathBuf) -> Result<()> {
     info!("✓ Database cleanup completed");
     Ok(())
 }
+
+// Constants for fallback strings
+const UNKNOWN_TITLE: &str = "Unknown Title";
+const UNKNOWN_AUTHOR: &str = "Unknown Author";

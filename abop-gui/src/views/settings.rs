@@ -114,18 +114,16 @@ where
                 // Ultimate fallback - create a completely default switch
                 Switch::default()
             })
-        }); // Use static MaterialColors to solve lifetime issues
-    if is_dark {
-        static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
-        #[allow(clippy::redundant_closure)]
-        md3_switch.view(move |_state| on_toggle(_state), &DARK_COLORS)
-    } else {
-        static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-            std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-        #[allow(clippy::redundant_closure)]
-        md3_switch.view(move |_state| on_toggle(_state), &LIGHT_COLORS)
-    }
+        });
+    
+    // Use static MaterialColors to solve lifetime issues
+    static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
+        std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
+    static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
+        std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
+    
+    let colors = if is_dark { &DARK_COLORS } else { &LIGHT_COLORS };
+    md3_switch.view(on_toggle, colors)
 }
 
 /// Creates a switch for theme toggling using Material Design 3 Switch component
