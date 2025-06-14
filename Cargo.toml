@@ -72,8 +72,8 @@ kurbo = "*"
 
 # System and platform
 getrandom = "*"
-hashbrown = "0.14"
-libloading = "0.8"
+hashbrown = "*"
+libloading = "*"
 parking_lot = "*"
 
 # CLI tools
