@@ -8,14 +8,14 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-# CLI Dependencies
-clap = { version = "4.0", features = ["derive"] }
-env_logger = "0.10"
-tokio = { version = "1.0", features = ["full"] }
-anyhow = "1.0"
+# Internal dependencies
+abop-core = { path = "../abop-core" }
 
 # Workspace dependencies
-abop-core = { path = "../abop-core" }
+clap.workspace = true
+env_logger.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
 log.workspace = true
 
 [dev-dependencies]

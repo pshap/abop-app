@@ -11,43 +11,33 @@ repository.workspace = true
 # Internal dependencies
 abop-core = { path = "../abop-core" }
 
-# Async runtime and futures
-futures = "0.3"
-
-# Iced with required features
-iced = { version = "0.13.1", features = [
-    "canvas",
-    "image",
-    "svg",
-    "tokio",
-    "advanced"
-] }
-
-# Font Awesome icons for Iced
-iced_font_awesome = "0.2.1"
-
-# Color science for Material Design 3 seed colors
-palette = "0.7.3"
-
-# High-performance locking for caching
-parking_lot = "0.12"
-
-# File dialogs
-rfd.workspace = true
-
 # Workspace dependencies
+futures.workspace = true
+iced_font_awesome.workspace = true
+palette.workspace = true
+parking_lot.workspace = true
+rfd.workspace = true
 thiserror.workspace = true
 log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
-tracing-subscriber = { version = "^0.3.18", features = ["env-filter", "fmt"] }
+tracing-subscriber.workspace = true
 walkdir.workspace = true
 chrono.workspace = true
 uuid.workspace = true
 dirs.workspace = true
 once_cell.workspace = true
 tokio.workspace = true
+
+# GUI-specific iced features
+iced = { workspace = true, features = [
+    "canvas",
+    "image",
+    "svg",
+    "tokio",
+    "advanced"
+] }
 rusqlite.workspace = true
 symphonia.workspace = true
 rodio.workspace = true
