@@ -40,11 +40,10 @@ fn test_database_path_consistency() -> Result<()> {
     println!("Database directory: {}", parent.display());
 
     // Verify this is in the correct location (should be in AppData)
-    let data_dir = dirs::data_dir().ok_or_else(|| abop_core::error::AppError::Other("Could not find data directory".to_string()))?;
-
-    if db_path.starts_with(&data_dir) {
+    let data_dir = dirs::data_dir().ok_or_else(|| abop_core::error::AppError::Other("Could not find data directory".to_string()))?;    if db_path.starts_with(&data_dir) {
         println!("✅ Database path is correctly located in user data directory");
-    } else {        println!("❌ Database path is NOT in user data directory");
+    } else {
+        println!("❌ Database path is NOT in user data directory");
         println!("   Expected prefix: {}", data_dir.display());
         return Err(abop_core::error::AppError::Other("Database path location is incorrect".to_string()));
     }

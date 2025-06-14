@@ -5,13 +5,13 @@ use abop_core::audio::{
     processing::{resampler::LinearResampler, traits::AudioProcessor},
 };
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use rand::{Rng, rng};
+use rand::{Rng, thread_rng};
 use std::hint::black_box;
 
 fn generate_test_audio(sample_rate: u32, channels: u16, duration_secs: f32) -> AudioBuffer<f32> {
     let samples = (sample_rate as f32 * duration_secs) as usize * channels as usize;
-    let mut rng = rng();
-    let data: Vec<f32> = (0..samples).map(|_| rng.random_range(-1.0..=1.0)).collect();
+    let mut rng = thread_rng();
+    let data: Vec<f32> = (0..samples).map(|_| rng.gen_range(-1.0..=1.0)).collect();
 
     AudioBuffer {
         data,

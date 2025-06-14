@@ -5,9 +5,9 @@
 use abop_core::db::Database;
 use abop_core::error::{Result, ErrorContext};
 
-fn main() -> Result<()> {
-    println!("🔍 Checking Centralized Database Content");
-    println!("=======================================");    // Get the database path
+fn main() -> Result<()> {    println!("🔍 Checking Centralized Database Content");
+    println!("=======================================");
+    // Get the database path
     let db_path = Database::get_app_database_path().context("Failed to get app database path")?;
 
     println!("Database path: {}", db_path.display());
@@ -47,9 +47,9 @@ fn main() -> Result<()> {
             println!("          Path: {}", audiobook.path.display());
         }
         println!();
-    }
-    // Get total stats
-    let repo = db.audiobook_repository();    let total_audiobooks = repo
+    }    // Get total stats
+    let repo = db.audiobook_repository();
+    let total_audiobooks = repo
         .find_all()
         .map_err(|e| abop_core::error::AppError::Other(format!("Failed to get all audiobooks: {}", e)))?;
 
