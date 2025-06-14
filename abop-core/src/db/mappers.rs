@@ -242,23 +242,27 @@ impl SqlQueries {
     pub const PROGRESS_COLUMNS: &'static str =
         "id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at";
 
+    /// Base audiobook SELECT query without WHERE clause
+    const BASE_AUDIOBOOK_QUERY: &'static str = "SELECT id, library_id, path, title, author, narrator, description, duration_seconds, size_bytes, cover_art, created_at, updated_at, selected FROM audiobooks";
+
+    /// Base library SELECT query without WHERE clause  
+    const BASE_LIBRARY_QUERY: &'static str = "SELECT id, name, path, created_at FROM libraries";
+
     /// Generate a standard audiobook SELECT query with optional WHERE clause
     #[must_use]
     pub fn audiobook_select(where_clause: Option<&str>) -> String {
-        let base = format!("SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS);
         match where_clause {
-            Some(where_clause) => format!("{base} WHERE {where_clause}"),
-            None => base,
+            Some(clause) => format!("{} WHERE {}", Self::BASE_AUDIOBOOK_QUERY, clause),
+            None => Self::BASE_AUDIOBOOK_QUERY.to_string(),
         }
     }
 
     /// Generate a standard library SELECT query with optional WHERE clause
     #[must_use]
     pub fn library_select(where_clause: Option<&str>) -> String {
-        let base = format!("SELECT {} FROM libraries", Self::LIBRARY_COLUMNS);
         match where_clause {
-            Some(where_clause) => format!("{base} WHERE {where_clause}"),
-            None => base,
+            Some(clause) => format!("{} WHERE {}", Self::BASE_LIBRARY_QUERY, clause),
+            None => Self::BASE_LIBRARY_QUERY.to_string(),
         }
     }
 

@@ -80,7 +80,8 @@ impl ThreadSafeAudioPlayer {
 
     /// Gets the current player state
     ///
-    /// See `AudioPlayer::get_state` for details.
+    /// Returns the current state of the audio player (Playing, Paused, or Stopped).
+    /// If the player lock cannot be acquired, returns PlayerState::Stopped as a fallback.
     #[must_use]
     pub fn get_state(&self) -> PlayerState {
         self.inner
