@@ -282,13 +282,18 @@ pub mod file {
     use super::*;
     use std::path::Path;
     /// Calculate safe file copy buffer size based on file size
+    /// 
+    /// Buffer size rationale:
+    /// - Small files (<1MB): 8KB buffer to minimize memory overhead
+    /// - Medium files (<100MB): 64KB buffer for balanced performance/memory
+    /// - Large files (≥100MB): 1MB buffer for maximum throughput
     pub const fn calculate_copy_buffer_size(file_size: u64) -> Result<usize> {
         // Use different buffer sizes based on file size
         let buffer_size = if file_size < 1024 * 1024 {
             // < 1MB
             8192 // 8KB
         } else if file_size < 100 * 1024 * 1024 {
-            // < 100MB
+            // < 100MB  
             65536 // 64KB
         } else {
             1024 * 1024 // 1MB
