@@ -216,7 +216,9 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
             && !label.is_empty()
         {
             return Err(ButtonError::InvalidIconPosition);
-        }        // Create the button content based on what's available (icon, label, or both)
+        }
+
+        // Create the button content based on what's available (icon, label, or both)
         let label = self.label;
         let icon = self.icon;
         let width = self.width;

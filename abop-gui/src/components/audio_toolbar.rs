@@ -58,7 +58,9 @@ impl AudioToolbar {
             },
             "stop",
             Some("Stop"),
-        );        let previous_button = buttons::create_button(
+        );
+
+        let previous_button = buttons::create_button(
             || {
                 buttons::button(material_tokens)
                     .icon_only(icon_names::SKIP_PREVIOUS, ButtonSize::Small)
