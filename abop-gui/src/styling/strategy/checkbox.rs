@@ -122,39 +122,18 @@ impl CheckboxStyleStrategy {
         if self.selected {
             colors.on_primary()
         } else {
-            Color::TRANSPARENT
-        }
-    }    /// Get state layer opacity for interaction states
-    /// 
-    /// Returns opacity values following Material Design 3 state layer specifications:
-    /// - Pressed: 0.12 (12%) - High feedback for direct interaction
-    /// - Hovered: 0.08 (8%) - Subtle hover indication  
-    /// - Focused: 0.12 (12%) - Clear focus visibility for accessibility
-    /// - Disabled: 0.38 (38%) - Overall component disabled opacity
-    /// - Default: 1.0 (100%) - Full opacity for normal state
-    /// 
-    /// Note: For checkboxes, disabled state uses component-level opacity rather than
-    /// just color alpha reduction, as per Material Design 3 checkbox specifications.
-    fn state_layer_opacity(&self, state: ComponentState) -> f32 {
-        match state {
-            ComponentState::Disabled => 0.38,  // MD3: Component disabled opacity
-            ComponentState::Pressed => 0.12,   // MD3: Strong press feedback
-            ComponentState::Hovered => 0.08,   // MD3: Subtle hover indication
-            ComponentState::Focused => 0.12,   // MD3: Accessibility-focused visibility
-            ComponentState::Loading => 0.08,   // MD3: Loading state indication
-            ComponentState::Default => 1.0,    // MD3: Full opacity in default state
-        }
+            Color::TRANSPARENT        }
     }
 }
 
-impl ComponentStyleStrategy for CheckboxStyleStrategy {    fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
+impl ComponentStyleStrategy for CheckboxStyleStrategy {fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         ComponentStyling {
             background: Background::Color(self.background_color(state, tokens)),
             text_color: tokens.colors.on_surface,
             border: self.border_style(state, tokens),
             shadow: None, // Checkboxes don't use elevation
             icon_color: Some(self.foreground_color(state, tokens)),
-            opacity: self.state_layer_opacity(state),
+            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
         }
     }
 }
@@ -214,14 +193,10 @@ mod tests {
         
         // Test hover state
         let hovered_styling = strategy.get_styling(ComponentState::Hovered, &tokens);
-        assert_eq!(hovered_styling.opacity, 0.08); // MD3 hover state layer opacity
+        assert_eq!(hovered_styling.opacity, 1.0);
         
         // Test pressed state
         let pressed_styling = strategy.get_styling(ComponentState::Pressed, &tokens);
-        assert_eq!(pressed_styling.opacity, 0.12); // MD3 pressed state layer opacity
-        
-        // Test default state
-        let default_styling = strategy.get_styling(ComponentState::Default, &tokens);
-        assert_eq!(default_styling.opacity, 1.0); // Full opacity in default state
+        assert_eq!(pressed_styling.opacity, 1.0);
     }
 }

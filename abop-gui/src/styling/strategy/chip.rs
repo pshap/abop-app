@@ -264,14 +264,13 @@ impl ComponentStyleStrategy for ChipStyleStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         // Calculate text color once to avoid redundant calculations
         let text_color = self.text_color(state, tokens);
-        
-        ComponentStyling {
+          ComponentStyling {
             background: Background::Color(self.background_color(state, tokens)),
             border: self.border_style(state, tokens),
             text_color,
             icon_color: Some(text_color),
             shadow: self.elevation_shadow(state, tokens), // Implement elevation for chips
-            opacity: self.state_layer_opacity(state), // Use calculated state layer opacity
+            opacity: 1.0, // Chips use color alpha for disabled state, not component opacity
         }
     }
 }

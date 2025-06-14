@@ -84,12 +84,10 @@ impl RadioStyleStrategy {
         } else {
             Color::TRANSPARENT // Only border visible when unselected
         }
-    }
-
-    /// Calculate border for radio button
+    }    /// Calculate border for radio button
     fn border_style(&self, state: ComponentState, tokens: &MaterialTokens) -> Border {
         let colors = &tokens.colors;
-          let color = if self.is_error() {
+        let color = if self.is_error() {
             colors.error.base
         } else if matches!(state, ComponentState::Disabled) {
             ColorUtils::with_alpha(colors.on_surface, 0.38)
@@ -129,28 +127,7 @@ impl RadioStyleStrategy {
         if self.selected {
             colors.on_primary()
         } else {
-            Color::TRANSPARENT
-        }
-    }    /// Get state layer opacity for interaction states
-    /// 
-    /// Returns opacity values following Material Design 3 state layer specifications:
-    /// - Pressed: 0.12 (12%) - High feedback for direct interaction
-    /// - Hovered: 0.08 (8%) - Subtle hover indication
-    /// - Focused: 0.10 (10%) - Clear focus visibility for accessibility
-    /// - Loading: 0.08 (8%) - Similar to hover for loading states
-    /// - Disabled/Default: 0.0 (0%) - No state layer overlay
-    /// 
-    /// Note: This will be used in future implementation of interactive state overlays
-    /// to provide visual feedback during user interactions with radio buttons.
-    fn state_layer_opacity(&self, state: ComponentState) -> f32 {
-        match state {
-            ComponentState::Pressed => 0.12,  // MD3: Strong press feedback
-            ComponentState::Hovered => 0.08,  // MD3: Subtle hover indication
-            ComponentState::Focused => 0.10,  // MD3: Accessibility-focused visibility
-            ComponentState::Loading => 0.08,  // MD3: Loading state indication
-            ComponentState::Disabled => 0.0,  // MD3: No overlay for disabled
-            ComponentState::Default => 0.0,   // MD3: No overlay in default state
-        }
+            Color::TRANSPARENT        }
     }
 }
 
@@ -165,7 +142,7 @@ impl ComponentStyleStrategy for RadioStyleStrategy {
             text_color: foreground,
             icon_color: Some(foreground),
             shadow: None, // Radio buttons typically don't have shadows
-            opacity: self.state_layer_opacity(state), // Use calculated state layer opacity
+            opacity: 1.0, // Radio buttons use color alpha for disabled state, not component opacity
         }
     }
 }
