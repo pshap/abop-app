@@ -180,8 +180,7 @@ impl StatusDisplay {
                     }
                     abop_core::scanner::ScanProgress::Cancelled { processed, .. } => {
                         (0.0, *processed, *processed, "Scan cancelled")
-                    }
-                };
+                    }                };
 
                 // Use cached progress text if available, otherwise fall back to formatting
                 let progress_text = if let Some(cached_text) = params.cached_scan_progress_text {

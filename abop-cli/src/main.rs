@@ -232,10 +232,8 @@ fn get_audiobook_count(db: &Database) -> Result<usize> {
 
     if libraries.is_empty() {
         return Ok(0);
-    }
-
-    // Use the first available library
-    let library_id = libraries.first().expect("Library list should not be empty").id.as_str();
+    }    // Use the first available library
+    let library_id = libraries.first().expect("First library should exist as we checked libraries.is_empty()").id.as_str();
 
     let audiobooks = db.get_audiobooks_in_library(library_id)?;
     Ok(audiobooks.len())
@@ -250,9 +248,8 @@ fn show_scan_results(db: &Database) -> Result<()> {
         info!("📚 Total audiobooks found: {count}");
 
         // Get libraries to show audiobook examples
-        let libraries = db.get_libraries()?;
-        if !libraries.is_empty() {
-            let library_id = libraries.first().expect("Library list should not be empty").id.as_str();
+        let libraries = db.get_libraries()?;        if !libraries.is_empty() {
+            let library_id = libraries.first().expect("First library should exist as we checked !libraries.is_empty()").id.as_str();
 
             // Show first few audiobooks as examples (efficiently load only what we need)
             let sample_audiobooks = db.get_audiobooks_in_library_paginated(library_id, Some(5), 0)?;
@@ -266,9 +263,7 @@ fn show_scan_results(db: &Database) -> Result<()> {
                     book.title.as_deref().unwrap_or(UNKNOWN_TITLE),
                     book.author.as_deref().unwrap_or(UNKNOWN_AUTHOR)
                 );
-            }
-
-            if total_count > 5 {
+            }            if total_count > 5 {
                 info!("  ... and {} more", total_count - 5);
             }
         }
@@ -303,12 +298,12 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
     debug!("Database::open() completed for list operation");
 
     // Get all libraries first
-    let libraries = db.get_libraries().context("Failed to get libraries")?;
-
-    if libraries.is_empty() {
+    let libraries = db.get_libraries().context("Failed to get libraries")?;    if libraries.is_empty() {
         info!("No libraries found in database. You may need to scan a library first.");
         return Ok(());
-    } // Use the first available library, or default to "1"
+    } 
+    
+    // Use the first available library, or default to "1"
     let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
 
     debug!("About to call count_audiobooks_in_library() with library_id: {library_id}");

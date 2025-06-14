@@ -280,8 +280,7 @@ pub mod ui {
 /// File system utilities
 pub mod file {
     use super::*;
-    use std::path::Path;
-    /// Calculate safe file copy buffer size based on file size
+    use std::path::Path;    /// Calculate safe file copy buffer size based on file size
     /// 
     /// Buffer size rationale:
     /// - Small files (<1MB): 8KB buffer to minimize memory overhead
