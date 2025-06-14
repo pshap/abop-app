@@ -20,13 +20,13 @@ futures = "0.3"
 async-trait = "0.1"
 
 # Serialization and configuration
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+toml = "*"
 
 # Error handling
-thiserror = "1.0"
-anyhow = "1.0"
+thiserror = "*"
+anyhow = "*"
 
 # Logging and tracing
 log = "*"
@@ -39,10 +39,10 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 humantime-serde = "1.1"
 
 # File system and I/O
-walkdir = "2"
-dirs = "5"
-tempfile = "3"
-rfd = "0.14"
+walkdir = "*"
+dirs = "*"
+tempfile = "*"
+rfd = "*"
 
 # Audio processing
 symphonia = "*"
