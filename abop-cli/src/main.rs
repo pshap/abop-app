@@ -248,7 +248,7 @@ fn show_scan_results(db: &Database) -> Result<()> {
         warn!("No audiobooks found in the library");
     } else {
         info!("📚 Total audiobooks found: {count}");
-        
+
         // Get libraries to show audiobook examples
         let libraries = db.get_libraries()?;
         if !libraries.is_empty() {

@@ -58,5 +58,3 @@ impl IssuePattern {
         Some(Self::from_message(&error.message))
     }
 }
-
-
