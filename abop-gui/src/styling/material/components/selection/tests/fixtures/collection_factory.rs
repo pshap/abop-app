@@ -3,7 +3,10 @@
 //! This module provides comprehensive factory functions for creating chip
 //! collections in various configurations for testing purposes.
 
-use super::{chip_factory::*, test_data::*};
+use super::{
+    chip_factory::{errors::oversized_label_chip, variants::deletable_input_chip},
+    test_data::*,
+};
 use crate::styling::material::components::selection::{
     ChipCollection, ChipCollectionBuilder, ChipSelectionMode, SelectionError,
 };

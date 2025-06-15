@@ -3,7 +3,13 @@
 //! This module tests the builder pattern implementation, fluent API design,
 //! and advanced builder features for chip components.
 
-use super::fixtures::{assertion_helpers::*, chip_factory::*, test_data::*};
+use super::fixtures::{
+    chip_factory::{
+        assertions::*,
+        errors::{empty_label_chip, max_length_label_chip, oversized_label_chip},
+    },
+    test_data::*,
+};
 use crate::styling::material::components::selection::builder::patterns::ComponentBuilder;
 use crate::styling::material::components::selection::common::SelectionComponent;
 use crate::styling::material::components::selection::{
@@ -155,7 +161,7 @@ mod builder_validation_tests {
         assert_empty_label_error(invalid_result);
 
         let oversized_result = oversized_label_chip(ChipVariant::Filter);
-        assert_label_validation_error(oversized_result, oversized_label().len());
+        assert_label_validation_error(&oversized_result, oversized_label().len());
     }
 
     #[test]

@@ -6,7 +6,7 @@
 //! - Real-world usage patterns
 //! - Memory efficiency tests
 
-use super::chip_test_helpers::*;
+use super::fixtures::chip_factory::{assertions::*, collections::*, test_chip};
 use crate::styling::material::components::selection::{
     ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipVariant,
 };

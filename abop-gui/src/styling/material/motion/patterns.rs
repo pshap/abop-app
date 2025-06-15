@@ -170,102 +170,50 @@ pub struct PatternsByUseCase {
     pub feedback: &'static [AnimationPattern],
 }
 
-/// Context-aware pattern selection
+/// Macro to generate pattern selector methods
 ///
-/// Provides intelligent pattern selection based on animation context.
-/// This helps developers choose appropriate patterns for their use cases.
-pub struct PatternSelector;
+/// This eliminates the DRY violation by centralizing the mapping between
+/// selector method names and their corresponding AnimationPattern variants.
+/// Each entry defines: (method_name, documentation, AnimationPattern_variant)
+macro_rules! define_pattern_selectors {
+    ($(
+        ($method_name:ident, $doc:expr, $pattern:ident)
+    ),* $(,)?) => {
+        /// Context-aware pattern selection
+        ///
+        /// Provides intelligent pattern selection based on animation context.
+        /// This helps developers choose appropriate patterns for their use cases.
+        pub struct PatternSelector;
 
-impl PatternSelector {
-    /// Select pattern for hover/focus state changes
-    #[must_use]
-    pub const fn hover_focus() -> AnimationPattern {
-        AnimationPattern::SimpleStateChange
-    }
+        impl PatternSelector {
+            $(
+                #[doc = $doc]
+                #[must_use]
+                pub const fn $method_name() -> AnimationPattern {
+                    AnimationPattern::$pattern
+                }
+            )*
+        }
+    };
+}
 
-    /// Select pattern for button press feedback
-    #[must_use]
-    pub const fn button_press() -> AnimationPattern {
-        AnimationPattern::Scale
-    }
-
-    /// Select pattern for menu animations
-    #[must_use]
-    pub const fn menu_appear() -> AnimationPattern {
-        AnimationPattern::Reveal
-    }
-
-    /// Select pattern for menu dismissal
-    #[must_use]
-    pub const fn menu_dismiss() -> AnimationPattern {
-        AnimationPattern::Dismiss
-    }
-
-    /// Select pattern for modal dialogs
-    #[must_use]
-    pub const fn modal_dialog() -> AnimationPattern {
-        AnimationPattern::ContainerTransform
-    }
-
-    /// Select pattern for page transitions
-    #[must_use]
-    pub const fn page_transition() -> AnimationPattern {
-        AnimationPattern::SharedElementTransition
-    }
-
-    /// Select pattern for loading indicators
-    #[must_use]
-    pub const fn loading_indicator() -> AnimationPattern {
-        AnimationPattern::Loading
-    }
-
-    /// Select pattern for element removal
-    #[must_use]
-    pub const fn element_removal() -> AnimationPattern {
-        AnimationPattern::Dismiss
-    }
-
-    /// Select pattern for element appearance
-    #[must_use]
-    pub const fn element_appearance() -> AnimationPattern {
-        AnimationPattern::FadeInOut
-    }
-
-    /// Select pattern for drawer/sidebar animations
-    #[must_use]
-    pub const fn drawer_slide() -> AnimationPattern {
-        AnimationPattern::Slide
-    }
-
-    /// Select pattern for accordion/collapsible content
-    #[must_use]
-    pub const fn accordion_toggle() -> AnimationPattern {
-        AnimationPattern::ComplexStateChange
-    }
-
-    /// Select pattern for tab transitions
-    #[must_use]
-    pub const fn tab_transition() -> AnimationPattern {
-        AnimationPattern::Slide
-    }
-
-    /// Select pattern for toast/snackbar animations
-    #[must_use]
-    pub const fn toast_notification() -> AnimationPattern {
-        AnimationPattern::Slide
-    }
-
-    /// Select pattern for floating action button animations
-    #[must_use]
-    pub const fn fab_animation() -> AnimationPattern {
-        AnimationPattern::Scale
-    }
-
-    /// Select pattern for card interactions
-    #[must_use]
-    pub const fn card_interaction() -> AnimationPattern {
-        AnimationPattern::Scale
-    }
+// Define all pattern selectors in one centralized location
+define_pattern_selectors! {
+    (hover_focus, "Select pattern for hover/focus state changes", SimpleStateChange),
+    (button_press, "Select pattern for button press feedback", Scale),
+    (menu_appear, "Select pattern for menu animations", Reveal),
+    (menu_dismiss, "Select pattern for menu dismissal", Dismiss),
+    (modal_dialog, "Select pattern for modal dialogs", ContainerTransform),
+    (page_transition, "Select pattern for page transitions", SharedElementTransition),
+    (loading_indicator, "Select pattern for loading indicators", Loading),
+    (element_removal, "Select pattern for element removal", Dismiss),
+    (element_appearance, "Select pattern for element appearance", FadeInOut),
+    (drawer_slide, "Select pattern for drawer/sidebar animations", Slide),
+    (accordion_toggle, "Select pattern for accordion/collapsible content", ComplexStateChange),
+    (tab_transition, "Select pattern for tab transitions", Slide),
+    (toast_notification, "Select pattern for toast/snackbar animations", Slide),
+    (fab_animation, "Select pattern for floating action button animations", Scale),
+    (card_interaction, "Select pattern for card interactions", Scale),
 }
 
 #[cfg(test)]
