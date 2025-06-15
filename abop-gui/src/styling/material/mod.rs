@@ -33,7 +33,6 @@ pub mod tokens;
 
 // Phase 3: Unified Material Design 3 System
 pub mod enhanced_tokens; // Complete token system
-pub mod migration_guide;
 pub mod unified_colors; // THE unified color system
 
 // Re-export the UNIFIED Material Design types (Phase 3)

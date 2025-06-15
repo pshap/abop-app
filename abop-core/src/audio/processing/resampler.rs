@@ -7,16 +7,17 @@
 // SIMD is used in the resample_buffer_simd function
 
 use super::{
-    casting_utils::safe_conversions::{safe_f64_to_usize_samples, safe_usize_to_f64_audio},
+    casting_utils::error_conversion::cast_to_audio_error,
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
 use crate::audio::AudioBuffer;
+use crate::utils::casting::domain::audio::{safe_f64_to_usize_samples, safe_usize_to_f64_audio};
 
 #[cfg(test)]
-use super::casting_utils::sample_calculations::safe_duration_to_samples;
+use crate::utils::casting::domain::audio::safe_duration_to_samples;
 use log::trace;
 
 /// Audio resampling error type
@@ -121,14 +122,14 @@ impl LinearResampler {
             "Resampling from {} Hz to {} Hz (ratio: {:.3})",
             buffer.sample_rate,
             target_rate,
-            ratio
-        ); // Calculate output length with safe conversion
+            ratio        ); // Calculate output length with safe conversion
         let input_samples_f64 =
             safe_usize_to_f64_audio(buffer.data.len()) / f64::from(buffer.channels);
         let output_samples_f64 = input_samples_f64 * ratio;
 
         // Safe conversion to usize with bounds checking
-        let output_samples = safe_f64_to_usize_samples(output_samples_f64)?;
+        let output_samples = safe_f64_to_usize_samples(output_samples_f64)
+            .map_err(|e| cast_to_audio_error(e.into()))?;
 
         // Create new buffer for resampled data
         let channels_usize = usize::from(buffer.channels);

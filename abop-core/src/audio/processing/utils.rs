@@ -228,23 +228,18 @@ pub mod channels {
 /// Memory estimation utilities
 pub mod memory {
     use super::{AudioProcessingError, Result};
-    use crate::audio::processing::casting_utils::sample_calculations;
-
-    /// Estimates memory usage for f32 audio buffer
+    use crate::utils::casting::domain::audio::safe_duration_to_samples;    /// Estimates memory usage for f32 audio buffer
     #[must_use]
     pub fn estimate_f32_buffer_size(sample_rate: u32, channels: u16, duration_secs: f32) -> usize {
         // Use safe casting utility for sample calculation
-        let samples =
-            sample_calculations::safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
+        let samples = safe_duration_to_samples(duration_secs, sample_rate)
+            .unwrap_or(0);
         samples * usize::from(channels) * std::mem::size_of::<f32>()
-    }
-
-    /// Estimates memory usage for i16 audio buffer
+    }    /// Estimates memory usage for i16 audio buffer
     #[must_use]
     pub fn estimate_i16_buffer_size(sample_rate: u32, channels: u16, duration_secs: f32) -> usize {
         // Use safe casting utility for sample calculation
-        let samples =
-            sample_calculations::safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
+        let samples = safe_duration_to_samples(duration_secs, sample_rate).unwrap_or(0);
         samples * usize::from(channels) * std::mem::size_of::<i16>()
     }
 
@@ -274,16 +269,14 @@ pub mod timing {
 /// Performance utilities for timing and estimation
 pub mod performance {
     use super::{AudioBuffer, Duration};
-    use crate::audio::processing::casting_utils::safe_conversions;
+    use crate::utils::casting::safe_usize_to_f64_audio;
 
     // Re-export the unified Timer from utils
-    pub use crate::utils::timer::Timer;
-
-    /// Estimate processing time based on buffer size and sample rate
+    pub use crate::utils::timer::Timer;    /// Estimate processing time based on buffer size and sample rate
     #[must_use]
     pub fn estimate_processing_time<T>(buffer: &AudioBuffer<T>) -> Duration {
         let samples_per_channel = buffer.data.len() / usize::from(buffer.channels); // Use safe casting utility for duration calculation
-        let duration_seconds = safe_conversions::safe_usize_to_f64_audio(samples_per_channel)
+        let duration_seconds = safe_usize_to_f64_audio(samples_per_channel)
             / f64::from(buffer.sample_rate);
 
         // Rough estimate: processing takes about 10% of audio duration minimum

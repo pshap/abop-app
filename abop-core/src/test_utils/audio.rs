@@ -6,9 +6,7 @@
 
 use crate::audio::AudioBuffer;
 use crate::audio::SampleFormat;
-use crate::audio::processing::casting_utils::sample_calculations::{
-    safe_duration_to_samples, safe_samples_to_duration,
-};
+use crate::utils::casting::domain::audio::{safe_duration_to_samples, safe_samples_to_duration};
 
 /// Creates a test audio buffer with a sine wave
 ///

@@ -61,8 +61,7 @@ impl<'a, Message> Default for ChipViewConfig<'a, Message> {
 impl Chip {
     /// Create the Iced widget element for this chip
     ///
-    /// # Arguments
-    /// * `on_press` - Optional callback when the chip is pressed
+    /// # Arguments    /// * `on_press` - Optional callback when the chip is pressed
     /// * `color_scheme` - Material Design color scheme to use for styling
     ///
     /// # Returns
@@ -72,13 +71,6 @@ impl Chip {
         on_press: Option<Message>,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
-        // Convert modern size to legacy size
-        let legacy_size = match self.props().size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
         // Create chip content
         let content = Text::new(self.label()).size(self.props().size.text_size());
 
@@ -87,8 +79,14 @@ impl Chip {
 
         // Create the style function with the tokens
         let style_fn = {
+            let selection_size = match self.props().size {
+                ComponentSize::Small => LegacySelectionSize::Small,
+                ComponentSize::Medium => LegacySelectionSize::Medium,
+                ComponentSize::Large => LegacySelectionSize::Large,
+            };
+            
             let builder =
-                SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(legacy_size);
+                SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(selection_size);
 
             // Create the style function
             builder.chip_style(self.is_selected())
@@ -213,22 +211,20 @@ impl Chip {
     pub fn view_enhanced<'a, Message: Clone + 'a>(
         &'a self,
         config: ChipViewConfig<'a, Message>,
-        color_scheme: &'a MaterialColors,
-    ) -> Element<'a, Message, Theme, Renderer> {
-        // Convert modern size to legacy size for consistent styling
-        let legacy_size = match self.props().size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        };
-
+        color_scheme: &'a MaterialColors,    ) -> Element<'a, Message, Theme, Renderer> {
         // Use static tokens to avoid lifetime issues
         let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
 
         // Create the style function with the tokens
         let style_fn = {
+            let selection_size = match self.props().size {
+                ComponentSize::Small => LegacySelectionSize::Small,
+                ComponentSize::Medium => LegacySelectionSize::Medium,
+                ComponentSize::Large => LegacySelectionSize::Large,
+            };
+            
             let builder =
-                SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(legacy_size);
+                SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(selection_size);
 
             // Create the style function
             builder.chip_style(self.is_selected())

@@ -61,8 +61,7 @@ impl Checkbox {
     ///
     /// # Returns
     /// An Iced Element that can be added to the UI
-    pub fn view<'a, Message: Clone + 'a>(
-        &self,
+    pub fn view<'a, Message: Clone + 'a>(        &self,
         on_toggle: impl Fn(CheckboxState) -> Message + 'a,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
@@ -73,12 +72,7 @@ impl Checkbox {
             CheckboxState::Indeterminate => false, // Special handling needed
         };
 
-        // Convert modern size to legacy size
-        let legacy_size = match self.props().size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        }; // Create the checkbox label first
+        // Create the checkbox label first
         let default_label = String::new();
         let label = self.props().label.as_ref().unwrap_or(&default_label);
 
@@ -87,8 +81,14 @@ impl Checkbox {
 
         // Create the style function with the tokens
         let style_fn = {
+            let selection_size = match self.props().size {
+                ComponentSize::Small => LegacySelectionSize::Small,
+                ComponentSize::Medium => LegacySelectionSize::Medium,
+                ComponentSize::Large => LegacySelectionSize::Large,
+            };
+            
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Checkbox)
-                .size(legacy_size)
+                .size(selection_size)
                 .error(self.has_error());
 
             // Create the style function

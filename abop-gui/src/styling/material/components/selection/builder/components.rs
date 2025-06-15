@@ -301,19 +301,13 @@ where
     /// An Iced Element that can be added to the UI
     pub fn view<'a, Message: Clone + 'a>(
         &self,
-        selected_value: Option<T>,
-        on_select: impl FnOnce(T) -> Message + Copy + 'a,
+        selected_value: Option<T>,        on_select: impl FnOnce(T) -> Message + Copy + 'a,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer>
     where
         T: Copy + 'a,
     {
-        // Convert modern size to legacy size
-        let legacy_size = match self.props.size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        }; // Create the radio button label
+        // Create the radio button label
         let default_label = String::new();
         let label = self.props.label.as_ref().unwrap_or(&default_label);
 
@@ -322,8 +316,14 @@ where
 
         // Create the style function with the tokens
         let style_fn = {
+            let selection_size = match self.props.size {
+                ComponentSize::Small => LegacySelectionSize::Small,
+                ComponentSize::Medium => LegacySelectionSize::Medium,
+                ComponentSize::Large => LegacySelectionSize::Large,
+            };
+            
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
-                .size(legacy_size)
+                .size(selection_size)
                 .error(self.error_state);
 
             // Create the style function

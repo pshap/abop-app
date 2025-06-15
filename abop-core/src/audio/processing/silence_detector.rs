@@ -4,15 +4,13 @@
 //! including configurable thresholds and minimum duration requirements.
 
 use super::{
-    casting_utils::{
-        error_conversion::cast_to_audio_error,
-        sample_calculations::{safe_duration_to_samples, safe_samples_to_duration},
-    },
+    casting_utils::error_conversion::cast_to_audio_error,
     config::{SilenceDetectorConfig, SilenceRemovalMode},
     error::Result,
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
+use crate::utils::casting::domain::audio::{safe_duration_to_samples, safe_samples_to_duration};
 use crate::audio::AudioBuffer;
 use crate::utils::casting::domain::audio::safe_progress;
 
@@ -89,13 +87,11 @@ impl SilenceDetector {
                 Ok(())
             }
         }
-    }
-
-    /// Removes silence from the beginning and end of the audio buffer
+    }    /// Removes silence from the beginning and end of the audio buffer
     fn remove_leading_trailing_silence(&self, buffer: &mut AudioBuffer<f32>) -> Result<()> {
         let threshold = Self::db_to_linear(self.config.threshold_db);
-        let min_samples =
-            safe_duration_to_samples(self.config.min_duration.as_secs_f32(), buffer.sample_rate)?;
+        let min_samples = safe_duration_to_samples(self.config.min_duration.as_secs_f32(), buffer.sample_rate)
+            .map_err(cast_to_audio_error)?;
 
         // Find the first non-silent sample
         let start = Self::find_first_non_silent_sample(&buffer.data, threshold);
@@ -117,11 +113,10 @@ impl SilenceDetector {
                 end + 1
             } else {
                 buffer.data.len()
-            };
-
-            if new_start < new_end {
+            };            if new_start < new_end {
                 let removed_samples = buffer.data.len() - (new_end - new_start);
-                let duration = safe_samples_to_duration(removed_samples, buffer.sample_rate)?;
+                let duration = safe_samples_to_duration(removed_samples, buffer.sample_rate)
+                    .map_err(cast_to_audio_error)?;
                 log::debug!(
                     "Removed {removed_samples} samples of leading/trailing silence ({duration:.3}s)"
                 );
@@ -153,11 +148,10 @@ impl SilenceDetector {
         // Add remaining non-silent audio after the last silence segment
         if last_end < buffer.data.len() {
             new_data.extend_from_slice(&buffer.data[last_end..]);
-        }
-
-        let removed_samples = buffer.data.len() - new_data.len();
+        }        let removed_samples = buffer.data.len() - new_data.len();
         if removed_samples > 0 {
-            let duration = safe_samples_to_duration(removed_samples, buffer.sample_rate)?;
+            let duration = safe_samples_to_duration(removed_samples, buffer.sample_rate)
+                .map_err(cast_to_audio_error)?;
             log::debug!(
                 "Removed {} silence segments totaling {} samples ({:.3}s)",
                 segments.len(),
@@ -181,10 +175,9 @@ impl SilenceDetector {
     ) -> Result<Vec<SilenceSegment>> {
         if buffer.data.is_empty() {
             return Ok(Vec::new());
-        }
-        let threshold = Self::db_to_linear(self.config.threshold_db);
-        let min_samples =
-            safe_duration_to_samples(self.config.min_duration.as_secs_f32(), buffer.sample_rate)?;
+        }        let threshold = Self::db_to_linear(self.config.threshold_db);
+        let min_samples = safe_duration_to_samples(self.config.min_duration.as_secs_f32(), buffer.sample_rate)
+            .map_err(cast_to_audio_error)?;
         let mut segments = Vec::new();
         let mut in_silence = false;
         let mut silence_start_frame = 0;
@@ -207,12 +200,11 @@ impl SilenceDetector {
                 // Start of silence
                 in_silence = true;
                 silence_start_frame = frame;
-            } else if !frame_is_silent && in_silence {
-                // End of silence
+            } else if !frame_is_silent && in_silence {                // End of silence
                 let silence_length_frames = frame - silence_start_frame;
                 if silence_length_frames >= min_samples {
-                    let duration_secs =
-                        safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
+                    let duration_secs = safe_samples_to_duration(silence_length_frames, buffer.sample_rate)
+                        .map_err(cast_to_audio_error)?;
                     segments.push(SilenceSegment {
                         start: silence_start_frame * channels,
                         end: frame * channels,
@@ -221,14 +213,12 @@ impl SilenceDetector {
                 }
                 in_silence = false;
             }
-        }
-
-        // Handle silence at the end of the buffer
+        }        // Handle silence at the end of the buffer
         if in_silence {
             let silence_length_frames = num_frames - silence_start_frame;
             if silence_length_frames >= min_samples {
-                let duration_secs =
-                    safe_samples_to_duration(silence_length_frames, buffer.sample_rate)?;
+                let duration_secs = safe_samples_to_duration(silence_length_frames, buffer.sample_rate)
+                    .map_err(cast_to_audio_error)?;
                 segments.push(SilenceSegment {
                     start: silence_start_frame * channels,
                     end: buffer.data.len(),
