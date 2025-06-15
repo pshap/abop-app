@@ -84,7 +84,7 @@ impl Chip {
                 ComponentSize::Medium => LegacySelectionSize::Medium,
                 ComponentSize::Large => LegacySelectionSize::Large,
             };
-            
+
             let builder =
                 SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(selection_size);
 
@@ -211,7 +211,8 @@ impl Chip {
     pub fn view_enhanced<'a, Message: Clone + 'a>(
         &'a self,
         config: ChipViewConfig<'a, Message>,
-        color_scheme: &'a MaterialColors,    ) -> Element<'a, Message, Theme, Renderer> {
+        color_scheme: &'a MaterialColors,
+    ) -> Element<'a, Message, Theme, Renderer> {
         // Use static tokens to avoid lifetime issues
         let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
 
@@ -222,7 +223,7 @@ impl Chip {
                 ComponentSize::Medium => LegacySelectionSize::Medium,
                 ComponentSize::Large => LegacySelectionSize::Large,
             };
-            
+
             let builder =
                 SelectionStyleBuilder::new(tokens, SelectionVariant::Chip).size(selection_size);
 

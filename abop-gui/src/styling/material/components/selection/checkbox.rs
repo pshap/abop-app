@@ -61,7 +61,8 @@ impl Checkbox {
     ///
     /// # Returns
     /// An Iced Element that can be added to the UI
-    pub fn view<'a, Message: Clone + 'a>(        &self,
+    pub fn view<'a, Message: Clone + 'a>(
+        &self,
         on_toggle: impl Fn(CheckboxState) -> Message + 'a,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
@@ -86,7 +87,7 @@ impl Checkbox {
                 ComponentSize::Medium => LegacySelectionSize::Medium,
                 ComponentSize::Large => LegacySelectionSize::Large,
             };
-            
+
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Checkbox)
                 .size(selection_size)
                 .error(self.has_error());

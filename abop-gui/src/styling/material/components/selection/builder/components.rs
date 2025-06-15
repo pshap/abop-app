@@ -301,7 +301,8 @@ where
     /// An Iced Element that can be added to the UI
     pub fn view<'a, Message: Clone + 'a>(
         &self,
-        selected_value: Option<T>,        on_select: impl FnOnce(T) -> Message + Copy + 'a,
+        selected_value: Option<T>,
+        on_select: impl FnOnce(T) -> Message + Copy + 'a,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer>
     where
@@ -321,7 +322,7 @@ where
                 ComponentSize::Medium => LegacySelectionSize::Medium,
                 ComponentSize::Large => LegacySelectionSize::Large,
             };
-            
+
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Radio)
                 .size(selection_size)
                 .error(self.error_state);

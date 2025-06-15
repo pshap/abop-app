@@ -4,8 +4,8 @@
 //! components must implement, ensuring consistent behavior and composability.
 
 use super::super::AudioBuffer;
-use crate::utils::casting::domain::audio::safe_usize_to_f64_audio;
 use super::error::Result;
+use crate::utils::casting::domain::audio::safe_usize_to_f64_audio;
 use std::time::Duration;
 
 /// Core trait for audio processing components

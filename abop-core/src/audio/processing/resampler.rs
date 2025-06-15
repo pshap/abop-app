@@ -122,7 +122,8 @@ impl LinearResampler {
             "Resampling from {} Hz to {} Hz (ratio: {:.3})",
             buffer.sample_rate,
             target_rate,
-            ratio        ); // Calculate output length with safe conversion
+            ratio
+        ); // Calculate output length with safe conversion
         let input_samples_f64 =
             safe_usize_to_f64_audio(buffer.data.len()) / f64::from(buffer.channels);
         let output_samples_f64 = input_samples_f64 * ratio;

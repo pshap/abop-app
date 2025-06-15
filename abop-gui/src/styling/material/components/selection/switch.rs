@@ -66,7 +66,8 @@ impl Switch {
         &self,
         on_toggle: impl Fn(SwitchState) -> Message + 'a,
         _color_scheme: &'a MaterialColors,
-    ) -> Element<'a, Message, Theme, Renderer> {        // TODO: Phase 4 - Replace with custom switch widget
+    ) -> Element<'a, Message, Theme, Renderer> {
+        // TODO: Phase 4 - Replace with custom switch widget
         // For now, use styled checkbox as placeholder
 
         // Convert switch state to boolean for checkbox compatibility
@@ -86,7 +87,7 @@ impl Switch {
                 ComponentSize::Medium => LegacySelectionSize::Medium,
                 ComponentSize::Large => LegacySelectionSize::Large,
             };
-            
+
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Switch)
                 .size(selection_size)
                 .error(self.has_error());
