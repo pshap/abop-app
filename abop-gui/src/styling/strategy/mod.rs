@@ -15,12 +15,14 @@
 //! # Usage
 //!
 //! ```rust
-//! use crate::styling::strategy::{ComponentStyleStrategy, ButtonStyleVariant};
-//! use crate::styling::material::MaterialTokens;
+//! use abop_gui::styling::strategy::{ComponentStyleStrategy, ButtonStyleVariant};
+//! use abop_gui::styling::material::MaterialTokens;
+//! use abop_gui::styling::strategy::traits::ComponentState;
 //!
+//! let tokens = MaterialTokens::default();
 //! let strategy = ButtonStyleVariant::Filled.get_strategy();
 //! let styling = strategy.get_styling(
-//!     ButtonState::Default,
+//!     ComponentState::Default,
 //!     &tokens
 //! );
 //! ```
