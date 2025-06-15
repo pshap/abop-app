@@ -18,8 +18,11 @@
 //! use abop_gui::styling::material::MaterialTokens;
 //! use abop_gui::theme::ThemeMode;
 //!
+//! #[derive(Debug, Clone)]
+//! enum Message { }
+//!
 //! let tokens = MaterialTokens::default();
-//! let progress = create_progress_indicator(
+//! let progress = create_progress_indicator::<Message>(
 //!     Some(0.5),
 //!     "Loading...",
 //!     ThemeMode::Light,

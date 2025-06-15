@@ -35,12 +35,11 @@ impl IconSize {
     /// # Returns
     /// * `Ok(IconSize)` if the size is within valid bounds
     /// * `Err(ButtonError::InvalidConfiguration)` if the size is too small or too large
-    ///
-    /// # Examples
+    ///    /// # Examples
     /// ```
     /// use abop_gui::components::buttons::icons::IconSize;
     ///
-    /// let size = IconSize::new(20.0)?; // Valid size
+    /// let size = IconSize::new(20.0).unwrap(); // Valid size
     /// let invalid = IconSize::new(100.0); // Returns error
     /// ```
     pub fn new(size: f32) -> ButtonResult<Self> {
