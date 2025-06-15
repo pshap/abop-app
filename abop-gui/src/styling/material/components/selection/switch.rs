@@ -73,13 +73,6 @@ impl Switch {
         // Convert switch state to boolean for checkbox compatibility
         let is_enabled = self.state().is_on();
 
-        // Convert modern size to legacy size
-        let legacy_size = match self.props().size {
-            ComponentSize::Small => LegacySelectionSize::Small,
-            ComponentSize::Medium => LegacySelectionSize::Medium,
-            ComponentSize::Large => LegacySelectionSize::Large,
-        }; // Legacy size conversion (this will be used in the closure below)
-
         // Create the switch label
         let default_label = String::new();
         let label = self.props().label.as_ref().unwrap_or(&default_label);
@@ -89,8 +82,14 @@ impl Switch {
 
         // Create the style function with the tokens
         let style_fn = {
+            let selection_size = match self.props().size {
+                ComponentSize::Small => LegacySelectionSize::Small,
+                ComponentSize::Medium => LegacySelectionSize::Medium,
+                ComponentSize::Large => LegacySelectionSize::Large,
+            };
+
             let builder = SelectionStyleBuilder::new(tokens, SelectionVariant::Switch)
-                .size(legacy_size)
+                .size(selection_size)
                 .error(self.has_error());
 
             // Create the style function

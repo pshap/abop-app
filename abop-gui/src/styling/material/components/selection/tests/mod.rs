@@ -11,9 +11,6 @@ pub mod checkbox_tests;
 /// Basic chip component tests  
 pub mod chip_tests;
 
-/// Test helper functions and utilities for chip testing
-pub mod chip_test_helpers;
-
 /// Chip validation and error handling tests
 pub mod chip_validation_tests;
 
