@@ -14,11 +14,13 @@
 //! ## Legacy Tests (Preserved for Compatibility)
 //! The original tests are maintained below to ensure no regression during migration.
 
-// Import legacy test helpers with specific imports to avoid ambiguity
-use super::chip_test_helpers::{
-    MAX_LABEL_LENGTH, all_selection_modes, assert_chip_basics, assert_chip_selected,
-    assert_chip_unselected, assert_collection_selection, assert_label_validation_error,
-    selected_test_chip, sized_test_chip, test_chip, test_collection,
+// Import from unified chip factory
+use super::fixtures::chip_factory::{
+    assertions::{assert_chip_basics, assert_chip_selected, assert_chip_unselected, 
+                 assert_collection_selection, assert_label_validation_error},
+    collections::{test_collection},
+    generators::{all_selection_modes, MAX_LABEL_LENGTH},
+    test_chip, sized_chip as sized_test_chip, selected_chip as selected_test_chip,
 };
 
 // Import test data constants

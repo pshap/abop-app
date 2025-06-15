@@ -6,7 +6,7 @@
 //! - Builder pattern validation
 //! - Collection validation
 
-use super::chip_test_helpers::*;
+use super::fixtures::chip_factory::{assertions::*, collections::*, generators::*};
 use super::fixtures::assertion_helpers::assert_empty_label_error;
 use crate::styling::material::components::selection::ChipBuilder;
 use crate::styling::material::components::selection::builder::ComponentBuilder;
