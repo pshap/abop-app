@@ -48,7 +48,7 @@ pub use builder::ButtonBuilder;
 #[doc(inline)]
 pub use error::ButtonError;
 #[doc(inline)]
-pub use variants::{ButtonVariant, ButtonSize};
+pub use variants::{ButtonSize, ButtonVariant};
 
 use crate::styling::material::MaterialTokens;
 use iced::Element;

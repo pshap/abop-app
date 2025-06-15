@@ -1,9 +1,9 @@
 //! Chip styling strategies for Material Design 3
 
-use iced::{Background, Border, Color};
-use super::{ComponentStyleStrategy, ComponentState, ComponentStyling};
-use crate::styling::material::MaterialTokens;
+use super::{ComponentState, ComponentStyleStrategy, ComponentStyling};
 use crate::styling::ColorUtils;
+use crate::styling::material::MaterialTokens;
+use iced::{Background, Border, Color};
 
 /// Style variant for chips
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,8 +83,9 @@ impl ChipStyleStrategy {
     pub fn error(mut self, error: bool) -> Self {
         self.error = error;
         self
-    }    /// Calculate background color based on variant and state
-    /// 
+    }
+    /// Calculate background color based on variant and state
+    ///
     /// Chip background colors follow Material Design 3 specifications:
     /// - Error state: Error container when selected, error with low opacity when unselected
     /// - Disabled state: Low opacity surface overlay
@@ -92,7 +93,7 @@ impl ChipStyleStrategy {
     /// - Elevated chips: Use surface container for subtle elevation appearance
     fn background_color(&self, state: ComponentState, tokens: &MaterialTokens) -> Color {
         let colors = &tokens.colors;
-        
+
         // Error state takes precedence over variant-specific styling
         if self.error {
             return if self.selected {
@@ -113,7 +114,8 @@ impl ChipStyleStrategy {
                 } else {
                     Color::TRANSPARENT
                 }
-            }            ChipStyleVariant::Filter => {
+            }
+            ChipStyleVariant::Filter => {
                 if self.selected {
                     colors.secondary_container()
                 } else if self.elevated {
@@ -137,8 +139,9 @@ impl ChipStyleStrategy {
                 }
             }
         }
-    }    /// Calculate border for chip
-    /// 
+    }
+    /// Calculate border for chip
+    ///
     /// Border styling follows Material Design 3 chip specifications:
     /// - Error chips: Always show error border for clear error indication
     /// - Disabled chips: Low opacity border for reduced prominence
@@ -146,7 +149,7 @@ impl ChipStyleStrategy {
     /// - Default chips: Standard outline border for definition
     fn border_style(&self, state: ComponentState, tokens: &MaterialTokens) -> Border {
         let colors = &tokens.colors;
-        
+
         // Determine border color based on state and chip properties
         let color = if self.error {
             colors.error.base // Error border for clear error indication
@@ -159,15 +162,20 @@ impl ChipStyleStrategy {
         };
 
         // Border width: 0 for elevated/selected/error chips, 1px for outlined chips
-        let width = if self.elevated || self.selected || self.error { 0.0 } else { 1.0 };
+        let width = if self.elevated || self.selected || self.error {
+            0.0
+        } else {
+            1.0
+        };
 
         Border {
             color,
             width,
             radius: 8.0.into(), // MD3 spec: Standard chip corner radius for rounded appearance
         }
-    }/// Calculate text/content color
-    /// 
+    }
+    /// Calculate text/content color
+    ///
     /// Text color selection follows Material Design 3 chip specifications:
     /// - Error state: Error text colors with proper contrast on error backgrounds
     /// - Disabled state: Reduced opacity text for disabled appearance  
@@ -178,7 +186,7 @@ impl ChipStyleStrategy {
     ///   * Suggestion: Surface variant text (secondary suggestions)
     fn text_color(&self, state: ComponentState, tokens: &MaterialTokens) -> Color {
         let colors = &tokens.colors;
-        
+
         // Error state overrides variant-specific text colors
         if self.error {
             return if self.selected {
@@ -195,39 +203,44 @@ impl ChipStyleStrategy {
 
         // Variant-specific text colors based on chip purpose and state
         match self.variant {
-            ChipStyleVariant::Assist => colors.on_surface,     // Primary text for actions
+            ChipStyleVariant::Assist => colors.on_surface, // Primary text for actions
             ChipStyleVariant::Filter => {
                 if self.selected {
                     colors.on_secondary_container() // High contrast on selected filter
                 } else {
-                    colors.on_surface_variant       // Lower emphasis when unselected
+                    colors.on_surface_variant // Lower emphasis when unselected
                 }
-            }            ChipStyleVariant::Input => colors.on_surface,      // User content text
+            }
+            ChipStyleVariant::Input => colors.on_surface, // User content text
             ChipStyleVariant::Suggestion => colors.on_surface_variant, // Secondary text for suggestions
         }
     }
 
     /// Calculate elevation shadow for chips
-    /// 
+    ///
     /// Chips can have elevation in certain states and variants:
     /// - Elevated chips: Subtle shadow to show they're raised above surface
     /// - Pressed state: Temporarily reduced elevation for press feedback
     /// - Disabled state: No elevation shadow
-    fn elevation_shadow(&self, state: ComponentState, _tokens: &MaterialTokens) -> Option<iced::Shadow> {
+    fn elevation_shadow(
+        &self,
+        state: ComponentState,
+        _tokens: &MaterialTokens,
+    ) -> Option<iced::Shadow> {
         use iced::Shadow;
-        
+
         // No shadow for disabled chips
         if matches!(state, ComponentState::Disabled) {
             return None;
         }
-        
+
         // Only elevated chips get shadows
         if self.elevated {
             let elevation = match state {
                 ComponentState::Pressed => 1.0, // Reduced elevation when pressed
-                _ => 2.0, // Standard elevation for elevated chips
+                _ => 2.0,                       // Standard elevation for elevated chips
             };
-            
+
             Some(Shadow {
                 color: Color::from_rgba(0.0, 0.0, 0.0, 0.2), // Subtle black shadow
                 offset: iced::Vector::new(0.0, elevation),
@@ -243,7 +256,7 @@ impl ComponentStyleStrategy for ChipStyleStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         // Calculate text color once to avoid redundant calculations
         let text_color = self.text_color(state, tokens);
-          ComponentStyling {
+        ComponentStyling {
             background: Background::Color(self.background_color(state, tokens)),
             border: self.border_style(state, tokens),
             text_color,
@@ -262,7 +275,7 @@ mod tests {
     fn test_assist_chip_styling() {
         let strategy = ChipStyleStrategy::assist();
         let tokens = MaterialTokens::default();
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
         assert_eq!(styling.background, Background::Color(Color::TRANSPARENT));
         assert_eq!(styling.border.color, tokens.colors.outline);
@@ -273,9 +286,12 @@ mod tests {
     fn test_filter_chip_selected_styling() {
         let strategy = ChipStyleStrategy::filter().selected(true);
         let tokens = MaterialTokens::default();
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
-        assert_eq!(styling.background, Background::Color(tokens.colors.secondary_container()));
+        assert_eq!(
+            styling.background,
+            Background::Color(tokens.colors.secondary_container())
+        );
         assert_eq!(styling.border.width, 0.0); // No border when selected
         assert_eq!(styling.text_color, tokens.colors.on_secondary_container());
     }
@@ -284,9 +300,12 @@ mod tests {
     fn test_chip_elevated_styling() {
         let strategy = ChipStyleStrategy::assist().elevated(true);
         let tokens = MaterialTokens::default();
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
-        assert_eq!(styling.background, Background::Color(tokens.colors.surface_container_low));
+        assert_eq!(
+            styling.background,
+            Background::Color(tokens.colors.surface_container_low)
+        );
         assert_eq!(styling.border.width, 0.0); // No border when elevated
     }
 
@@ -294,7 +313,7 @@ mod tests {
     fn test_chip_error_styling() {
         let strategy = ChipStyleStrategy::input().error(true);
         let tokens = MaterialTokens::default();
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
         assert_eq!(styling.border.color, tokens.colors.error.base);
         assert_eq!(styling.text_color, tokens.colors.error.base);
@@ -304,17 +323,23 @@ mod tests {
     fn test_chip_disabled_styling() {
         let strategy = ChipStyleStrategy::suggestion();
         let tokens = MaterialTokens::default();
-        
+
         let styling = strategy.get_styling(ComponentState::Disabled, &tokens);
         // Disabled state should have reduced opacity
-        assert_eq!(styling.background, Background::Color(ColorUtils::with_alpha(tokens.colors.on_surface, 0.12)));
-        assert_eq!(styling.text_color, ColorUtils::with_alpha(tokens.colors.on_surface, 0.38));
+        assert_eq!(
+            styling.background,
+            Background::Color(ColorUtils::with_alpha(tokens.colors.on_surface, 0.12))
+        );
+        assert_eq!(
+            styling.text_color,
+            ColorUtils::with_alpha(tokens.colors.on_surface, 0.38)
+        );
     }
 
     #[test]
     fn test_all_chip_variants() {
         let tokens = MaterialTokens::default();
-        
+
         // Test all variants can be created and styled
         let variants = vec![
             ChipStyleStrategy::assist(),
@@ -322,7 +347,7 @@ mod tests {
             ChipStyleStrategy::input(),
             ChipStyleStrategy::suggestion(),
         ];
-        
+
         for strategy in variants {
             let styling = strategy.get_styling(ComponentState::Default, &tokens);
             // All should have valid styling

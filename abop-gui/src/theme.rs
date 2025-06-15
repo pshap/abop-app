@@ -94,7 +94,8 @@ impl ThemeMode {
         match self {
             Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
-        }    }
+        }
+    }
 
     /// Get background color for the current theme mode
     #[must_use]
@@ -201,7 +202,8 @@ impl ThemeMode {
         } else {
             MaterialColors::light_default()
         }
-    }    /// Get semantic colors for the current theme mode
+    }
+    /// Get semantic colors for the current theme mode
     #[must_use]
     pub fn semantic_colors(&self) -> crate::styling::material::SemanticColors {
         // Use the appropriate semantic color scheme for the theme
@@ -337,5 +339,3 @@ fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
     };
     IcedTheme::custom("Material".to_string(), palette)
 }
-
-

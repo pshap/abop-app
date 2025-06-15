@@ -50,7 +50,7 @@ impl ButtonState {
     pub const fn is_interactive(&self) -> bool {
         !matches!(self, Self::Disabled | Self::Loading)
     }
-    
+
     /// Get the state overlay opacity for Material Design state layers
     #[must_use]
     pub const fn state_layer_opacity(&self) -> f32 {
@@ -177,7 +177,8 @@ impl CheckboxState {
     #[must_use]
     pub const fn is_indeterminate(&self) -> bool {
         self.indeterminate
-    }    /// Get the current interaction state
+    }
+    /// Get the current interaction state
     #[must_use]
     pub const fn get_interaction(&self) -> InteractionState {
         self.interaction
@@ -217,7 +218,8 @@ impl CheckboxState {
     #[must_use]
     pub const fn is_pressed(&self) -> bool {
         matches!(self.interaction, InteractionState::Pressed)
-    }    /// Get the state layer opacity for Material Design state layers
+    }
+    /// Get the state layer opacity for Material Design state layers
     #[must_use]
     pub const fn state_layer_opacity(&self) -> f32 {
         if self.disabled {

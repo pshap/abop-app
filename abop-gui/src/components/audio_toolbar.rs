@@ -36,7 +36,8 @@ impl AudioToolbar {
             icon_names::PAUSE
         } else {
             icon_names::PLAY
-        };        let play_button = buttons::create_button(
+        };
+        let play_button = buttons::create_button(
             || {
                 buttons::button(material_tokens)
                     .icon_only(play_icon, ButtonSize::Small)

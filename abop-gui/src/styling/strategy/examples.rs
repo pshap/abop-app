@@ -4,11 +4,11 @@
 //! in Material Design 3 components, demonstrating the proper patterns for
 //! consistent, accessible, and theme-aware styling.
 
-use iced::{Element, Color};
 use crate::styling::{
     MaterialTokens,
-    strategy::{ComponentState, ButtonStyleVariant},
+    strategy::{ButtonStyleVariant, ComponentState},
 };
+use iced::{Color, Element};
 
 /// Example: Creating a custom button using the strategy system
 ///
@@ -23,16 +23,15 @@ pub fn create_strategy_button<'a, Message: Clone + 'a>(
 ) -> Element<'a, Message> {
     // Step 1: Get the appropriate strategy for the button variant
     let strategy = variant.get_strategy();
-    
+
     // Step 2: Get styling from the strategy (NO direct color access!)
     let styling = strategy.get_styling(state, tokens);
-    
+
     // Step 3: Apply the styling to create the button
     let button = iced::widget::button(
-        iced::widget::text(label)
-            .color(styling.text_color) // Use strategy-provided color
+        iced::widget::text(label).color(styling.text_color), // Use strategy-provided color
     );
-    
+
     // Apply click handler if provided
     if let Some(message) = on_press {
         button.on_press(message).into()
@@ -42,7 +41,7 @@ pub fn create_strategy_button<'a, Message: Clone + 'a>(
 }
 
 /// Example: Bad pattern - DO NOT USE
-/// 
+///
 /// This shows the WRONG way to handle colors directly.
 /// This pattern should never be used in the application.
 #[allow(dead_code)]
@@ -54,10 +53,9 @@ fn bad_example_direct_color_access<'a, Message: Clone + 'a>(
     let colors = &tokens.colors;
     let _bad_background = colors.primary.base;
     let bad_text_color = colors.on_primary(); // Direct access!
-    
+
     iced::widget::button(
-        iced::widget::text(label)
-            .color(bad_text_color) // ❌ This bypasses accessibility checks
+        iced::widget::text(label).color(bad_text_color), // ❌ This bypasses accessibility checks
     )
     .into()
 }
@@ -75,28 +73,25 @@ pub fn create_semantic_button<'a, Message: Clone + 'a>(
 ) -> Element<'a, Message> {
     // ✅ GOOD: Use semantic colors for semantic purposes
     let semantic_colors = tokens.semantic_colors();
-    
+
     let (background_color, text_color) = match semantic_type {
         SemanticColorType::Success => (semantic_colors.success, Color::WHITE),
         SemanticColorType::Warning => (semantic_colors.warning, Color::BLACK),
         SemanticColorType::Error => (semantic_colors.error, Color::WHITE),
         SemanticColorType::Info => (semantic_colors.info, Color::WHITE),
     };
-    
+
     // Apply state-based opacity
     let opacity = state.opacity_modifier();
     let _final_background = Color::new(
         background_color.r,
         background_color.g,
         background_color.b,
-        background_color.a * opacity
+        background_color.a * opacity,
     );
-    
-    let button = iced::widget::button(
-        iced::widget::text(label)
-            .color(text_color)
-    );
-    
+
+    let button = iced::widget::button(iced::widget::text(label).color(text_color));
+
     if let Some(message) = on_press {
         button.on_press(message).into()
     } else {
@@ -141,37 +136,39 @@ impl<'a, Message: Clone + 'a> StrategyButton<'a, Message> {
             on_press: None,
             width: iced::Length::Shrink,
             height: iced::Length::Fixed(40.0),
-        }    }
-    
+        }
+    }
+
     /// Set button style variant
     pub fn variant(mut self, variant: ButtonStyleVariant) -> Self {
         self.variant = variant;
         self
     }
-    
+
     /// Set button component state
     pub fn state(mut self, state: ComponentState) -> Self {
         self.state = state;
-        self    }
-    
+        self
+    }
+
     /// Set button press message
     pub fn on_press(mut self, message: Message) -> Self {
         self.on_press = Some(message);
         self
     }
-    
+
     /// Set button width
     pub fn width(mut self, width: iced::Length) -> Self {
         self.width = width;
         self
     }
-    
+
     /// Set button height
     pub fn height(mut self, height: iced::Length) -> Self {
         self.height = height;
         self
     }
-    
+
     /// Build the button element
     pub fn build(self) -> Element<'a, Message> {
         create_strategy_button(
@@ -186,22 +183,23 @@ impl<'a, Message: Clone + 'a> StrategyButton<'a, Message> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[test]
+    use super::*;
+    #[test]
     fn test_strategy_button_creation() {
         let tokens = MaterialTokens::light();
-        
+
         // Test that the builder pattern works
         let _button = StrategyButton::<()>::new("Test", &tokens)
             .variant(ButtonStyleVariant::Outlined)
             .state(ComponentState::Hovered);
-        
+
         // Test passes if no panic occurs during button creation
     }
-    
+
     #[test]
     fn test_semantic_button_types() {
         let tokens = MaterialTokens::light();
-        
+
         // Test all semantic types compile and execute
         for semantic_type in [
             SemanticColorType::Success,
@@ -218,11 +216,11 @@ mod tests {
             );
         }
     }
-    
+
     #[test]
     fn test_all_button_variants_work() {
         let tokens = MaterialTokens::light();
-        
+
         for variant in [
             ButtonStyleVariant::Filled,
             ButtonStyleVariant::FilledTonal,
@@ -239,11 +237,11 @@ mod tests {
             );
         }
     }
-    
+
     #[test]
     fn test_all_component_states_work() {
         let tokens = MaterialTokens::light();
-        
+
         for state in [
             ComponentState::Default,
             ComponentState::Hovered,

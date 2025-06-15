@@ -70,7 +70,7 @@ impl fmt::Display for ButtonError {
 ///
 /// ```rust
 /// use abop_gui::components::buttons::error::{ButtonResult, ButtonError};
-/// 
+///
 /// fn create_button_element() -> ButtonResult<String> {
 ///     let icon_exists = true; // Example condition
 ///     if icon_exists {

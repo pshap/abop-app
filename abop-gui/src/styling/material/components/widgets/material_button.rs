@@ -26,11 +26,8 @@ use iced::{
     widget::Text,
 };
 
-use crate::styling::material::{
-    elevation::ElevationLevel,
-    tokens::core::MaterialTokens,
-};
-use crate::styling::strategy::{ComponentState, ButtonStyleVariant};
+use crate::styling::material::{elevation::ElevationLevel, tokens::core::MaterialTokens};
+use crate::styling::strategy::{ButtonStyleVariant, ComponentState};
 
 /// Material Design 3 button size variants
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,14 +105,12 @@ pub struct MaterialButton<'a, Message> {
     border_radius: f32,
 }
 
-impl<'a, Message> MaterialButton<'a, Message> {    /// Create a new Material button with text
+impl<'a, Message> MaterialButton<'a, Message> {
+    /// Create a new Material button with text
     pub fn new(text: impl Into<String>, tokens: &'a MaterialTokens) -> Self {
         // Use strategy system default styling for initial color
         let filled_strategy = ButtonStyleVariant::Filled.get_strategy();
-        let default_styling = filled_strategy.get_styling(
-            ComponentState::Default,
-            tokens,
-        );
+        let default_styling = filled_strategy.get_styling(ComponentState::Default, tokens);
 
         let text_element = Text::new(text.into())
             .size(tokens.typography().label_large.size)
@@ -191,7 +186,8 @@ impl<'a, Message> MaterialButton<'a, Message> {    /// Create a new Material but
     pub fn padding(mut self, padding: impl Into<Padding>) -> Self {
         self.padding = padding.into();
         self
-    }    /// Convert MaterialButtonState to ComponentState used by the strategy system
+    }
+    /// Convert MaterialButtonState to ComponentState used by the strategy system
     const fn get_button_state(&self) -> ComponentState {
         match self.state {
             MaterialButtonState::Enabled => ComponentState::Default,
@@ -216,11 +212,8 @@ impl<'a, Message> MaterialButton<'a, Message> {    /// Create a new Material but
     fn get_colors(&self) -> ButtonColors {
         let variant = self.get_button_variant();
         let state = self.get_button_state();
-        let strategy = variant.get_strategy();        // Get styling directly from the strategy
-        let styling = strategy.get_styling(
-            state,
-            self.tokens,
-        );
+        let strategy = variant.get_strategy(); // Get styling directly from the strategy
+        let styling = strategy.get_styling(state, self.tokens);
 
         // Extract background color from Background enum
         let background_color = match styling.background {

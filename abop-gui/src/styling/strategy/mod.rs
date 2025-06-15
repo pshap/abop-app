@@ -25,29 +25,29 @@
 //!     ComponentState::Default,
 //!     &tokens
 //! );
-//! 
+//!
 //! // Configure button styling based on the strategy's recommendations
 //! // to maintain consistent theming and accessibility standards
 //! button.set_background_color(styling.background_color);
 //! button.set_text_color(styling.text_color);
 //! ```
 
-pub mod traits;
 pub mod button;
 pub mod checkbox;
-pub mod radio;
-pub mod switch;
 pub mod chip;
+pub mod examples;
+pub mod radio;
 pub mod states;
 pub mod styling;
-pub mod examples;
+pub mod switch;
+pub mod traits;
 
 // Re-export main strategy components
-pub use traits::{ComponentStyleStrategy, ComponentState};
 pub use button::{ButtonStyleVariant, ButtonStyling};
 pub use checkbox::{CheckboxStyleStrategy, CheckboxStyleVariant};
-pub use radio::{RadioStyleStrategy, RadioStyleVariant};
-pub use switch::{SwitchStyleStrategy, SwitchStyleVariant};
 pub use chip::{ChipStyleStrategy, ChipStyleVariant};
-pub use states::{ButtonState, CheckboxState, InteractionState, ComponentInteractionState};
+pub use radio::{RadioStyleStrategy, RadioStyleVariant};
+pub use states::{ButtonState, CheckboxState, ComponentInteractionState, InteractionState};
 pub use styling::ComponentStyling;
+pub use switch::{SwitchStyleStrategy, SwitchStyleVariant};
+pub use traits::{ComponentState, ComponentStyleStrategy};

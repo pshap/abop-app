@@ -3,12 +3,12 @@
 //! This module implements the strategy pattern for Material Design 3 button variants,
 //! providing consistent styling while supporting all theme modes and component states.
 
-use iced::{Color, Background, Border};
-use crate::styling::material::MaterialTokens;
 use super::{
-    traits::{ComponentStyleStrategy, ComponentState},
     styling::ComponentStyling,
+    traits::{ComponentState, ComponentStyleStrategy},
 };
+use crate::styling::material::MaterialTokens;
+use iced::{Background, Border, Color};
 
 /// Button styling variant strategies
 ///
@@ -62,7 +62,7 @@ impl ButtonStyling {
 
 impl std::ops::Deref for ButtonStyling {
     type Target = ComponentStyling;
-    
+
     fn deref(&self) -> &Self::Target {
         &self.base
     }
@@ -79,21 +79,29 @@ impl ComponentStyleStrategy for FilledButtonStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         let colors = &tokens.colors;
         let states = &tokens.states;
-          let (background_color, text_color) = match state {
+        let (background_color, text_color) = match state {
             ComponentState::Default => (colors.primary.base, colors.on_primary()),
             ComponentState::Hovered => {
-                let overlay = apply_state_overlay(colors.primary.base, colors.on_primary(), states.opacity.hover);
+                let overlay = apply_state_overlay(
+                    colors.primary.base,
+                    colors.on_primary(),
+                    states.opacity.hover,
+                );
                 (overlay, colors.on_primary())
-            },
+            }
             ComponentState::Pressed => {
-                let overlay = apply_state_overlay(colors.primary.base, colors.on_primary(), states.opacity.pressed);
+                let overlay = apply_state_overlay(
+                    colors.primary.base,
+                    colors.on_primary(),
+                    states.opacity.pressed,
+                );
                 (overlay, colors.on_primary())
-            },
+            }
             ComponentState::Focused => (colors.primary.base, colors.on_primary()),
             ComponentState::Disabled => (colors.on_surface, colors.surface),
             ComponentState::Loading => (colors.primary.container, colors.on_primary_container()),
         };
-        
+
         ComponentStyling {
             background: Background::Color(background_color),
             text_color,
@@ -104,7 +112,11 @@ impl ComponentStyleStrategy for FilledButtonStrategy {
             } else {
                 None
             },
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: if matches!(state, ComponentState::Disabled) {
+                0.38
+            } else {
+                1.0
+            },
         }
     }
 }
@@ -116,28 +128,44 @@ impl ComponentStyleStrategy for FilledTonalButtonStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         let colors = &tokens.colors;
         let states = &tokens.states;
-          let (background_color, text_color) = match state {
-            ComponentState::Default => (colors.secondary.container, colors.on_secondary_container()),
+        let (background_color, text_color) = match state {
+            ComponentState::Default => {
+                (colors.secondary.container, colors.on_secondary_container())
+            }
             ComponentState::Hovered => {
-                let overlay = apply_state_overlay(colors.secondary.container, colors.on_secondary_container(), states.opacity.hover);
+                let overlay = apply_state_overlay(
+                    colors.secondary.container,
+                    colors.on_secondary_container(),
+                    states.opacity.hover,
+                );
                 (overlay, colors.on_secondary_container())
-            },
+            }
             ComponentState::Pressed => {
-                let overlay = apply_state_overlay(colors.secondary.container, colors.on_secondary_container(), states.opacity.pressed);
+                let overlay = apply_state_overlay(
+                    colors.secondary.container,
+                    colors.on_secondary_container(),
+                    states.opacity.pressed,
+                );
                 (overlay, colors.on_secondary_container())
-            },
-            ComponentState::Focused => (colors.secondary.container, colors.on_secondary_container()),
+            }
+            ComponentState::Focused => {
+                (colors.secondary.container, colors.on_secondary_container())
+            }
             ComponentState::Disabled => (colors.on_surface, colors.surface),
             ComponentState::Loading => (colors.secondary.base, colors.secondary.on_base),
         };
-        
+
         ComponentStyling {
             background: Background::Color(background_color),
             text_color,
             icon_color: Some(text_color),
             border: Border::default(),
             shadow: None, // Filled tonal buttons don't have elevation
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: if matches!(state, ComponentState::Disabled) {
+                0.38
+            } else {
+                1.0
+            },
         }
     }
 }
@@ -149,32 +177,51 @@ impl ComponentStyleStrategy for OutlinedButtonStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         let colors = &tokens.colors;
         let states = &tokens.states;
-        
+
         let (background_color, text_color, border_color) = match state {
             ComponentState::Default => (Color::TRANSPARENT, colors.primary.base, colors.outline),
             ComponentState::Hovered => {
-                let overlay = apply_state_overlay(Color::TRANSPARENT, colors.primary.base, states.opacity.hover);
+                let overlay = apply_state_overlay(
+                    Color::TRANSPARENT,
+                    colors.primary.base,
+                    states.opacity.hover,
+                );
                 (overlay, colors.primary.base, colors.outline)
-            },
+            }
             ComponentState::Pressed => {
-                let overlay = apply_state_overlay(Color::TRANSPARENT, colors.primary.base, states.opacity.pressed);
+                let overlay = apply_state_overlay(
+                    Color::TRANSPARENT,
+                    colors.primary.base,
+                    states.opacity.pressed,
+                );
                 (overlay, colors.primary.base, colors.outline)
-            },
-            ComponentState::Focused => (Color::TRANSPARENT, colors.primary.base, colors.primary.base),
+            }
+            ComponentState::Focused => {
+                (Color::TRANSPARENT, colors.primary.base, colors.primary.base)
+            }
             ComponentState::Disabled => (Color::TRANSPARENT, colors.on_surface, colors.outline),
-            ComponentState::Loading => (Color::TRANSPARENT, colors.on_surface_variant, colors.outline_variant),
+            ComponentState::Loading => (
+                Color::TRANSPARENT,
+                colors.on_surface_variant,
+                colors.outline_variant,
+            ),
         };
-        
+
         ComponentStyling {
             background: Background::Color(background_color),
             text_color,
-            icon_color: Some(text_color),            border: Border {
+            icon_color: Some(text_color),
+            border: Border {
                 color: border_color,
                 width: 1.0,
                 radius: tokens.shapes.corner_medium.radius,
             },
             shadow: None,
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: if matches!(state, ComponentState::Disabled) {
+                0.38
+            } else {
+                1.0
+            },
         }
     }
 }
@@ -186,29 +233,41 @@ impl ComponentStyleStrategy for TextButtonStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         let colors = &tokens.colors;
         let states = &tokens.states;
-        
+
         let (background_color, text_color) = match state {
             ComponentState::Default => (Color::TRANSPARENT, colors.primary.base),
             ComponentState::Hovered => {
-                let overlay = apply_state_overlay(Color::TRANSPARENT, colors.primary.base, states.opacity.hover);
+                let overlay = apply_state_overlay(
+                    Color::TRANSPARENT,
+                    colors.primary.base,
+                    states.opacity.hover,
+                );
                 (overlay, colors.primary.base)
-            },
+            }
             ComponentState::Pressed => {
-                let overlay = apply_state_overlay(Color::TRANSPARENT, colors.primary.base, states.opacity.pressed);
+                let overlay = apply_state_overlay(
+                    Color::TRANSPARENT,
+                    colors.primary.base,
+                    states.opacity.pressed,
+                );
                 (overlay, colors.primary.base)
-            },
+            }
             ComponentState::Focused => (Color::TRANSPARENT, colors.primary.base),
             ComponentState::Disabled => (Color::TRANSPARENT, colors.on_surface),
             ComponentState::Loading => (Color::TRANSPARENT, colors.on_surface_variant),
         };
-        
+
         ComponentStyling {
             background: Background::Color(background_color),
             text_color,
             icon_color: Some(text_color),
             border: Border::default(),
             shadow: None,
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: if matches!(state, ComponentState::Disabled) {
+                0.38
+            } else {
+                1.0
+            },
         }
     }
 }
@@ -220,22 +279,30 @@ impl ComponentStyleStrategy for ElevatedButtonStrategy {
     fn get_styling(&self, state: ComponentState, tokens: &MaterialTokens) -> ComponentStyling {
         let colors = &tokens.colors;
         let states = &tokens.states;
-        
+
         let (background_color, text_color, elevation_level) = match state {
             ComponentState::Default => (colors.surface_container_low, colors.primary.base, 1),
             ComponentState::Hovered => {
-                let overlay = apply_state_overlay(colors.surface_container_low, colors.primary.base, states.opacity.hover);
+                let overlay = apply_state_overlay(
+                    colors.surface_container_low,
+                    colors.primary.base,
+                    states.opacity.hover,
+                );
                 (overlay, colors.primary.base, 2)
-            },
+            }
             ComponentState::Pressed => {
-                let overlay = apply_state_overlay(colors.surface_container_low, colors.primary.base, states.opacity.pressed);
+                let overlay = apply_state_overlay(
+                    colors.surface_container_low,
+                    colors.primary.base,
+                    states.opacity.pressed,
+                );
                 (overlay, colors.primary.base, 1)
-            },
+            }
             ComponentState::Focused => (colors.surface_container_low, colors.primary.base, 1),
             ComponentState::Disabled => (colors.on_surface, colors.surface, 0),
             ComponentState::Loading => (colors.surface_container, colors.on_surface_variant, 0),
         };
-        
+
         ComponentStyling {
             background: Background::Color(background_color),
             text_color,
@@ -246,7 +313,11 @@ impl ComponentStyleStrategy for ElevatedButtonStrategy {
             } else {
                 None
             },
-            opacity: if matches!(state, ComponentState::Disabled) { 0.38 } else { 1.0 },
+            opacity: if matches!(state, ComponentState::Disabled) {
+                0.38
+            } else {
+                1.0
+            },
         }
     }
 }
@@ -262,7 +333,7 @@ fn apply_state_overlay(background: Color, overlay_color: Color, opacity: f32) ->
     if opacity == 0.0 {
         return background;
     }
-    
+
     // Blend the overlay color onto the background
     let alpha = opacity;
     Color::new(
@@ -281,7 +352,7 @@ fn create_elevation_shadow(level: u8) -> iced::Shadow {
         3 => (4.0, 8.0, Color::new(0.0, 0.0, 0.0, 0.19)),
         _ => (1.0, 3.0, Color::new(0.0, 0.0, 0.0, 0.12)),
     };
-    
+
     iced::Shadow {
         color,
         offset: iced::Vector::new(0.0, offset_y),
@@ -298,46 +369,46 @@ mod tests {
     fn test_filled_button_strategy() {
         let tokens = MaterialTokens::light();
         let strategy = FilledButtonStrategy;
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
-        
+
         // Filled buttons should have primary background
         if let Background::Color(bg) = styling.background {
             assert_eq!(bg, tokens.colors.primary.base);
         } else {
             panic!("Expected solid color background");
         }
-        
+
         assert_eq!(styling.text_color, tokens.colors.on_primary());
         assert!(styling.shadow.is_some());
     }
-    
+
     #[test]
     fn test_outlined_button_strategy() {
         let tokens = MaterialTokens::light();
         let strategy = OutlinedButtonStrategy;
-        
+
         let styling = strategy.get_styling(ComponentState::Default, &tokens);
-        
+
         // Outlined buttons should have transparent background
         if let Background::Color(bg) = styling.background {
             assert_eq!(bg, Color::TRANSPARENT);
         } else {
             panic!("Expected transparent background");
         }
-        
+
         assert_eq!(styling.text_color, tokens.colors.primary.base);
         assert_eq!(styling.border.width, 1.0);
         assert_eq!(styling.border.color, tokens.colors.outline);
     }
-    
+
     #[test]
     fn test_disabled_state_opacity() {
         let tokens = MaterialTokens::light();
         let strategy = FilledButtonStrategy;
-        
+
         let styling = strategy.get_styling(ComponentState::Disabled, &tokens);
-        
+
         assert_eq!(styling.opacity, 0.38);
     }
 }

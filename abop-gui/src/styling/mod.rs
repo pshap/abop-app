@@ -19,5 +19,5 @@ pub mod validation;
 // Re-export commonly used styling types for convenience
 pub use color_utils::ColorUtils;
 pub use material::MaterialTokens;
-pub use strategy::{ComponentStyleStrategy, ComponentState, ButtonStyleVariant, ComponentStyling};
+pub use strategy::{ButtonStyleVariant, ComponentState, ComponentStyleStrategy, ComponentStyling};
 pub use traits::{ComponentStyle, StyleBuilder, StyleVariant, ThemeAware};
