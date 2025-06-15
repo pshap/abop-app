@@ -26,7 +26,8 @@
 //!     &tokens
 //! );
 //! 
-//! // Apply the styling to your button
+//! // Configure button styling based on the strategy's recommendations
+//! // to maintain consistent theming and accessibility standards
 //! button.set_background_color(styling.background_color);
 //! button.set_text_color(styling.text_color);
 //! ```
