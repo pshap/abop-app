@@ -4,7 +4,7 @@
 //! specifications for the unified strategy system.
 
 use crate::styling::color_utils::ColorUtils;
-use crate::styling::material::tokens::core::MaterialTokens;
+use crate::styling::material::MaterialTokens;
 use iced::{Background, Border, Color};
 
 use super::{ComponentStyleStrategy, ComponentStyling, traits::ComponentState};
@@ -145,7 +145,7 @@ impl ComponentStyleStrategy for CheckboxStyleStrategy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::styling::material::tokens::core::MaterialTokens;
+    use crate::styling::material::MaterialTokens;
 
     #[test]
     fn test_checkbox_standard_styling() {
