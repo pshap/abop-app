@@ -366,17 +366,14 @@ impl AnimationBuilder {
 }
 
 /// Utility functions for animation interpolation
-pub mod interpolation {
-    /// Linear interpolation between two values
+pub mod interpolation {    /// Linear interpolation between two values
     #[must_use]
-    #[allow(dead_code)]
     pub fn lerp(start: f32, end: f32, progress: f32) -> f32 {
         (end - start).mul_add(progress, start)
     }
 
     /// Linear interpolation for colors (RGB)
     #[must_use]
-    #[allow(dead_code)]
     pub fn lerp_color(
         start: (f32, f32, f32),
         end: (f32, f32, f32),
@@ -391,7 +388,6 @@ pub mod interpolation {
 
     /// Smooth step interpolation (smoother than linear)
     #[must_use]
-    #[allow(dead_code)]
     pub fn smooth_step(start: f32, end: f32, progress: f32) -> f32 {
         let smooth_progress = progress * progress * 2.0f32.mul_add(-progress, 3.0);
         (end - start).mul_add(smooth_progress, start)
@@ -399,69 +395,10 @@ pub mod interpolation {
 
     /// Smoother step interpolation (even smoother)
     #[must_use]
-    #[allow(dead_code)]
     pub fn smoother_step(start: f32, end: f32, progress: f32) -> f32 {
         let smooth_progress =
             progress * progress * progress * progress.mul_add(progress.mul_add(6.0, -15.0), 10.0);
         (end - start).mul_add(smooth_progress, start)
-    }
-}
-
-/// Integration helpers for common animation scenarios
-pub mod helpers {
-    use super::{Animation, AnimationPattern};
-
-    /// Create a simple fade animation
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn fade_animation(fade_in: bool) -> Animation {
-        if fade_in {
-            Animation::from_pattern(AnimationPattern::FadeInOut)
-        } else {
-            Animation::from_pattern(AnimationPattern::Dismiss)
-        }
-    }
-
-    /// Create a scale animation for button press
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn button_press_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::Scale).with_speed_factor(1.5) // Faster for responsiveness
-    }
-
-    /// Create a slide animation for navigation
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn navigation_slide_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::Slide)
-    }
-
-    /// Create a loading animation that loops
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn loading_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::Loading).with_reduced_motion_respect(false) // Always animate loading
-    }
-
-    /// Create hover state animation
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn hover_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::SimpleStateChange).with_speed_factor(1.2) // Slightly faster for responsiveness
-    }
-
-    /// Create modal/dialog appearance animation
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn modal_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::ContainerTransform)
-    }
-
-    /// Create toast/notification animation
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn toast_animation() -> Animation {
-        Animation::from_pattern(AnimationPattern::Slide).with_speed_factor(1.3)
     }
 }
 
@@ -538,23 +475,7 @@ mod tests {
         let color_end = (0.0, 1.0, 0.0);
         let color_mid = lerp_color(color_start, color_end, 0.5);
         assert_eq!(color_mid, (0.5, 0.5, 0.0));
-    }
-
-    #[test]
-    fn test_helper_functions() {
-        use super::helpers::*;
-
-        let fade = fade_animation(true);
-        assert!(fade.original_duration().as_millis() > 0);
-
-        let button = button_press_animation();
-        assert!(button.original_duration().as_millis() > 0);
-
-        let loading = loading_animation();
-        assert!(!loading.respect_reduced_motion);
-    }
-
-    #[test]
+    }    #[test]
     fn test_animation_timing() {
         let mut animation = Animation::from_pattern(AnimationPattern::FadeInOut);
         animation.start();
