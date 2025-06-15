@@ -205,176 +205,127 @@ impl MaterialColors {
             Self::create_light_scheme(palette)
         }
     }
-
     /// Creates light theme color scheme with proper tone mappings
+    ///
+    /// Maps Material Design 3 tonal palette to semantic color roles for light themes.
+    /// Tone values follow MD3 specifications:
+    /// - Surface colors use high tones (90-100) for bright backgrounds
+    /// - Text colors use low tones (10-30) for sufficient contrast
+    /// - Container surfaces use mid-high tones (85-95) for subtle elevation
     fn create_light_scheme(palette: &MaterialPalette) -> Self {
         Self {
-            // Primary colors (light theme tones)
-            primary: ColorRole {
-                base: palette.primary.tones[10],            // tone 40
-                on_base: palette.primary.tones[23],         // tone 100
-                container: palette.primary.tones[16],       // tone 90
-                on_container: palette.primary.tones[3],     // tone 10
-                fixed: palette.primary.tones[16],           // tone 90
-                fixed_dim: palette.primary.tones[14],       // tone 80
-                on_fixed: palette.primary.tones[3],         // tone 10
-                on_fixed_variant: palette.primary.tones[7], // tone 30
-            },
+            // Color roles using helper function
+            primary: Self::create_light_color_role(&palette.primary),
+            secondary: Self::create_light_color_role(&palette.secondary),
+            tertiary: Self::create_light_color_role(&palette.tertiary),
+            error: Self::create_light_color_role(&palette.error),
 
-            // Secondary colors (light theme tones)
-            secondary: ColorRole {
-                base: palette.secondary.tones[10],            // tone 40
-                on_base: palette.secondary.tones[23],         // tone 100
-                container: palette.secondary.tones[16],       // tone 90
-                on_container: palette.secondary.tones[3],     // tone 10
-                fixed: palette.secondary.tones[16],           // tone 90
-                fixed_dim: palette.secondary.tones[14],       // tone 80
-                on_fixed: palette.secondary.tones[3],         // tone 10
-                on_fixed_variant: palette.secondary.tones[7], // tone 30
-            },
+            // Surface and background colors - MD3 light theme specification
+            surface: palette.neutral.tones[19], // tone 98 - main surface, very light
+            on_surface: palette.neutral.tones[3], // tone 10 - text on surface, high contrast
+            surface_variant: palette.neutral_variant.tones[16], // tone 90 - subtle surface variation
+            on_surface_variant: palette.neutral_variant.tones[9], // tone 30 - lower contrast text
+            background: palette.neutral.tones[19], // tone 98 - app background, matches surface
+            on_background: palette.neutral.tones[3], // tone 10 - text on background
 
-            // Tertiary colors (light theme tones)
-            tertiary: ColorRole {
-                base: palette.tertiary.tones[10],            // tone 40
-                on_base: palette.tertiary.tones[23],         // tone 100
-                container: palette.tertiary.tones[16],       // tone 90
-                on_container: palette.tertiary.tones[3],     // tone 10
-                fixed: palette.tertiary.tones[16],           // tone 90
-                fixed_dim: palette.tertiary.tones[14],       // tone 80
-                on_fixed: palette.tertiary.tones[3],         // tone 10
-                on_fixed_variant: palette.tertiary.tones[7], // tone 30
-            },
+            // Outline colors for borders and dividers
+            outline: palette.neutral_variant.tones[10], // tone 50 - medium contrast borders
+            outline_variant: palette.neutral_variant.tones[14], // tone 80 - subtle borders
 
-            // Error colors (light theme tones)
-            error: ColorRole {
-                base: palette.error.tones[10],            // tone 40
-                on_base: palette.error.tones[23],         // tone 100
-                container: palette.error.tones[16],       // tone 90
-                on_container: palette.error.tones[3],     // tone 10
-                fixed: palette.error.tones[16],           // tone 90
-                fixed_dim: palette.error.tones[14],       // tone 80
-                on_fixed: palette.error.tones[3],         // tone 10
-                on_fixed_variant: palette.error.tones[7], // tone 30
-            },
+            // Inverse colors for high-contrast elements (dark-on-light inversion)
+            inverse_surface: palette.neutral.tones[6], // tone 20 - dark surface for contrast
+            inverse_on_surface: palette.neutral.tones[17], // tone 95 - light text on dark
+            inverse_primary: palette.primary.tones[14], // tone 80 - accessible primary on dark
 
-            // Surface and background colors
-            surface: palette.neutral.tones[19],   // tone 98
-            on_surface: palette.neutral.tones[3], // tone 10
-            surface_variant: palette.neutral_variant.tones[16], // tone 90
-            on_surface_variant: palette.neutral_variant.tones[9], // tone 30
-            background: palette.neutral.tones[19], // tone 98
-            on_background: palette.neutral.tones[3], // tone 10
+            // System colors for shadows and overlays
+            shadow: palette.neutral.tones[0], // tone 0 - pure black for shadows
+            scrim: palette.neutral.tones[0],  // tone 0 - overlay backgrounds
+            surface_tint: palette.primary.tones[10], // tone 40 - primary color for elevation tinting            // Surface container variants for different elevation levels
+            surface_container: palette.neutral.tones[15], // tone 94 - elevated containers
+            surface_container_low: palette.neutral.tones[17], // tone 96 - subtle elevation
+            surface_container_lowest: palette.neutral.tones[20], // tone 100 - no elevation
+            surface_container_high: palette.neutral.tones[13], // tone 92 - moderate elevation
+            surface_container_highest: palette.neutral.tones[11], // tone 90 - highest elevation
 
-            // Outline colors
-            outline: palette.neutral_variant.tones[10], // tone 50
-            outline_variant: palette.neutral_variant.tones[14], // tone 80
-
-            // Inverse colors
-            inverse_surface: palette.neutral.tones[6], // tone 20
-            inverse_on_surface: palette.neutral.tones[17], // tone 95
-            inverse_primary: palette.primary.tones[14], // tone 80
-
-            // System colors
-            shadow: palette.neutral.tones[0],        // tone 0
-            scrim: palette.neutral.tones[0],         // tone 0
-            surface_tint: palette.primary.tones[10], // tone 40
-
-            // Surface container variants (light theme)
-            surface_container: palette.neutral.tones[15], // tone 94
-            surface_container_low: palette.neutral.tones[17], // tone 96
-            surface_container_lowest: palette.neutral.tones[20], // tone 100
-            surface_container_high: palette.neutral.tones[13], // tone 92
-            surface_container_highest: palette.neutral.tones[11], // tone 90
-
-            // Additional surface variants
-            surface_dim: palette.neutral.tones[14], // tone 87
-            surface_bright: palette.neutral.tones[19], // tone 98
+            // Additional surface variants for light/dark surface distinction
+            surface_dim: palette.neutral.tones[14], // tone 87 - dimmed surface variant
+            surface_bright: palette.neutral.tones[19], // tone 98 - bright surface (matches main surface)
         }
     }
 
     /// Creates dark theme color scheme with proper tone mappings
+    ///
+    /// Maps Material Design 3 tonal palette to semantic color roles for dark themes.
+    /// Tone values follow MD3 dark theme specifications:
+    /// - Surface colors use low tones (6-30) for dark backgrounds
+    /// - Text colors use high tones (80-95) for sufficient contrast on dark
+    /// - Container surfaces use mid-low tones (10-25) for subtle elevation hierarchy
     fn create_dark_scheme(palette: &MaterialPalette) -> Self {
         Self {
-            // Primary colors (dark theme tones)
-            primary: ColorRole {
-                base: palette.primary.tones[14],            // tone 80
-                on_base: palette.primary.tones[5],          // tone 20
-                container: palette.primary.tones[7],        // tone 30
-                on_container: palette.primary.tones[16],    // tone 90
-                fixed: palette.primary.tones[16],           // tone 90
-                fixed_dim: palette.primary.tones[14],       // tone 80
-                on_fixed: palette.primary.tones[3],         // tone 10
-                on_fixed_variant: palette.primary.tones[7], // tone 30
-            },
+            // Color roles using helper function
+            primary: Self::create_dark_color_role(&palette.primary),
+            secondary: Self::create_dark_color_role(&palette.secondary),
+            tertiary: Self::create_dark_color_role(&palette.tertiary),
+            error: Self::create_dark_color_role(&palette.error),
 
-            // Secondary colors (dark theme tones)
-            secondary: ColorRole {
-                base: palette.secondary.tones[14],            // tone 80
-                on_base: palette.secondary.tones[5],          // tone 20
-                container: palette.secondary.tones[7],        // tone 30
-                on_container: palette.secondary.tones[16],    // tone 90
-                fixed: palette.secondary.tones[16],           // tone 90
-                fixed_dim: palette.secondary.tones[14],       // tone 80
-                on_fixed: palette.secondary.tones[3],         // tone 10
-                on_fixed_variant: palette.secondary.tones[7], // tone 30
-            },
+            // Surface and background colors - MD3 dark theme specification
+            surface: palette.neutral.tones[2], // tone 6 - main dark surface
+            on_surface: palette.neutral.tones[17], // tone 90 - light text on dark surface
+            surface_variant: palette.neutral_variant.tones[7], // tone 30 - subtle dark surface variation
+            on_surface_variant: palette.neutral_variant.tones[14], // tone 80 - medium contrast text
+            background: palette.neutral.tones[2], // tone 6 - app background, matches surface
+            on_background: palette.neutral.tones[17], // tone 90 - light text on dark background
 
-            // Tertiary colors (dark theme tones)
-            tertiary: ColorRole {
-                base: palette.tertiary.tones[14],            // tone 80
-                on_base: palette.tertiary.tones[5],          // tone 20
-                container: palette.tertiary.tones[7],        // tone 30
-                on_container: palette.tertiary.tones[16],    // tone 90
-                fixed: palette.tertiary.tones[16],           // tone 90
-                fixed_dim: palette.tertiary.tones[14],       // tone 80
-                on_fixed: palette.tertiary.tones[3],         // tone 10
-                on_fixed_variant: palette.tertiary.tones[7], // tone 30
-            },
+            // Outline colors for borders and dividers in dark theme
+            outline: palette.neutral_variant.tones[12], // tone 60 - visible borders on dark
+            outline_variant: palette.neutral_variant.tones[7], // tone 30 - subtle borders
 
-            // Error colors (dark theme tones)
-            error: ColorRole {
-                base: palette.error.tones[14],            // tone 80
-                on_base: palette.error.tones[5],          // tone 20
-                container: palette.error.tones[7],        // tone 30
-                on_container: palette.error.tones[16],    // tone 90
-                fixed: palette.error.tones[16],           // tone 90
-                fixed_dim: palette.error.tones[14],       // tone 80
-                on_fixed: palette.error.tones[3],         // tone 10
-                on_fixed_variant: palette.error.tones[7], // tone 30
-            },
+            // Inverse colors for light-on-dark elements (light-on-dark inversion)
+            inverse_surface: palette.neutral.tones[17], // tone 90 - light surface for contrast
+            inverse_on_surface: palette.neutral.tones[5], // tone 20 - dark text on light
+            inverse_primary: palette.primary.tones[10], // tone 40 - accessible primary on light
 
-            // Surface and background colors
-            surface: palette.neutral.tones[2],     // tone 6
-            on_surface: palette.neutral.tones[17], // tone 90
-            surface_variant: palette.neutral_variant.tones[7], // tone 30
-            on_surface_variant: palette.neutral_variant.tones[14], // tone 80
-            background: palette.neutral.tones[2],  // tone 6
-            on_background: palette.neutral.tones[17], // tone 90
+            // System colors for shadows and overlays
+            shadow: palette.neutral.tones[0], // tone 0 - pure black for shadows
+            scrim: palette.neutral.tones[0],  // tone 0 - overlay backgrounds
+            surface_tint: palette.primary.tones[14], // tone 80 - primary color for dark elevation tinting            // Surface container variants for different elevation levels in dark theme
+            surface_container: palette.neutral.tones[4], // tone 12 - elevated containers
+            surface_container_low: palette.neutral.tones[3], // tone 10 - subtle elevation
+            surface_container_lowest: palette.neutral.tones[1], // tone 4 - no elevation
+            surface_container_high: palette.neutral.tones[6], // tone 17 - moderate elevation
+            surface_container_highest: palette.neutral.tones[8], // tone 22 - highest elevation
 
-            // Outline colors
-            outline: palette.neutral_variant.tones[12], // tone 60
-            outline_variant: palette.neutral_variant.tones[7], // tone 30
+            // Additional surface variants for light/dark surface distinction
+            surface_dim: palette.neutral.tones[2], // tone 6 - dimmed surface (matches main surface)
+            surface_bright: palette.neutral.tones[8], // tone 24 - bright surface variant
+        }
+    }
 
-            // Inverse colors
-            inverse_surface: palette.neutral.tones[17], // tone 90
-            inverse_on_surface: palette.neutral.tones[5], // tone 20
-            inverse_primary: palette.primary.tones[10], // tone 40
+    /// Helper function to create a ColorRole with proper tone mappings for light theme
+    fn create_light_color_role(palette: &TonalPalette) -> ColorRole {
+        ColorRole {
+            base: palette.tones[10],            // tone 40
+            on_base: palette.tones[23],         // tone 100
+            container: palette.tones[16],       // tone 90
+            on_container: palette.tones[3],     // tone 10
+            fixed: palette.tones[16],           // tone 90
+            fixed_dim: palette.tones[14],       // tone 80
+            on_fixed: palette.tones[3],         // tone 10
+            on_fixed_variant: palette.tones[7], // tone 30
+        }
+    }
 
-            // System colors
-            shadow: palette.neutral.tones[0],        // tone 0
-            scrim: palette.neutral.tones[0],         // tone 0
-            surface_tint: palette.primary.tones[14], // tone 80
-
-            // Surface container variants (dark theme)
-            surface_container: palette.neutral.tones[4], // tone 12
-            surface_container_low: palette.neutral.tones[3], // tone 10
-            surface_container_lowest: palette.neutral.tones[1], // tone 4
-            surface_container_high: palette.neutral.tones[6], // tone 17
-            surface_container_highest: palette.neutral.tones[8], // tone 22
-
-            // Additional surface variants
-            surface_dim: palette.neutral.tones[2],    // tone 6
-            surface_bright: palette.neutral.tones[8], // tone 24
+    /// Helper function to create a ColorRole with proper tone mappings for dark theme
+    fn create_dark_color_role(palette: &TonalPalette) -> ColorRole {
+        ColorRole {
+            base: palette.tones[14],            // tone 80
+            on_base: palette.tones[5],          // tone 20
+            container: palette.tones[7],        // tone 30
+            on_container: palette.tones[16],    // tone 90
+            fixed: palette.tones[16],           // tone 90
+            fixed_dim: palette.tones[14],       // tone 80
+            on_fixed: palette.tones[3],         // tone 10
+            on_fixed_variant: palette.tones[7], // tone 30
         }
     }
 }

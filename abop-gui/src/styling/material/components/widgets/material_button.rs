@@ -26,11 +26,8 @@ use iced::{
     widget::Text,
 };
 
-use crate::styling::material::{
-    components::button_style::{strategy::ButtonState, variants::ButtonStyleVariant},
-    elevation::ElevationLevel,
-    tokens::core::MaterialTokens,
-};
+use crate::styling::material::{elevation::ElevationLevel, tokens::core::MaterialTokens};
+use crate::styling::strategy::{ButtonStyleVariant, ComponentState};
 
 /// Material Design 3 button size variants
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -113,13 +110,7 @@ impl<'a, Message> MaterialButton<'a, Message> {
     pub fn new(text: impl Into<String>, tokens: &'a MaterialTokens) -> Self {
         // Use strategy system default styling for initial color
         let filled_strategy = ButtonStyleVariant::Filled.get_strategy();
-        let default_styling = filled_strategy.get_styling(
-            ButtonState::Default,
-            tokens,
-            &tokens.colors,
-            &tokens.elevation,
-            &tokens.shapes,
-        );
+        let default_styling = filled_strategy.get_styling(ComponentState::Default, tokens);
 
         let text_element = Text::new(text.into())
             .size(tokens.typography().label_large.size)
@@ -196,14 +187,14 @@ impl<'a, Message> MaterialButton<'a, Message> {
         self.padding = padding.into();
         self
     }
-    /// Convert MaterialButtonState to ButtonState used by the strategy system
-    const fn get_button_state(&self) -> ButtonState {
+    /// Convert MaterialButtonState to ComponentState used by the strategy system
+    const fn get_button_state(&self) -> ComponentState {
         match self.state {
-            MaterialButtonState::Enabled => ButtonState::Default,
-            MaterialButtonState::Disabled => ButtonState::Disabled,
-            MaterialButtonState::Hovered => ButtonState::Hovered,
-            MaterialButtonState::Pressed => ButtonState::Pressed,
-            MaterialButtonState::Focused => ButtonState::Focused,
+            MaterialButtonState::Enabled => ComponentState::Default,
+            MaterialButtonState::Disabled => ComponentState::Disabled,
+            MaterialButtonState::Hovered => ComponentState::Hovered,
+            MaterialButtonState::Pressed => ComponentState::Pressed,
+            MaterialButtonState::Focused => ComponentState::Focused,
         }
     }
 
@@ -221,16 +212,8 @@ impl<'a, Message> MaterialButton<'a, Message> {
     fn get_colors(&self) -> ButtonColors {
         let variant = self.get_button_variant();
         let state = self.get_button_state();
-        let strategy = variant.get_strategy();
-
-        // Get styling directly from the strategy
-        let styling = strategy.get_styling(
-            state,
-            self.tokens,
-            &self.tokens.colors,
-            &self.tokens.elevation,
-            &self.tokens.shapes,
-        );
+        let strategy = variant.get_strategy(); // Get styling directly from the strategy
+        let styling = strategy.get_styling(state, self.tokens);
 
         // Extract background color from Background enum
         let background_color = match styling.background {

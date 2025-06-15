@@ -10,6 +10,7 @@ pub mod input;
 pub mod material;
 pub mod plugins;
 pub mod scrollable;
+pub mod strategy;
 pub mod testing;
 pub mod traits;
 pub mod utils;
@@ -18,4 +19,5 @@ pub mod validation;
 // Re-export commonly used styling types for convenience
 pub use color_utils::ColorUtils;
 pub use material::MaterialTokens;
+pub use strategy::{ButtonStyleVariant, ComponentState, ComponentStyleStrategy, ComponentStyling};
 pub use traits::{ComponentStyle, StyleBuilder, StyleVariant, ThemeAware};

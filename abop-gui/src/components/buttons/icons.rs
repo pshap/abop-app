@@ -34,9 +34,7 @@ impl IconSize {
     ///
     /// # Returns
     /// * `Ok(IconSize)` if the size is within valid bounds
-    /// * `Err(ButtonError::InvalidConfiguration)` if the size is too small or too large
-    ///
-    /// # Examples
+    /// * `Err(ButtonError::InvalidConfiguration)` if the size is too small or too large    /// # Examples
     /// ```
     /// use abop_gui::components::buttons::icons::IconSize;
     ///

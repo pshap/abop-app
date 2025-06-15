@@ -6,9 +6,9 @@
 use iced::widget::{Space, column, container, row, text};
 use iced::{Element, Length};
 
+use crate::components::buttons;
 use crate::components::buttons::builder::ButtonBuilder;
 use crate::components::buttons::variants::ButtonVariant;
-use crate::components::buttons;
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::styling::container::dialog::DialogContainerStyles;
@@ -36,7 +36,8 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         row![
             column![
                 text("Theme").size(state.material_tokens.typography().label_large.size),
-                text("Switch between light and dark theme").size(state.material_tokens.typography().body_small.size)
+                text("Switch between light and dark theme")
+                    .size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             theme_switch
@@ -47,7 +48,8 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         row![
             column![
                 text("Auto-save Library").size(state.material_tokens.typography().label_large.size),
-                text("Automatically save library changes").size(state.material_tokens.typography().body_small.size)
+                text("Automatically save library changes")
+                    .size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             auto_save_switch
@@ -57,8 +59,10 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         // Scan Subdirectories Setting
         row![
             column![
-                text("Scan Subdirectories").size(state.material_tokens.typography().label_large.size),
-                text("Include subdirectories when scanning for audiobooks").size(state.material_tokens.typography().body_small.size)
+                text("Scan Subdirectories")
+                    .size(state.material_tokens.typography().label_large.size),
+                text("Include subdirectories when scanning for audiobooks")
+                    .size(state.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             scan_subdirs_switch

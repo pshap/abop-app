@@ -6,11 +6,12 @@
 //! # Examples
 //!
 //! ```no_run
-//! use abop_gui::components::buttons::{self, ButtonVariant, IconPosition};
+//! use abop_gui::components::buttons::{self, ButtonVariant};
+//! use abop_gui::components::buttons::variants::IconPosition;
 //! use abop_gui::styling::material::MaterialTokens;
 //! use iced::Length;
 //!
-//! # fn example(tokens: &MaterialTokens) -> iced::Element<'static, ()> {
+//! # fn example(tokens: &MaterialTokens) -> iced::Element<'_, ()> {
 //! // Create a primary button with an icon
 //! let button = buttons::button(tokens)
 //!     .label("Save")
@@ -45,9 +46,21 @@ const ICON_TEXT_SPACING: f32 = 8.0;
 macro_rules! apply_container_properties {
     ($container:expr, $width:expr, $height:expr, $padding:expr) => {{
         let result = $container;
-        let result = if let Some(w) = $width { result.width(w) } else { result };
-        let result = if let Some(h) = $height { result.height(h) } else { result };
-        if let Some(p) = $padding { result.padding(p) } else { result }
+        let result = if let Some(w) = $width {
+            result.width(w)
+        } else {
+            result
+        };
+        let result = if let Some(h) = $height {
+            result.height(h)
+        } else {
+            result
+        };
+        if let Some(p) = $padding {
+            result.padding(p)
+        } else {
+            result
+        }
     }};
 }
 
@@ -56,10 +69,11 @@ macro_rules! apply_container_properties {
 /// # Examples
 ///
 /// ```no_run
-/// use abop_gui::components::buttons::{self, ButtonVariant, IconPosition};
+/// use abop_gui::components::buttons::{self, ButtonVariant};
+/// use abop_gui::components::buttons::variants::IconPosition;
 /// use abop_gui::styling::material::MaterialTokens;
 ///
-/// # fn example(tokens: &MaterialTokens) -> iced::Element<'static, ()> {
+/// # fn example(tokens: &MaterialTokens) -> iced::Element<'_, ()> {
 /// // Create a primary button with an icon
 /// let button = buttons::button(tokens)
 ///     .label("Save")
@@ -185,7 +199,8 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
-    }    /// Set the message to send when the button is pressed
+    }
+    /// Set the message to send when the button is pressed
     pub fn on_press(mut self, message: M) -> Self {
         self.on_press = Some(message);
         self
@@ -224,7 +239,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
         let width = self.width;
         let height = self.height;
         let padding = self.padding;
-        
+
         let content: Element<'a, M> = match (label, icon) {
             (Some(label), Some(icon)) => {
                 // Button with both icon and label
@@ -267,7 +282,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);
-                
+
                 apply_container_properties!(container_with_alignment, width, height, padding).into()
             }
             (None, Some(icon)) => {
@@ -280,7 +295,7 @@ impl<'a, M: Clone + 'a> ButtonBuilder<'a, M> {
                     .width(Length::Shrink) // Size to content for proper button layout
                     .align_x(Alignment::Center)
                     .align_y(Alignment::Center);
-                
+
                 apply_container_properties!(container_with_alignment, width, height, padding).into()
             }
             (None, None) => unreachable!(), // Already validated above
