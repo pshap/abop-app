@@ -18,7 +18,7 @@ use super::test_data::*;
 use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::common::SelectionComponent;
 use crate::styling::material::components::selection::{
-    Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState, 
+    Chip, ChipBuilder, ChipCollection, ChipCollectionBuilder, ChipSelectionMode, ChipState,
     ChipVariant, ComponentSize, SelectionError,
 };
 
@@ -29,7 +29,7 @@ use crate::styling::material::components::selection::{
 /// Basic chip creation module
 pub mod basic {
     use super::*;
-    
+
     /// Create a basic test chip with default settings
     pub fn chip(label: &str, variant: ChipVariant) -> Chip {
         ChipBuilder::new(label, variant)
@@ -44,7 +44,7 @@ pub mod basic {
             .build()
             .expect("Failed to build sized chip")
     }
-    
+
     /// Create a chip with leading icon
     pub fn chip_with_leading_icon(label: &str, variant: ChipVariant, icon: &str) -> Chip {
         ChipBuilder::new(label, variant)
@@ -102,7 +102,7 @@ pub mod basic {
 /// State-specific chip creation module
 pub mod states {
     use super::*;
-    
+
     /// Create a chip in selected state
     pub fn selected_chip(label: &str, variant: ChipVariant) -> Chip {
         ChipBuilder::new(label, variant)
@@ -135,7 +135,7 @@ pub mod states {
 /// Variant-specific chip creation module
 pub mod variants {
     use super::*;
-    
+
     /// Create a filter chip with standard configuration
     pub fn filter_chip(label: &str) -> Chip {
         basic::chip(label, ChipVariant::Filter)
@@ -177,7 +177,7 @@ pub mod variants {
 /// Chip collection creation module
 pub mod collections {
     use super::*;
-    
+
     /// Create a test chip collection with default settings
     pub fn test_collection(mode: ChipSelectionMode) -> ChipCollection {
         ChipCollectionBuilder::new(mode)
@@ -215,7 +215,7 @@ pub mod collections {
 /// Test assertion helper module
 pub mod assertions {
     use super::*;
-    
+
     /// Assert that a chip has expected basic properties
     pub fn assert_chip_basics(chip: &Chip, expected_label: &str, expected_variant: ChipVariant) {
         assert_eq!(chip.label(), expected_label);
@@ -223,7 +223,7 @@ pub mod assertions {
         assert_eq!(chip.state(), ChipState::Unselected);
         assert!(!chip.props().disabled);
     }
-    
+
     /// Assert that a chip is in selected state
     pub fn assert_chip_selected(chip: &Chip) {
         assert_eq!(chip.state(), ChipState::Selected);
@@ -317,7 +317,10 @@ pub mod assertions {
     }
 
     /// Test that label validation works correctly
-    pub fn assert_label_validation_error(result: &Result<Chip, SelectionError>, expected_len: usize) {
+    pub fn assert_label_validation_error(
+        result: &Result<Chip, SelectionError>,
+        expected_len: usize,
+    ) {
         match result {
             Err(SelectionError::LabelTooLong { len, max: _ }) => {
                 assert_eq!(*len, expected_len);
@@ -339,7 +342,7 @@ pub mod assertions {
 /// Data generation module for testing
 pub mod generators {
     use super::*;
-    
+
     /// Maximum allowed label length for chips
     pub const MAX_LABEL_LENGTH: usize = 100; // This should match actual constant
 
@@ -393,7 +396,8 @@ pub mod generators {
             ChipSelectionMode::Single,
             ChipSelectionMode::Multiple,
         ]
-    }    /// All possible chip states for testing
+    }
+    /// All possible chip states for testing
     pub const ALL_CHIP_STATES: &[ChipState] = &[ChipState::Unselected, ChipState::Selected];
 }
 
@@ -404,7 +408,7 @@ pub mod generators {
 /// Error case factory module
 pub mod errors {
     use super::*;
-    
+
     /// Attempt to create chip with empty label (should fail)
     pub fn empty_label_chip(variant: ChipVariant) -> Result<Chip, SelectionError> {
         ChipBuilder::new("", variant).build()
@@ -428,7 +432,7 @@ pub mod errors {
 /// Batch creation module for testing multiple chips
 pub mod batch {
     use super::*;
-    
+
     /// Create a set of chips with all variants
     pub fn all_variant_chips(label: &str) -> Vec<Chip> {
         generators::all_chip_variants()
@@ -449,12 +453,10 @@ pub mod batch {
     pub fn all_state_chips(label: &str, variant: ChipVariant) -> Vec<Chip> {
         generators::ALL_CHIP_STATES
             .iter()
-            .map(|&state| {
-                match state {
-                    ChipState::Selected => states::selected_chip(label, variant),
-                    ChipState::Unselected => basic::chip(label, variant),
-                    ChipState::Pressed => states::pressed_chip(label, variant),
-                }
+            .map(|&state| match state {
+                ChipState::Selected => states::selected_chip(label, variant),
+                ChipState::Unselected => basic::chip(label, variant),
+                ChipState::Pressed => states::pressed_chip(label, variant),
             })
             .collect()
     }
@@ -482,7 +484,7 @@ pub mod batch {
 /// Real-world scenario module for testing
 pub mod scenarios {
     use super::*;
-    
+
     /// Create filter chips for search interface testing
     pub fn search_filter_chips() -> Vec<Chip> {
         FILTER_CHIP_LABELS
@@ -523,7 +525,7 @@ pub mod scenarios {
 /// Performance testing module
 pub mod performance {
     use super::*;
-    
+
     /// Create a random valid chip for property-based testing
     pub fn random_chip() -> Chip {
         basic::chip(&random_valid_label(), random_chip_variant())
@@ -603,7 +605,7 @@ pub use variants::{assist_chip, filter_chip, input_chip, selected_filter_chip, s
 // Re-export assertion functions
 pub use assertions::*;
 
-// Re-export collection functions  
+// Re-export collection functions
 pub use collections::*;
 
 // Re-export generators

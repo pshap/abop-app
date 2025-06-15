@@ -16,11 +16,13 @@
 
 // Import from unified chip factory
 use super::fixtures::chip_factory::{
-    assertions::{assert_chip_basics, assert_chip_selected, assert_chip_unselected, 
-                 assert_collection_selection, assert_label_validation_error},
-    collections::{test_collection},
-    generators::{all_selection_modes, MAX_LABEL_LENGTH},
-    test_chip, sized_chip as sized_test_chip, selected_chip as selected_test_chip,
+    assertions::{
+        assert_chip_basics, assert_chip_selected, assert_chip_unselected,
+        assert_collection_selection, assert_label_validation_error,
+    },
+    collections::test_collection,
+    generators::{MAX_LABEL_LENGTH, all_selection_modes},
+    selected_chip as selected_test_chip, sized_chip as sized_test_chip, test_chip,
 };
 
 // Import test data constants

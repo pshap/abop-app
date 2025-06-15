@@ -4,11 +4,8 @@
 //! collections in various configurations for testing purposes.
 
 use super::{
-    chip_factory::{
-        errors::oversized_label_chip,
-        variants::deletable_input_chip,
-    },
-    test_data::*
+    chip_factory::{errors::oversized_label_chip, variants::deletable_input_chip},
+    test_data::*,
 };
 use crate::styling::material::components::selection::{
     ChipCollection, ChipCollectionBuilder, ChipSelectionMode, SelectionError,

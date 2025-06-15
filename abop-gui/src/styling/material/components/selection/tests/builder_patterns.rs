@@ -6,9 +6,9 @@
 use super::fixtures::{
     chip_factory::{
         assertions::*,
-        errors::{empty_label_chip, oversized_label_chip, max_length_label_chip},
+        errors::{empty_label_chip, max_length_label_chip, oversized_label_chip},
     },
-    test_data::*
+    test_data::*,
 };
 use crate::styling::material::components::selection::builder::patterns::ComponentBuilder;
 use crate::styling::material::components::selection::common::SelectionComponent;

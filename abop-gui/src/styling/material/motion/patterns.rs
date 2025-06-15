@@ -171,7 +171,7 @@ pub struct PatternsByUseCase {
 }
 
 /// Macro to generate pattern selector methods
-/// 
+///
 /// This eliminates the DRY violation by centralizing the mapping between
 /// selector method names and their corresponding AnimationPattern variants.
 /// Each entry defines: (method_name, documentation, AnimationPattern_variant)
