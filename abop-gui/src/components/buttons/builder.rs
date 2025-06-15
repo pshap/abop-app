@@ -6,11 +6,12 @@
 //! # Examples
 //!
 //! ```no_run
-//! use abop_gui::components::buttons::{self, ButtonVariant, IconPosition};
+//! use abop_gui::components::buttons::{self, ButtonVariant};
+//! use abop_gui::components::buttons::variants::IconPosition;
 //! use abop_gui::styling::material::MaterialTokens;
 //! use iced::Length;
 //!
-//! # fn example(tokens: &MaterialTokens) -> iced::Element<'static, ()> {
+//! # fn example(tokens: &MaterialTokens) -> iced::Element<'_, ()> {
 //! // Create a primary button with an icon
 //! let button = buttons::button(tokens)
 //!     .label("Save")
@@ -56,10 +57,11 @@ macro_rules! apply_container_properties {
 /// # Examples
 ///
 /// ```no_run
-/// use abop_gui::components::buttons::{self, ButtonVariant, IconPosition};
+/// use abop_gui::components::buttons::{self, ButtonVariant};
+/// use abop_gui::components::buttons::variants::IconPosition;
 /// use abop_gui::styling::material::MaterialTokens;
 ///
-/// # fn example(tokens: &MaterialTokens) -> iced::Element<'static, ()> {
+/// # fn example(tokens: &MaterialTokens) -> iced::Element<'_, ()> {
 /// // Create a primary button with an icon
 /// let button = buttons::button(tokens)
 ///     .label("Save")

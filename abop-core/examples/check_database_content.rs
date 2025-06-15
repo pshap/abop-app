@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     } // Get total stats
     let repo = db.audiobook_repository();
     let total_audiobooks = repo.find_all().map_err(|e| {
-        abop_core::error::AppError::Other(format!("Failed to get all audiobooks: {}", e))
+        abop_core::error::AppError::Other(format!("Failed to get all audiobooks: {e}"))
     })?;
 
     println!("📊 Total Statistics:");

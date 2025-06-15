@@ -14,7 +14,6 @@
 //! - **Factories**: Component factory patterns (Phase 3 foundation)
 
 // Core Material Design modules
-// pub mod colors; // DELETED - Using unified_colors instead
 pub mod components;
 pub mod elevation;
 pub mod motion;
@@ -24,7 +23,6 @@ pub mod sizing;
 pub mod spacing;
 pub mod typography;
 pub mod visual;
-// pub mod md3_color;       // DEPRECATED - Use unified_colors instead
 
 // Phase 2: New organizational modules
 pub mod builders;
@@ -36,7 +34,7 @@ pub mod tokens;
 // Phase 3: Unified Material Design 3 System
 pub mod enhanced_tokens; // Complete token system
 pub mod migration_guide;
-pub mod unified_colors; // THE unified color system // Migration helpers
+pub mod unified_colors; // THE unified color system
 
 // Re-export the UNIFIED Material Design types (Phase 3)
 pub use components::*;

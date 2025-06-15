@@ -6,7 +6,8 @@
 //! # Examples
 //!
 //! ```no_run
-//! use abop_gui::components::buttons::{self, ButtonVariant, IconPosition};
+//! use abop_gui::components::buttons::{self, ButtonVariant};
+//! use abop_gui::components::buttons::variants::IconPosition;
 //! use abop_gui::styling::material::MaterialTokens;
 //! use iced::Element;
 //!
@@ -88,7 +89,7 @@ pub fn button<'a, M: Clone + 'a>(tokens: &'a MaterialTokens) -> ButtonBuilder<'a
 /// #[derive(Debug, Clone)]
 /// enum Message { Save }
 ///
-/// # fn example(tokens: &MaterialTokens) -> iced::Element<'static, Message> {
+/// # fn example(tokens: &MaterialTokens) -> iced::Element<'_, Message> {
 /// let save_btn = buttons::create_button(
 ///     || buttons::button(tokens)
 ///         .label("Save")

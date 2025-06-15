@@ -93,6 +93,8 @@ pub mod icon_names {
 ///
 /// # Examples
 /// ```rust
+/// use abop_gui::components::icons::{small_icon, medium_icon, large_icon, sized_icon};
+/// 
 /// // Prefer predefined sizes (optimized):
 /// let icon = small_icon("home");      // 12px - optimized
 /// let icon = medium_icon("search");   // 16px - optimized
