@@ -7,6 +7,7 @@ use abop_core::db::Database;
 use abop_core::error::{ErrorContext, Result};
 use rusqlite::OptionalExtension;
 use std::path::PathBuf;
+use tracing::error;
 
 fn main() -> Result<()> {
     println!("🔍 ABOP Database Centralization Validation");
@@ -37,7 +38,7 @@ fn test_database_path_consistency() -> Result<()> {
     let parent = db_path.parent().ok_or_else(|| {
         let error_msg =
             "Database path has no parent directory - this indicates an invalid path structure";
-        eprintln!("ERROR: {error_msg}");
+        error!("Database path has no parent directory: {}", error_msg);
         abop_core::error::AppError::Other(error_msg.to_string())
     })?;
 
@@ -46,7 +47,7 @@ fn test_database_path_consistency() -> Result<()> {
     // Verify this is in the correct location (should be in AppData)
     let data_dir = dirs::data_dir().ok_or_else(|| {
         let error_msg = "Could not determine the system's data directory. This might indicate a platform compatibility issue or insufficient permissions.";
-        eprintln!("ERROR: {error_msg}");
+        error!("Could not determine system data directory: {}", error_msg);
         abop_core::error::AppError::Other(error_msg.to_string())
     })?;
 
@@ -58,7 +59,7 @@ fn test_database_path_consistency() -> Result<()> {
             data_dir.display(),
             db_path.display()
         );
-        eprintln!("ERROR: {error_msg}");
+        error!("Database path location incorrect: {}", error_msg);
         println!("❌ Database path is NOT in user data directory");
         println!("   Expected prefix: {}", data_dir.display());
         return Err(abop_core::error::AppError::Other(error_msg));
@@ -134,7 +135,7 @@ fn test_database_operations() -> Result<()> {
 
         let error_msg =
             "Database schema not properly initialized - migrations table not found or corrupted";
-        eprintln!("ERROR: {error_msg}");
+        error!("Database schema issue: {}", error_msg);
         return Err(abop_core::error::AppError::Other(error_msg.to_string()));
     }
 
@@ -236,7 +237,7 @@ fn test_library_operations() -> Result<()> {
                     "Library not found after creation at path: {}",
                     test_path.display()
                 );
-                eprintln!("ERROR: {error_msg}");
+                error!("Library not found after creation: {}", error_msg);
                 abop_core::error::AppError::Other(error_msg)
             })?;
 
@@ -254,7 +255,7 @@ fn test_library_operations() -> Result<()> {
                 .context("Failed to find library by ID")?
                 .ok_or_else(|| {
                     let error_msg = format!("Library not found by ID: {library_id}");
-                    eprintln!("ERROR: {error_msg}");
+                    error!("Library not found by ID: {}", error_msg);
                     abop_core::error::AppError::Other(error_msg)
                 })?;
 

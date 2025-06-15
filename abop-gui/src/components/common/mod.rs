@@ -19,7 +19,10 @@
 //! use abop_gui::theme::ThemeMode;
 //!
 //! #[derive(Debug, Clone)]
-//! enum Message { }
+//! enum Message {
+//!     ProgressUpdate(f32),
+//!     LoadingComplete,
+//! }
 //!
 //! let tokens = MaterialTokens::default();
 //! let progress = create_progress_indicator::<Message>(

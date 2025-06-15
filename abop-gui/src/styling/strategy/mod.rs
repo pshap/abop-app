@@ -25,6 +25,10 @@
 //!     ComponentState::Default,
 //!     &tokens
 //! );
+//! 
+//! // Apply the styling to your button
+//! button.set_background_color(styling.background_color);
+//! button.set_text_color(styling.text_color);
 //! ```
 
 pub mod traits;

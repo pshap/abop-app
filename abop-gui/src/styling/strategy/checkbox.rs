@@ -80,12 +80,13 @@ impl CheckboxStyleStrategy {
     }    /// Calculate border for checkbox
     fn border_style(&self, state: ComponentState, tokens: &MaterialTokens) -> Border {
         let colors = &tokens.colors;
-        
-        let color = if self.error {
+          let color = if self.error {
             colors.error.base
         } else if matches!(state, ComponentState::Disabled) {
             ColorUtils::with_alpha(colors.on_surface, 0.38)
-        } else if self.selected || matches!(state, ComponentState::Focused) {
+        } else if self.selected {
+            colors.primary.base
+        } else if matches!(state, ComponentState::Focused) {
             colors.primary.base
         } else {
             colors.on_surface_variant
