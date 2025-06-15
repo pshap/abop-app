@@ -365,42 +365,6 @@ impl AnimationBuilder {
     }
 }
 
-/// Utility functions for animation interpolation
-pub mod interpolation {    /// Linear interpolation between two values
-    #[must_use]
-    pub fn lerp(start: f32, end: f32, progress: f32) -> f32 {
-        (end - start).mul_add(progress, start)
-    }
-
-    /// Linear interpolation for colors (RGB)
-    #[must_use]
-    pub fn lerp_color(
-        start: (f32, f32, f32),
-        end: (f32, f32, f32),
-        progress: f32,
-    ) -> (f32, f32, f32) {
-        (
-            lerp(start.0, end.0, progress),
-            lerp(start.1, end.1, progress),
-            lerp(start.2, end.2, progress),
-        )
-    }
-
-    /// Smooth step interpolation (smoother than linear)
-    #[must_use]
-    pub fn smooth_step(start: f32, end: f32, progress: f32) -> f32 {
-        let smooth_progress = progress * progress * 2.0f32.mul_add(-progress, 3.0);
-        (end - start).mul_add(smooth_progress, start)
-    }
-
-    /// Smoother step interpolation (even smoother)
-    #[must_use]
-    pub fn smoother_step(start: f32, end: f32, progress: f32) -> f32 {
-        let smooth_progress =
-            progress * progress * progress * progress.mul_add(progress.mul_add(6.0, -15.0), 10.0);
-        (end - start).mul_add(smooth_progress, start)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -462,19 +426,6 @@ mod tests {
 
         assert_eq!(animation.original_duration(), Duration::from_millis(350));
         assert_eq!(animation.easing().name, "emphasized");
-    }
-
-    #[test]
-    fn test_interpolation_functions() {
-        use super::interpolation::*;
-
-        assert_eq!(lerp(0.0, 10.0, 0.5), 5.0);
-        assert_eq!(lerp(10.0, 20.0, 0.25), 12.5);
-
-        let color_start = (1.0, 0.0, 0.0);
-        let color_end = (0.0, 1.0, 0.0);
-        let color_mid = lerp_color(color_start, color_end, 0.5);
-        assert_eq!(color_mid, (0.5, 0.5, 0.0));
     }    #[test]
     fn test_animation_timing() {
         let mut animation = Animation::from_pattern(AnimationPattern::FadeInOut);
