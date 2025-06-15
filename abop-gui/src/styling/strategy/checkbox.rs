@@ -1,6 +1,6 @@
 //! Checkbox style strategy implementation
 //!
-//! This module provides the checkbox-specific styling strategy following Material Design 3
+//! This module provides the checkbox styling strategy following Material Design 3
 //! specifications for the unified strategy system.
 
 use iced::{Background, Border, Color};
@@ -85,9 +85,7 @@ impl CheckboxStyleStrategy {
             colors.error.base
         } else if matches!(state, ComponentState::Disabled) {
             ColorUtils::with_alpha(colors.on_surface, 0.38)
-        } else if self.selected {
-            colors.primary.base
-        } else if matches!(state, ComponentState::Focused) {
+        } else if self.selected || matches!(state, ComponentState::Focused) {
             colors.primary.base
         } else {
             colors.on_surface_variant
