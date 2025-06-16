@@ -6,31 +6,58 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use tempfile::NamedTempFile;
-    /// Set up test database with migrations and proper error handling
+    /// Set up a fresh test database with migrations and proper error handling.
+    /// 
+    /// # Returns
+    /// A new `Arc<EnhancedConnection>` connected to a temporary database with all migrations applied.
+    /// 
+    /// # Panics
+    /// Panics if any step of the database setup fails, with a descriptive error message.
     fn setup_test_db() -> Arc<EnhancedConnection> {
-        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test database");
+        // Create a temporary file for the database
+        let temp_file = NamedTempFile::new()
+            .expect("Failed to create temporary file for test database");
         let db_path = temp_file.path();
 
+        // Initialize the enhanced connection
         let enhanced_conn = Arc::new(EnhancedConnection::new(db_path));
 
-        // Connect to the database first
+        // Connect to the database
         enhanced_conn
             .connect()
             .expect("Failed to connect to test database - check database setup");
 
-        // Set up database schema using migrations
-        let mut conn =
-            Connection::open(db_path).expect("Failed to open database connection for migrations");
+        // Apply database migrations
+        let mut conn = Connection::open(db_path)
+            .expect("Failed to open database connection for migrations");
 
-        run_migrations(&mut conn).expect("Failed to run database migrations during test setup");
+        run_migrations(&mut conn)
+            .expect("Failed to run database migrations during test setup");
 
         enhanced_conn
     }
 
     /// Create a test library repository with a fresh database
+    /// 
+    /// # Returns
+    /// A new `LibraryRepository` instance connected to a fresh test database.
     fn create_test_repo() -> LibraryRepository {
         let enhanced_conn = setup_test_db();
         LibraryRepository::new(enhanced_conn)
+    }
+    
+    /// Helper function to create a test library with the given name and path
+    /// 
+    /// # Arguments
+    /// * `repo` - The repository to create the library in
+    /// * `name` - Name for the test library
+    /// * `path` - Path for the test library
+    /// 
+    /// # Returns
+    /// The created library
+    fn create_test_library(repo: &LibraryRepository, name: &str, path: &str) -> crate::models::Library {
+        repo.create(name, path)
+            .unwrap_or_else(|e| panic!("Failed to create test library '{}' at '{}': {}", name, path, e))
     }
 
     #[test]
@@ -57,18 +84,33 @@ mod tests {
 
         // Create first library
         let result1 = repo.create(name, path1);
-        assert!(result1.is_ok()); // Try to create second library with same name
+        assert!(result1.is_ok(), "First library creation should succeed");
+        
+        // Try to create second library with same name
         let result2 = repo.create(name, path2);
-        assert!(result2.is_err());
+        
+        // Check for error
+        assert!(result2.is_err(), "Creating library with duplicate name should fail");
+        
+        // Get the error and check its type rather than string content
         let error = result2.unwrap_err();
-        // Check for the actual error types returned by the repository
-        let error_debug = format!("{:?}", error);
+        let error_type = std::any::type_name_of_val(&error);
+        
+        // Verify it's a database constraint error
         assert!(
-            error_debug.contains("Sqlite")
-                || error_debug.contains("DuplicateEntry")
-                || error_debug.contains("already exists"),
-            "Expected duplicate error for library name, got: {}",
-            error_debug
+            error_type.contains("Sqlite") || error_type.contains("Constraint"),
+            "Expected a database constraint error, got: {}",
+            error_type
+        );
+        
+        // Check error message contains relevant information
+        let error_msg = error.to_string().to_lowercase();
+        assert!(
+            error_msg.contains("unique") || 
+            error_msg.contains("duplicate") || 
+            error_msg.contains("constraint"),
+            "Error message should indicate a constraint violation, got: {}",
+            error_msg
         );
     }
 
@@ -81,21 +123,57 @@ mod tests {
 
         // Create first library
         let result1 = repo.create(name1, path);
-        assert!(result1.is_ok());
+        assert!(result1.is_ok(), "First library creation should succeed");
 
         // Try to create second library with same path but different name
         let result2 = repo.create(name2, path);
-        assert!(result2.is_err());
+        
+        // Check for error
+        assert!(result2.is_err(), "Creating library with duplicate path should fail");
+        
+        // Get the error and check its type rather than string content
         let error = result2.unwrap_err();
-        // Check for the actual error types returned by the repository
-        let error_debug = format!("{:?}", error);
+        let error_type = std::any::type_name_of_val(&error);
+        
+        // Verify it's a database constraint error
         assert!(
-            error_debug.contains("Sqlite")
-                || error_debug.contains("DuplicateEntry")
-                || error_debug.contains("already exists"),
-            "Expected duplicate error for library path, got: {}",
-            error_debug
+            error_type.contains("Sqlite") || error_type.contains("Constraint"),
+            "Expected a database constraint error, got: {}",
+            error_type
         );
+        
+        // Check error message contains relevant information
+        let error_msg = error.to_string().to_lowercase();
+        assert!(
+            error_msg.contains("unique") || 
+            error_msg.contains("duplicate") || 
+            error_msg.contains("constraint") ||
+            error_msg.contains("path"),
+            "Error message should indicate a path constraint violation, got: {}",
+            error_msg
+        );
+    }
+    
+    /// Test that creating a library with an empty name or path fails
+    #[test]
+    fn test_create_library_invalid_input() {
+        let repo = create_test_repo();
+        
+        // Test empty name
+        let result = repo.create("", "/valid/path");
+        assert!(result.is_err(), "Creating library with empty name should fail");
+        
+        // Test empty path
+        let result = repo.create("Valid Name", "");
+        assert!(result.is_err(), "Creating library with empty path should fail");
+        
+        // Test whitespace-only name
+        let result = repo.create("   ", "/valid/path");
+        assert!(result.is_err(), "Creating library with whitespace-only name should fail");
+        
+        // Test whitespace-only path
+        let result = repo.create("Valid Name", "   ");
+        assert!(result.is_err(), "Creating library with whitespace-only path should fail");
     }
 
     #[test]
@@ -328,8 +406,36 @@ mod tests {
     #[test]
     fn test_create_with_special_characters() {
         let repo = create_test_repo();
-        let name = "Library with Special Characters: éñ & 日本語";
-        let path = "/path/with spaces & special chars";
+        
+        // Test various special characters and edge cases
+        let test_cases = [
+            ("Standard ASCII", "Test Library", "/test/path"),
+            ("Unicode characters", "Bibliothèque avec accents: éèàçù", "/chemin/avec/caractères"),
+            ("Non-Latin scripts", "図書館 ライブラリ 图书馆 도서관", "/путь/к/библиотеке"),
+            ("Special symbols", "Library !@#$%^&*()_+-=[]{}|;:'\",.<>/?", "/path/with/symbols/!@#$%^&*()"),
+            ("Whitespace in name", "  Library with  extra   spaces  ", "/path/with/spaces"),
+            ("Mixed case", "LiBrArY wItH mIxEd CaSe", "/PaTh/To/LiBrArY"),
+        ];
+        
+        for (test_case, name, path) in test_cases {
+            println!("Testing: {}", test_case);
+            
+            // Test creation
+            let result = repo.create(name, path);
+            assert!(result.is_ok(), "Failed to create library for case '{}': {:?}", test_case, result.err());
+            
+            let library = result.unwrap();
+            assert_eq!(library.name, name, "Name mismatch for case '{}'", test_case);
+            assert_eq!(library.path, PathBuf::from(path), "Path mismatch for case '{}'", test_case);
+            
+            // Test retrieval
+            let found = repo.find_by_id(&library.id);
+            assert!(found.is_ok(), "Failed to find library by ID for case '{}'", test_case);
+            assert_eq!(found.unwrap().id, library.id, "Found library ID mismatch for case '{}'", test_case);
+            
+            // Clean up
+            assert!(repo.delete(&library.id).is_ok(), "Failed to clean up library for case '{}'", test_case);
+        }
 
         let result = repo.create(name, path);
         assert!(result.is_ok());
@@ -385,6 +491,88 @@ mod tests {
         // Verify deletion
         let not_found = repo.find_by_id(&created.id).unwrap();
         assert!(not_found.is_none());
+    }
+
+    #[test]
+    fn test_bulk_operations() {
+        // This test verifies that bulk operations work correctly with a moderate number of items
+        // Note: For actual performance testing, use criterion or another benchmarking framework
+        const NUM_LIBRARIES: usize = 50; // Reasonable number for functional testing
+        
+        let repo = create_test_repo();
+        let mut created_ids = Vec::with_capacity(NUM_LIBRARIES);
+        
+        // Create libraries in a batch
+        for i in 0..NUM_LIBRARIES {
+            let name = format!("Library {}", i);
+            let path = format!("/path/to/library/{}", i);
+            
+            let library = create_test_library(&repo, &name, &path);
+            created_ids.push(library.id.clone());
+        }
+        
+        // Verify all libraries were created
+        let all_libraries = repo.find_all().expect("Failed to fetch all libraries");
+        assert_eq!(all_libraries.len(), NUM_LIBRARIES, 
+                 "Incorrect number of libraries found");
+        
+        // Verify each library can be found by ID
+        for id in &created_ids {
+            assert!(repo.find_by_id(id).is_ok(), 
+                   "Failed to find library with ID: {}", id);
+        }
+        
+        // Clean up
+        for id in created_ids {
+            assert!(repo.delete(&id).is_ok(), 
+                   "Failed to delete library with ID: {}", id);
+        }
+        
+        // Verify all libraries were deleted
+        assert!(repo.find_all().expect("Failed to fetch all libraries").is_empty(),
+               "Not all libraries were deleted");
+    }
+    
+    /// Test for transaction behavior in bulk operations
+    #[test]
+    fn test_bulk_operations_transaction() {
+        let repo = create_test_repo();
+        
+        // This test verifies that either all operations in a transaction complete,
+        // or none of them do if there's an error
+        
+        // First, create a few valid libraries
+        let valid_libs = [
+            ("Valid 1", "/valid/path/1"),
+            ("Valid 2", "/valid/path/2"),
+        ];
+        
+        // This should fail because of the duplicate path
+        let test_cases = [
+            ("Should Fail", "/duplicate/path"),
+            ("Should Also Fail", "/duplicate/path"),
+        ];
+        
+        // Try to create all libraries in separate transactions (should succeed)
+        for (name, path) in &valid_libs {
+            assert!(repo.create(name, path).is_ok(), 
+                   "Failed to create valid library: {} at {}", name, path);
+        }
+        
+        // Try to create libraries with a duplicate path in a transaction (should fail)
+        let result = repo.create_many(
+            test_cases.iter()
+                .map(|(name, path)| (name.to_string(), path.to_string()))
+                .collect()
+        );
+        
+        // The entire batch should fail due to the duplicate path
+        assert!(result.is_err(), "Expected batch operation with duplicate paths to fail");
+        
+        // Verify no partial changes were committed
+        let all_libraries = repo.find_all().expect("Failed to fetch all libraries");
+        assert_eq!(all_libraries.len(), valid_libs.len(), 
+                 "Number of libraries should match the valid ones created");
     }
 
     #[test]

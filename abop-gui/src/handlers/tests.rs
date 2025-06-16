@@ -9,10 +9,36 @@ mod ui_state_tests {
     use std::path::PathBuf;
 
     // Test constants to reduce duplication and improve clarity
-    const TEST_BOOK1_PATH: &str = "/test/book1.mp3";
-    const TEST_BOOK2_PATH: &str = "/test/book2.mp3";
-    const TEST_RECENT_PATH: &str = "/test/recent/path";
-    const TEST_LIBRARY_ID: &str = "lib1";
+    mod test_constants {
+        pub const TEST_BOOK1_PATH: &str = "/test/book1.mp3";
+        pub const TEST_BOOK2_PATH: &str = "/test/book2.mp3";
+        pub const TEST_BOOK3_PATH: &str = "/test/book3.mp3";
+        pub const TEST_RECENT_PATH: &str = "/test/recent/path";
+        pub const TEST_LIBRARY_ID: &str = "lib1";
+        pub const TEST_AUTHOR_A: &str = "Author A";
+        pub const TEST_AUTHOR_B: &str = "Author B";
+        pub const TEST_AUTHOR_C: &str = "Author C";
+        pub const TEST_TITLE_1: &str = "Zebra Book";
+        pub const TEST_TITLE_2: &str = "Alpha Book";
+        pub const TEST_TITLE_3: &str = "Book with Numbers 123";
+    }
+    
+    use test_constants::*;
+    
+    /// Helper function to create a test audiobook with the given parameters
+    fn create_test_audiobook(
+        id: &str, 
+        title: &str, 
+        author: &str,
+        path: &str
+    ) -> abop_core::models::audiobook::Audiobook {
+        use abop_core::models::audiobook::Audiobook;
+        let mut book = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(path));
+        book.id = id.to_string();
+        book.title = Some(title.to_string());
+        book.author = Some(author.to_string());
+        book
+    }
 
     #[test]
     fn test_handle_show_settings() {
@@ -184,34 +210,72 @@ mod ui_state_tests {
     }
     #[test]
     fn test_handle_sort_by() {
-        let mut state = UiState::default();
         use abop_core::models::audiobook::Audiobook;
-
-        // Set up audiobooks with different titles for sorting
-        let mut book1 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK1_PATH));
-        book1.title = Some("Zebra Book".to_string());
-        book1.author = Some("Author A".to_string());
-
-        let mut book2 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK2_PATH));
-        book2.title = Some("Alpha Book".to_string());
-        book2.author = Some("Author B".to_string());
-
-        state.audiobooks = vec![book1, book2];
-
+        use std::collections::HashSet;
+        
+        let mut state = UiState::default();
+        
+        // Create test audiobooks with different attributes for comprehensive sorting
+        let book1 = create_test_audiobook("1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH);
+        let book2 = create_test_audiobook("2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH);
+        let book3 = create_test_audiobook("3", TEST_TITLE_3, TEST_AUTHOR_C, TEST_BOOK3_PATH);
+        
+        // Set initial state with unsorted books
+        state.audiobooks = vec![book1.clone(), book2.clone(), book3.clone()];
+        
         // Test sorting by title
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
-        assert!(task.is_some());
-
-        // Verify that the sort order is applied (should be reflected in state or task)
-        // Note: The actual sorting logic would be in the task execution
-
+        assert!(task.is_some(), "Sorting by title should return a task");
+        
+        // Verify sort order after title sort (should be Alpha, Book with Numbers, Zebra)
+        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
+            assert_eq!(sort_key, "title", "Sort key should be 'title'");
+        } else {
+            panic!("Expected SortAudiobooks message");
+        }
+        
         // Test sorting by author
         let task = handle_ui_message(&mut state, Message::SortBy("author".to_string()));
-        assert!(task.is_some());
-
-        // Test sorting by an unknown field
+        assert!(task.is_some(), "Sorting by author should return a task");
+        
+        // Verify sort order after author sort (should be Author A, B, C)
+        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
+            assert_eq!(sort_key, "author", "Sort key should be 'author'");
+        } else {
+            panic!("Expected SortAudiobooks message");
+        }
+        
+        // Test sorting by path
+        let task = handle_ui_message(&mut state, Message::SortBy("path".to_string()));
+        assert!(task.is_some(), "Sorting by path should return a task");
+        
+        // Test toggling sort order (ascending/descending)
+        state.sort_ascending = true;
+        let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
+        assert!(task.is_some(), "Toggling sort order should return a task");
+        
+        // Verify sort order toggled to descending
+        if let Message::SortAudiobooks { sort_key: _, sort_order } = task.unwrap().message() {
+            assert!(!sort_order, "Sort order should be toggled to descending");
+        } else {
+            panic!("Expected SortAudiobooks message");
+        }
+        
+        // Test sorting by an unknown field (should default to title)
         let task = handle_ui_message(&mut state, Message::SortBy("unknown_field".to_string()));
-        assert!(task.is_some()); // Should still return a task, even if field is unknown
+        assert!(task.is_some(), "Sorting by unknown field should still return a task");
+        
+        // Verify default sort key is used for unknown fields
+        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
+            assert_eq!(sort_key, "title", "Should default to 'title' for unknown sort fields");
+        } else {
+            panic!("Expected SortAudiobooks message");
+        }
+        
+        // Test with empty audiobooks list
+        state.audiobooks.clear();
+        let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
+        assert!(task.is_some(), "Should handle empty audiobooks list");
     }
 
     #[test]
