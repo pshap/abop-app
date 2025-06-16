@@ -1,7 +1,7 @@
 use super::{
     config::{
         ChannelMixerConfig, NormalizerConfig, ProcessingConfig, ResamplerConfig,
-        SilenceDetectorConfig, MixingAlgorithm,
+        SilenceDetectorConfig,
     },
     utils::{channels::validate_channels, sample_rate::validate_sample_rate},
 };
@@ -284,6 +284,7 @@ impl ConfigValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio::processing::config::MixingAlgorithm;
     use std::time::Duration;
 
     #[test]
