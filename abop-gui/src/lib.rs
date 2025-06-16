@@ -70,7 +70,11 @@ pub mod styling;
 #[cfg(test)]
 pub mod testing;
 
-// Re-exports (simplified for new implementation)
+/// Test utilities module for shared test fixtures
+#[cfg(test)]
+pub mod test_utils;
+
+/// Re-exports (simplified for new implementation)
 
 /// Prelude module for convenient imports
 pub mod prelude {

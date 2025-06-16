@@ -1,7 +1,12 @@
-//! Tests for AppState management
-//! 
-//! This module contains tests for application state initialization,
-//! transitions, and persistence.
+//! Tests for UI state management and workflows
+//!
+//! This module contains comprehensive tests for:
+//! - UI state initialization and default values
+//! - State transitions between different view modes  
+//! - Library scanning workflow and progress tracking
+//! - Audiobook selection and player state management
+//! - Settings persistence and theme switching
+//! - Complete workflow validations with side effects
 
 use super::*;
 use abop_core::models::ui::{AppState, ViewType};
@@ -175,17 +180,21 @@ mod core_state_tests {
         // Test clearing selection
         state.select_audiobook(None);
         assert!(state.selected_audiobook_id.is_none());
-    }
-
-    #[test]
+    }    #[test]
     fn test_state_summary() {
         let state = AppState::default();
         let summary = state.get_summary();
         
+        // Summary should include structured information about the application state
+        // Expected format: "AppState { view=[ViewType], audiobooks=N, libraries=N, selected=ID }"
         assert!(summary.contains("AppState"));
         assert!(summary.contains("view="));
         assert!(summary.contains("audiobooks=0"));
         assert!(summary.contains("libraries=0"));
+        
+        // Verify the summary is concise and informative
+        assert!(summary.len() < 200, "Summary should be concise");
+        assert!(!summary.is_empty(), "Summary should not be empty");
     }
 
     #[test]
@@ -212,24 +221,38 @@ mod state_workflow_tests {
     #[test]
     fn test_library_scanning_workflow() {
         let mut state = UiState::default();
+        use abop_core::models::audiobook::Audiobook;
+        use std::path::PathBuf;
         
         // Step 1: User starts a scan
         state.scanning = true;
         state.scan_progress = Some(0.0);
+        assert!(state.scanning);
+        assert_eq!(state.scan_progress, Some(0.0));
         
         // Step 2: Scan progresses
         state.scan_progress = Some(0.5);
+        assert_eq!(state.scan_progress, Some(0.5));
         
         // Step 3: Scan completes
         state.scanning = false;
         state.scan_progress = Some(1.0);
         
-        // Step 4: Results are loaded
-        // (In real app, audiobooks would be populated)
+        // Step 4: Results are loaded - verify audiobooks are populated
+        let audiobook1 = Audiobook::new("test-lib", PathBuf::from("/test/book1.mp3"));
+        let audiobook2 = Audiobook::new("test-lib", PathBuf::from("/test/book2.mp3"));
+        state.audiobooks = vec![audiobook1, audiobook2];
         
-        // Verify workflow state
-        assert!(!state.scanning);
-        assert_eq!(state.scan_progress, Some(1.0));
+        // Verify workflow state and side effects
+        assert!(!state.scanning, "Scanning should be complete");
+        assert_eq!(state.scan_progress, Some(1.0), "Progress should be 100%");
+        assert_eq!(state.audiobooks.len(), 2, "Audiobooks should be populated");
+        assert!(state.selected_audiobooks.is_empty(), "No audiobooks should be initially selected");
+        
+        // Verify the audiobooks have expected properties
+        assert!(!state.audiobooks[0].id.is_empty());
+        assert!(!state.audiobooks[1].id.is_empty());
+        assert_ne!(state.audiobooks[0].id, state.audiobooks[1].id);
     }
 
     #[test]

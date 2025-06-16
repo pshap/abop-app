@@ -118,16 +118,17 @@ mod status_tests {
     use crate::styling::material::MaterialTokens;
     use crate::theme::ThemeMode;
     use abop_core::PlayerState;
+    use abop_core::scanner::ScanProgress;
 
     #[test]
     fn test_status_display_enhanced() {
         let tokens = MaterialTokens::default();
         let params = EnhancedStatusDisplayParams {
             scanning: false,
-            scan_progress: None, // Simplify - don't use scan_progress
+            scan_progress: None,
             cached_scan_progress_text: Some("Scanning progress"),
             processing_audio: false,
-            processing_progress: Some(0.5), // Use Option<f32>
+            processing_progress: Some(0.5),
             cached_processing_progress_text: Some("Processing progress"),
             processing_status: Some("Processing status"),
             player_state: PlayerState::Stopped,
@@ -142,6 +143,91 @@ mod status_tests {
     }
 
     #[test]
+    fn test_status_display_edge_cases() {
+        let tokens = MaterialTokens::default();
+        
+        // Test with None progress
+        let params_none = EnhancedStatusDisplayParams {
+            scanning: false,
+            scan_progress: None,
+            cached_scan_progress_text: None,
+            processing_audio: false,
+            processing_progress: None,
+            cached_processing_progress_text: None,
+            processing_status: None,
+            player_state: PlayerState::Stopped,
+            current_playing_file: None,
+            selected_count: 0,
+            total_count: 0,
+            theme: ThemeMode::Light,
+        };
+        let element = StatusDisplay::enhanced_view(params_none, &tokens);
+        let _ = element; // Verify None values work
+          // Test with starting scan progress
+        let params_zero = EnhancedStatusDisplayParams {
+            scanning: true,
+            scan_progress: Some(ScanProgress::Started { total_files: 100 }),
+            cached_scan_progress_text: Some("Starting scan..."),
+            processing_audio: true,
+            processing_progress: Some(0.0),
+            cached_processing_progress_text: Some("Starting processing..."),
+            processing_status: Some("Initializing"),
+            player_state: PlayerState::Playing,
+            current_playing_file: None,
+            selected_count: 0,
+            total_count: 100,
+            theme: ThemeMode::Dark,
+        };
+        let element = StatusDisplay::enhanced_view(params_zero, &tokens);
+        let _ = element; // Verify started scan progress works
+          // Test with file processing progress
+        let test_audio_path = std::path::PathBuf::from("/test/audio.mp3");
+        let params_complete = EnhancedStatusDisplayParams {
+            scanning: false,
+            scan_progress: Some(ScanProgress::Complete { 
+                processed: 100, 
+                errors: 0, 
+                duration: std::time::Duration::from_secs(10)
+            }),
+            cached_scan_progress_text: Some("Scan complete"),
+            processing_audio: false,
+            processing_progress: Some(1.0),
+            cached_processing_progress_text: Some("Processing complete"),
+            processing_status: Some("Finished"),
+            player_state: PlayerState::Paused,
+            current_playing_file: Some(&test_audio_path),
+            selected_count: 1,
+            total_count: 1,
+            theme: ThemeMode::MaterialDark,
+        };
+        let element = StatusDisplay::enhanced_view(params_complete, &tokens);
+        let _ = element; // Verify complete scan progress works
+        
+        // Test out-of-bounds progress (should be handled gracefully)
+        let params_oob = EnhancedStatusDisplayParams {
+            scanning: true,
+            scan_progress: Some(ScanProgress::FileProcessed {
+                current: 150,
+                total: 100, // Out of bounds - more current than total
+                file_name: "test.mp3".to_string(),
+                progress_percentage: 1.5, // Out of bounds percentage
+            }),
+            cached_scan_progress_text: Some("Invalid progress"),
+            processing_audio: true,
+            processing_progress: Some(-0.1), // Out of bounds
+            cached_processing_progress_text: Some("Invalid processing"),
+            processing_status: Some("Error state"),
+            player_state: PlayerState::Stopped,
+            current_playing_file: None,
+            selected_count: 999,
+            total_count: 1,
+            theme: ThemeMode::Light,
+        };
+        let element = StatusDisplay::enhanced_view(params_oob, &tokens);
+        let _ = element; // Verify out-of-bounds handled gracefully
+    }
+
+    #[test]
     fn test_status_display_app_footer() {
         let element = StatusDisplay::app_footer(15, ThemeMode::Light);
         let _ = element; // Just verify it compiles and runs
@@ -153,22 +239,8 @@ mod table_tests {
     use super::super::table_core::AudiobookTable;
     use crate::styling::material::MaterialTokens;
     use crate::state::TableState;
-    use abop_core::models::audiobook::Audiobook;
-    use std::collections::HashSet;
-    use std::path::PathBuf;
-
-    fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-        let path = PathBuf::from(format!("/test/path/{}.mp3", title));
-        let mut audiobook = Audiobook::new("test-library-id", &path);
-        audiobook.id = id.to_string();
-        audiobook.title = Some(title.to_string());
-        audiobook.author = Some("Test Author".to_string());
-        audiobook.duration_seconds = Some(3600);
-        audiobook.size_bytes = Some(1024000);
-        audiobook
-    }
-
-    #[test]
+    use crate::test_utils::create_test_audiobook;
+    use std::collections::HashSet;    #[test]
     fn test_audiobook_table_empty() {
         let tokens = MaterialTokens::default();
         let audiobooks = vec![];

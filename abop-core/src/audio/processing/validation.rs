@@ -284,7 +284,7 @@ impl ConfigValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio::processing::config::MixingAlgorithm;
+    use super::super::config::MixingAlgorithm;
     use std::time::Duration;
 
     #[test]

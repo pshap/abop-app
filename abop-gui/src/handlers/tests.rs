@@ -8,6 +8,12 @@ mod ui_state_tests {
     use crate::theme::ThemeMode;
     use std::path::PathBuf;
 
+    // Test constants to reduce duplication and improve clarity
+    const TEST_BOOK1_PATH: &str = "/test/book1.mp3";
+    const TEST_BOOK2_PATH: &str = "/test/book2.mp3";
+    const TEST_RECENT_PATH: &str = "/test/recent/path";
+    const TEST_LIBRARY_ID: &str = "lib1";
+
     #[test]
     fn test_handle_show_settings() {
         let mut state = UiState::default();
@@ -67,9 +73,8 @@ mod ui_state_tests {
         // Add some audiobooks using the correct structure
         use abop_core::models::audiobook::Audiobook;
         use std::path::PathBuf;
-        
-        let audiobook1 = Audiobook::new("lib1", PathBuf::from("/test/book1.mp3"));
-        let audiobook2 = Audiobook::new("lib1", PathBuf::from("/test/book2.mp3"));
+          let audiobook1 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK1_PATH));
+        let audiobook2 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK2_PATH));
         
         state.audiobooks = vec![audiobook1, audiobook2];
         
@@ -129,7 +134,7 @@ mod ui_state_tests {
     #[test]
     fn test_handle_select_recent_directory() {
         let mut state = UiState::default();
-        let path = PathBuf::from("/test/recent/path");
+        let path = PathBuf::from(TEST_RECENT_PATH);
         
         let task = handle_ui_message(&mut state, Message::SelectRecentDirectory(path.clone()));
         // Should return a task for handling directory selection
@@ -170,13 +175,36 @@ mod ui_state_tests {
         let mut state = UiState::default();
         let task = handle_ui_message(&mut state, Message::ResetRedrawFlag);
         assert!(task.is_some());
-    }
-
-    #[test]
+    }    #[test]
     fn test_handle_sort_by() {
         let mut state = UiState::default();
+        use abop_core::models::audiobook::Audiobook;
+        
+        // Set up audiobooks with different titles for sorting
+        let mut book1 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK1_PATH));
+        book1.title = Some("Zebra Book".to_string());
+        book1.author = Some("Author A".to_string());
+        
+        let mut book2 = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(TEST_BOOK2_PATH));
+        book2.title = Some("Alpha Book".to_string());
+        book2.author = Some("Author B".to_string());
+        
+        state.audiobooks = vec![book1, book2];
+        
+        // Test sorting by title
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
         assert!(task.is_some());
+        
+        // Verify that the sort order is applied (should be reflected in state or task)
+        // Note: The actual sorting logic would be in the task execution
+        
+        // Test sorting by author  
+        let task = handle_ui_message(&mut state, Message::SortBy("author".to_string()));
+        assert!(task.is_some());
+        
+        // Test sorting by an unknown field
+        let task = handle_ui_message(&mut state, Message::SortBy("unknown_field".to_string()));
+        assert!(task.is_some()); // Should still return a task, even if field is unknown
     }
 
     #[test]
