@@ -1,6 +1,5 @@
 //! Consolidated test module for selection components
 //!
-
 //! This module provides comprehensive test coverage for all selection components
 //! (checkboxes, chips, radios, switches) in a single, well-organized file.
 
