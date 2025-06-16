@@ -278,3 +278,420 @@ impl<T> FullAudioProcessor for T where
         + ThreadSafe
 {
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::audio::AudioBuffer;
+    use std::time::Duration;
+
+    // Test implementation for AudioProcessor trait
+    #[derive(Debug, Default)]
+    struct MockProcessor {
+        bypassed: bool,
+        latency_samples: usize,
+        is_valid: bool,
+        is_ready: bool,
+        is_processing: bool,
+        memory_usage: usize,
+        cpu_usage: f32,
+        name: String,
+    }
+
+    impl AudioProcessor for MockProcessor {
+        fn process(&mut self, _buffer: &mut AudioBuffer<f32>) -> Result<()> {
+            if self.is_valid {
+                Ok(())
+            } else {
+                Err(super::super::error::AudioProcessingError::Pipeline(
+                    "Mock processor failed".to_string(),
+                ))
+            }
+        }
+
+        fn reset(&mut self) {
+            self.is_processing = false;
+        }
+    }
+
+    impl Configurable<String> for MockProcessor {
+        fn configure(&mut self, config: String) -> Result<()> {
+            if config == "invalid" {
+                Err(super::super::error::AudioProcessingError::Configuration(
+                    "Invalid configuration".to_string(),
+                ))
+            } else {
+                self.name = config;
+                Ok(())
+            }
+        }
+
+        fn get_config(&self) -> &String {
+            &self.name
+        }
+    }
+
+    impl LatencyReporting for MockProcessor {
+        fn get_latency_samples(&self) -> usize {
+            self.latency_samples
+        }
+    }
+
+    impl Validatable for MockProcessor {
+        fn validate(&self) -> Result<()> {
+            if self.is_valid {
+                Ok(())
+            } else {
+                Err(super::super::error::AudioProcessingError::Configuration(
+                    "Invalid processor state".to_string(),
+                ))
+            }
+        }
+    }
+
+    impl ProcessorLifecycle for MockProcessor {
+        fn initialize(&mut self) -> Result<()> {
+            self.is_ready = true;
+            Ok(())
+        }
+
+        fn cleanup(&mut self) -> Result<()> {
+            self.is_ready = false;
+            Ok(())
+        }
+
+        fn is_ready(&self) -> bool {
+            self.is_ready
+        }
+
+        fn is_processing(&self) -> bool {
+            self.is_processing
+        }
+
+        fn pause(&mut self) -> Result<()> {
+            self.is_processing = false;
+            Ok(())
+        }
+
+        fn resume(&mut self) -> Result<()> {
+            self.is_processing = true;
+            Ok(())
+        }
+    }
+
+    impl ProcessorInfo for MockProcessor {
+        fn name(&self) -> &str {
+            if self.name.is_empty() {
+                "MockProcessor"
+            } else {
+                &self.name
+            }
+        }
+    }
+
+    impl ProgressReporting for MockProcessor {
+        type Progress = f32;
+
+        fn report_progress(&self) -> Self::Progress {
+            0.5
+        }
+
+        fn completion_percentage(&self) -> f32 {
+            0.75
+        }
+
+        fn estimated_time_remaining(&self) -> Option<Duration> {
+            Some(Duration::from_secs(10))
+        }
+    }
+
+    impl ResourceEstimation for MockProcessor {
+        fn estimate_memory_usage(&self, buffer_size: usize) -> usize {
+            self.memory_usage + buffer_size * 4 // 4 bytes per f32 sample
+        }
+
+        fn estimate_cpu_usage(&self) -> f32 {
+            self.cpu_usage
+        }
+    }
+
+    impl StreamingProcessor for MockProcessor {
+        fn process_chunk(&mut self, input: &[f32], output: &mut [f32]) -> Result<usize> {
+            if input.len() != output.len() {
+                return Err(super::super::error::AudioProcessingError::BufferValidation(
+                    "Input and output buffer size mismatch".to_string(),
+                ));
+            }
+            output.copy_from_slice(input);
+            Ok(input.len())
+        }
+
+        fn preferred_chunk_size(&self) -> usize {
+            512
+        }
+
+        fn streaming_latency(&self) -> usize {
+            self.latency_samples
+        }
+    }
+
+    impl Serializable for MockProcessor {
+        fn serialize(&self) -> Result<Vec<u8>> {
+            Ok(self.name.as_bytes().to_vec())
+        }
+
+        fn deserialize(&mut self, data: &[u8]) -> Result<()> {
+            self.name = String::from_utf8(data.to_vec()).map_err(|_| {
+                super::super::error::AudioProcessingError::InvalidInput(
+                    "Invalid UTF-8 data".to_string(),
+                )
+            })?;
+            Ok(())
+        }
+
+        fn type_id(&self) -> &'static str {
+            "MockProcessor"
+        }
+    }
+
+    impl Bypassable for MockProcessor {
+        fn is_bypassed(&self) -> bool {
+            self.bypassed
+        }
+
+        fn set_bypassed(&mut self, bypassed: bool) {
+            self.bypassed = bypassed;
+        }
+    }
+
+    #[test]
+    fn test_audio_processor() {
+        let mut processor = MockProcessor {
+            is_valid: true,
+            ..Default::default()
+        };
+
+        let mut buffer = AudioBuffer {
+            data: vec![0.0f32; 100],
+            format: crate::audio::SampleFormat::F32,
+            channels: 2,
+            sample_rate: 44100,
+        };
+
+        // Test successful processing
+        assert!(processor.process(&mut buffer).is_ok());
+
+        // Test reset
+        processor.is_processing = true;
+        processor.reset();
+        assert!(!processor.is_processing);
+
+        // Test failure case
+        processor.is_valid = false;
+        assert!(processor.process(&mut buffer).is_err());
+    }
+
+    #[test]
+    fn test_configurable() {
+        let mut processor = MockProcessor::default();
+
+        // Test valid configuration
+        assert!(processor.configure("test_config".to_string()).is_ok());
+        assert_eq!(processor.get_config(), "test_config");
+
+        // Test invalid configuration
+        assert!(processor.configure("invalid".to_string()).is_err());
+    }
+
+    #[test]
+    fn test_latency_reporting() {
+        let processor = MockProcessor {
+            latency_samples: 256,
+            ..Default::default()
+        };
+
+        assert_eq!(processor.get_latency_samples(), 256);
+        assert_eq!(processor.get_latency_seconds(44100), 256.0 / 44100.0);
+    }
+
+    #[test]
+    fn test_validatable() {
+        let processor = MockProcessor {
+            is_valid: true,
+            ..Default::default()
+        };
+        assert!(processor.validate().is_ok());
+
+        let invalid_processor = MockProcessor {
+            is_valid: false,
+            ..Default::default()
+        };
+        assert!(invalid_processor.validate().is_err());
+    }
+
+    #[test]
+    fn test_progress_reporting() {
+        let processor = MockProcessor::default();
+
+        assert_eq!(processor.report_progress(), 0.5);
+        assert_eq!(processor.completion_percentage(), 0.75);
+        assert_eq!(
+            processor.estimated_time_remaining(),
+            Some(Duration::from_secs(10))
+        );
+    }
+
+    #[test]
+    fn test_resource_estimation() {
+        let processor = MockProcessor {
+            memory_usage: 1000,
+            cpu_usage: 0.5,
+            ..Default::default()
+        };
+
+        let buffer_size = 1024;
+        assert_eq!(
+            processor.estimate_memory_usage(buffer_size),
+            1000 + buffer_size * 4
+        );
+        assert_eq!(processor.estimate_cpu_usage(), 0.5);
+
+        // Test processing time estimation
+        let time = processor.estimate_processing_time(44100, 44100);
+        assert_eq!(time, Duration::from_secs_f64(0.5)); // 1 second of audio * 0.5 CPU usage
+    }
+
+    #[test]
+    fn test_processor_lifecycle() {
+        let mut processor = MockProcessor::default();
+
+        // Initial state
+        assert!(!processor.is_ready());
+        assert!(!processor.is_processing());
+
+        // Initialize
+        assert!(processor.initialize().is_ok());
+        assert!(processor.is_ready());
+
+        // Pause/Resume
+        assert!(processor.resume().is_ok());
+        assert!(processor.is_processing());
+
+        assert!(processor.pause().is_ok());
+        assert!(!processor.is_processing());
+
+        // Cleanup
+        assert!(processor.cleanup().is_ok());
+        assert!(!processor.is_ready());
+    }
+
+    #[test]
+    fn test_streaming_processor() {
+        let mut processor = MockProcessor::default();
+
+        assert_eq!(processor.preferred_chunk_size(), 512);
+        assert_eq!(processor.streaming_latency(), 0);
+
+        let input = vec![1.0, 2.0, 3.0, 4.0];
+        let mut output = vec![0.0; 4];
+
+        let processed = processor.process_chunk(&input, &mut output).unwrap();
+        assert_eq!(processed, 4);
+        assert_eq!(output, input);
+
+        // Test size mismatch
+        let mut output_wrong_size = vec![0.0; 2];
+        assert!(processor
+            .process_chunk(&input, &mut output_wrong_size)
+            .is_err());
+    }
+
+    #[test]
+    fn test_serializable() {
+        let processor = MockProcessor {
+            name: "test_processor".to_string(),
+            ..Default::default()
+        };
+
+        // Test serialization
+        let data = processor.serialize().unwrap();
+        assert_eq!(data, b"test_processor");
+
+        // Test type_id
+        assert_eq!(processor.type_id(), "MockProcessor");
+
+        // Test deserialization
+        let mut new_processor = MockProcessor::default();
+        assert!(new_processor.deserialize(&data).is_ok());
+        assert_eq!(new_processor.name, "test_processor");
+
+        // Test invalid data
+        assert!(new_processor.deserialize(&[0xFF, 0xFE]).is_err());
+    }
+
+    #[test]
+    fn test_bypassable() {
+        let mut processor = MockProcessor::default();
+
+        assert!(!processor.is_bypassed());
+
+        processor.set_bypassed(true);
+        assert!(processor.is_bypassed());
+
+        processor.toggle_bypass();
+        assert!(!processor.is_bypassed());
+
+        processor.toggle_bypass();
+        assert!(processor.is_bypassed());
+    }
+
+    #[test]
+    fn test_processor_info() {
+        let processor = MockProcessor::default();
+
+        assert_eq!(processor.name(), "MockProcessor");
+        assert_eq!(processor.version(), "1.0.0");
+        assert_eq!(processor.description(), "");
+        assert_eq!(processor.author(), "ABOP");
+        assert_eq!(processor.supported_input_formats(), vec!["f32".to_string()]);
+        assert_eq!(
+            processor.supported_output_formats(),
+            vec!["f32".to_string()]
+        );
+
+        let named_processor = MockProcessor {
+            name: "CustomName".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(named_processor.name(), "CustomName");
+    }
+
+    #[test]
+    fn test_full_audio_processor() {
+        let mut processor = MockProcessor {
+            is_valid: true,
+            ..Default::default()
+        };
+
+        let mut buffer = AudioBuffer {
+            data: vec![0.0f32; 100],
+            format: crate::audio::SampleFormat::F32,
+            channels: 2,
+            sample_rate: 44100,
+        };
+
+        // Test validate_and_process with valid processor
+        assert!(processor.validate_and_process(&mut buffer).is_ok());
+
+        // Test validate_and_process with invalid processor
+        processor.is_valid = false;
+        assert!(processor.validate_and_process(&mut buffer).is_err());
+    }
+
+    #[test]
+    fn test_thread_safe_trait() {
+        // Test that our mock processor is thread-safe
+        fn assert_thread_safe<T: ThreadSafe>() {}
+        assert_thread_safe::<MockProcessor>();
+    }
+}

@@ -317,3 +317,240 @@ pub mod constants {
     /// Maximum allowed audio file size in bytes (500MB)
     pub const MAX_AUDIO_FILE_SIZE: usize = 500 * 1024 * 1024;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::audio::{AudioBuffer, SampleFormat};
+
+    // Test buffer validation
+    #[test]
+    fn test_validate_buffer_valid() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        assert!(validate_buffer(&buffer).is_ok());
+    }
+
+    #[test]
+    fn test_validate_buffer_no_channels() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 0, // Invalid
+        };
+
+        assert!(validate_buffer(&buffer).is_err());
+    }
+
+    #[test]
+    fn test_validate_buffer_no_sample_rate() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 0, // Invalid
+            channels: 2,
+        };
+
+        assert!(validate_buffer(&buffer).is_err());
+    }
+
+    #[test]
+    fn test_validate_buffer_empty_data() {
+        let buffer: AudioBuffer<f32> = AudioBuffer {
+            data: Vec::new(), // Invalid
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        assert!(validate_buffer(&buffer).is_err());
+    }
+
+    #[test]
+    fn test_validate_buffer_mismatched_data_length() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 999], // Not divisible by 2 channels
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        assert!(validate_buffer(&buffer).is_err());
+    }
+
+    #[test]
+    fn test_validate_buffer_size() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 1000], // 500 samples per channel
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        // Valid size
+        assert!(buffer::validate_buffer_size(&buffer, 500).is_ok());
+
+        // Invalid size
+        assert!(buffer::validate_buffer_size(&buffer, 400).is_err());
+    }
+
+    #[test]
+    fn test_validate_buffer_compatibility() {
+        let buffer1 = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        let buffer2 = AudioBuffer {
+            data: vec![0i16; 1000],
+            format: SampleFormat::S16,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        // Compatible buffers
+        assert!(buffer::validate_buffer_compatibility(&buffer1, &buffer2).is_ok());
+
+        let buffer3 = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 48000, // Different sample rate
+            channels: 2,
+        };
+
+        // Incompatible sample rate
+        assert!(buffer::validate_buffer_compatibility(&buffer1, &buffer3).is_err());
+
+        let buffer4 = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 1, // Different channel count
+        };
+
+        // Incompatible channel count
+        assert!(buffer::validate_buffer_compatibility(&buffer1, &buffer4).is_err());
+    }
+
+    // Test sample rate validation
+    #[test]
+    fn test_validate_sample_rate() {
+        assert!(sample_rate::validate_sample_rate(44100).is_ok());
+        assert!(sample_rate::validate_sample_rate(48000).is_ok());
+        assert!(sample_rate::validate_sample_rate(8000).is_ok());
+
+        assert!(sample_rate::validate_sample_rate(0).is_err());
+        assert!(sample_rate::validate_sample_rate(1).is_err());
+        assert!(sample_rate::validate_sample_rate(999999).is_err());
+    }
+
+    #[test]
+    fn test_is_standard_sample_rate() {
+        assert!(sample_rate::is_standard_sample_rate(44100));
+        assert!(sample_rate::is_standard_sample_rate(48000));
+        assert!(sample_rate::is_standard_sample_rate(96000));
+
+        assert!(!sample_rate::is_standard_sample_rate(45000));
+        assert!(!sample_rate::is_standard_sample_rate(12345));
+    }
+
+    // Test channel validation
+    #[test]
+    fn test_validate_channels() {
+        assert!(channels::validate_channels(1).is_ok());
+        assert!(channels::validate_channels(2).is_ok());
+        assert!(channels::validate_channels(6).is_ok());
+
+        assert!(channels::validate_channels(0).is_err());
+        assert!(channels::validate_channels(99).is_err());
+    }
+
+    #[test]
+    fn test_is_standard_configuration() {
+        assert!(channels::is_standard_configuration(1));
+        assert!(channels::is_standard_configuration(2));
+        assert!(channels::is_standard_configuration(6));
+
+        assert!(!channels::is_standard_configuration(3));
+        assert!(!channels::is_standard_configuration(99));
+    }
+
+    // Test memory estimation
+    #[test]
+    fn test_estimate_f32_buffer_size() {
+        let size = memory::estimate_f32_buffer_size(44100, 2, 1.0);
+        assert_eq!(size, 44100 * 2 * 4); // 1 second * 2 channels * 4 bytes per f32
+    }
+
+    #[test]
+    fn test_estimate_i16_buffer_size() {
+        let size = memory::estimate_i16_buffer_size(44100, 2, 1.0);
+        assert_eq!(size, 44100 * 2 * 2); // 1 second * 2 channels * 2 bytes per i16
+    }
+
+    // Test performance estimation
+    #[test]
+    fn test_estimate_processing_time() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 44100 * 2], // 1 second of stereo audio
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        let time = estimate_processing_time(&buffer);
+        // Processing time should be 10% of audio duration (0.1s) plus overhead
+        // Overhead: 2 channels * 10ms + 44100/1000 ms = 20ms + 44ms = 64ms
+        // Total expected: ~164ms
+        assert!(time.as_millis() > 50 && time.as_millis() < 300);
+    }
+
+    #[test]
+    fn test_estimate_memory_usage() {
+        let buffer = AudioBuffer {
+            data: vec![0.0f32; 1000],
+            format: SampleFormat::F32,
+            sample_rate: 44100,
+            channels: 2,
+        };
+
+        let memory = estimate_memory_usage(&buffer);
+        assert_eq!(memory, 1000 * 4 * 2); // Buffer size * 2 for processing overhead
+    }
+
+    // Test timing utilities
+    #[test]
+    fn test_timer() {
+        let timer = Timer::new("test");
+        
+        // Simulate some work
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        
+        let elapsed = timer.elapsed();
+        assert!(elapsed.as_millis() >= 10);
+        
+        // Test a new timer
+        let new_timer = Timer::start();
+        let elapsed_new = new_timer.elapsed();
+        assert!(elapsed_new < elapsed);
+    }
+
+    // Test constants module
+    #[test]
+    fn test_constants() {
+        assert_eq!(constants::DEFAULT_BUFFER_SIZE, 4096);
+        assert_eq!(constants::DEFAULT_TIMEOUT_MS, 30_000);
+        assert_eq!(constants::DEFAULT_PARALLEL_THREADS, 4);
+        assert_eq!(constants::DEFAULT_SILENCE_THRESHOLD_DB, -60.0);
+        assert_eq!(constants::DEFAULT_TARGET_LUFS, -23.0);
+        assert_eq!(constants::MAX_AUDIO_FILE_SIZE, 500 * 1024 * 1024);
+    }
+}

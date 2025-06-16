@@ -1,7 +1,7 @@
 use super::{
     config::{
         ChannelMixerConfig, NormalizerConfig, ProcessingConfig, ResamplerConfig,
-        SilenceDetectorConfig,
+        SilenceDetectorConfig, MixingAlgorithm,
     },
     utils::{channels::validate_channels, sample_rate::validate_sample_rate},
 };
@@ -278,5 +278,243 @@ impl ConfigValidator {
             }),
             _ => Err(AppError::Audio(format!("Unknown use case: {use_case}"))),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_validate_processing_config_valid() {
+        let config = ProcessingConfig {
+            resampler: Some(ResamplerConfig {
+                target_sample_rate: Some(44100),
+                ..Default::default()
+            }),
+            channel_mixer: Some(ChannelMixerConfig {
+                target_channels: Some(2),
+                ..Default::default()
+            }),
+            normalizer: Some(NormalizerConfig {
+                target_loudness: -23.0,
+                ..Default::default()
+            }),
+            silence_detector: Some(SilenceDetectorConfig {
+                threshold_db: -45.0,
+                min_duration: Duration::from_millis(1000),
+                ..Default::default()
+            }),
+            num_threads: Some(4),
+            ..Default::default()
+        };
+
+        assert!(ConfigValidator::validate_processing_config(&config).is_ok());
+    }
+
+    #[test]
+    fn test_validate_processing_config_invalid_threads() {
+        let config = ProcessingConfig {
+            num_threads: Some(0), // Invalid: zero threads
+            ..Default::default()
+        };
+
+        assert!(ConfigValidator::validate_processing_config(&config).is_err());
+    }
+
+    #[test]
+    fn test_validate_resampler_config() {
+        let valid_config = ResamplerConfig {
+            target_sample_rate: Some(44100),
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_resampler_config(&valid_config).is_ok());
+
+        let invalid_config = ResamplerConfig {
+            target_sample_rate: Some(0), // Invalid sample rate
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_resampler_config(&invalid_config).is_err());
+    }    #[test]
+    fn test_validate_channel_mixer_config() {
+        let valid_config = ChannelMixerConfig {
+            target_channels: Some(2),
+            mix_algorithm: MixingAlgorithm::WeightedSum {
+                left_weight: 0.7,
+                right_weight: 0.3,
+            },
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_channel_mixer_config(&valid_config).is_ok());        let invalid_config = ChannelMixerConfig {
+            mix_algorithm: MixingAlgorithm::WeightedSum {
+                left_weight: 1.5, // Invalid: > 1.0
+                right_weight: 0.3,
+            },
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_channel_mixer_config(&invalid_config).is_err());
+    }
+
+    #[test]
+    fn test_validate_normalizer_config() {
+        let valid_config = NormalizerConfig {
+            target_loudness: -23.0,
+            peak_level: -1.0,
+            headroom_db: 1.0,
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_normalizer_config(&valid_config).is_ok());
+
+        let invalid_loudness = NormalizerConfig {
+            target_loudness: 5.0, // Invalid: positive loudness
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_normalizer_config(&invalid_loudness).is_err());
+
+        let invalid_peak = NormalizerConfig {
+            peak_level: 2.0, // Invalid: positive peak level
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_normalizer_config(&invalid_peak).is_err());
+
+        let invalid_headroom = NormalizerConfig {
+            headroom_db: -1.0, // Invalid: negative headroom
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_normalizer_config(&invalid_headroom).is_err());
+    }
+
+    #[test]
+    fn test_validate_silence_detector_config() {
+        let valid_config = SilenceDetectorConfig {
+            threshold_db: -45.0,
+            min_duration: Duration::from_millis(1000),
+            fade_duration: Duration::from_millis(100),
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_silence_detector_config(&valid_config).is_ok());
+
+        let invalid_threshold = SilenceDetectorConfig {
+            threshold_db: 5.0, // Invalid: positive threshold
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_silence_detector_config(&invalid_threshold).is_err());
+
+        let invalid_duration = SilenceDetectorConfig {
+            min_duration: Duration::from_millis(0), // Invalid: zero duration
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_silence_detector_config(&invalid_duration).is_err());
+
+        let invalid_fade = SilenceDetectorConfig {
+            min_duration: Duration::from_millis(100),
+            fade_duration: Duration::from_millis(200), // Invalid: fade > min_duration
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_silence_detector_config(&invalid_fade).is_err());
+    }
+
+    #[test]
+    fn test_config_compatibility() {
+        let config = ProcessingConfig {
+            resampler: Some(ResamplerConfig {
+                target_sample_rate: Some(44100),
+                ..Default::default()
+            }),
+            normalizer: Some(NormalizerConfig::default()),
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_config_compatibility(&config).is_ok());
+
+        // Test with low sample rate - should still work but may generate warning
+        let low_rate_config = ProcessingConfig {
+            resampler: Some(ResamplerConfig {
+                target_sample_rate: Some(4000),
+                ..Default::default()
+            }),
+            normalizer: Some(NormalizerConfig::default()),
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_config_compatibility(&low_rate_config).is_ok());
+    }
+
+    #[test]
+    fn test_get_recommended_config_podcast() {
+        let config = ConfigValidator::get_recommended_config("podcast").unwrap();
+        
+        assert!(config.resampler.is_some());
+        assert!(config.channel_mixer.is_some());
+        assert!(config.normalizer.is_some());
+        assert!(config.silence_detector.is_some());
+
+        let resampler = config.resampler.unwrap();
+        assert_eq!(resampler.target_sample_rate, Some(44100));
+
+        let mixer = config.channel_mixer.unwrap();
+        assert_eq!(mixer.target_channels, Some(1));
+
+        let normalizer = config.normalizer.unwrap();
+        assert_eq!(normalizer.target_loudness, -16.0);
+
+        let detector = config.silence_detector.unwrap();
+        assert_eq!(detector.threshold_db, -45.0);
+    }
+
+    #[test]
+    fn test_get_recommended_config_music() {
+        let config = ConfigValidator::get_recommended_config("music").unwrap();
+        
+        assert!(config.resampler.is_some());
+        assert!(config.channel_mixer.is_some());
+        assert!(config.normalizer.is_some());
+        assert!(config.silence_detector.is_none()); // No silence removal for music
+
+        let resampler = config.resampler.unwrap();
+        assert_eq!(resampler.target_sample_rate, Some(44100));
+
+        let mixer = config.channel_mixer.unwrap();
+        assert_eq!(mixer.target_channels, Some(2)); // Stereo for music
+
+        let normalizer = config.normalizer.unwrap();
+        assert_eq!(normalizer.target_loudness, -14.0);
+    }
+
+    #[test]
+    fn test_get_recommended_config_voice() {
+        let config = ConfigValidator::get_recommended_config("voice").unwrap();
+        
+        assert!(config.resampler.is_some());
+        assert!(config.channel_mixer.is_some());
+        assert!(config.normalizer.is_some());
+        assert!(config.silence_detector.is_some());
+
+        let resampler = config.resampler.unwrap();
+        assert_eq!(resampler.target_sample_rate, Some(16000)); // Lower rate for voice
+
+        let mixer = config.channel_mixer.unwrap();
+        assert_eq!(mixer.target_channels, Some(1)); // Mono for voice
+
+        let normalizer = config.normalizer.unwrap();
+        assert_eq!(normalizer.target_loudness, -20.0);
+
+        let detector = config.silence_detector.unwrap();
+        assert_eq!(detector.threshold_db, -50.0);
+    }
+
+    #[test]
+    fn test_get_recommended_config_unknown() {
+        let result = ConfigValidator::get_recommended_config("unknown");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_config_alias() {
+        let config = ProcessingConfig::default();
+        // Verify that validate_config is an alias for validate_processing_config
+        let result1 = ConfigValidator::validate_config(&config);
+        let result2 = ConfigValidator::validate_processing_config(&config);
+        
+        assert_eq!(result1.is_ok(), result2.is_ok());
     }
 }
