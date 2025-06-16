@@ -273,3 +273,6 @@ impl Repository for LibraryRepository {
 }
 
 impl EnhancedRepository for LibraryRepository {}
+
+#[cfg(test)]
+mod tests;

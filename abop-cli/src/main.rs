@@ -392,3 +392,24 @@ fn handle_db_clean(database_path: PathBuf) -> Result<()> {
 // Constants for fallback strings
 const UNKNOWN_TITLE: &str = "Unknown Title";
 const UNKNOWN_AUTHOR: &str = "Unknown Author";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn test_command_factory() {
+        // Test that the CLI structure is valid
+        let cmd = Args::command();
+        assert!(!cmd.get_name().is_empty());
+        assert!(cmd.get_version().is_some());
+    }
+
+    #[test]
+    fn test_constants() {
+        // Test that constants are defined and not empty
+        assert!(!UNKNOWN_TITLE.is_empty());
+        assert!(!UNKNOWN_AUTHOR.is_empty());
+    }
+}

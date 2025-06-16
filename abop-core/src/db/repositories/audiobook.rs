@@ -475,3 +475,6 @@ impl Repository for AudiobookRepository {
 }
 
 impl EnhancedRepository for AudiobookRepository {}
+
+#[cfg(test)]
+mod tests;
