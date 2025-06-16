@@ -7,11 +7,11 @@ use abop_core::models::audiobook::Audiobook;
 use std::path::PathBuf;
 
 /// Creates a test audiobook with default values and the specified ID and title.
-/// 
+///
 /// # Arguments
 /// * `id` - The ID to assign to the audiobook
 /// * `title` - The title to assign to the audiobook
-/// 
+///
 /// # Returns
 /// A fully configured `Audiobook` instance suitable for testing
 pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
@@ -26,20 +26,20 @@ pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
 }
 
 /// Creates a test audiobook with customizable metadata.
-/// 
+///
 /// # Arguments
 /// * `id` - The ID to assign to the audiobook
 /// * `title` - The title to assign to the audiobook
 /// * `author` - The author to assign to the audiobook
 /// * `duration` - Duration in seconds
-/// 
+///
 /// # Returns
 /// A configured `Audiobook` instance with the specified metadata
 pub fn create_custom_test_audiobook(
-    id: &str, 
-    title: &str, 
-    author: &str, 
-    duration: Option<u64>
+    id: &str,
+    title: &str,
+    author: &str,
+    duration: Option<u64>,
 ) -> Audiobook {
     let path = PathBuf::from(format!("/test/path/{}.mp3", title));
     let mut audiobook = Audiobook::new("test-library-id", &path);

@@ -530,13 +530,13 @@ mod tests {
     #[test]
     fn test_timer() {
         let timer = Timer::new("test");
-        
+
         // Simulate some work
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
         let elapsed = timer.elapsed();
         assert!(elapsed.as_millis() >= 10);
-        
+
         // Test a new timer
         let new_timer = Timer::start();
         let elapsed_new = new_timer.elapsed();

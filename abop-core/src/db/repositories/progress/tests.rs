@@ -1,27 +1,30 @@
 #[cfg(test)]
 mod tests {
     use super::super::ProgressRepository;
-    use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
     use crate::db::repositories::{AudiobookRepository, LibraryRepository};
+    use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
     use crate::models::{Audiobook, Progress};
     use chrono::Utc;
     use rusqlite::Connection;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use tempfile::NamedTempFile;    /// Set up test database with migrations
+    use tempfile::NamedTempFile;
+    /// Set up test database with migrations
     fn setup_test_db() -> Arc<EnhancedConnection> {
         let temp_file = NamedTempFile::new().expect("Failed to create temp file");
         let db_path = temp_file.path();
-        
+
         let enhanced_conn = Arc::new(EnhancedConnection::new(db_path));
-        
+
         // Connect to the database first
-        enhanced_conn.connect().expect("Failed to connect to database");
-        
+        enhanced_conn
+            .connect()
+            .expect("Failed to connect to database");
+
         // Set up database schema using migrations
         let mut conn = Connection::open(db_path).expect("Failed to open database");
         run_migrations(&mut conn).expect("Failed to run migrations");
-          enhanced_conn
+        enhanced_conn
     }
 
     /// Create a test audiobook
@@ -39,35 +42,40 @@ mod tests {
             cover_art: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
-            selected: false,        }
+            selected: false,
+        }
     }
 
     /// Create a test progress repository with necessary dependencies
     fn create_test_repo_with_deps(audiobook_ids: &[&str]) -> (ProgressRepository, Vec<String>) {
         let enhanced_conn = setup_test_db();
-        
+
         // Create repositories for setting up dependencies
         let library_repo = LibraryRepository::new(Arc::clone(&enhanced_conn));
         let audiobook_repo = AudiobookRepository::new(Arc::clone(&enhanced_conn));
         let progress_repo = ProgressRepository::new(enhanced_conn);
-        
+
         // Create a test library
-        let _library = library_repo.create("Test Library", "/test/path").expect("Failed to create test library");
-        
+        let _library = library_repo
+            .create("Test Library", "/test/path")
+            .expect("Failed to create test library");
+
         let mut created_audiobook_ids = Vec::new();
-        
+
         // Create test audiobooks for each ID
         for (i, &audiobook_id) in audiobook_ids.iter().enumerate() {
             let audiobook = create_test_audiobook(
                 audiobook_id,
-                &_library.id,  // Use the actual library ID from creation
+                &_library.id, // Use the actual library ID from creation
                 &format!("/test/audiobook-{}.mp3", i + 1),
                 &format!("Test Audiobook {}", i + 1),
             );
-            audiobook_repo.upsert(&audiobook).expect("Failed to create test audiobook");
+            audiobook_repo
+                .upsert(&audiobook)
+                .expect("Failed to create test audiobook");
             created_audiobook_ids.push(audiobook_id.to_string());
         }
-        
+
         (progress_repo, created_audiobook_ids)
     }
 
@@ -204,7 +212,8 @@ mod tests {
 
         let progress_list = result.unwrap();
         assert!(progress_list.is_empty());
-    }    #[test]
+    }
+    #[test]
     fn test_find_all_multiple() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
 
@@ -225,13 +234,15 @@ mod tests {
 
         // Results should be ordered by updated_at DESC
         // Since we created them in sequence, they should maintain that order
-        let audiobook_ids: Vec<String> = progress_list.iter()
+        let audiobook_ids: Vec<String> = progress_list
+            .iter()
             .map(|p| p.audiobook_id.clone())
             .collect();
         assert!(audiobook_ids.contains(&"audiobook-1".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-2".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-3".to_string()));
-    }    #[test]
+    }
+    #[test]
     fn test_get_recently_played() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
 
@@ -257,12 +268,12 @@ mod tests {
         // Should include progress1 and progress2 (within 7 days), but not progress3 (never played)
         assert_eq!(recent_list.len(), 2);
 
-        let audiobook_ids: Vec<String> = recent_list.iter()
-            .map(|p| p.audiobook_id.clone())
-            .collect();
+        let audiobook_ids: Vec<String> =
+            recent_list.iter().map(|p| p.audiobook_id.clone()).collect();
         assert!(audiobook_ids.contains(&"audiobook-1".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-2".to_string()));
-    }    #[test]
+    }
+    #[test]
     fn test_get_completed() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
 
@@ -281,13 +292,15 @@ mod tests {
         let completed_list = result.unwrap();
         assert_eq!(completed_list.len(), 2);
 
-        let audiobook_ids: Vec<String> = completed_list.iter()
+        let audiobook_ids: Vec<String> = completed_list
+            .iter()
             .map(|p| p.audiobook_id.clone())
             .collect();
         assert!(audiobook_ids.contains(&"audiobook-2".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-3".to_string()));
         assert!(!audiobook_ids.contains(&"audiobook-1".to_string()));
-    }    #[test]
+    }
+    #[test]
     fn test_get_in_progress() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
 
@@ -410,9 +423,15 @@ mod tests {
         let result = repo.delete("non-existent-id");
         assert!(result.is_ok());
         assert!(!result.unwrap()); // Should return false for non-existent progress
-    }    #[test]
+    }
+    #[test]
     fn test_get_statistics() {
-        let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3", "audiobook-4"]);
+        let (repo, _) = create_test_repo_with_deps(&[
+            "audiobook-1",
+            "audiobook-2",
+            "audiobook-3",
+            "audiobook-4",
+        ]);
 
         // Create progress records with different states
         let progress1 = create_test_progress("audiobook-1", 0, false); // Not started
@@ -453,7 +472,8 @@ mod tests {
         let result = repo.exists_for_audiobook("non-existent-audiobook");
         assert!(result.is_ok());
         assert!(!result.unwrap());
-    }    #[test]
+    }
+    #[test]
     fn test_progress_workflow() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-workflow"]);
         let audiobook_id = "audiobook-workflow";

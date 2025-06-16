@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn test_builder_creation() {
         let builder = ProcessingConfigBuilder::new();
-        
+
         // Check that all fields are initialized to None
         assert!(builder.resampler.is_none());
         assert!(builder.channel_mixer.is_none());
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn test_default_creation() {
         let builder = ProcessingConfigBuilder::default();
-        
+
         // Default should be the same as new()
         assert!(builder.resampler.is_none());
         assert!(builder.channel_mixer.is_none());
@@ -388,62 +388,55 @@ mod tests {
 
     #[test]
     fn test_with_target_sample_rate() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_target_sample_rate(48000);
-        
+        let builder = ProcessingConfigBuilder::new().with_target_sample_rate(48000);
+
         assert!(builder.resampler.is_some());
         assert_eq!(builder.resampler.unwrap().target_sample_rate, Some(48000));
     }
 
     #[test]
     fn test_with_target_channels() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_target_channels(2);
-        
+        let builder = ProcessingConfigBuilder::new().with_target_channels(2);
+
         assert!(builder.channel_mixer.is_some());
         assert_eq!(builder.channel_mixer.unwrap().target_channels, Some(2));
     }
 
     #[test]
     fn test_with_target_loudness() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_target_loudness(-23.0);
-        
+        let builder = ProcessingConfigBuilder::new().with_target_loudness(-23.0);
+
         assert!(builder.normalizer.is_some());
         assert_eq!(builder.normalizer.unwrap().target_loudness, -23.0);
     }
 
     #[test]
     fn test_with_silence_threshold() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_silence_threshold(-40.0);
-        
+        let builder = ProcessingConfigBuilder::new().with_silence_threshold(-40.0);
+
         assert!(builder.silence_detector.is_some());
         assert_eq!(builder.silence_detector.unwrap().threshold_db, -40.0);
     }
 
     #[test]
     fn test_with_filename_suffix() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_filename_suffix("_processed");
-        
+        let builder = ProcessingConfigBuilder::new().with_filename_suffix("_processed");
+
         assert!(builder.output.is_some());
         assert_eq!(builder.output.unwrap().filename_suffix, "_processed");
     }
 
     #[test]
     fn test_with_num_threads() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_num_threads(4);
-        
+        let builder = ProcessingConfigBuilder::new().with_num_threads(4);
+
         assert_eq!(builder.num_threads, Some(4));
     }
 
     #[test]
     fn test_with_parallel_processing() {
-        let builder = ProcessingConfigBuilder::new()
-            .with_parallel_processing(true);
-        
+        let builder = ProcessingConfigBuilder::new().with_parallel_processing(true);
+
         assert_eq!(builder.enable_parallel, Some(true));
     }
 
@@ -457,7 +450,7 @@ mod tests {
             .with_filename_suffix("_processed")
             .with_num_threads(4)
             .with_parallel_processing(true);
-        
+
         // Verify all configurations were set
         assert!(builder.resampler.is_some());
         assert!(builder.channel_mixer.is_some());
@@ -473,7 +466,7 @@ mod tests {
         let builder = ProcessingConfigBuilder::new()
             .with_target_sample_rate(44100)
             .with_target_sample_rate(48000); // Override
-        
+
         assert!(builder.resampler.is_some());
         assert_eq!(builder.resampler.unwrap().target_sample_rate, Some(48000));
     }
@@ -482,7 +475,7 @@ mod tests {
     fn test_build_config() {
         let builder = ProcessingConfigBuilder::new();
         let config = builder.build();
-        
+
         // All components should be None when not configured
         assert!(config.resampler.is_none());
         assert!(config.channel_mixer.is_none());

@@ -8,7 +8,7 @@ mod about_tests {
     #[test]
     fn test_about_view_component_creation() {
         let element = AboutView::view(ThemeMode::Light);
-        
+
         // Should create element without panicking
         let _ = element; // Just verify it compiles and runs
     }
@@ -18,7 +18,7 @@ mod about_tests {
         // Test light theme
         let light_element = AboutView::view(ThemeMode::Light);
         let _ = light_element; // Just verify it compiles and runs
-        
+
         // Test dark theme
         let dark_element = AboutView::view(ThemeMode::Dark);
         let _ = dark_element; // Just verify it compiles and runs
@@ -43,13 +43,15 @@ mod audio_controls_tests {
         audiobook.duration_seconds = Some(3600);
         audiobook.size_bytes = Some(1024000);
         audiobook
-    }    #[test]
+    }
+    #[test]
     fn test_audio_controls_view() {
         let tokens = MaterialTokens::default();
         let audiobooks = vec![create_test_audiobook("1", "Test Book")];
         let selected_ids = HashSet::new();
-        
-        let element = AudioControls::view(&selected_ids, &audiobooks, PlayerState::Stopped, &tokens);
+
+        let element =
+            AudioControls::view(&selected_ids, &audiobooks, PlayerState::Stopped, &tokens);
         let _ = element; // Just verify it compiles and runs
     }
 
@@ -62,8 +64,9 @@ mod audio_controls_tests {
         ];
         let mut selected_ids = HashSet::new();
         selected_ids.insert("1".to_string());
-        
-        let element = AudioControls::view(&selected_ids, &audiobooks, PlayerState::Stopped, &tokens);
+
+        let element =
+            AudioControls::view(&selected_ids, &audiobooks, PlayerState::Stopped, &tokens);
         let _ = element; // Just verify it compiles and runs
     }
 
@@ -73,9 +76,13 @@ mod audio_controls_tests {
         let audiobooks = vec![create_test_audiobook("1", "Test Book")];
         let mut selected_ids = HashSet::new();
         selected_ids.insert("1".to_string());
-        
+
         // Test different player states
-        let states = [PlayerState::Stopped, PlayerState::Playing, PlayerState::Paused];
+        let states = [
+            PlayerState::Stopped,
+            PlayerState::Playing,
+            PlayerState::Paused,
+        ];
         for state in states {
             let element = AudioControls::view(&selected_ids, &audiobooks, state, &tokens);
             let _ = element; // Just verify it compiles and runs
@@ -93,7 +100,7 @@ mod audio_toolbar_tests {
         let tokens = MaterialTokens::default();
         let toolbar = AudioToolbar::new();
         let element = toolbar.view(&tokens);
-        
+
         let _ = element; // Just verify it compiles and runs
     }
 
@@ -101,11 +108,11 @@ mod audio_toolbar_tests {
     fn test_audio_toolbar_with_playing_state() {
         let tokens = MaterialTokens::default();
         let mut toolbar = AudioToolbar::new();
-        
+
         toolbar.set_playing(true);
         let playing_element = toolbar.view(&tokens);
         let _ = playing_element; // Just verify it compiles and runs
-        
+
         toolbar.set_playing(false);
         let stopped_element = toolbar.view(&tokens);
         let _ = stopped_element; // Just verify it compiles and runs
@@ -114,7 +121,7 @@ mod audio_toolbar_tests {
 
 #[cfg(test)]
 mod status_tests {
-    use super::super::status::{StatusDisplay, EnhancedStatusDisplayParams};
+    use super::super::status::{EnhancedStatusDisplayParams, StatusDisplay};
     use crate::styling::material::MaterialTokens;
     use crate::theme::ThemeMode;
     use abop_core::PlayerState;
@@ -137,7 +144,7 @@ mod status_tests {
             total_count: 10,
             theme: ThemeMode::Light,
         };
-        
+
         let element = StatusDisplay::enhanced_view(params, &tokens);
         let _ = element; // Just verify it compiles and runs
     }
@@ -145,7 +152,7 @@ mod status_tests {
     #[test]
     fn test_status_display_edge_cases() {
         let tokens = MaterialTokens::default();
-        
+
         // Test with None progress
         let params_none = EnhancedStatusDisplayParams {
             scanning: false,
@@ -163,7 +170,7 @@ mod status_tests {
         };
         let element = StatusDisplay::enhanced_view(params_none, &tokens);
         let _ = element; // Verify None values work
-          // Test with starting scan progress
+        // Test with starting scan progress
         let params_zero = EnhancedStatusDisplayParams {
             scanning: true,
             scan_progress: Some(ScanProgress::Started { total_files: 100 }),
@@ -180,14 +187,14 @@ mod status_tests {
         };
         let element = StatusDisplay::enhanced_view(params_zero, &tokens);
         let _ = element; // Verify started scan progress works
-          // Test with file processing progress
+        // Test with file processing progress
         let test_audio_path = std::path::PathBuf::from("/test/audio.mp3");
         let params_complete = EnhancedStatusDisplayParams {
             scanning: false,
-            scan_progress: Some(ScanProgress::Complete { 
-                processed: 100, 
-                errors: 0, 
-                duration: std::time::Duration::from_secs(10)
+            scan_progress: Some(ScanProgress::Complete {
+                processed: 100,
+                errors: 0,
+                duration: std::time::Duration::from_secs(10),
             }),
             cached_scan_progress_text: Some("Scan complete"),
             processing_audio: false,
@@ -202,7 +209,7 @@ mod status_tests {
         };
         let element = StatusDisplay::enhanced_view(params_complete, &tokens);
         let _ = element; // Verify complete scan progress works
-        
+
         // Test out-of-bounds progress (should be handled gracefully)
         let params_oob = EnhancedStatusDisplayParams {
             scanning: true,
@@ -237,16 +244,17 @@ mod status_tests {
 #[cfg(test)]
 mod table_tests {
     use super::super::table_core::AudiobookTable;
-    use crate::styling::material::MaterialTokens;
     use crate::state::TableState;
+    use crate::styling::material::MaterialTokens;
     use crate::test_utils::create_test_audiobook;
-    use std::collections::HashSet;    #[test]
+    use std::collections::HashSet;
+    #[test]
     fn test_audiobook_table_empty() {
         let tokens = MaterialTokens::default();
         let audiobooks = vec![];
         let selected = HashSet::new();
         let table_state = TableState::default();
-        
+
         let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
         let _ = element; // Just verify it compiles and runs
     }
@@ -260,7 +268,7 @@ mod table_tests {
         ];
         let selected = HashSet::new();
         let table_state = TableState::default();
-        
+
         let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
         let _ = element; // Just verify it compiles and runs
     }
@@ -275,7 +283,7 @@ mod table_tests {
         let mut selected = HashSet::new();
         selected.insert("1".to_string());
         let table_state = TableState::default();
-        
+
         let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
         let _ = element; // Just verify it compiles and runs
     }

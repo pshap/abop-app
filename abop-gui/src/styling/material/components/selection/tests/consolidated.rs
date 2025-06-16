@@ -1,10 +1,10 @@
 //! Consolidated tests for Material Design selection components
-//! 
+//!
 //! This module contains unified tests for checkbox, chip, switch, and related
 //! selection component functionality.
 
-use crate::styling::material::components::selection::*;
 use crate::styling::material::components::selection::builder::*;
+use crate::styling::material::components::selection::*;
 
 #[cfg(test)]
 mod checkbox_tests {
@@ -16,7 +16,7 @@ mod checkbox_tests {
             .label("Test checkbox")
             .build()
             .expect("Should create valid checkbox");
-        
+
         assert_eq!(checkbox.state, CheckboxState::Checked);
         assert_eq!(checkbox.props.label, Some("Test checkbox".to_string()));
     }
@@ -45,7 +45,7 @@ mod checkbox_tests {
             .label("Indeterminate")
             .build()
             .expect("Should create indeterminate checkbox");
-        
+
         assert_eq!(checkbox.state, CheckboxState::Indeterminate);
         assert_eq!(checkbox.props.label, Some("Indeterminate".to_string()));
     }
@@ -60,7 +60,7 @@ mod chip_tests {
         let chip = ChipBuilder::new("Test Chip", ChipVariant::Filter)
             .build()
             .expect("Should create valid chip");
-        
+
         assert_eq!(chip.label, "Test Chip");
         assert_eq!(chip.variant, ChipVariant::Filter);
         assert_eq!(chip.state, ChipState::Unselected);
@@ -90,7 +90,7 @@ mod chip_tests {
             .selected(true)
             .build()
             .expect("Should create selected chip");
-        
+
         assert_eq!(chip.state, ChipState::Selected);
         assert_eq!(chip.label, "Toggle Chip");
     }
@@ -106,7 +106,7 @@ mod switch_tests {
             .label("Test switch")
             .build()
             .expect("Should create valid switch");
-        
+
         assert_eq!(switch.state, SwitchState::On);
         assert_eq!(switch.props.label, Some("Test switch".to_string()));
     }
@@ -135,7 +135,7 @@ mod switch_tests {
             .label("Enable feature")
             .build()
             .expect("Should create labeled switch");
-        
+
         assert_eq!(switch.props.label, Some("Enable feature".to_string()));
         assert_eq!(switch.state, SwitchState::Off);
     }
@@ -151,17 +151,17 @@ mod integration_tests {
             .size(ComponentSize::Large)
             .build()
             .expect("Should create large checkbox");
-        
+
         let chip = ChipBuilder::filter("Test")
             .size(ComponentSize::Large)
             .build()
             .expect("Should create large chip");
-        
+
         let switch = SwitchBuilder::on()
             .size(ComponentSize::Large)
             .build()
             .expect("Should create large switch");
-        
+
         assert_eq!(checkbox.props.size, ComponentSize::Large);
         assert_eq!(chip.props.size, ComponentSize::Large);
         assert_eq!(switch.props.size, ComponentSize::Large);
@@ -173,12 +173,12 @@ mod integration_tests {
             .label("Checkbox Label")
             .build()
             .expect("Should create labeled checkbox");
-        
+
         let switch = SwitchBuilder::off()
             .label("Switch Label")
             .build()
             .expect("Should create labeled switch");
-        
+
         assert_eq!(checkbox.props.label, Some("Checkbox Label".to_string()));
         assert_eq!(switch.props.label, Some("Switch Label".to_string()));
     }
@@ -190,33 +190,31 @@ mod validation_tests {
 
     #[test]
     fn test_chip_empty_label_validation() {
-        let result = ChipBuilder::filter("")
-            .build();
-        
+        let result = ChipBuilder::filter("").build();
+
         // Empty labels should cause validation errors
         assert!(result.is_err());
     }
 
     #[test]
     fn test_chip_valid_label_validation() {
-        let result = ChipBuilder::filter("Valid Label")
-            .build();
-        
+        let result = ChipBuilder::filter("Valid Label").build();
+
         assert!(result.is_ok());
     }
 
-    #[test] 
+    #[test]
     fn test_component_builder_patterns() {
         // Test that all builders follow the same patterns
         let checkbox = CheckboxBuilder::from_bool(true)
             .label("Pattern Test")
             .build()
             .expect("Should build checkbox");
-        
+
         let chip = ChipBuilder::suggestion("Pattern Test")
             .build()
             .expect("Should build chip");
-        
+
         // Verify consistent behavior
         assert_eq!(checkbox.props.label, Some("Pattern Test".to_string()));
         assert_eq!(chip.label, "Pattern Test");
@@ -230,7 +228,7 @@ mod validation_tests {
             .disabled(false)
             .build()
             .expect("Should build with chained methods");
-        
+
         assert_eq!(chip.label, "Chain Test");
         assert_eq!(chip.state, ChipState::Selected);
         assert_eq!(chip.props.size, ComponentSize::Medium);

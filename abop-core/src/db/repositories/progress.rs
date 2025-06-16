@@ -23,7 +23,8 @@ impl ProgressRepository {
         Self {
             enhanced_connection,
         }
-    }    /// Save or update progress for an audiobook
+    }
+    /// Save or update progress for an audiobook
     ///
     /// # Errors
     ///
@@ -240,7 +241,8 @@ impl ProgressRepository {
             })?.collect::<Result<Vec<_>, _>>()?;
             Ok(progress_list)
         })
-    }    /// Update position for an audiobook
+    }
+    /// Update position for an audiobook
     ///
     /// # Errors
     ///
@@ -261,7 +263,8 @@ impl ProgressRepository {
             )?;
             Ok(rows_affected > 0)
         })
-    }    /// Mark an audiobook as completed or not completed
+    }
+    /// Mark an audiobook as completed or not completed
     ///
     /// # Errors
     ///

@@ -283,8 +283,8 @@ impl ConfigValidator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::config::MixingAlgorithm;
+    use super::*;
     use std::time::Duration;
 
     #[test]
@@ -337,7 +337,8 @@ mod tests {
             ..Default::default()
         };
         assert!(ConfigValidator::validate_resampler_config(&invalid_config).is_err());
-    }    #[test]
+    }
+    #[test]
     fn test_validate_channel_mixer_config() {
         let valid_config = ChannelMixerConfig {
             target_channels: Some(2),
@@ -347,7 +348,8 @@ mod tests {
             },
             ..Default::default()
         };
-        assert!(ConfigValidator::validate_channel_mixer_config(&valid_config).is_ok());        let invalid_config = ChannelMixerConfig {
+        assert!(ConfigValidator::validate_channel_mixer_config(&valid_config).is_ok());
+        let invalid_config = ChannelMixerConfig {
             mix_algorithm: MixingAlgorithm::WeightedSum {
                 left_weight: 1.5, // Invalid: > 1.0
                 right_weight: 0.3,
@@ -443,7 +445,7 @@ mod tests {
     #[test]
     fn test_get_recommended_config_podcast() {
         let config = ConfigValidator::get_recommended_config("podcast").unwrap();
-        
+
         assert!(config.resampler.is_some());
         assert!(config.channel_mixer.is_some());
         assert!(config.normalizer.is_some());
@@ -465,7 +467,7 @@ mod tests {
     #[test]
     fn test_get_recommended_config_music() {
         let config = ConfigValidator::get_recommended_config("music").unwrap();
-        
+
         assert!(config.resampler.is_some());
         assert!(config.channel_mixer.is_some());
         assert!(config.normalizer.is_some());
@@ -484,7 +486,7 @@ mod tests {
     #[test]
     fn test_get_recommended_config_voice() {
         let config = ConfigValidator::get_recommended_config("voice").unwrap();
-        
+
         assert!(config.resampler.is_some());
         assert!(config.channel_mixer.is_some());
         assert!(config.normalizer.is_some());
@@ -515,7 +517,7 @@ mod tests {
         // Verify that validate_config is an alias for validate_processing_config
         let result1 = ConfigValidator::validate_config(&config);
         let result2 = ConfigValidator::validate_processing_config(&config);
-        
+
         assert_eq!(result1.is_ok(), result2.is_ok());
     }
 }

@@ -443,25 +443,29 @@ mod tests {
         fn deserialize(&mut self, data: &[u8]) -> Result<()> {
             // Guard against unbounded memory allocation
             const MAX_INPUT_SIZE: usize = 1024 * 1024; // 1MB limit for safety
-            
+
             if data.len() > MAX_INPUT_SIZE {
                 return Err(super::super::error::AudioProcessingError::InvalidInput(
-                    format!("Input data too large: {} bytes (max: {} bytes)", 
-                           data.len(), MAX_INPUT_SIZE)
+                    format!(
+                        "Input data too large: {} bytes (max: {} bytes)",
+                        data.len(),
+                        MAX_INPUT_SIZE
+                    ),
                 ));
             }
-            
+
             // Check for empty input
             if data.is_empty() {
                 return Err(super::super::error::AudioProcessingError::InvalidInput(
-                    "Empty input data provided".to_string()
+                    "Empty input data provided".to_string(),
                 ));
             }
-            
+
             self.name = String::from_utf8(data.to_vec()).map_err(|e| {
-                super::super::error::AudioProcessingError::InvalidInput(
-                    format!("Invalid UTF-8 data: {}", e)
-                )
+                super::super::error::AudioProcessingError::InvalidInput(format!(
+                    "Invalid UTF-8 data: {}",
+                    e
+                ))
             })?;
             Ok(())
         }
@@ -618,9 +622,11 @@ mod tests {
 
         // Test size mismatch
         let mut output_wrong_size = vec![0.0; 2];
-        assert!(processor
-            .process_chunk(&input, &mut output_wrong_size)
-            .is_err());
+        assert!(
+            processor
+                .process_chunk(&input, &mut output_wrong_size)
+                .is_err()
+        );
     }
 
     #[test]
