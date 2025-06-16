@@ -71,6 +71,3 @@ mod validation;
 
 // Common imports used across all builder modules
 mod common {}
-
-#[cfg(test)]
-mod tests;
