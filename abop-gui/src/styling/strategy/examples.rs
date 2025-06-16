@@ -30,34 +30,12 @@ pub fn create_strategy_button<'a, Message: Clone + 'a>(
     // Step 3: Apply the styling to create the button
     let button = iced::widget::button(
         iced::widget::text(label).color(styling.text_color), // Use strategy-provided color
-    );
-
-    // Apply click handler if provided
+    );    // Apply click handler if provided
     if let Some(message) = on_press {
         button.on_press(message).into()
     } else {
         button.into()
     }
-}
-
-/// Example: Bad pattern - DO NOT USE
-///
-/// This shows the WRONG way to handle colors directly.
-/// This pattern should never be used in the application.
-#[allow(dead_code)]
-fn bad_example_direct_color_access<'a, Message: Clone + 'a>(
-    label: &'a str,
-    tokens: &'a MaterialTokens,
-) -> Element<'a, Message> {
-    // ❌ BAD: Direct color access bypasses the strategy system
-    let colors = &tokens.colors;
-    let _bad_background = colors.primary.base;
-    let bad_text_color = colors.on_primary(); // Direct access!
-
-    iced::widget::button(
-        iced::widget::text(label).color(bad_text_color), // ❌ This bypasses accessibility checks
-    )
-    .into()
 }
 
 /// Example: Good pattern using semantic colors when needed

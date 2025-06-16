@@ -258,15 +258,4 @@ impl App {
             }
         })
     }
-
-    /// Runs the application with the provided settings
-    ///
-    /// Note: This method is no longer used in iced 0.13.x.
-    /// The application is now started using iced::application() in main.rs
-    #[deprecated(note = "Use iced::application() in main.rs instead")]
-    pub fn run(_settings: iced::Settings) -> iced::Result {
-        // This method is no longer used with iced 0.13.x
-        log::warn!("App::run is deprecated. Using iced::application() instead.");
-        Ok(())
-    }
 }
