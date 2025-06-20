@@ -1,11 +1,12 @@
 #[cfg(test)]
-mod tests {
+mod library_tests {
     use super::super::LibraryRepository;
     use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
     use rusqlite::Connection;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use tempfile::NamedTempFile;
+
     /// Set up a fresh test database with migrations and proper error handling.
     ///
     /// # Returns
@@ -62,8 +63,7 @@ mod tests {
         let path_buf = PathBuf::from(path);
         repo.create(name, path_buf).unwrap_or_else(|e| {
             panic!(
-                "Failed to create test library '{}' at '{}': {}",
-                name, path, e
+                "Failed to create test library '{name}' at '{path}': {e}"
             )
         })
     }
@@ -547,8 +547,8 @@ mod tests {
 
         // Create libraries in a batch
         for i in 0..NUM_LIBRARIES {
-            let name = format!("Library {}", i);
-            let path = format!("/path/to/library/{}", i);
+            let name = format!("Library {i}");
+            let path = format!("/path/to/library/{i}");
 
             let library = create_test_library(&repo, &name, &path);
             created_ids.push(library.id.clone());
@@ -642,8 +642,8 @@ mod tests {
         let test_data: Vec<(String, std::path::PathBuf)> = (0..NUM_LIBRARIES)
             .map(|i| {
                 (
-                    format!("Bulk Library {}", i),
-                    std::path::PathBuf::from(format!("/bulk/library/{}", i)),
+                    format!("Bulk Library {i}"),
+                    std::path::PathBuf::from(format!("/bulk/library/{i}")),
                 )
             })
             .collect();

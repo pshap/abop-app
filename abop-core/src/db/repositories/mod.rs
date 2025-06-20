@@ -17,6 +17,9 @@ use rusqlite::Connection;
 use std::any::Any;
 use std::sync::Arc;
 
+/// Type alias for row processing callback to reduce complexity
+type RowCallback = Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
+
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
@@ -100,9 +103,7 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: Box<
-            dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send,
-        >,
+        callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>>;
 }
 
@@ -199,9 +200,7 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: Box<
-            dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send,
-        >,
+        callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>> {
         use std::sync::Arc;
         use std::sync::Mutex;

@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod progress_tests {
     use super::super::ProgressRepository;
     use crate::db::repositories::{AudiobookRepository, LibraryRepository};
     use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
@@ -83,12 +83,10 @@ mod tests {
     fn create_test_repo() -> ProgressRepository {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1"]);
         repo
-    }
-
-    /// Create a test progress record
+    }    /// Create a test progress record
     fn create_test_progress(audiobook_id: &str, position: u64, completed: bool) -> Progress {
         Progress {
-            id: format!("progress-{}", audiobook_id),
+            id: format!("progress-{audiobook_id}"),
             audiobook_id: audiobook_id.to_string(),
             position_seconds: position,
             completed,

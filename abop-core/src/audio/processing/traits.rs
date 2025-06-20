@@ -459,12 +459,9 @@ mod tests {
                 return Err(super::super::error::AudioProcessingError::InvalidInput(
                     "Empty input data provided".to_string(),
                 ));
-            }
-
-            self.name = String::from_utf8(data.to_vec()).map_err(|e| {
+            }            self.name = String::from_utf8(data.to_vec()).map_err(|e| {
                 super::super::error::AudioProcessingError::InvalidInput(format!(
-                    "Invalid UTF-8 data: {}",
-                    e
+                    "Invalid UTF-8 data: {e}"
                 ))
             })?;
             Ok(())
