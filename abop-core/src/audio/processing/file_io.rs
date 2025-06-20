@@ -26,23 +26,6 @@
 //! let processor = AudioFileProcessor::new(pipeline, options);
 //! ```
 
-/// Creates a new `AudioFileProcessor` with the given pipeline and options.
-///
-/// # Arguments
-///
-/// * `pipeline` - The audio processing pipeline to use.
-/// * `options` - File processing options such as output format and naming pattern.
-///
-/// # Returns
-///
-/// A new `AudioFileProcessor` instance.
-#[must_use]
-pub const fn new(
-    pipeline: AudioProcessingPipeline,
-    options: FileProcessingOptions,
-) -> AudioFileProcessor {
-    AudioFileProcessor { pipeline, options }
-}
 use super::pipeline::AudioProcessingPipeline;
 use crate::audio::{AudioBuffer, SampleFormat};
 use crate::error::Result;

@@ -444,8 +444,6 @@ mod tests {
         ];
 
         for (test_case, name, path) in test_cases {
-            println!("Testing: {}", test_case);
-
             // Test creation
             let result = repo.create(name, path);
             assert!(
