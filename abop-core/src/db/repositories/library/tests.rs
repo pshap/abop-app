@@ -638,10 +638,16 @@ mod library_tests {
         );
     }
 
+    /// Test bulk operations functionality with a moderate number of records
+    /// 
+    /// This is a functional test that verifies bulk operations work correctly,
+    /// not a performance benchmark. For actual performance benchmarking,
+    /// see the benches/ directory with criterion-based benchmarks.
     #[test]
     fn test_bulk_operations_performance() {
         let repo = create_test_repo();
         // Test creating and finding a larger number of libraries efficiently
+        // Using 50 libraries to test bulk operations performance without making tests too slow
         const NUM_LIBRARIES: usize = 50;
         let mut created_ids = Vec::with_capacity(NUM_LIBRARIES);
         // Prepare test data first to avoid lifetime issues
