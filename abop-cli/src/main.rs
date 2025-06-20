@@ -397,7 +397,6 @@ const UNKNOWN_AUTHOR: &str = "Unknown Author";
 mod tests {
     use super::*;
     use clap::CommandFactory;
-    use std::path::Path;
     use tempfile::TempDir;
 
     #[test]
@@ -622,7 +621,7 @@ mod tests {
     #[test]
     fn test_scanner_config_presets() {
         // Test different configuration presets
-        let temp_dir = TempDir::new().unwrap();
+        let _temp_dir = TempDir::new().unwrap();
 
         // Test that different config presets don't cause panics
         // We can't easily test the full scan without a complex setup,

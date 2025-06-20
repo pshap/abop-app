@@ -1,7 +1,6 @@
 //! Tests for audio processing operations (AudioProcessingOption enum).
 
 use abop_core::message::AudioProcessingOption;
-use std::sync::{Arc, Mutex};
 
 #[cfg(test)]
 mod audio_operations_tests {

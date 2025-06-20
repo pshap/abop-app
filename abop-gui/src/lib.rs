@@ -98,7 +98,6 @@ pub mod test_utils;
 /// ```no_run
 /// use abop_gui::prelude::*;
 /// ```
-
 /// Prelude module for convenient imports
 ///
 /// This module re-exports commonly used types and traits from Iced and
