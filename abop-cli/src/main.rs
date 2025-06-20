@@ -916,7 +916,6 @@ mod tests {
         for size_str in valid_sizes {
             if let Ok(size) = size_str.parse::<usize>() {
                 let clamped = size.clamp(1, 1000);
-                assert!(clamped >= 1 && clamped <= 1000);
                 assert_eq!(clamped, size); // All test values should be within range
             }
         }

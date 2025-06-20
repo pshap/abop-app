@@ -211,7 +211,6 @@ mod ui_state_tests {
     #[test]
     fn test_handle_sort_by() {
         use abop_core::models::audiobook::Audiobook;
-        use std::collections::HashSet;
 
         let mut state = UiState::default();
 
