@@ -103,11 +103,18 @@ impl ConfigValidator {
                 )));
             }
             
-            // Validate that the sum of weights is reasonable (prevent clipping)
+            // Validate that the sum of weights is reasonable to prevent audio clipping.
+            // Rationale: In weighted sum mixing, the output amplitude is:
+            // output = (left_channel * left_weight) + (right_channel * right_weight)
+            // If both input channels are at maximum amplitude (1.0) and weight_sum > 1.0,
+            // the output can exceed the maximum representable value, causing clipping distortion.
+            // This validation ensures the mixed output stays within the valid audio range.
             let weight_sum = left_weight + right_weight;
             if weight_sum > 1.0 {
                 return Err(AppError::Audio(format!(
-                    "Sum of mixing weights ({weight_sum:.2}) exceeds 1.0, which may cause clipping"
+                    "Sum of mixing weights ({weight_sum:.2}) exceeds 1.0, which may cause clipping. \
+                     Individual weights: left={left_weight:.2}, right={right_weight:.2}. \
+                     Consider reducing one or both weights to keep the sum ≤ 1.0"
                 )));
             }
         } else {

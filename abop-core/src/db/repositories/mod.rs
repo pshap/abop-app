@@ -25,8 +25,13 @@ use std::sync::Arc;
 /// by the caller. This is an unsafe pattern that should be avoided in favor of
 /// typed alternatives when possible. Consider using specific repository methods
 /// with concrete return types instead of this dynamic callback approach.
-type RowCallback =
-    Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
+/// 
+/// # Usage
+/// 
+/// This callback is intended for single-use scenarios where the exact return type
+/// cannot be determined at compile time. The caller must know the expected type
+/// and perform safe downcasting of the returned `Box<dyn Any + Send>`.
+type RowCallback = Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {
@@ -107,6 +112,18 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     }
 
     /// Execute a query that returns a single row (dynamic version)
+    /// 
+    /// # Warning
+    /// 
+    /// This method has a complex signature with unsafe type erasure via `Box<dyn Any + Send>`.
+    /// It's recommended to use typed repository methods instead of this dynamic approach.
+    /// This method may be deprecated in future versions in favor of safer alternatives.
+    /// 
+    /// # Safety Requirements
+    /// 
+    /// - The query must return exactly one row (enforced by rusqlite)
+    /// - The callback can only be called once per method invocation
+    /// - Type casting of the returned `Box<dyn Any + Send>` is the caller's responsibility
     fn query_row_dyn(
         &self,
         query: &str,
