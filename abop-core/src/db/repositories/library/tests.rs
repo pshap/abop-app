@@ -7,6 +7,39 @@ mod library_tests {
     use std::sync::Arc;
     use tempfile::NamedTempFile;
 
+    /// Create a temporary database file for testing
+    ///
+    /// # Returns
+    /// A `NamedTempFile` that will be cleaned up when dropped
+    fn create_temp_db_file() -> NamedTempFile {
+        NamedTempFile::new().expect("Failed to create temporary file for test database")
+    }
+
+    /// Create and connect to an enhanced database connection
+    ///
+    /// # Arguments
+    /// * `db_path` - Path to the database file
+    ///
+    /// # Returns
+    /// A connected `Arc<EnhancedConnection>`
+    fn create_enhanced_connection(db_path: &Path) -> Arc<EnhancedConnection> {
+        let enhanced_conn = Arc::new(EnhancedConnection::new(db_path));
+        enhanced_conn
+            .connect()
+            .expect("Failed to connect to test database - check database setup");
+        enhanced_conn
+    }
+
+    /// Initialize the database schema using migrations
+    ///
+    /// # Arguments
+    /// * `db_path` - Path to the database file
+    fn initialize_schema(db_path: &Path) {
+        let mut conn =
+            Connection::open(db_path).expect("Failed to open database connection for migrations");
+        run_migrations(&mut conn).expect("Failed to run database migrations during test setup");
+    }
+
     /// Set up a fresh test database with migrations and proper error handling.
     ///
     /// # Returns
@@ -15,25 +48,12 @@ mod library_tests {
     /// # Panics
     /// Panics if any step of the database setup fails, with a descriptive error message.
     fn setup_test_db() -> Arc<EnhancedConnection> {
-        // Create a temporary file for the database
-        let temp_file =
-            NamedTempFile::new().expect("Failed to create temporary file for test database");
+        let temp_file = create_temp_db_file();
         let db_path = temp_file.path();
-
-        // Initialize the enhanced connection
-        let enhanced_conn = Arc::new(EnhancedConnection::new(db_path));
-
-        // Connect to the database
-        enhanced_conn
-            .connect()
-            .expect("Failed to connect to test database - check database setup");
-
-        // Apply database migrations
-        let mut conn =
-            Connection::open(db_path).expect("Failed to open database connection for migrations");
-
-        run_migrations(&mut conn).expect("Failed to run database migrations during test setup");
-
+        
+        let enhanced_conn = create_enhanced_connection(db_path);
+        initialize_schema(db_path);
+        
         enhanced_conn
     }
 
