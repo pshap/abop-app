@@ -18,6 +18,13 @@ use std::any::Any;
 use std::sync::Arc;
 
 /// Type alias for row processing callback to reduce complexity
+/// 
+/// # Safety
+/// 
+/// The callback returns `Box<dyn Any + Send>` which requires careful type casting
+/// by the caller. This is an unsafe pattern that should be avoided in favor of
+/// typed alternatives when possible. Consider using specific repository methods
+/// with concrete return types instead of this dynamic callback approach.
 type RowCallback =
     Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 

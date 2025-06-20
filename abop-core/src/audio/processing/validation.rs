@@ -102,6 +102,14 @@ impl ConfigValidator {
                     "Right weight must be between 0.0 and 1.0, got: {right_weight}"
                 )));
             }
+            
+            // Validate that the sum of weights is reasonable (prevent clipping)
+            let weight_sum = left_weight + right_weight;
+            if weight_sum > 1.0 {
+                return Err(AppError::Audio(format!(
+                    "Sum of mixing weights ({weight_sum:.2}) exceeds 1.0, which may cause clipping"
+                )));
+            }
         } else {
             // Other algorithms don't require additional validation
         }
@@ -356,6 +364,16 @@ mod tests {
             ..Default::default()
         };
         assert!(ConfigValidator::validate_channel_mixer_config(&invalid_config).is_err());
+        
+        // Test sum validation - weights individually valid but sum > 1.0
+        let invalid_sum_config = ChannelMixerConfig {
+            mix_algorithm: MixingAlgorithm::WeightedSum {
+                left_weight: 0.7,
+                right_weight: 0.8, // Sum = 1.5 > 1.0, may cause clipping
+            },
+            ..Default::default()
+        };
+        assert!(ConfigValidator::validate_channel_mixer_config(&invalid_sum_config).is_err());
     }
 
     #[test]
