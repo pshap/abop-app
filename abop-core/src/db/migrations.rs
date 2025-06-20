@@ -201,13 +201,15 @@ impl MigrationManager {
 
 /// Gets all migrations in order
 fn get_migrations() -> Vec<Migration> {
-    vec![
-        Migration {
+    vec![        Migration {
             version: 1,
             up_sql: include_str!("migrations/001_initial_schema.sql"),
             description: "Initial database schema with libraries, audiobooks, and progress tracking",
         },
-        // Migration for adding selected column has been removed as it's now part of the initial schema
+        // Migration version 2 (add selected column) was removed during schema consolidation.
+        // The selected column functionality is now included in the initial schema (version 1)
+        // to reduce complexity for new installations. This avoids the need for a separate
+        // migration step for basic UI state tracking functionality.
     ]
 }
 

@@ -552,7 +552,8 @@ mod library_tests {
         let created_count = repo.create_many(&BULK_TEST_LIBRARIES).expect("Failed to create libraries in batch");
         assert_eq!(created_count, BULK_TEST_LIBRARIES.len(), "Not all libraries were created in batch");
 
-        // Create additional individual libraries to reach NUM_LIBRARIES total
+        // For remaining libraries, we'll create them individually to avoid complex lifetime issues
+        // This is acceptable for test code where simplicity is preferred over micro-optimizations
         let remaining = NUM_LIBRARIES - BULK_TEST_LIBRARIES.len();
         for i in 0..remaining {
             let name = format!("Individual Library {i}");
@@ -596,7 +597,11 @@ mod library_tests {
         );
     }
 
-    /// Test for transaction behavior in bulk operations
+    /// Test transaction behavior in bulk operations
+    /// 
+    /// This test verifies that database operations maintain consistency
+    /// when batch operations include both valid and invalid entries.
+    /// It ensures proper rollback behavior on constraint violations.
     #[test]
     fn test_bulk_operations_transaction() {
         let repo = create_test_repo();

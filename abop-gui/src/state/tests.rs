@@ -455,12 +455,14 @@ mod state_workflow_tests {
             );
 
             // Verify the playing file matches an existing audiobook
-            assert!(
-                state.audiobooks.iter().any(|book| 
-                    &book.path == state.current_playing_file.as_ref().unwrap()
-                ),
-                "Playing file must correspond to an existing audiobook"
-            );
+            if let Some(playing_path) = &state.current_playing_file {
+                assert!(
+                    state.audiobooks.iter().any(|book| &book.path == playing_path),
+                    "Playing file must correspond to an existing audiobook"
+                );
+            } else {
+                panic!("Current playing file should be set");
+            }
 
             // Step 2: Pause playback
             state.player_state = PlayerState::Paused;
@@ -505,12 +507,12 @@ mod state_workflow_tests {
 
         // Test edge case: Try to play a file that doesn't exist in audiobooks
         state.current_playing_file = Some(PathBuf::from("/nonexistent/file.mp3"));
-        assert!(
-            !state.audiobooks.iter().any(|book| 
-                &book.path == state.current_playing_file.as_ref().unwrap()
-            ),
-            "Playing a non-existent file should not match any audiobook"
-        );
+        if let Some(playing_path) = &state.current_playing_file {
+            assert!(
+                !state.audiobooks.iter().any(|book| &book.path == playing_path),
+                "Playing a non-existent file should not match any audiobook"
+            );
+        }
     }
 
     #[test]

@@ -338,6 +338,8 @@ impl BatchProcessor {
 
         processor
             .process_file(input_path)
-            .map_err(AudioProcessingError::from)
+            .map_err(|e| AudioProcessingError::FileIo(
+                format!("Failed to process file '{}': {}", input_path.display(), e)
+            ))
     }
 }

@@ -203,9 +203,6 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         params: &[&(dyn rusqlite::ToSql + Sync)],
         callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>> {
-        use std::sync::Arc;
-        use std::sync::Mutex;
-
         // Clone the query string to own it
         let query = query.to_string();
 
@@ -231,9 +228,9 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
             })
             .collect();
 
-        // Create a thread-safe wrapper for the callback
-        let callback = Arc::new(Mutex::new(Some(callback)));
-        let callback_clone = Arc::clone(&callback);
+        // Use Cell to allow interior mutability for single-use callback
+        use std::cell::Cell;
+        let callback_option = Cell::new(Some(callback));
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
@@ -242,12 +239,16 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
             let param_refs: Vec<&dyn rusqlite::ToSql> =
                 params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
 
-            // Execute the query and get the result
-
-            // Return the result directly - execute_query will handle the error conversion
+            // Execute the query and call callback
             stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
-                // Call the callback with the row
-                let callback = callback_clone.lock().unwrap().take().unwrap();
+                // Take the callback from the Cell (only works once)
+                let callback = callback_option.take().ok_or_else(|| {
+                    rusqlite::Error::SqliteFailure(
+                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
+                        Some("Callback already consumed".to_string())
+                    )
+                })?;
+                
                 callback(row)
             })
         })

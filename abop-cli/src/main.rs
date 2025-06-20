@@ -656,25 +656,28 @@ mod tests {
         }
     }
 
+    // Test utilities for shared database operations
+    fn setup_test_db() -> (TempDir, std::path::PathBuf, Database) {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let db_path = temp_dir.path().join("test.db");
+        let db = Database::open(&db_path).expect("Failed to open test database");
+        (temp_dir, db_path, db)
+    }
+
     #[test]
     fn test_get_audiobook_count_empty_database() {
         // Test get_audiobook_count with an empty database
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test.db");
-
-        // Create a database
-        let db = Database::open(&db_path).unwrap();
+        let (_temp_dir, _db_path, db) = setup_test_db();
 
         // Test count with no libraries
-        let count = get_audiobook_count(&db).unwrap();
+        let count = get_audiobook_count(&db).expect("Failed to get audiobook count");
         assert_eq!(count, 0);
     }
 
     #[test]
     fn test_handle_db_operation_dispatch() {
         // Test that handle_db_operation properly dispatches to the right function
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test.db");
+        let (_temp_dir, db_path, _db) = setup_test_db();
 
         // Test init operation
         let result = handle_db_operation(db_path.clone(), DbOperations::Init);
@@ -696,8 +699,7 @@ mod tests {
     #[test]
     fn test_handle_db_init() {
         // Test database initialization
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test_init.db");
+        let (_temp_dir, db_path, _db) = setup_test_db();
 
         let result = handle_db_init(db_path.clone());
         assert!(result.is_ok(), "Database initialization should succeed");
@@ -712,11 +714,7 @@ mod tests {
     #[test]
     fn test_handle_db_list_empty() {
         // Test listing audiobooks in an empty database
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test_list.db");
-
-        // Initialize database first
-        let _db = Database::open(&db_path).unwrap();
+        let (_temp_dir, db_path, _db) = setup_test_db();
 
         let result = handle_db_list(db_path);
         assert!(
@@ -728,11 +726,7 @@ mod tests {
     #[test]
     fn test_handle_db_stats_empty() {
         // Test stats on an empty database
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test_stats.db");
-
-        // Initialize database first
-        let _db = Database::open(&db_path).unwrap();
+        let (_temp_dir, db_path, _db) = setup_test_db();
 
         let result = handle_db_stats(db_path);
         assert!(
@@ -744,11 +738,7 @@ mod tests {
     #[test]
     fn test_handle_db_clean() {
         // Test database cleaning
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test_clean.db");
-
-        // Initialize database first
-        let _db = Database::open(&db_path).unwrap();
+        let (_temp_dir, db_path, _db) = setup_test_db();
 
         let result = handle_db_clean(db_path);
         assert!(result.is_ok(), "DB clean should succeed");
@@ -757,10 +747,7 @@ mod tests {
     #[test]
     fn test_show_scan_results_empty() {
         // Test showing scan results with empty database
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().join("test_results.db");
-
-        let db = Database::open(&db_path).unwrap();
+        let (_temp_dir, _db_path, db) = setup_test_db();
 
         let result = show_scan_results(&db);
         assert!(
