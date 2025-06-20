@@ -418,8 +418,8 @@ mod state_workflow_tests {
             ("Test Audiobook 4", "with spaces/path to/book.mp3"),
         ];
 
-        for (i, (title, test_path)) in test_audiobooks.iter().enumerate() {
-            let book_id = format!("playbook_test_{}", i);
+        for (i, (_title, test_path)) in test_audiobooks.iter().enumerate() {
+            let _book_id = format!("playbook_test_{}", i);
             let library_id = "test-library";
             
             // Setup: Create and add an audiobook to the state

@@ -66,25 +66,6 @@ mod library_tests {
         LibraryRepository::new(enhanced_conn)
     }
 
-    /// Helper function to create a test library with the given name and path
-    ///
-    /// # Arguments
-    /// * `repo` - The repository to create the library in
-    /// * `name` - Name for the test library
-    /// * `path` - Path for the test library
-    ///
-    /// # Returns
-    /// The created library
-    fn create_test_library(
-        repo: &LibraryRepository,
-        name: &str,
-        path: &str,
-    ) -> crate::models::Library {
-        let path_buf = PathBuf::from(path);
-        repo.create(name, path_buf)
-            .unwrap_or_else(|e| panic!("Failed to create test library '{name}' at '{path}': {e}"))
-    }
-
     #[test]
     fn test_create_library_success() {
         let repo = create_test_repo();
