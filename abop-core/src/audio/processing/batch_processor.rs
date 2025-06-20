@@ -6,7 +6,10 @@ use super::file_io::{AudioFileProcessor, FileProcessingOptions};
 use crate::audio::AudioBufferPool;
 use crate::audio::processing::pipeline::AudioProcessingPipeline;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::{Duration, Instant};
 
 /// Handles processing of multiple audio files, optionally in parallel.
@@ -20,10 +23,12 @@ pub struct BatchProcessor {
     progress_callback: Option<Arc<dyn Fn(f32, String) + Send + Sync>>,
     /// Buffer pool for efficient memory reuse during processing
     buffer_pool: Option<Arc<AudioBufferPool<f32>>>,
+    /// Flag to signal cancellation
+    cancellation_token: Arc<AtomicBool>,
 }
 
 /// Result of batch processing operation
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct BatchProcessingResult {
     /// Successfully processed files and their output paths
     pub successful: Vec<(PathBuf, PathBuf)>,
@@ -73,6 +78,7 @@ impl BatchProcessor {
             enable_parallel,
             progress_callback: None,
             buffer_pool: None,
+            cancellation_token: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -211,6 +217,23 @@ impl BatchProcessor {
         }
     }
 
+    /// Cancel the current batch processing operation
+    ///
+    /// This will cause the processing to stop at the next opportunity.
+    pub fn cancel(&self) {
+        self.cancellation_token.store(true, Ordering::SeqCst);
+    }
+
+    /// Check if processing has been cancelled
+    fn is_cancelled(&self) -> bool {
+        self.cancellation_token.load(Ordering::SeqCst)
+    }
+
+    /// Reset the cancellation token
+    fn reset_cancellation(&self) {
+        self.cancellation_token.store(false, Ordering::SeqCst);
+    }
+
     /// Process files in parallel with detailed result tracking
     fn process_files_parallel_detailed<P: AsRef<Path> + Send + Sync>(
         &self,
@@ -218,6 +241,8 @@ impl BatchProcessor {
         successful: &mut Vec<(PathBuf, PathBuf)>,
         failed: &mut Vec<(PathBuf, AudioProcessingError)>,
     ) {
+        // Reset cancellation state at the start of processing
+        self.reset_cancellation();
         use rayon::prelude::*;
 
         // TODO: Implement enhanced parallel processing optimization
@@ -236,6 +261,14 @@ impl BatchProcessor {
             .par_iter()
             .enumerate()
             .map(|(index, path)| {
+                // Check for cancellation before processing each file
+                if self.is_cancelled() {
+                    return Err((
+                        path.as_ref().to_path_buf(),
+                        AudioProcessingError::Cancelled("Processing was cancelled".to_string()),
+                    ));
+                }
+
                 self.report_progress(index, total_files);
 
                 let input_path = path.as_ref().to_path_buf();
@@ -253,6 +286,11 @@ impl BatchProcessor {
                 Err((input, error)) => failed.push((input, error)),
             }
         }
+
+        // Report final progress if not cancelled
+        if !self.is_cancelled() {
+            self.report_progress(total_files, total_files);
+        }
     }
 
     /// Process files sequentially with detailed result tracking
@@ -262,8 +300,19 @@ impl BatchProcessor {
         successful: &mut Vec<(PathBuf, PathBuf)>,
         failed: &mut Vec<(PathBuf, AudioProcessingError)>,
     ) {
+        // Reset cancellation state at the start of processing
+        self.reset_cancellation();
         let total_files = input_paths.len();
+
         for (index, path) in input_paths.iter().enumerate() {
+            // Check for cancellation before processing each file
+            if self.is_cancelled() {
+                failed.push((
+                    path.as_ref().to_path_buf(),
+                    AudioProcessingError::Cancelled("Processing was cancelled".to_string()),
+                ));
+                break;
+            }
             self.report_progress(index, total_files);
 
             let input_path = path.as_ref().to_path_buf();
@@ -271,6 +320,11 @@ impl BatchProcessor {
                 Ok(output_path) => successful.push((input_path, output_path)),
                 Err(e) => failed.push((input_path, e)),
             }
+        }
+
+        // Report final progress
+        if !self.is_cancelled() {
+            self.report_progress(total_files, total_files);
         }
     }
 
@@ -282,12 +336,6 @@ impl BatchProcessor {
             self.file_processor.options.clone(),
         );
 
-        processor.process_file(input_path).map_err(|e| {
-            AudioProcessingError::Pipeline(format!(
-                "Failed to process file '{}': {}",
-                input_path.display(),
-                e
-            ))
-        })
+        processor.process_file(input_path).map_err(AudioProcessingError::from)
     }
 }

@@ -255,17 +255,19 @@ impl AppState {
         // This would be implemented with change tracking in a full implementation
         // For now, we'll always return false to maintain compatibility
         false
-    }
-
-    /// Get a summary of the current state
+    }    /// Get a summary of the current state
     #[must_use]
     pub fn get_summary(&self) -> String {
+        let selected_display = match &self.selected_audiobook_id {
+            Some(id) => id.clone(),
+            None => "None".to_string(),
+        };
         format!(
-            "AppState: view={:?}, audiobooks={}, libraries={}, selected={:?}",
+            "AppState {{ view={:?}, audiobooks={}, libraries={}, selected={} }}",
             self.current_view,
             self.app_data.audiobooks.len(),
             self.app_data.libraries.len(),
-            self.selected_audiobook_id
+            selected_display
         )
     }
 

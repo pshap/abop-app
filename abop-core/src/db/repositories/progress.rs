@@ -6,7 +6,7 @@ use rusqlite::{OptionalExtension, params};
 use std::sync::Arc;
 
 use super::super::error::DbResult;
-use super::{EnhancedRepository, Repository};
+use super::{EnhancedRepository, Repository, RepositoryBase};
 use crate::db::EnhancedConnection;
 use crate::db::datetime_serde::SqliteDateTime;
 use crate::models::Progress;
@@ -363,8 +363,8 @@ impl ProgressRepository {
     }
 }
 
-impl Repository for ProgressRepository {
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+impl RepositoryBase for ProgressRepository {
+    fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
     }
 }

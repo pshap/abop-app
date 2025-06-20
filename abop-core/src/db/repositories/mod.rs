@@ -14,49 +14,127 @@ pub use progress::ProgressRepository;
 use super::connection::EnhancedConnection;
 use super::error::{DatabaseError, DbResult};
 use rusqlite::Connection;
+use std::any::Any;
 use std::sync::Arc;
 
-/// Base repository trait for common functionality
-pub trait Repository {
+/// Base repository trait with non-generic methods
+pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
-    fn get_connection(&self) -> &Arc<EnhancedConnection>;
+    fn connect(&self) -> &Arc<EnhancedConnection>;
 
+    /// Get a dyn-compatible reference to this repository
+    fn as_dyn(&self) -> &dyn DynRepository
+    where
+        Self: Sized,
+    {
+        self
+    }
+}
+
+/// Repository operations with generic methods
+/// This trait is not object-safe due to generic methods
+pub trait Repository: RepositoryBase {
     /// Execute a query with proper error handling
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The database connection cannot be acquired
-    /// - The query execution fails
     fn execute_query<F, R>(&self, f: F) -> DbResult<R>
     where
         F: Fn(&Connection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        self.get_connection()
-            .with_connection(move |conn| f(conn).map_err(DatabaseError::from))
-    }
+        R: Send + 'static;
 
     /// Execute a query with enhanced connection
     fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
     where
         F: Fn(&EnhancedConnection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        let config = self.get_connection().config().clone();
-        self.get_connection().with_connection(move |_| {
-            let enhanced = EnhancedConnection::with_config(config.clone());
-            f(&enhanced).map_err(DatabaseError::from)
-        })
-    }
+        R: Send + 'static;
 
     /// Execute a transaction with enhanced connection features
     fn execute_transaction<F, R>(&self, f: F) -> DbResult<R>
     where
         F: Fn(&rusqlite::Transaction) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
+        R: Send + 'static;
+}
+
+/// Object-safe repository trait for dynamic dispatch
+pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
+    /// Execute a query with proper error handling (dynamic version)
+    fn execute_query_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+    ) -> DbResult<usize> {
+        // Clone the query string to own it
+        let query = query.to_string();
+
+        // Convert parameters to a vector of owned values
+        let params: Vec<rusqlite::types::Value> = params
+            .iter()
+            .filter_map(|p| match p.to_sql().ok()? {
+                rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
+                    rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
+                    rusqlite::types::ValueRef::Integer(i) => {
+                        Some(rusqlite::types::Value::Integer(i))
+                    }
+                    rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
+                    rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
+                        String::from_utf8_lossy(s).into_owned(),
+                    )),
+                    rusqlite::types::ValueRef::Blob(b) => {
+                        Some(rusqlite::types::Value::Blob(b.to_vec()))
+                    }
+                },
+                rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
+                _ => None,
+            })
+            .collect();
+
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+            // Convert the parameters to references for the query
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+            stmt.execute(rusqlite::params_from_iter(param_refs))
+        })
+    }
+
+    /// Execute a query that returns a single row (dynamic version)
+    fn query_row_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+        callback: Box<
+            dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send,
+        >,
+    ) -> DbResult<Box<dyn Any + Send>>;
+}
+
+// Default implementation for Repository methods
+impl<T: RepositoryBase + ?Sized> Repository for T {
+    fn execute_query<F, R>(&self, f: F) -> DbResult<R>
+    where
+        F: Fn(&Connection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
     {
-        self.get_connection().with_connection_mut(move |conn| {
+        self.connect()
+            .with_connection(move |conn| f(conn).map_err(DatabaseError::from))
+    }
+
+    fn execute_query_enhanced<F, R>(&self, f: F) -> DbResult<R>
+    where
+        F: Fn(&EnhancedConnection) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
+        R: Send + 'static,
+    {
+        let config = self.connect().config().clone();
+        self.connect().with_connection(move |_| {
+            let enhanced = EnhancedConnection::with_config(config.clone());
+            f(&enhanced).map_err(DatabaseError::from)
+        })
+    }
+
+    fn execute_transaction<F, R>(&self, f: F) -> DbResult<R>
+    where
+        F: Fn(&rusqlite::Transaction) -> std::result::Result<R, rusqlite::Error> + Send + 'static,
+        R: Send + 'static,
+    {
+        self.connect().with_connection_mut(move |conn| {
             let tx = conn.transaction().map_err(DatabaseError::from)?;
             let result = f(&tx).map_err(DatabaseError::from);
             match result {
@@ -73,11 +151,114 @@ pub trait Repository {
     }
 }
 
+// Implement DynRepository for all repository types
+impl<T: RepositoryBase + ?Sized> DynRepository for T {
+    fn execute_query_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+    ) -> DbResult<usize> {
+        // Clone the query string to own it
+        let query = query.to_string();
+
+        // Convert parameters to a vector of owned values
+        let params: Vec<rusqlite::types::Value> = params
+            .iter()
+            .filter_map(|p| {
+                match p.to_sql().ok()? {
+                    rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
+                        rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
+                        rusqlite::types::ValueRef::Integer(i) => {
+                            Some(rusqlite::types::Value::Integer(i))
+                        }
+                        rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
+                        rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
+                            String::from_utf8_lossy(s).into_owned(),
+                        )),
+                        rusqlite::types::ValueRef::Blob(b) => {
+                            Some(rusqlite::types::Value::Blob(b.to_vec()))
+                        }
+                    },
+                    rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
+                    // Handle any future variants of ToSqlOutput
+                    _ => None,
+                }
+            })
+            .collect();
+
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+            // Convert the parameters back to references for the query
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+            stmt.execute(rusqlite::params_from_iter(param_refs))
+        })
+    }
+
+    fn query_row_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+        callback: Box<
+            dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send,
+        >,
+    ) -> DbResult<Box<dyn Any + Send>> {
+        use std::sync::Arc;
+        use std::sync::Mutex;
+
+        // Clone the query string to own it
+        let query = query.to_string();
+
+        // Convert parameters to a vector of owned values
+        let params: Vec<rusqlite::types::Value> = params
+            .iter()
+            .filter_map(|p| match p.to_sql().ok()? {
+                rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
+                    rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
+                    rusqlite::types::ValueRef::Integer(i) => {
+                        Some(rusqlite::types::Value::Integer(i))
+                    }
+                    rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
+                    rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
+                        String::from_utf8_lossy(s).into_owned(),
+                    )),
+                    rusqlite::types::ValueRef::Blob(b) => {
+                        Some(rusqlite::types::Value::Blob(b.to_vec()))
+                    }
+                },
+                rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
+                _ => None,
+            })
+            .collect();
+
+        // Create a thread-safe wrapper for the callback
+        let callback = Arc::new(Mutex::new(Some(callback)));
+        let callback_clone = Arc::clone(&callback);
+
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+
+            // Convert the parameters to references for the query
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+
+            // Execute the query and get the result
+
+            // Return the result directly - execute_query will handle the error conversion
+            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+                // Call the callback with the row
+                let callback = callback_clone.lock().unwrap().take().unwrap();
+                callback(row)
+            })
+        })
+    }
+}
+
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
 pub trait EnhancedRepository: Repository {
     /// Get access to enhanced connection
     fn get_enhanced_connection(&self) -> &Arc<EnhancedConnection> {
-        self.get_connection()
+        self.connect()
     }
 }
 

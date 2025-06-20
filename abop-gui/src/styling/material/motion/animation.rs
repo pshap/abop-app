@@ -425,12 +425,9 @@ mod tests {
 
         assert_eq!(animation.original_duration(), Duration::from_millis(350));
         assert_eq!(animation.easing().name, "emphasized");
-<<<<<<< HEAD
     }
+
     #[test]
-=======
-    }    #[test]
->>>>>>> master
     fn test_animation_timing() {
         let mut animation = Animation::from_pattern(AnimationPattern::FadeInOut);
         animation.start();

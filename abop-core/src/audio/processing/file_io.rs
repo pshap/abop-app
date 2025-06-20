@@ -163,11 +163,9 @@ impl AudioFileProcessor {
 
     /// Load an audio file into a buffer, converting to f32 samples.
     fn load_audio_file(path: &Path) -> Result<AudioBuffer<f32>> {
-        use hound::{SampleFormat as HoundSampleFormat, WavReader};
-
-        // Open the WAV file
+        use hound::{SampleFormat as HoundSampleFormat, WavReader};        // Open the WAV file
         let reader = WavReader::open(path).map_err(|e| {
-            crate::error::AppError::Audio(format!(
+            crate::error::AppError::Io(format!(
                 "Failed to open audio file '{}': {}",
                 path.display(),
                 e
@@ -250,22 +248,18 @@ impl AudioFileProcessor {
             sample_rate: buffer.sample_rate,
             bits_per_sample: 32,
             sample_format: HoundSampleFormat::Float,
-        };
-
-        // Create the writer and write all samples
+        };        // Create the writer and write all samples
         let mut writer = WavWriter::create(path, spec).map_err(|e| {
-            crate::error::AppError::Audio(format!(
+            crate::error::AppError::Io(format!(
                 "Failed to create output file '{}': {}",
                 path.display(),
                 e
             ))
-        })?;
-
-        // Write all samples
+        })?;        // Write all samples
         for &sample in &buffer.data {
             writer
                 .write_sample(sample)
-                .map_err(|e| crate::error::AppError::Audio(format!("Error writing sample: {e}")))?;
+                .map_err(|e| crate::error::AppError::Io(format!("Error writing sample: {e}")))?;
         }
 
         // Finalize the writer (this is a no-op in newer hound versions but kept for compatibility)

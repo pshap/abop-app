@@ -22,8 +22,9 @@ CREATE TABLE audiobooks (
     duration_seconds INTEGER,
     size_bytes INTEGER,
     cover_art BLOB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    selected BOOLEAN DEFAULT 0,
     FOREIGN KEY (library_id) REFERENCES libraries(id) ON DELETE CASCADE
 );
 
@@ -44,11 +45,11 @@ CREATE INDEX idx_audiobooks_library_id ON audiobooks(library_id);
 CREATE INDEX idx_audiobooks_path ON audiobooks(path);
 CREATE INDEX idx_progress_audiobook_id ON progress(audiobook_id);
 
--- Trigger to update the updated_at timestamp on audiobooks update
+-- Trigger to update the updated_at timestamp on audiobooks update with RFC3339 format
 CREATE TRIGGER update_audiobooks_timestamp
 AFTER UPDATE ON audiobooks
 BEGIN
-    UPDATE audiobooks SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE audiobooks SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = NEW.id;
 END;
 
 -- Note: No default library is seeded - libraries should be created by users with valid paths

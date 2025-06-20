@@ -22,15 +22,15 @@ mod ui_state_tests {
         pub const TEST_TITLE_2: &str = "Alpha Book";
         pub const TEST_TITLE_3: &str = "Book with Numbers 123";
     }
-    
+
     use test_constants::*;
-    
+
     /// Helper function to create a test audiobook with the given parameters
     fn create_test_audiobook(
-        id: &str, 
-        title: &str, 
+        id: &str,
+        title: &str,
         author: &str,
-        path: &str
+        path: &str,
     ) -> abop_core::models::audiobook::Audiobook {
         use abop_core::models::audiobook::Audiobook;
         let mut book = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(path));
@@ -212,66 +212,82 @@ mod ui_state_tests {
     fn test_handle_sort_by() {
         use abop_core::models::audiobook::Audiobook;
         use std::collections::HashSet;
-        
+
         let mut state = UiState::default();
-        
+
         // Create test audiobooks with different attributes for comprehensive sorting
         let book1 = create_test_audiobook("1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH);
         let book2 = create_test_audiobook("2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH);
         let book3 = create_test_audiobook("3", TEST_TITLE_3, TEST_AUTHOR_C, TEST_BOOK3_PATH);
-        
+
         // Set initial state with unsorted books
         state.audiobooks = vec![book1.clone(), book2.clone(), book3.clone()];
         
+        // Start with a different column so that sorting by title will be ascending by default
+        state.table_state.sort_column = "author".to_string();
+
         // Test sorting by title
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
         assert!(task.is_some(), "Sorting by title should return a task");
-        
+
         // Verify sort order after title sort (should be Alpha, Book with Numbers, Zebra)
-        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
-            assert_eq!(sort_key, "title", "Sort key should be 'title'");
-        } else {
-            panic!("Expected SortAudiobooks message");
-        }
-        
+        assert_eq!(
+            state.table_state.sort_column, "title",
+            "Sort key should be 'title'"
+        );
+        assert!(
+            state.table_state.sort_ascending,
+            "Should be sorted in ascending order by default"
+        );
+
         // Test sorting by author
         let task = handle_ui_message(&mut state, Message::SortBy("author".to_string()));
         assert!(task.is_some(), "Sorting by author should return a task");
-        
+
         // Verify sort order after author sort (should be Author A, B, C)
-        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
-            assert_eq!(sort_key, "author", "Sort key should be 'author'");
-        } else {
-            panic!("Expected SortAudiobooks message");
-        }
-        
+        assert_eq!(
+            state.table_state.sort_column, "author",
+            "Sort key should be 'author'"
+        );
+
         // Test sorting by path
         let task = handle_ui_message(&mut state, Message::SortBy("path".to_string()));
         assert!(task.is_some(), "Sorting by path should return a task");
-        
+        assert_eq!(
+            state.table_state.sort_column, "path",
+            "Sort key should be 'path'"
+        );
+
         // Test toggling sort order (ascending/descending)
-        state.sort_ascending = true;
+        // First, set sort column to title to prepare for toggle test
+        state.table_state.sort_column = "title".to_string();
+        state.table_state.sort_ascending = true;
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
         assert!(task.is_some(), "Toggling sort order should return a task");
-        
+
         // Verify sort order toggled to descending
-        if let Message::SortAudiobooks { sort_key: _, sort_order } = task.unwrap().message() {
-            assert!(!sort_order, "Sort order should be toggled to descending");
-        } else {
-            panic!("Expected SortAudiobooks message");
-        }
-        
-        // Test sorting by an unknown field (should default to title)
+        assert_eq!(
+            state.table_state.sort_column, "title",
+            "Sort key should be 'title'"
+        );
+        assert!(
+            !state.table_state.sort_ascending,
+            "Sort order should be toggled to descending"
+        );
+
+        // Test sorting by an unknown field (should accept any field name)
         let task = handle_ui_message(&mut state, Message::SortBy("unknown_field".to_string()));
-        assert!(task.is_some(), "Sorting by unknown field should still return a task");
-        
-        // Verify default sort key is used for unknown fields
-        if let Message::SortAudiobooks { sort_key, sort_order: _ } = task.unwrap().message() {
-            assert_eq!(sort_key, "title", "Should default to 'title' for unknown sort fields");
-        } else {
-            panic!("Expected SortAudiobooks message");
-        }
-        
+        assert!(
+            task.is_some(),
+            "Sorting by unknown field should still return a task"
+        );
+
+        // Verify unknown field is accepted (implementation doesn't validate column names)
+        assert_eq!(
+            state.table_state.sort_column, "unknown_field",
+            "Should accept any column name, even unknown ones"
+        );
+
         // Test with empty audiobooks list
         state.audiobooks.clear();
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));

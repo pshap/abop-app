@@ -420,17 +420,19 @@ mod tests {
     #[test]
     fn test_args_parsing_scan_command() {
         // Test basic scan command parsing
-        let args = Args::try_parse_from(&[
-            "abop-cli",
-            "scan",
-            "--library", "/test/path",
-        ]).unwrap();
+        let args = Args::try_parse_from(&["abop-cli", "scan", "--library", "/test/path"]).unwrap();
 
         assert!(!args.verbose);
         assert!(!args.debug);
-        
+
         match args.command {
-            Commands::Scan { library, database, config, max_concurrent_tasks, max_concurrent_db_operations } => {
+            Commands::Scan {
+                library,
+                database,
+                config,
+                max_concurrent_tasks,
+                max_concurrent_db_operations,
+            } => {
                 assert_eq!(library, PathBuf::from("/test/path"));
                 assert!(database.is_none());
                 assert_eq!(config, "default");
@@ -447,20 +449,32 @@ mod tests {
         let args = Args::try_parse_from(&[
             "abop-cli",
             "--verbose",
-            "--debug", 
+            "--debug",
             "scan",
-            "--library", "/test/path",
-            "--database", "/test/db.sqlite",
-            "--config", "large",
-            "--max-concurrent-tasks", "8",
-            "--max-concurrent-db-operations", "4",
-        ]).unwrap();
+            "--library",
+            "/test/path",
+            "--database",
+            "/test/db.sqlite",
+            "--config",
+            "large",
+            "--max-concurrent-tasks",
+            "8",
+            "--max-concurrent-db-operations",
+            "4",
+        ])
+        .unwrap();
 
         assert!(args.verbose);
         assert!(args.debug);
-        
+
         match args.command {
-            Commands::Scan { library, database, config, max_concurrent_tasks, max_concurrent_db_operations } => {
+            Commands::Scan {
+                library,
+                database,
+                config,
+                max_concurrent_tasks,
+                max_concurrent_db_operations,
+            } => {
                 assert_eq!(library, PathBuf::from("/test/path"));
                 assert_eq!(database, Some(PathBuf::from("/test/db.sqlite")));
                 assert_eq!(config, "large");
@@ -474,15 +488,15 @@ mod tests {
     #[test]
     fn test_args_parsing_db_init_command() {
         // Test database init command parsing
-        let args = Args::try_parse_from(&[
-            "abop-cli",
-            "db",
-            "--database", "/test/db.sqlite",
-            "init",
-        ]).unwrap();
+        let args =
+            Args::try_parse_from(&["abop-cli", "db", "--database", "/test/db.sqlite", "init"])
+                .unwrap();
 
         match args.command {
-            Commands::Db { database, operation } => {
+            Commands::Db {
+                database,
+                operation,
+            } => {
                 assert_eq!(database, PathBuf::from("/test/db.sqlite"));
                 assert!(matches!(operation, DbOperations::Init));
             }
@@ -492,15 +506,15 @@ mod tests {
 
     #[test]
     fn test_args_parsing_db_list_command() {
-        let args = Args::try_parse_from(&[
-            "abop-cli",
-            "db",
-            "--database", "/test/db.sqlite",
-            "list",
-        ]).unwrap();
+        let args =
+            Args::try_parse_from(&["abop-cli", "db", "--database", "/test/db.sqlite", "list"])
+                .unwrap();
 
         match args.command {
-            Commands::Db { database, operation } => {
+            Commands::Db {
+                database,
+                operation,
+            } => {
                 assert_eq!(database, PathBuf::from("/test/db.sqlite"));
                 assert!(matches!(operation, DbOperations::List));
             }
@@ -510,15 +524,15 @@ mod tests {
 
     #[test]
     fn test_args_parsing_db_stats_command() {
-        let args = Args::try_parse_from(&[
-            "abop-cli",
-            "db",
-            "--database", "/test/db.sqlite",
-            "stats",
-        ]).unwrap();
+        let args =
+            Args::try_parse_from(&["abop-cli", "db", "--database", "/test/db.sqlite", "stats"])
+                .unwrap();
 
         match args.command {
-            Commands::Db { database, operation } => {
+            Commands::Db {
+                database,
+                operation,
+            } => {
                 assert_eq!(database, PathBuf::from("/test/db.sqlite"));
                 assert!(matches!(operation, DbOperations::Stats));
             }
@@ -528,15 +542,15 @@ mod tests {
 
     #[test]
     fn test_args_parsing_db_clean_command() {
-        let args = Args::try_parse_from(&[
-            "abop-cli",
-            "db",
-            "--database", "/test/db.sqlite",
-            "clean",
-        ]).unwrap();
+        let args =
+            Args::try_parse_from(&["abop-cli", "db", "--database", "/test/db.sqlite", "clean"])
+                .unwrap();
 
         match args.command {
-            Commands::Db { database, operation } => {
+            Commands::Db {
+                database,
+                operation,
+            } => {
                 assert_eq!(database, PathBuf::from("/test/db.sqlite"));
                 assert!(matches!(operation, DbOperations::Clean));
             }
@@ -549,7 +563,7 @@ mod tests {
         // Test that missing required arguments cause parsing to fail
         let result = Args::try_parse_from(&["abop-cli", "scan"]);
         assert!(result.is_err());
-        
+
         let result = Args::try_parse_from(&["abop-cli", "db", "init"]);
         assert!(result.is_err());
     }
@@ -560,9 +574,12 @@ mod tests {
         let args = Args::try_parse_from(&[
             "abop-cli",
             "scan",
-            "--library", "/test/path",
-            "--config", "invalid_preset",
-        ]).unwrap();
+            "--library",
+            "/test/path",
+            "--config",
+            "invalid_preset",
+        ])
+        .unwrap();
 
         match args.command {
             Commands::Scan { config, .. } => {
@@ -582,7 +599,7 @@ mod tests {
             None,
             None,
         );
-        
+
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Library path does not exist"));
@@ -594,15 +611,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("not_a_directory.txt");
         std::fs::write(&file_path, "test content").unwrap();
-        
-        let result = scan_library(
-            file_path,
-            None,
-            "default".to_string(),
-            None,
-            None,
-        );
-        
+
+        let result = scan_library(file_path, None, "default".to_string(), None, None);
+
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Library path is not a directory"));
@@ -612,27 +623,37 @@ mod tests {
     fn test_scanner_config_presets() {
         // Test different configuration presets
         let temp_dir = TempDir::new().unwrap();
-        
+
         // Test that different config presets don't cause panics
         // We can't easily test the full scan without a complex setup,
         // but we can test that the configuration logic works
-        
-        let configs = vec!["default", "large", "small", "conservative", "unknown_preset"];
-        
+
+        let configs = vec![
+            "default",
+            "large",
+            "small",
+            "conservative",
+            "unknown_preset",
+        ];
+
         for preset in configs {
             // The function should handle unknown presets gracefully
             // We're testing the configuration logic, not the full scan
             let result = std::panic::catch_unwind(|| {
                 match preset {
                     "large" => ScannerConfig::for_large_libraries(),
-                    "small" => ScannerConfig::for_small_libraries(), 
+                    "small" => ScannerConfig::for_small_libraries(),
                     "conservative" => ScannerConfig::conservative(),
                     "default" => ScannerConfig::default(),
                     _ => ScannerConfig::default(), // Unknown presets fall back to default
                 }
             });
-            
-            assert!(result.is_ok(), "Config preset '{}' should not panic", preset);
+
+            assert!(
+                result.is_ok(),
+                "Config preset '{}' should not panic",
+                preset
+            );
         }
     }
 
@@ -641,10 +662,10 @@ mod tests {
         // Test get_audiobook_count with an empty database
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // Create a database
         let db = Database::open(&db_path).unwrap();
-        
+
         // Test count with no libraries
         let count = get_audiobook_count(&db).unwrap();
         assert_eq!(count, 0);
@@ -655,19 +676,19 @@ mod tests {
         // Test that handle_db_operation properly dispatches to the right function
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // Test init operation
         let result = handle_db_operation(db_path.clone(), DbOperations::Init);
         assert!(result.is_ok(), "DB init should succeed");
-        
+
         // Test stats operation on the initialized database
         let result = handle_db_operation(db_path.clone(), DbOperations::Stats);
         assert!(result.is_ok(), "DB stats should succeed");
-        
+
         // Test list operation
         let result = handle_db_operation(db_path.clone(), DbOperations::List);
         assert!(result.is_ok(), "DB list should succeed");
-        
+
         // Test clean operation
         let result = handle_db_operation(db_path, DbOperations::Clean);
         assert!(result.is_ok(), "DB clean should succeed");
@@ -678,12 +699,15 @@ mod tests {
         // Test database initialization
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test_init.db");
-        
+
         let result = handle_db_init(db_path.clone());
         assert!(result.is_ok(), "Database initialization should succeed");
-        
+
         // Verify database file was created
-        assert!(db_path.exists(), "Database file should exist after initialization");
+        assert!(
+            db_path.exists(),
+            "Database file should exist after initialization"
+        );
     }
 
     #[test]
@@ -691,12 +715,15 @@ mod tests {
         // Test listing audiobooks in an empty database
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test_list.db");
-        
+
         // Initialize database first
         let _db = Database::open(&db_path).unwrap();
-        
+
         let result = handle_db_list(db_path);
-        assert!(result.is_ok(), "DB list should succeed even with empty database");
+        assert!(
+            result.is_ok(),
+            "DB list should succeed even with empty database"
+        );
     }
 
     #[test]
@@ -704,12 +731,15 @@ mod tests {
         // Test stats on an empty database
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test_stats.db");
-        
+
         // Initialize database first
         let _db = Database::open(&db_path).unwrap();
-        
+
         let result = handle_db_stats(db_path);
-        assert!(result.is_ok(), "DB stats should succeed even with empty database");
+        assert!(
+            result.is_ok(),
+            "DB stats should succeed even with empty database"
+        );
     }
 
     #[test]
@@ -717,10 +747,10 @@ mod tests {
         // Test database cleaning
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test_clean.db");
-        
+
         // Initialize database first
         let _db = Database::open(&db_path).unwrap();
-        
+
         let result = handle_db_clean(db_path);
         assert!(result.is_ok(), "DB clean should succeed");
     }
@@ -730,53 +760,66 @@ mod tests {
         // Test showing scan results with empty database
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test_results.db");
-        
+
         let db = Database::open(&db_path).unwrap();
-        
+
         let result = show_scan_results(&db);
-        assert!(result.is_ok(), "Show scan results should succeed with empty database");
+        assert!(
+            result.is_ok(),
+            "Show scan results should succeed with empty database"
+        );
     }
 
     #[test]
     fn test_handle_db_operations_nonexistent_file() {
         // Test error handling when database file doesn't exist for read operations
         let nonexistent_path = PathBuf::from("/nonexistent/database.db");
-        
+
         // Stats, List, and Clean operations should fail gracefully on non-existent files
         let result = handle_db_stats(nonexistent_path.clone());
-        assert!(result.is_err(), "Stats should fail on non-existent database");
-        
+        assert!(
+            result.is_err(),
+            "Stats should fail on non-existent database"
+        );
+
         let result = handle_db_list(nonexistent_path.clone());
         assert!(result.is_err(), "List should fail on non-existent database");
-        
+
         let result = handle_db_clean(nonexistent_path);
-        assert!(result.is_err(), "Clean should fail on non-existent database");
+        assert!(
+            result.is_err(),
+            "Clean should fail on non-existent database"
+        );
     }
 
     #[test]
     fn test_config_override_with_command_line_options() {
         // Test that command-line options override config presets
         // This tests the logic in scan_library function
-        
+
         let mut config = ScannerConfig::default();
         let original_tasks = config.max_concurrent_tasks;
         let original_db_ops = config.max_concurrent_db_operations;
-        
-        // Simulate the override logic from scan_library
-        let max_concurrent_tasks = Some(16);
-        let max_concurrent_db_operations = Some(8);
-        
+
+        // Use values that are guaranteed to be different from defaults
+        // Choose values based on what's different from current defaults
+        let max_concurrent_tasks = if original_tasks == 16 { Some(32) } else { Some(16) };
+        let max_concurrent_db_operations = if original_db_ops == 8 { Some(4) } else { Some(8) };
+
         if let Some(tasks) = max_concurrent_tasks {
             config.max_concurrent_tasks = tasks;
         }
         if let Some(db_ops) = max_concurrent_db_operations {
             config.max_concurrent_db_operations = db_ops;
         }
-        
-        assert_eq!(config.max_concurrent_tasks, 16);
-        assert_eq!(config.max_concurrent_db_operations, 8);
+
+        // Verify the configuration was actually overridden
         assert_ne!(config.max_concurrent_tasks, original_tasks);
         assert_ne!(config.max_concurrent_db_operations, original_db_ops);
+        
+        // Verify the override values are set correctly
+        assert_eq!(config.max_concurrent_tasks, max_concurrent_tasks.unwrap());
+        assert_eq!(config.max_concurrent_db_operations, max_concurrent_db_operations.unwrap());
     }
 
     #[test]
@@ -793,7 +836,7 @@ mod tests {
                 max_concurrent_db_operations: None,
             },
         };
-        
+
         let debug_str = format!("{:?}", args);
         assert!(debug_str.contains("verbose: true"));
         assert!(debug_str.contains("debug: false"));
@@ -809,7 +852,7 @@ mod tests {
             DbOperations::Stats,
             DbOperations::Clean,
         ];
-        
+
         for op in operations {
             let debug_str = format!("{:?}", op);
             assert!(!debug_str.is_empty());
@@ -819,11 +862,11 @@ mod tests {
     #[test]
     fn test_path_validation_edge_cases() {
         // Test edge cases in path validation
-        
+
         // Empty path should be handled gracefully by PathBuf
         let empty_path = PathBuf::new();
         assert!(!empty_path.exists());
-        
+
         // Very long path names (within reasonable limits)
         let long_name = "a".repeat(100);
         let long_path = PathBuf::from(format!("/tmp/{}", long_name));
@@ -835,18 +878,26 @@ mod tests {
     fn test_concurrent_limits_validation() {
         // Test that concurrent limits can be set to various values
         let test_values = vec![1, 2, 4, 8, 16, 32, 100];
-        
+
         for value in test_values {
             let args = Args::try_parse_from(&[
                 "abop-cli",
                 "scan",
-                "--library", "/test/path",
-                "--max-concurrent-tasks", &value.to_string(),
-                "--max-concurrent-db-operations", &value.to_string(),
-            ]).unwrap();
-            
+                "--library",
+                "/test/path",
+                "--max-concurrent-tasks",
+                &value.to_string(),
+                "--max-concurrent-db-operations",
+                &value.to_string(),
+            ])
+            .unwrap();
+
             match args.command {
-                Commands::Scan { max_concurrent_tasks, max_concurrent_db_operations, .. } => {
+                Commands::Scan {
+                    max_concurrent_tasks,
+                    max_concurrent_db_operations,
+                    ..
+                } => {
                     assert_eq!(max_concurrent_tasks, Some(value));
                     assert_eq!(max_concurrent_db_operations, Some(value));
                 }
@@ -859,7 +910,7 @@ mod tests {
     fn test_environment_variable_page_size_parsing() {
         // Test the page size environment variable parsing logic
         // This tests the logic used in handle_db_list
-        
+
         // Test valid page size
         let valid_sizes = vec!["50", "100", "500", "1000"];
         for size_str in valid_sizes {
@@ -869,14 +920,14 @@ mod tests {
                 assert_eq!(clamped, size); // All test values should be within range
             }
         }
-        
+
         // Test invalid page sizes get clamped
         let invalid_sizes = vec![0, 1001, 9999];
         for size in invalid_sizes {
             let clamped = size.clamp(1, 1000);
             assert!(clamped >= 1 && clamped <= 1000);
         }
-        
+
         // Test default fallback
         let default_page_size = 100;
         assert!(default_page_size >= 1 && default_page_size <= 1000);

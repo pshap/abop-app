@@ -186,19 +186,76 @@ mod core_state_tests {
     }
     #[test]
     fn test_state_summary() {
-        let state = AppState::default();
+        use abop_core::models::audiobook::Audiobook;
+        use std::path::PathBuf;
+
+        // Test with default state
+        let mut state = AppState::default();
         let summary = state.get_summary();
 
-        // Summary should include structured information about the application state
-        // Expected format: "AppState { view=[ViewType], audiobooks=N, libraries=N, selected=ID }"
-        assert!(summary.contains("AppState"));
-        assert!(summary.contains("view="));
-        assert!(summary.contains("audiobooks=0"));
-        assert!(summary.contains("libraries=0"));
+        // Verify summary format and required fields
+        assert!(
+            summary.starts_with("AppState {"),
+            "Summary should start with AppState"
+        );
+        assert!(
+            summary.contains("view=Library"),
+            "Summary should include current view"
+        );
+        assert!(
+            summary.contains("audiobooks=0"),
+            "Summary should include audiobooks count"
+        );
+        assert!(
+            summary.contains("libraries=0"),
+            "Summary should include libraries count"
+        );
+        assert!(
+            summary.ends_with('}'),
+            "Summary should end with closing brace"
+        );
 
-        // Verify the summary is concise and informative
-        assert!(summary.len() < 200, "Summary should be concise");
-        assert!(!summary.is_empty(), "Summary should not be empty");
+        // Test with an audiobook selected
+        let book_id = "test-book-123".to_string();
+        state.select_audiobook(Some(book_id.clone()));
+        let summary_with_selection = state.get_summary();
+        assert!(
+            summary_with_selection.contains(&format!("selected={}", book_id)),
+            "Summary should include selected audiobook ID"
+        );
+
+        // Test with multiple audiobooks and libraries
+        state
+            .app_data
+            .audiobooks
+            .push(Audiobook::new("lib1", PathBuf::from("/test/book1.mp3")));
+        state
+            .app_data
+            .audiobooks
+            .push(Audiobook::new("lib1", PathBuf::from("/test/book2.mp3")));
+        state
+            .app_data
+            .libraries
+            .push(abop_core::models::library::Library::new(
+                "Test Library",
+                "/test/path",
+            ));
+
+        let summary_with_content = state.get_summary();
+        assert!(
+            summary_with_content.contains("audiobooks=2"),
+            "Summary should reflect updated audiobooks count"
+        );
+        assert!(
+            summary_with_content.contains("libraries=1"),
+            "Summary should reflect updated libraries count"
+        );
+
+        // Verify summary remains concise
+        assert!(
+            summary_with_content.len() < 250,
+            "Summary should remain concise with more content"
+        );
     }
 
     #[test]
@@ -224,71 +281,244 @@ mod state_workflow_tests {
 
     #[test]
     fn test_library_scanning_workflow() {
-        let mut state = UiState::default();
         use abop_core::models::audiobook::Audiobook;
         use std::path::PathBuf;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::time::Duration;
+        use tokio::runtime::Runtime;
 
-        // Step 1: User starts a scan
-        state.scanning = true;
-        state.scan_progress = Some(0.0);
-        assert!(state.scanning);
-        assert_eq!(state.scan_progress, Some(0.0));
+        // Create a new runtime for testing async operations
+        let rt = Runtime::new().expect("Failed to create runtime");
+        rt.block_on(async {
+            let mut state = UiState::default();
+            let scan_complete = Arc::new(AtomicBool::new(false));
+            let scan_progress = Arc::new(std::sync::Mutex::new(0.0));
 
-        // Step 2: Scan progresses
-        state.scan_progress = Some(0.5);
-        assert_eq!(state.scan_progress, Some(0.5));
+            // Simulate scan start
+            state.core_state.set_current_view(ViewType::Library);
+            state.scanning = true;
+            state.scan_progress = Some(0.0);
 
-        // Step 3: Scan completes
-        state.scanning = false;
-        state.scan_progress = Some(1.0);
+            assert!(state.scanning, "Scan should be in progress");
+            assert_eq!(
+                state.scan_progress,
+                Some(0.0),
+                "Initial progress should be 0%"
+            );
 
-        // Step 4: Results are loaded - verify audiobooks are populated
-        let audiobook1 = Audiobook::new("test-lib", PathBuf::from("/test/book1.mp3"));
-        let audiobook2 = Audiobook::new("test-lib", PathBuf::from("/test/book2.mp3"));
-        state.audiobooks = vec![audiobook1, audiobook2];
+            // Simulate scan progress updates
+            let progress_updates = vec![0.1, 0.25, 0.5, 0.75, 0.9, 1.0];
+            for progress in progress_updates {
+                state.scan_progress = Some(progress);
+                *scan_progress.lock().unwrap() = progress;
 
-        // Verify workflow state and side effects
-        assert!(!state.scanning, "Scanning should be complete");
-        assert_eq!(state.scan_progress, Some(1.0), "Progress should be 100%");
-        assert_eq!(state.audiobooks.len(), 2, "Audiobooks should be populated");
-        assert!(
-            state.selected_audiobooks.is_empty(),
-            "No audiobooks should be initially selected"
-        );
+                // Verify progress updates are reflected in the UI state
+                assert_eq!(
+                    state.scan_progress,
+                    Some(progress),
+                    "Progress should be updated to {}",
+                    progress
+                );
 
-        // Verify the audiobooks have expected properties
-        assert!(!state.audiobooks[0].id.is_empty());
-        assert!(!state.audiobooks[1].id.is_empty());
-        assert_ne!(state.audiobooks[0].id, state.audiobooks[1].id);
+                // Simulate UI updates based on progress
+                if progress >= 0.5 && progress < 1.0 {
+                    assert!(
+                        state.scanning,
+                        "Scan should still be in progress at {}%",
+                        progress * 100.0
+                    );
+                }
+
+                // Small delay to simulate work
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+
+            // Simulate scan completion
+            state.scanning = false;
+            state.scan_progress = Some(1.0);
+            scan_complete.store(true, Ordering::SeqCst);
+
+            // Load test audiobooks with various valid paths
+            let test_audiobooks = vec![
+                Audiobook::new("test-lib", PathBuf::from("/valid/path/book1.mp3")),
+                Audiobook::new(
+                    "test-lib",
+                    PathBuf::from(r"C:\Users\test\audiobooks\book2.mp3"),
+                ),
+                Audiobook::new("test-lib", PathBuf::from("relative/path/book3.mp3")),
+            ];
+
+            // Verify path validation in the test
+            for book in &test_audiobooks {
+                assert!(
+                    !book.path.as_os_str().is_empty(),
+                    "Audiobook path should not be empty"
+                );
+
+                // Check for common invalid path patterns
+                let path_str = book.path.to_string_lossy();
+                assert!(
+                    !path_str.contains("\\?"),
+                    "Path should not contain invalid characters: {}",
+                    path_str
+                );
+            }
+
+            // Update state with scanned audiobooks
+            state.audiobooks = test_audiobooks;
+
+            // Verify final state
+            assert!(!state.scanning, "Scan should be complete");
+            assert_eq!(state.scan_progress, Some(1.0), "Progress should be 100%");
+            assert_eq!(state.audiobooks.len(), 3, "All audiobooks should be loaded");
+            assert!(
+                state.selected_audiobooks.is_empty(),
+                "No audiobooks should be selected after scan"
+            );
+
+            // Verify all audiobooks have unique IDs
+            let mut ids = std::collections::HashSet::new();
+            for book in &state.audiobooks {
+                assert!(!book.id.is_empty(), "Audiobook ID should not be empty");
+                assert!(
+                    ids.insert(&book.id),
+                    "Duplicate audiobook ID found: {}",
+                    book.id
+                );
+            }
+
+            // Verify the scan completion flag was set
+            assert!(
+                scan_complete.load(Ordering::SeqCst),
+                "Scan completion flag should be set"
+            );
+
+            // Verify the final progress value
+            assert_eq!(
+                *scan_progress.lock().unwrap(),
+                1.0,
+                "Final progress should be 100%"
+            );
+        });
     }
 
     #[test]
     fn test_audiobook_playback_workflow() {
+        use std::path::{Path, PathBuf};
+        use std::sync::mpsc;
+        use std::thread;
+        use std::time::Duration;
+
         let mut state = UiState::default();
-        use std::path::PathBuf;
 
-        // Setup: Audiobook is selected
-        let book_id = "playback_test".to_string();
-        state.selected_audiobooks.insert(book_id.clone());
+        // Test data with various path formats
+        let test_paths = [
+            "/valid/path/audiobook.mp3".to_string(),
+            r"C:\Users\test\audiobooks\book.mp3".to_string(),
+            "relative/path/audiobook.mp3".to_string(),
+            "with spaces/path to/book.mp3".to_string(),
+        ];
 
-        // Step 1: User starts playback
+        for (i, test_path) in test_paths.iter().enumerate() {
+            let book_id = format!("playback_test_{}", i);
+
+            // Setup: Select an audiobook
+            state.selected_audiobooks.clear();
+            state.selected_audiobooks.insert(book_id.clone());
+
+            // Convert path to proper format for the current OS
+            let path_buf = PathBuf::from(test_path);
+
+            // Verify path handling
+            assert!(
+                !path_buf.as_os_str().is_empty(),
+                "Test path should not be empty"
+            );
+
+            // Skip path existence check since these are test paths
+
+            // Step 1: Start playback
+            state.player_state = PlayerState::Playing;
+            state.current_playing_file = Some(path_buf.clone());
+
+            // Verify playback started correctly
+            assert_eq!(
+                state.player_state,
+                PlayerState::Playing,
+                "Playback should be in progress"
+            );
+            assert!(
+                state.current_playing_file.is_some(),
+                "Current playing file should be set"
+            );
+
+            // Verify the file path is preserved exactly as provided
+            assert_eq!(
+                state.current_playing_file.as_ref().unwrap(),
+                &path_buf,
+                "File path should be preserved exactly"
+            );
+
+            // Step 2: Pause playback
+            state.player_state = PlayerState::Paused;
+            assert_eq!(
+                state.player_state,
+                PlayerState::Paused,
+                "Playback should be paused"
+            );
+
+            // Step 3: Resume playback
+            state.player_state = PlayerState::Playing;
+            assert_eq!(
+                state.player_state,
+                PlayerState::Playing,
+                "Playback should have resumed"
+            );
+
+            // Step 4: Stop playback
+            state.player_state = PlayerState::Stopped;
+            state.current_playing_file = None;
+
+            // Verify final state
+            assert_eq!(
+                state.player_state,
+                PlayerState::Stopped,
+                "Playback should be stopped"
+            );
+            assert!(
+                state.current_playing_file.is_none(),
+                "No file should be playing"
+            );
+
+            // Verify the audiobook is still selected after playback
+            assert!(
+                state.selected_audiobooks.contains(&book_id),
+                "Audiobook should remain selected after playback"
+            );
+
+            // Test with invalid path (should not panic)
+            // Using a valid path with invalid characters instead of null byte
+            let invalid_path = PathBuf::from("/invalid/path/with/invalid/characters/<invalid>");
+            state.current_playing_file = Some(invalid_path);
+            state.player_state = PlayerState::Playing;
+
+            // The test passes if we get here without panicking
+            assert_eq!(
+                state.player_state,
+                PlayerState::Playing,
+                "Should handle invalid paths gracefully"
+            );
+        }
+
+        // Test with empty path (should not panic)
+        state.current_playing_file = Some(PathBuf::new());
         state.player_state = PlayerState::Playing;
-        state.current_playing_file = Some(PathBuf::from("/test/audiobook.mp3"));
-
-        // Step 2: User pauses
-        state.player_state = PlayerState::Paused;
-
-        // Step 3: User resumes
-        state.player_state = PlayerState::Playing;
-
-        // Step 4: Playback stops
-        state.player_state = PlayerState::Stopped;
-        state.current_playing_file = None;
-
-        // Verify final state
-        assert_eq!(state.player_state, PlayerState::Stopped);
-        assert!(state.current_playing_file.is_none());
-        assert!(state.selected_audiobooks.contains(&book_id));
+        assert_eq!(
+            state.player_state,
+            PlayerState::Playing,
+            "Should handle empty paths gracefully"
+        );
     }
 
     #[test]

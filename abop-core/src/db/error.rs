@@ -114,6 +114,10 @@ pub enum DatabaseError {
     /// I/O error occurred.
     #[error("I/O error: {0}")]
     Io(String),
+
+    /// Custom error message.
+    #[error("Database error: {0}")]
+    Custom(String),
 }
 
 /// Convenient Result type for database operations
@@ -172,6 +176,12 @@ impl DatabaseError {
         Self::ExecutionFailed {
             message: message.to_string(),
         }
+    }
+
+    /// Create a custom error with the given message
+    #[must_use]
+    pub fn custom<T: Into<String>>(message: T) -> Self {
+        Self::Custom(message.into())
     }
 }
 

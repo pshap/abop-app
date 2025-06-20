@@ -224,8 +224,13 @@ impl LibraryRepository {
 }
 
 impl Repository for LibraryRepository {
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+    fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
+    }
+    
+    #[deprecated(note = "use connect() instead")]
+    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+        self.connect()
     }
 }
 
