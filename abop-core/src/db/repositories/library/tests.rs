@@ -304,12 +304,9 @@ mod library_tests {
             ("Gamma Library", "/gamma"),
         ];
 
-        // Use transactions for bulk operations
-        let mut created_libraries = Vec::new();
-        for (name, path) in libraries_to_create {
-            let library = repo.create(name, path).unwrap();
-            created_libraries.push(library);
-        }
+        // Use batched create_many for efficient bulk operations
+        let created_count = repo.create_many(&libraries_to_create).unwrap();
+        assert_eq!(created_count, 3, "All libraries should be created");
 
         let result = repo.find_all();
         assert!(result.is_ok());
@@ -540,16 +537,25 @@ mod library_tests {
         const NUM_LIBRARIES: usize = 50; // Reasonable number for functional testing
 
         let repo = create_test_repo();
-        let mut created_ids = Vec::with_capacity(NUM_LIBRARIES);
 
-        // Create libraries in a batch
-        for i in 0..NUM_LIBRARIES {
-            let name = format!("Library {i}");
-            let path = format!("/path/to/library/{i}");
+        // Prepare test data for batch creation
+        let test_data: Vec<(String, String)> = (0..NUM_LIBRARIES)
+            .map(|i| {
+                (
+                    format!("Library {i}"),
+                    format!("/path/to/library/{i}"),
+                )
+            })
+            .collect();
 
-            let library = create_test_library(&repo, &name, &path);
-            created_ids.push(library.id.clone());
-        }
+        // Create libraries using batch operations (more efficient)
+        let test_data_refs: Vec<(&str, &str)> = test_data
+            .iter()
+            .map(|(name, path)| (name.as_str(), path.as_str()))
+            .collect();
+
+        let created_count = repo.create_many(&test_data_refs).expect("Failed to create libraries in batch");
+        assert_eq!(created_count, NUM_LIBRARIES, "Not all libraries were created");
 
         // Verify all libraries were created
         let all_libraries = repo.find_all().expect("Failed to fetch all libraries");
@@ -559,7 +565,8 @@ mod library_tests {
             "Incorrect number of libraries found"
         );
 
-        // Verify each library can be found by ID
+        // Verify each library can be found by ID and collect IDs for cleanup
+        let created_ids: Vec<String> = all_libraries.iter().map(|lib| lib.id.clone()).collect();
         for id in &created_ids {
             assert!(
                 repo.find_by_id(id).is_ok(),
