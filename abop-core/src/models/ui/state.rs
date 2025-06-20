@@ -260,8 +260,8 @@ impl AppState {
     #[must_use]
     pub fn get_summary(&self) -> String {
         let selected_display = match &self.selected_audiobook_id {
-            Some(id) => id.clone(),
-            None => "None".to_string(),
+            Some(id) => id.as_str(),
+            None => "None",
         };
         format!(
             "AppState {{ view={:?}, audiobooks={}, libraries={}, selected={} }}",

@@ -418,8 +418,8 @@ mod state_workflow_tests {
             ("Test Audiobook 4", "with spaces/path to/book.mp3"),
         ];
 
-        for (i, (_title, test_path)) in test_audiobooks.iter().enumerate() {
-            let _book_id = format!("playbook_test_{}", i);
+        for (i, (title, test_path)) in test_audiobooks.iter().enumerate() {
+            let book_id = format!("playbook_test_{}", i);
             let library_id = "test-library";
             
             // Setup: Create and add an audiobook to the state
@@ -435,7 +435,7 @@ mod state_workflow_tests {
             let playing_path = state.audiobooks
                 .iter()
                 .find(|book| book.id == audiobook_id)
-                .unwrap()
+                .expect("Audiobook should exist in test state")
                 .path
                 .clone();
 

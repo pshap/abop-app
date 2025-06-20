@@ -272,18 +272,19 @@ mod ui_state_tests {
             "Sort order should be toggled to descending"
         );
 
-        // Test sorting by an unknown field (should accept any field name)
-        let task = handle_ui_message(&mut state, Message::SortBy("unknown_field".to_string()));
-        assert!(
-            task.is_some(),
-            "Sorting by unknown field should still return a task"
-        );
-
-        // Verify unknown field is accepted (implementation doesn't validate column names)
-        assert_eq!(
-            state.table_state.sort_column, "unknown_field",
-            "Should accept any column name, even unknown ones"
-        );
+        // Test sorting by valid field names
+        let valid_fields = ["title", "author", "path", "library_id"];
+        for field in &valid_fields {
+            let task = handle_ui_message(&mut state, Message::SortBy(field.to_string()));
+            assert!(
+                task.is_some(),
+                "Sorting by valid field '{}' should return a task", field
+            );
+            assert_eq!(
+                state.table_state.sort_column, *field,
+                "Sort column should be set to '{}'", field
+            );
+        }
 
         // Test with empty audiobooks list
         state.audiobooks.clear();

@@ -22,8 +22,10 @@ CREATE TABLE audiobooks (
     duration_seconds INTEGER,
     size_bytes INTEGER,
     cover_art BLOB,
+    -- Timestamps for creation and modification tracking
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    -- UI selection state: 0 = not selected, 1 = selected for batch operations
     selected BOOLEAN DEFAULT 0,
     FOREIGN KEY (library_id) REFERENCES libraries(id) ON DELETE CASCADE
 );
