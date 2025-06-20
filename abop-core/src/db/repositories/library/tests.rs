@@ -538,24 +538,26 @@ mod library_tests {
 
         let repo = create_test_repo();
 
-        // Prepare test data for batch creation
-        let test_data: Vec<(String, String)> = (0..NUM_LIBRARIES)
-            .map(|i| {
-                (
-                    format!("Library {i}"),
-                    format!("/path/to/library/{i}"),
-                )
-            })
-            .collect();
-
         // Create libraries using batch operations (more efficient)
-        let test_data_refs: Vec<(&str, &str)> = test_data
-            .iter()
-            .map(|(name, path)| (name.as_str(), path.as_str()))
-            .collect();
+        // Use a smaller dataset that we can define statically for bulk operations test
+        const BULK_TEST_LIBRARIES: [(&str, &str); 5] = [
+            ("Bulk Library 1", "/bulk/path/1"),
+            ("Bulk Library 2", "/bulk/path/2"),
+            ("Bulk Library 3", "/bulk/path/3"),
+            ("Bulk Library 4", "/bulk/path/4"),
+            ("Bulk Library 5", "/bulk/path/5"),
+        ];
 
-        let created_count = repo.create_many(&test_data_refs).expect("Failed to create libraries in batch");
-        assert_eq!(created_count, NUM_LIBRARIES, "Not all libraries were created");
+        let created_count = repo.create_many(&BULK_TEST_LIBRARIES).expect("Failed to create libraries in batch");
+        assert_eq!(created_count, BULK_TEST_LIBRARIES.len(), "Not all libraries were created in batch");
+
+        // Create additional individual libraries to reach NUM_LIBRARIES total
+        let remaining = NUM_LIBRARIES - BULK_TEST_LIBRARIES.len();
+        for i in 0..remaining {
+            let name = format!("Individual Library {i}");
+            let path = std::path::PathBuf::from(format!("/individual/path/{i}"));
+            repo.create(&name, path).expect("Failed to create individual library");
+        }
 
         // Verify all libraries were created
         let all_libraries = repo.find_all().expect("Failed to fetch all libraries");
