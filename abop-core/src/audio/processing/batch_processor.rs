@@ -336,6 +336,8 @@ impl BatchProcessor {
             self.file_processor.options.clone(),
         );
 
-        processor.process_file(input_path).map_err(AudioProcessingError::from)
+        processor
+            .process_file(input_path)
+            .map_err(AudioProcessingError::from)
     }
 }

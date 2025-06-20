@@ -173,7 +173,7 @@ mod audio_operations_tests {
                     total_files <= input_files.len(),
                     "Should not have processed more files than input"
                 );
-                
+
                 // If there are failed files, check that at least one was a cancellation
                 if !result.failed.is_empty() {
                     let has_cancellation = result
@@ -224,7 +224,7 @@ mod audio_operations_tests {
 
         match result {
             Ok(result) => {
-                // In parallel mode, timing is unpredictable. We might have processed all files 
+                // In parallel mode, timing is unpredictable. We might have processed all files
                 // or some of them depending on timing. The important thing is that cancellation
                 // was requested and the system responded appropriately.
                 let total_files = result.successful.len() + result.failed.len();
@@ -232,7 +232,7 @@ mod audio_operations_tests {
                     total_files <= input_files.len(),
                     "Should not have processed more files than input"
                 );
-                
+
                 // If there are failed files, at least one should be a cancellation
                 if !result.failed.is_empty() {
                     let has_cancellation = result

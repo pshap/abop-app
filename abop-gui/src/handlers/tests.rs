@@ -221,7 +221,7 @@ mod ui_state_tests {
 
         // Set initial state with unsorted books
         state.audiobooks = vec![book1.clone(), book2.clone(), book3.clone()];
-        
+
         // Start with a different column so that sorting by title will be ascending by default
         state.table_state.sort_column = "author".to_string();
 

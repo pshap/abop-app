@@ -18,7 +18,8 @@ use std::any::Any;
 use std::sync::Arc;
 
 /// Type alias for row processing callback to reduce complexity
-type RowCallback = Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
+type RowCallback =
+    Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {

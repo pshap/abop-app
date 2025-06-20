@@ -2,10 +2,7 @@
 
 use super::*;
 use crate::{
-    db::{
-        EnhancedConnection, migrations::run_migrations,
-        repositories::AudiobookRepository,
-    },
+    db::{EnhancedConnection, migrations::run_migrations, repositories::AudiobookRepository},
     models::Audiobook,
 };
 use chrono::Utc;
@@ -35,7 +32,9 @@ fn setup_test_db() -> (AudiobookRepository, tempfile::TempPath) {
         db_path.to_str().expect("Invalid temp path"),
     ));
     // Ensure the connection is established before use
-    connection.connect().expect("Failed to connect EnhancedConnection in test");
+    connection
+        .connect()
+        .expect("Failed to connect EnhancedConnection in test");
 
     (AudiobookRepository::new(connection), db_path)
 }
@@ -201,7 +200,8 @@ fn test_find_all_audiobooks_multiple() {
             params!["test-library-2", "Test Library 2", "/path/to/library2"],
         )?;
         Ok(())
-    }).expect("Failed to insert test libraries");
+    })
+    .expect("Failed to insert test libraries");
 
     // Create test data with libraries
     let book1 = create_test_audiobook("test-library-1", "/test/path/to/audiobook1");
@@ -244,7 +244,8 @@ fn test_find_by_library() {
             params!["lib2", "Library 2", "/path/to/library2"],
         )?;
         Ok(())
-    }).expect("Failed to insert test libraries");
+    })
+    .expect("Failed to insert test libraries");
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -303,7 +304,8 @@ fn test_count_by_library() {
             params!["lib2", "Library 2", "/path/to/library2"],
         )?;
         Ok(())
-    }).expect("Failed to insert test libraries");
+    })
+    .expect("Failed to insert test libraries");
 
     // Create test data with libraries
     let book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
@@ -355,7 +357,8 @@ fn test_find_by_author() {
             params!["test-library-2", "Test Library 2", "/path/to/library2"],
         )?;
         Ok(())
-    }).expect("Failed to insert test libraries");
+    })
+    .expect("Failed to insert test libraries");
 
     // Create test data with different authors
     let mut book1 = create_test_audiobook("test-library-1", "/test/path/to/audiobook1");

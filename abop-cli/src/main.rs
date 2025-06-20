@@ -803,8 +803,16 @@ mod tests {
 
         // Use values that are guaranteed to be different from defaults
         // Choose values based on what's different from current defaults
-        let max_concurrent_tasks = if original_tasks == 16 { Some(32) } else { Some(16) };
-        let max_concurrent_db_operations = if original_db_ops == 8 { Some(4) } else { Some(8) };
+        let max_concurrent_tasks = if original_tasks == 16 {
+            Some(32)
+        } else {
+            Some(16)
+        };
+        let max_concurrent_db_operations = if original_db_ops == 8 {
+            Some(4)
+        } else {
+            Some(8)
+        };
 
         if let Some(tasks) = max_concurrent_tasks {
             config.max_concurrent_tasks = tasks;
@@ -816,10 +824,13 @@ mod tests {
         // Verify the configuration was actually overridden
         assert_ne!(config.max_concurrent_tasks, original_tasks);
         assert_ne!(config.max_concurrent_db_operations, original_db_ops);
-        
+
         // Verify the override values are set correctly
         assert_eq!(config.max_concurrent_tasks, max_concurrent_tasks.unwrap());
-        assert_eq!(config.max_concurrent_db_operations, max_concurrent_db_operations.unwrap());
+        assert_eq!(
+            config.max_concurrent_db_operations,
+            max_concurrent_db_operations.unwrap()
+        );
     }
 
     #[test]

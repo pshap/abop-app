@@ -255,7 +255,8 @@ impl AppState {
         // This would be implemented with change tracking in a full implementation
         // For now, we'll always return false to maintain compatibility
         false
-    }    /// Get a summary of the current state
+    }
+    /// Get a summary of the current state
     #[must_use]
     pub fn get_summary(&self) -> String {
         let selected_display = match &self.selected_audiobook_id {

@@ -61,11 +61,8 @@ mod library_tests {
         path: &str,
     ) -> crate::models::Library {
         let path_buf = PathBuf::from(path);
-        repo.create(name, path_buf).unwrap_or_else(|e| {
-            panic!(
-                "Failed to create test library '{name}' at '{path}': {e}"
-            )
-        })
+        repo.create(name, path_buf)
+            .unwrap_or_else(|e| panic!("Failed to create test library '{name}' at '{path}': {e}"))
     }
 
     #[test]
@@ -105,7 +102,7 @@ mod library_tests {
 
         // Get the error and check if it's the expected constraint error
         let error = result2.unwrap_err();
-        
+
         // Check if it's a DatabaseError containing an SQLite constraint error
         let error_msg = error.to_string().to_lowercase();
         assert!(
@@ -139,7 +136,7 @@ mod library_tests {
 
         // Get the error and check if it's the expected constraint error
         let error = result2.unwrap_err();
-        
+
         // Check if it's a DatabaseError containing an SQLite constraint error
         let error_msg = error.to_string().to_lowercase();
         assert!(

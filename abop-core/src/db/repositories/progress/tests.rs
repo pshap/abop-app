@@ -83,7 +83,8 @@ mod progress_tests {
     fn create_test_repo() -> ProgressRepository {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1"]);
         repo
-    }    /// Create a test progress record
+    }
+    /// Create a test progress record
     fn create_test_progress(audiobook_id: &str, position: u64, completed: bool) -> Progress {
         Progress {
             id: format!("progress-{audiobook_id}"),
