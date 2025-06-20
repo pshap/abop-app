@@ -3,7 +3,7 @@
 use super::*;
 use crate::{
     db::{
-        EnhancedConnection, error::DbResult, migrations::run_migrations,
+        EnhancedConnection, migrations::run_migrations,
         repositories::AudiobookRepository,
     },
     models::Audiobook,
@@ -32,7 +32,7 @@ fn setup_test_db() -> (AudiobookRepository, tempfile::TempPath) {
 
     // Create the EnhancedConnection and repository
     let connection = Arc::new(EnhancedConnection::new(
-        db_path.to_str().expect("Invalid temp path").to_string(),
+        db_path.to_str().expect("Invalid temp path"),
     ));
     // Ensure the connection is established before use
     connection.connect().expect("Failed to connect EnhancedConnection in test");
@@ -63,44 +63,6 @@ fn create_test_audiobook(library_id: &str, path: &str) -> Audiobook {
     }
 }
 
-// Helper function to execute a query on a repository
-fn execute_query(
-    repo: &AudiobookRepository,
-    query: &str,
-    params: &[&(dyn rusqlite::ToSql + Sync)],
-) -> DbResult<usize> {
-    // Clone the query string to ensure it lives long enough
-    let query = query.to_string();
-
-    // Convert parameters to owned values that are Send + Sync
-    let params: Vec<rusqlite::types::Value> = params
-        .iter()
-        .filter_map(|p| match p.to_sql().ok()? {
-            rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
-                rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
-                rusqlite::types::ValueRef::Integer(i) => Some(rusqlite::types::Value::Integer(i)),
-                rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
-                rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
-                    String::from_utf8_lossy(s).into_owned(),
-                )),
-                rusqlite::types::ValueRef::Blob(b) => {
-                    Some(rusqlite::types::Value::Blob(b.to_vec()))
-                }
-            },
-            rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
-            _ => None,
-        })
-        .collect();
-
-    repo.execute_query(move |conn| {
-        let mut stmt = conn.prepare(&query)?;
-        // Convert the parameters to references for the query
-        let param_refs: Vec<&dyn rusqlite::ToSql> =
-            params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
-        stmt.execute(rusqlite::params_from_iter(param_refs))
-    })
-}
-
 #[test]
 fn test_audiobook_repository_creation() {
     let repo = create_test_db();
@@ -111,14 +73,13 @@ fn test_audiobook_repository_creation() {
         db_conn
             .query_row("SELECT 1", [], |_| Ok(()))
             .map_err(|e| DatabaseError::ExecutionFailed {
-                message: format!("Query failed: {}", e),
+                message: format!("Query failed: {e}"),
             })
     });
 
     assert!(
         result.is_ok(),
-        "Should be able to execute a query: {:?}",
-        result
+        "Should be able to execute a query: {result:?}"
     );
 }
 
@@ -130,15 +91,14 @@ fn test_upsert_new_audiobook() {
 
     // Test inserting a new audiobook
     let result = repo.upsert(&audiobook);
-    assert!(result.is_ok(), "Should insert new audiobook: {:?}", result);
+    assert!(result.is_ok(), "Should insert new audiobook: {result:?}");
 
     // Test updating the audiobook
     audiobook.title = Some("Updated Title".to_string());
     let result = repo.upsert(&audiobook);
     assert!(
         result.is_ok(),
-        "Should update existing audiobook: {:?}",
-        result
+        "Should update existing audiobook: {result:?}"
     );
 
     // Verify the update was successful
@@ -269,9 +229,9 @@ fn test_find_by_library() {
     let repo = create_test_db();
 
     // Create test data with libraries
-    let mut book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
-    let mut book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
-    let mut book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
+    let book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
+    let book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
+    let book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
 
     // Insert libraries for used library_ids
     repo.execute_query(|conn| {
@@ -346,9 +306,9 @@ fn test_count_by_library() {
     }).expect("Failed to insert test libraries");
 
     // Create test data with libraries
-    let mut book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
-    let mut book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
-    let mut book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
+    let book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
+    let book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
+    let book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -462,8 +422,8 @@ fn test_find_by_path() {
     let repo = create_test_db();
 
     // Create test data with paths
-    let mut book1 = create_test_audiobook("test-library-1", "/audiobooks/fiction/book1.mp3");
-    let mut book2 = create_test_audiobook("test-library-1", "/audiobooks/nonfiction/book2.mp3");
+    let book1 = create_test_audiobook("test-library-1", "/audiobooks/fiction/book1.mp3");
+    let book2 = create_test_audiobook("test-library-1", "/audiobooks/nonfiction/book2.mp3");
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");

@@ -341,12 +341,10 @@ mod tests {
     #[test]
     fn test_validate_channel_mixer_config() {
         let valid_config = ChannelMixerConfig {
-            target_channels: Some(2),
-            mix_algorithm: MixingAlgorithm::WeightedSum {
+            target_channels: Some(2),            mix_algorithm: MixingAlgorithm::WeightedSum {
                 left_weight: 0.7,
                 right_weight: 0.3,
             },
-            ..Default::default()
         };
         assert!(ConfigValidator::validate_channel_mixer_config(&valid_config).is_ok());
         let invalid_config = ChannelMixerConfig {
