@@ -210,8 +210,6 @@ mod ui_state_tests {
     }
     #[test]
     fn test_handle_sort_by() {
-        use abop_core::models::audiobook::Audiobook;
-
         let mut state = UiState::default();
 
         // Create test audiobooks with different attributes for comprehensive sorting

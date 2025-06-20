@@ -405,10 +405,7 @@ mod state_workflow_tests {
 
     #[test]
     fn test_audiobook_playback_workflow() {
-        use std::path::{Path, PathBuf};
-        use std::sync::mpsc;
-        use std::thread;
-        use std::time::Duration;
+        use std::path::PathBuf;
 
         let mut state = UiState::default();
 
