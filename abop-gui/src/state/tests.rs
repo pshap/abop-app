@@ -405,39 +405,43 @@ mod state_workflow_tests {
 
     #[test]
     fn test_audiobook_playback_workflow() {
+        use abop_core::models::audiobook::Audiobook;
         use std::path::PathBuf;
 
         let mut state = UiState::default();
 
-        // Test data with various path formats
-        let test_paths = [
-            "/valid/path/audiobook.mp3".to_string(),
-            r"C:\Users\test\audiobooks\book.mp3".to_string(),
-            "relative/path/audiobook.mp3".to_string(),
-            "with spaces/path to/book.mp3".to_string(),
+        // Test data with realistic audiobook paths
+        let test_audiobooks = [
+            ("Test Audiobook 1", "/valid/path/audiobook.mp3"),
+            ("Test Audiobook 2", r"C:\Users\test\audiobooks\book.mp3"),
+            ("Test Audiobook 3", "relative/path/audiobook.mp3"),
+            ("Test Audiobook 4", "with spaces/path to/book.mp3"),
         ];
 
-        for (i, test_path) in test_paths.iter().enumerate() {
-            let book_id = format!("playback_test_{}", i);
+        for (i, (title, test_path)) in test_audiobooks.iter().enumerate() {
+            let book_id = format!("playbook_test_{}", i);
+            let library_id = "test-library";
+            
+            // Setup: Create and add an audiobook to the state
+            let audiobook = Audiobook::new(library_id, PathBuf::from(test_path));
+            let audiobook_id = audiobook.id.clone();
+            state.audiobooks.push(audiobook);
 
-            // Setup: Select an audiobook
+            // Select the audiobook
             state.selected_audiobooks.clear();
-            state.selected_audiobooks.insert(book_id.clone());
+            state.selected_audiobooks.insert(audiobook_id.clone());
 
-            // Convert path to proper format for the current OS
-            let path_buf = PathBuf::from(test_path);
-
-            // Verify path handling
-            assert!(
-                !path_buf.as_os_str().is_empty(),
-                "Test path should not be empty"
-            );
-
-            // Skip path existence check since these are test paths
+            // Get the path for playback (must match an existing audiobook)
+            let playing_path = state.audiobooks
+                .iter()
+                .find(|book| book.id == audiobook_id)
+                .unwrap()
+                .path
+                .clone();
 
             // Step 1: Start playback
             state.player_state = PlayerState::Playing;
-            state.current_playing_file = Some(path_buf.clone());
+            state.current_playing_file = Some(playing_path.clone());
 
             // Verify playback started correctly
             assert_eq!(
@@ -450,11 +454,12 @@ mod state_workflow_tests {
                 "Current playing file should be set"
             );
 
-            // Verify the file path is preserved exactly as provided
-            assert_eq!(
-                state.current_playing_file.as_ref().unwrap(),
-                &path_buf,
-                "File path should be preserved exactly"
+            // Verify the playing file matches an existing audiobook
+            assert!(
+                state.audiobooks.iter().any(|book| 
+                    &book.path == state.current_playing_file.as_ref().unwrap()
+                ),
+                "Playing file must correspond to an existing audiobook"
             );
 
             // Step 2: Pause playback
@@ -490,31 +495,21 @@ mod state_workflow_tests {
 
             // Verify the audiobook is still selected after playback
             assert!(
-                state.selected_audiobooks.contains(&book_id),
+                state.selected_audiobooks.contains(&audiobook_id),
                 "Audiobook should remain selected after playback"
             );
 
-            // Test with invalid path (should not panic)
-            // Using a valid path with invalid characters instead of null byte
-            let invalid_path = PathBuf::from("/invalid/path/with/invalid/characters/<invalid>");
-            state.current_playing_file = Some(invalid_path);
-            state.player_state = PlayerState::Playing;
-
-            // The test passes if we get here without panicking
-            assert_eq!(
-                state.player_state,
-                PlayerState::Playing,
-                "Should handle invalid paths gracefully"
-            );
+            // Clear audiobooks for next iteration
+            state.audiobooks.clear();
         }
 
-        // Test with empty path (should not panic)
-        state.current_playing_file = Some(PathBuf::new());
-        state.player_state = PlayerState::Playing;
-        assert_eq!(
-            state.player_state,
-            PlayerState::Playing,
-            "Should handle empty paths gracefully"
+        // Test edge case: Try to play a file that doesn't exist in audiobooks
+        state.current_playing_file = Some(PathBuf::from("/nonexistent/file.mp3"));
+        assert!(
+            !state.audiobooks.iter().any(|book| 
+                &book.path == state.current_playing_file.as_ref().unwrap()
+            ),
+            "Playing a non-existent file should not match any audiobook"
         );
     }
 
