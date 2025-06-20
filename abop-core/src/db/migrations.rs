@@ -201,7 +201,8 @@ impl MigrationManager {
 
 /// Gets all migrations in order
 fn get_migrations() -> Vec<Migration> {
-    vec![        Migration {
+    vec![
+        Migration {
             version: 1,
             up_sql: include_str!("migrations/001_initial_schema.sql"),
             description: "Initial database schema with libraries, audiobooks, and progress tracking",

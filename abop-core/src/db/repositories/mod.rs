@@ -235,7 +235,12 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
             })
             .collect();
 
-        // Use Cell to allow interior mutability for single-use callback
+        // Use Cell to allow interior mutability for single-use callback.
+        // Design rationale: We need to move the callback from within a closure that's
+        // called by rusqlite's query_row. Since the closure is FnMut (not FnOnce),
+        // we can't move the callback directly. Cell provides interior mutability
+        // that allows us to safely take ownership of the callback exactly once,
+        // which matches the expected usage pattern for this callback-based API.
         use std::cell::Cell;
         let callback_option = Cell::new(Some(callback));
 
@@ -247,12 +252,16 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
                 params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
 
             // Execute the query and call callback
+            // Note: query_row expects exactly ONE row. If zero rows or multiple rows
+            // are returned, rusqlite will return an error (NoRows or TooManyRows).
+            // This is intentional behavior for this method - callers must ensure
+            // their query returns exactly one row.
             stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
                 // Take the callback from the Cell (only works once)
                 let callback = callback_option.take().ok_or_else(|| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
-                        Some("Callback already consumed".to_string())
+                        Some("Callback already consumed - query_row_dyn can only be called once per instance".to_string())
                     )
                 })?;
                 

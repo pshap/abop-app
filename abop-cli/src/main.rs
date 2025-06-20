@@ -656,8 +656,16 @@ mod tests {
         }
     }
 
-    // Test utilities for shared database operations
-    fn setup_test_db() -> (TempDir, std::path::PathBuf, Database) {
+    /// Test database setup result containing temporary directory, database path, and database instance
+    type TestDbSetup = (TempDir, std::path::PathBuf, Database);
+
+    /// Creates a test database with temporary directory for isolated testing
+    /// 
+    /// Returns a tuple containing:
+    /// - `TempDir`: Temporary directory that will be cleaned up when dropped
+    /// - `PathBuf`: Path to the database file within the temporary directory  
+    /// - `Database`: Opened database instance ready for testing
+    fn setup_test_db() -> TestDbSetup {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let db_path = temp_dir.path().join("test.db");
         let db = Database::open(&db_path).expect("Failed to open test database");
