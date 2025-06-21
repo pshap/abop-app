@@ -184,39 +184,60 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
     ) -> DbResult<usize> {
-        // Clone the query string to own it
+        // Simplify parameter handling by using rusqlite's built-in parameter conversion
         let query = query.to_string();
-
-        // Convert parameters to a vector of owned values
-        let params: Vec<rusqlite::types::Value> = params
+        let params: Vec<Box<dyn rusqlite::ToSql + Send>> = params
             .iter()
-            .filter_map(|p| {
-                match p.to_sql().ok()? {
-                    rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
-                        rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
-                        rusqlite::types::ValueRef::Integer(i) => {
-                            Some(rusqlite::types::Value::Integer(i))
+            .map(|p| {
+                // Convert to string representation for simplicity and safety
+                // This handles all common parameter types uniformly
+                match p.to_sql() {
+                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => match v {
+                        rusqlite::types::ValueRef::Null => {
+                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
                         }
-                        rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
-                        rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
-                            String::from_utf8_lossy(s).into_owned(),
-                        )),
+                        rusqlite::types::ValueRef::Integer(i) => {
+                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Real(f) => {
+                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Text(s) => {
+                            Box::new(String::from_utf8_lossy(s).into_owned()) as Box<dyn rusqlite::ToSql + Send>
+                        }
                         rusqlite::types::ValueRef::Blob(b) => {
-                            Some(rusqlite::types::Value::Blob(b.to_vec()))
+                            Box::new(b.to_vec()) as Box<dyn rusqlite::ToSql + Send>
                         }
                     },
-                    rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
-                    // Handle any future variants of ToSqlOutput
-                    _ => None,
+                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => match v {
+                        rusqlite::types::Value::Null => {
+                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Integer(i) => {
+                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Real(f) => {
+                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Text(s) => {
+                            Box::new(s) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Blob(b) => {
+                            Box::new(b) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                    },
+                    Ok(_) => {
+                        // Handle any other ToSqlOutput variants safely
+                        Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                    }
+                    Err(_) => Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>,
                 }
             })
             .collect();
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
-            // Convert the parameters back to references for the query
-            let param_refs: Vec<&dyn rusqlite::ToSql> =
-                params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
             stmt.execute(rusqlite::params_from_iter(param_refs))
         })
     }
@@ -227,28 +248,52 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         params: &[&(dyn rusqlite::ToSql + Sync)],
         callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>> {
-        // Clone the query string to own it
+        // Simplify parameter handling by using the same approach as execute_query_dyn
         let query = query.to_string();
-
-        // Convert parameters to a vector of owned values
-        let params: Vec<rusqlite::types::Value> = params
+        let params: Vec<Box<dyn rusqlite::ToSql + Send>> = params
             .iter()
-            .filter_map(|p| match p.to_sql().ok()? {
-                rusqlite::types::ToSqlOutput::Borrowed(v) => match v {
-                    rusqlite::types::ValueRef::Null => Some(rusqlite::types::Value::Null),
-                    rusqlite::types::ValueRef::Integer(i) => {
-                        Some(rusqlite::types::Value::Integer(i))
+            .map(|p| {
+                match p.to_sql() {
+                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => match v {
+                        rusqlite::types::ValueRef::Null => {
+                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Integer(i) => {
+                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Real(f) => {
+                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Text(s) => {
+                            Box::new(String::from_utf8_lossy(s).into_owned()) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::ValueRef::Blob(b) => {
+                            Box::new(b.to_vec()) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                    },
+                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => match v {
+                        rusqlite::types::Value::Null => {
+                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Integer(i) => {
+                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Real(f) => {
+                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Text(s) => {
+                            Box::new(s) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                        rusqlite::types::Value::Blob(b) => {
+                            Box::new(b) as Box<dyn rusqlite::ToSql + Send>
+                        }
+                    },
+                    Ok(_) => {
+                        // Handle any other ToSqlOutput variants safely
+                        Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
                     }
-                    rusqlite::types::ValueRef::Real(f) => Some(rusqlite::types::Value::Real(f)),
-                    rusqlite::types::ValueRef::Text(s) => Some(rusqlite::types::Value::Text(
-                        String::from_utf8_lossy(s).into_owned(),
-                    )),
-                    rusqlite::types::ValueRef::Blob(b) => {
-                        Some(rusqlite::types::Value::Blob(b.to_vec()))
-                    }
-                },
-                rusqlite::types::ToSqlOutput::Owned(v) => Some(v),
-                _ => None,
+                    Err(_) => Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>,
+                }
             })
             .collect();
 
@@ -263,10 +308,7 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
-
-            // Convert the parameters to references for the query
-            let param_refs: Vec<&dyn rusqlite::ToSql> =
-                params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
 
             // Execute the query and call callback
             // Note: query_row expects exactly ONE row. If zero rows or multiple rows

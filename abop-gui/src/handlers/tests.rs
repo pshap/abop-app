@@ -15,6 +15,7 @@ mod ui_state_tests {
         pub const TEST_BOOK3_PATH: &str = "/test/book3.mp3";
         pub const TEST_RECENT_PATH: &str = "/test/recent/path";
         pub const TEST_LIBRARY_ID: &str = "lib1";
+        pub const TEST_AUDIOBOOK_ID: &str = "test-audiobook-id";
         pub const TEST_AUTHOR_A: &str = "Author A";
         pub const TEST_AUTHOR_B: &str = "Author B";
         pub const TEST_AUTHOR_C: &str = "Author C";
@@ -141,7 +142,7 @@ mod ui_state_tests {
     #[test]
     fn test_handle_toggle_audiobook_selection() {
         let mut state = UiState::default();
-        let audiobook_id = "test-id".to_string();
+        let audiobook_id = TEST_AUDIOBOOK_ID.to_string();
 
         // Initially not selected
         assert!(!state.selected_audiobooks.contains(&audiobook_id));
@@ -306,8 +307,8 @@ mod ui_state_tests {
         
         // Verify that an invalid sort doesn't crash the sort operation
         // This tests that the sort utility handles unknown columns gracefully
-        state.audiobooks.push(create_test_audiobook("test1", "Test Book 1", "Test Author 1", "/test/path1.mp3"));
-        state.audiobooks.push(create_test_audiobook("test2", "Test Book 2", "Test Author 2", "/test/path2.mp3"));
+        state.audiobooks.push(create_test_audiobook("test1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
+        state.audiobooks.push(create_test_audiobook("test2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
         crate::utils::sort_audiobooks(&mut state); // Should not panic
         
         // Restore to a valid column for subsequent operations
