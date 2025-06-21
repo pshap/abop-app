@@ -11,8 +11,13 @@
 /// 
 /// **Sorting Behavior:**
 /// - `title`, `author`, `format`, `path`, `library_id`: Lexicographic (alphabetical) sorting
-/// - `duration`: Numeric sorting by duration in seconds (0 for unknown duration)
-/// - `size`: Numeric sorting by file size in bytes (0 for unknown size)
+/// - `duration`: Numeric sorting by duration in seconds (unknown/missing duration sorts as 0, appearing first in ascending order)
+/// - `size`: Numeric sorting by file size in bytes (unknown/missing size sorts as 0, appearing first in ascending order)
+/// 
+/// **Unknown Value Placement:**
+/// - Ascending sort: Unknown values (0) appear at the beginning
+/// - Descending sort: Unknown values (0) appear at the end
+/// - This ensures consistent, predictable sorting behavior for incomplete metadata
 pub const VALID_SORT_COLUMNS: &[&str] = &[
     "title", 
     "author", 

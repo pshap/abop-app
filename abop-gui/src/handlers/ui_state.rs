@@ -245,7 +245,8 @@ fn handle_reset_redraw_flag(state: &mut UiState) -> Option<Task<Message>> {
 }
 
 fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message>> {
-    log::info!("Sorting by column: {column_id}");    // Validate the column ID against known valid columns
+    log::info!("Sorting by column: {}", column_id);
+    // Validate the column ID against known valid columns
     let validated_column = if VALID_SORT_COLUMNS.contains(&column_id.as_str()) {
         column_id
     } else {

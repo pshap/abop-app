@@ -97,29 +97,21 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     /// # Warning
     /// 
     /// This method has a complex signature with unsafe type erasure via `Box<dyn Any + Send>`.
-    /// **⚠️ UNSAFE TYPE ERASURE WARNING ⚠️**
     /// 
-    /// This method performs type erasure and returns `Box<dyn Any + Send>`, which requires
-    /// unsafe downcasting at the call site. This can lead to:
-    /// - Runtime panics if types are mismatched
-    /// - Security vulnerabilities through type confusion attacks
-    /// - Memory corruption in debug builds
-    /// 
-    /// **SECURITY IMPLICATIONS:**
-    /// - No compile-time type checking
+    /// This method performs type erasure and returns `Box<dyn Any + Send>`, creating security risks:
+    /// - Runtime panics if types are mismatched during downcasting
     /// - Potential for type confusion vulnerabilities
-    /// - Risk of undefined behavior with incorrect type casts
+    /// - Memory corruption in debug builds
+    /// - No compile-time type checking
     /// 
-    /// It's recommended to use typed repository methods or the `SafeDynRepository` trait instead.
-    /// This method may be deprecated in future versions in favor of safer alternatives.
+    /// **Use `SafeDynRepository::query_row_safe` instead for type safety.**
     /// 
     /// # Safety Requirements
     /// 
-    /// - The query must return exactly one row (enforced by rusqlite)
-    /// - The callback can only be called once per method invocation
-    /// - Type casting of the returned `Box<dyn Any + Send>` is the caller's responsibility
-    /// - **CALLER MUST ENSURE CORRECT TYPE CASTING TO PREVENT SECURITY ISSUES**
-    #[deprecated(since = "0.1.0", note = "Use SafeDynRepository::query_row_safe instead for type safety and security")]
+    /// - Query must return exactly one row (enforced by rusqlite)
+    /// - Callback can only be called once per method invocation
+    /// - Caller must ensure correct type casting to prevent security issues
+    #[deprecated(since = "0.1.0", note = "Use SafeDynRepository::query_row_safe for type safety")]
     fn query_row_dyn(
         &self,
         query: &str,
@@ -416,8 +408,9 @@ impl RepositoryManager {
                     // Attempt to rollback, but preserve the original error if rollback fails
                     if let Err(rollback_err) = tx.rollback() {
                         log::error!(
-                            "Transaction rollback failed: {}. Original error: {}. Context: transaction_error=true, rollback_failed=true", 
-                            rollback_err, e
+                            "Transaction rollback failed: {rollback_error}. Original error: {original_error}",
+                            rollback_error = rollback_err,
+                            original_error = e,
                         );
                         // Return a compound error that includes both the original and rollback errors
                         Err(DatabaseError::transaction_failed(&format!(
@@ -426,8 +419,8 @@ impl RepositoryManager {
                         )))
                     } else {
                         log::warn!(
-                            "Transaction rolled back successfully after error: {}. Context: transaction_error=true, rollback_successful=true", 
-                            e
+                            "Transaction rolled back successfully after error: {error}",
+                            error = e,
                         );
                         Err(e)
                     }

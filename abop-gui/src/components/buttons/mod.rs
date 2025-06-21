@@ -33,7 +33,10 @@
 //!     .variant(ButtonVariant::Outlined)
 //!     .on_press(Message::Save)
 //!     .build()
-//!     .unwrap_or_else(|_| iced::widget::text("Export").into());
+//!     .unwrap_or_else(|err| {
+//!         log::warn!("Failed to build export button: {}", err);
+//!         iced::widget::text("Export").into()
+//!     });
 //! save_btn
 //! }
 //! ```

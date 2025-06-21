@@ -61,7 +61,8 @@ pub fn sort_audiobooks(state: &mut UiState) {
     let column = &state.table_state.sort_column;
     let ascending = state.table_state.sort_ascending;
     
-    state.audiobooks.sort_by(|a, b| {        let ordering = match column.as_str() {
+    state.audiobooks.sort_by(|a, b| {
+        let ordering = match column.as_str() {
             "title" => a
                 .title
                 .as_deref()
