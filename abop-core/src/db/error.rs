@@ -178,7 +178,28 @@ impl DatabaseError {
         }
     }
 
-    /// Create a parameter conversion error
+    /// Create a parameter conversion error for SQL parameter processing failures
+    /// 
+    /// This method is specifically designed for errors that occur during the conversion
+    /// of Rust types to SQL parameters in dynamic database operations. Common scenarios
+    /// include:
+    /// - Type conversion failures (e.g., invalid Unicode in strings)
+    /// - Unsupported parameter types for the current SQLite version
+    /// - Memory allocation failures during parameter serialization
+    /// - Custom `ToSql` implementations that return errors
+    /// 
+    /// # Arguments
+    /// * `message` - Detailed error description including context about which parameter
+    ///               failed and why (e.g., "Failed to convert parameter at index 2: invalid UTF-8")
+    /// 
+    /// # Usage
+    /// ```rust
+    /// use abop_core::db::error::DatabaseError;
+    /// 
+    /// let error = DatabaseError::parameter_conversion_failed(
+    ///     "Failed to convert parameter at index 1: string contains invalid UTF-8 sequence"
+    /// );
+    /// ```
     #[must_use]
     pub fn parameter_conversion_failed(message: &str) -> Self {
         Self::ExecutionFailed {
