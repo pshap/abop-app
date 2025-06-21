@@ -124,8 +124,7 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     ///     Ok(MyType::from(row))
     /// })?; // SAFE!
     /// ```
-    /// 
-    /// **Use `SafeDynRepository::query_row_safe` instead for type safety.**
+    ///    /// **Use `SafeDynRepository::query_row_safe` instead for type safety.**
     /// 
     /// # Safety Requirements
     /// 
@@ -135,6 +134,36 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     /// - **CRITICAL**: Never use this method with untrusted input or in security-sensitive contexts
     #[deprecated(since = "0.1.0", note = "Use SafeDynRepository::query_row_safe for type safety")]
     fn query_row_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+        callback: RowCallback,
+    ) -> DbResult<Box<dyn Any + Send>> {
+        // Provide a default implementation that discourages usage
+        // and logs security warnings when this unsafe method is called
+        log::error!(
+            "SECURITY WARNING: Deprecated unsafe method query_row_dyn called! \
+             This method uses type erasure and creates security vulnerabilities. \
+             Query: '{}', Caller should migrate to SafeDynRepository::query_row_safe", 
+            query
+        );
+        
+        // Implement the unsafe functionality but with additional safety checks
+        self.query_row_dyn_unsafe_impl(query, params, callback)
+    }
+
+    /// Internal unsafe implementation - DO NOT CALL DIRECTLY
+    /// 
+    /// This method exists only to maintain backward compatibility for existing code
+    /// that hasn't been migrated yet. It will be removed in a future version.
+    /// 
+    /// # Safety
+    /// 
+    /// This method is inherently unsafe due to type erasure. Only use through
+    /// the deprecated `query_row_dyn` method, which provides additional logging
+    /// and safety warnings.
+    #[doc(hidden)]
+    fn query_row_dyn_unsafe_impl(
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
@@ -178,6 +207,63 @@ pub trait SafeDynRepository: RepositoryBase {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
                         Some("Callback consumed - query_row_safe single-use only".to_string())
+                    )
+                })?;
+                callback(row)
+            })
+        })
+    }
+
+    /// Execute a query dyn with migration to safe alternative
+    /// 
+    /// This method provides a migration path from the unsafe `query_row_dyn` to the safe
+    /// `query_row_safe` method. It accepts a generic return type and provides compile-time
+    /// type safety while maintaining the dynamic query capability.
+    /// 
+    /// # Type Safety
+    /// 
+    /// Unlike `query_row_dyn`, this method:
+    /// - Provides compile-time type checking
+    /// - Eliminates runtime type casting errors
+    /// - Prevents type confusion vulnerabilities
+    /// - Maintains performance with zero-cost abstractions
+    /// 
+    /// # Migration Example
+    /// 
+    /// ```rust
+    /// // Old unsafe pattern:
+    /// let result = repo.query_row_dyn(sql, params, |row| {
+    ///     Ok(Box::new(MyStruct::from(row)) as Box<dyn Any + Send>)
+    /// })?;
+    /// let my_struct = *result.downcast::<MyStruct>().unwrap(); // UNSAFE!
+    ///    /// // New safe pattern:
+    /// let my_struct: MyStruct = repo.query_row_safe_migration(sql, params, |row| {
+    ///     MyStruct::from(row)
+    /// })?; // SAFE!
+    /// ```
+    fn query_row_safe_migration<T: Send + 'static>(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+        callback: impl FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send + 'static,
+    ) -> DbResult<T> {
+        let query = query.to_string();
+        let owned_params = convert_params_efficiently(params)?;
+        
+        // Use Cell for single-use callback ownership transfer
+        use std::cell::Cell;
+        let callback_option = Cell::new(Some(callback));
+        
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+            let param_refs: Vec<&dyn rusqlite::ToSql> = 
+                owned_params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
+            
+            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+                let callback = callback_option.take().ok_or_else(|| {
+                    rusqlite::Error::SqliteFailure(
+                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
+                        Some("Callback consumed - query_row_safe_migration single-use only".to_string())
                     )
                 })?;
                 callback(row)
@@ -262,9 +348,7 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
                 owned_params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
             stmt.execute(rusqlite::params_from_iter(param_refs))
         })
-    }
-
-    fn query_row_dyn(
+    }    fn query_row_dyn_unsafe_impl(
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
