@@ -288,8 +288,11 @@ mod state_workflow_tests {
         use std::time::Duration;
         use tokio::runtime::Runtime;
 
-        // Create a new runtime for testing async operations
-        let rt = Runtime::new().expect("Failed to create runtime");
+        // Create a new runtime for testing async operations with detailed error context
+        let rt = match Runtime::new() {
+            Ok(runtime) => runtime,
+            Err(e) => panic!("Failed to create tokio runtime for test - this may indicate system resource constraints or threading issues: {}", e),
+        };
         rt.block_on(async {
             let mut state = UiState::default();
             let scan_complete = Arc::new(AtomicBool::new(false));

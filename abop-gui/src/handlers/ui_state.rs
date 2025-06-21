@@ -244,15 +244,22 @@ fn handle_reset_redraw_flag(state: &mut UiState) -> Option<Task<Message>> {
 }
 
 fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message>> {
-    log::info!("Sorting by column: {column_id}");
+    log::info!("Sorting by column: {column_id}");    // Validate the column ID against known valid columns
+    const VALID_COLUMNS: &[&str] = &["title", "author", "duration", "size", "format", "path", "library_id"];
+    let validated_column = if VALID_COLUMNS.contains(&column_id.as_str()) {
+        column_id
+    } else {
+        log::warn!("Invalid sort column '{}', defaulting to 'title'", column_id);
+        "title".to_string()
+    };
 
     // Update the sort state
-    if state.table_state.sort_column == column_id {
+    if state.table_state.sort_column == validated_column {
         // If clicking the same column, toggle sort direction
         state.table_state.sort_ascending = !state.table_state.sort_ascending;
     } else {
         // If clicking a different column, sort ascending by default
-        state.table_state.sort_column = column_id;
+        state.table_state.sort_column = validated_column;
         state.table_state.sort_ascending = true;
     }
 

@@ -290,6 +290,29 @@ mod ui_state_tests {
         state.audiobooks.clear();
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
         assert!(task.is_some(), "Should handle empty audiobooks list");
+
+        // Test sorting by an invalid field - should default to a valid column
+        let task = handle_ui_message(&mut state, Message::SortBy("invalid_field".to_string()));
+        assert!(
+            task.is_some(),
+            "Sorting by invalid field should still return a task"
+        );
+        
+        // With the new validation, invalid columns should default to 'title'
+        assert_eq!(
+            state.table_state.sort_column, "title",
+            "Invalid column should default to 'title' for safety"
+        );
+        
+        // Verify that an invalid sort doesn't crash the sort operation
+        // This tests that the sort utility handles unknown columns gracefully
+        state.audiobooks.push(create_test_audiobook("test1", "Test Book 1", "Test Author 1", "/test/path1.mp3"));
+        state.audiobooks.push(create_test_audiobook("test2", "Test Book 2", "Test Author 2", "/test/path2.mp3"));
+        crate::utils::sort_audiobooks(&mut state); // Should not panic
+        
+        // Restore to a valid column for subsequent operations
+        let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
+        assert!(task.is_some());
     }
 
     #[test]
