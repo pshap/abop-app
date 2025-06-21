@@ -14,7 +14,7 @@
 //! #[derive(Debug, Clone)]
 //! enum Message { Save, Cancel }
 //!
-//! # fn example(tokens: &MaterialTokens) -> Element<'static, Message> {
+//! fn example<'a>(tokens: &'a MaterialTokens) -> Element<'a, Message> {
 //! // Create a primary button with error handling
 //! let save_btn = buttons::create_button(
 //!     || buttons::button(tokens)
@@ -27,15 +27,15 @@
 //! );
 //!
 //! // Create a button with an icon using the direct builder (if you want custom error handling)
-//! let export_btn = buttons::button(tokens)
+//! let _export_btn = buttons::button(tokens)
 //!     .label("Export")
 //!     .icon("download", IconPosition::Leading)
 //!     .variant(ButtonVariant::Outlined)
 //!     .on_press(Message::Save)
 //!     .build()
 //!     .expect("Failed to build button");
-//! # save_btn
-//! # }
+//! save_btn
+//! }
 //! ```
 
 pub mod builder;

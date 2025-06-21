@@ -15,21 +15,21 @@
 //! # Usage
 //!
 //! ```rust
-//! use abop_gui::styling::strategy::{ComponentStyleStrategy, ButtonStyleVariant};
+//! use abop_gui::styling::strategy::{ButtonStyleVariant, ButtonStyling};
 //! use abop_gui::styling::material::MaterialTokens;
-//! use abop_gui::styling::strategy::traits::ComponentState;
+//! use abop_gui::styling::strategy::states::ComponentInteractionState;
 //!
 //! let tokens = MaterialTokens::default();
 //! let strategy = ButtonStyleVariant::Filled.get_strategy();
 //! let styling = strategy.get_styling(
-//!     ComponentState::Default,
+//!     ComponentInteractionState::Default,
 //!     &tokens
 //! );
 //!
-//! // Configure button styling based on the strategy's recommendations
-//! // to maintain consistent theming and accessibility standards
-//! button.set_background_color(styling.background_color);
-//! button.set_text_color(styling.text_color);
+//! // Apply the styling colors to your button component
+//! // styling.background contains the appropriate background color
+//! // styling.text_color contains the appropriate text color
+//! // styling.border contains the appropriate border styling
 //! ```
 
 pub mod button;
