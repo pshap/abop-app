@@ -27,13 +27,13 @@
 //! );
 //!
 //! // Create a button with an icon using the direct builder (if you want custom error handling)
-//! let _export_btn = buttons::button(tokens)
+//! let export_btn = buttons::button(tokens)
 //!     .label("Export")
 //!     .icon("download", IconPosition::Leading)
 //!     .variant(ButtonVariant::Outlined)
 //!     .on_press(Message::Save)
 //!     .build()
-//!     .expect("Failed to build button");
+//!     .unwrap_or_else(|_| iced::widget::text("Export").into());
 //! save_btn
 //! }
 //! ```

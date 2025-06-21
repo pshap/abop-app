@@ -379,14 +379,14 @@ mod ui_state_tests {
             
             // Additional validation: ensure sort stability and consistency
             // Apply the same sort operation again and verify it doesn't change the order
-            let before_second_sort = state.audiobooks.clone();
+            let before_second_sort_len = state.audiobooks.len();
             let current_sort_column = state.table_state.sort_column.clone();
             let second_task = handle_ui_message(&mut state, Message::SortBy(current_sort_column));
             assert!(second_task.is_some(), "Second sort operation should succeed");
             
             // After second sort, direction should be toggled but content should be consistent
-            let after_second_sort = state.audiobooks.clone();
-            assert_eq!(before_second_sort.len(), after_second_sort.len(), 
+            let after_second_sort_len = state.audiobooks.len();
+            assert_eq!(before_second_sort_len, after_second_sort_len, 
                 "Repeated sort operations should preserve audiobook count");
         }
         
