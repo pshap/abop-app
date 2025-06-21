@@ -312,7 +312,30 @@ mod ui_state_tests {
         // This tests that the sort utility handles unknown columns gracefully
         state.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_1, TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
         state.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_2, TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
-        crate::utils::sort_audiobooks(&mut state); // Should not panic
+        let original_len = state.audiobooks.len();
+        
+        // Test that sort operation completes successfully
+        crate::utils::sort_audiobooks(&mut state);
+        
+        // Validate that the sort operation:
+        // 1. Doesn't panic or crash
+        // 2. Preserves all audiobooks (no data loss)  
+        // 3. Handles the column validation properly (invalid column defaults to title)
+        assert_eq!(state.audiobooks.len(), original_len, "Sort operation should preserve all audiobooks");
+        assert_eq!(state.table_state.sort_column, "title", "Sort column should be defaulted to title");
+        
+        // The sort direction may be toggled since invalid column defaults to current column
+        // Just verify that the data is consistent (either ascending or descending order)
+        if state.audiobooks.len() >= 2 {
+            let first_title = state.audiobooks[0].title.as_deref().unwrap_or("");
+            let second_title = state.audiobooks[1].title.as_deref().unwrap_or("");
+            
+            if state.table_state.sort_ascending {
+                assert!(first_title <= second_title, "Books should be in ascending order by title");
+            } else {
+                assert!(first_title >= second_title, "Books should be in descending order by title");
+            }
+        }
         
         // Restore to a valid column for subsequent operations
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));

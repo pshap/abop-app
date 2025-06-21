@@ -184,24 +184,9 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
     ) -> DbResult<usize> {
-        // Convert parameters to owned values using the same helper functions
+        // Use efficient parameter conversion with early error handling
         let query = query.to_string();
-        let owned_params: Result<Vec<_>, _> = params.iter()
-            .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
-                match p.to_sql() {
-                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
-                        Ok(convert_value_ref_to_owned(v))
-                    }
-                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
-                        Ok(convert_value_to_owned(v))
-                    }
-                    Ok(_) => Ok(Box::new(None::<String>)),
-                    Err(e) => Err(DatabaseError::from(e)),
-                }
-            })
-            .collect();
-        
-        let owned_params = owned_params?;
+        let owned_params = convert_params_efficiently(params)?;
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
@@ -217,25 +202,9 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         params: &[&(dyn rusqlite::ToSql + Sync)],
         callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>> {
-        // Convert parameters to owned values for thread safety
+        // Use the same efficient parameter conversion as execute_query_dyn
         let query = query.to_string();
-        let owned_params: Result<Vec<_>, _> = params.iter()
-            .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
-                // Use rusqlite's built-in conversion to simplify parameter handling
-                match p.to_sql() {
-                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
-                        Ok(convert_value_ref_to_owned(v))
-                    }
-                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
-                        Ok(convert_value_to_owned(v))
-                    }
-                    Ok(_) => Ok(Box::new(None::<String>)),
-                    Err(e) => Err(DatabaseError::from(e)),
-                }
-            })
-            .collect();
-        
-        let owned_params = owned_params.map_err(|e| e)?;
+        let owned_params = convert_params_efficiently(params)?;
 
         // Use Cell for single-use callback ownership transfer
         use std::cell::Cell;
@@ -261,6 +230,14 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
 }
 
 /// Helper function to convert a ValueRef to an owned ToSql value
+/// 
+/// **Purpose**: Converts borrowed SQLite values (ValueRef) to owned values that can be 
+/// safely moved across thread boundaries (Send) for use in dynamic database operations.
+/// This is essential for the dynamic repository pattern where parameters need to be
+/// converted from various types into a uniform trait object representation.
+///
+/// **Usage**: Called internally by `execute_query_dyn` and `query_row_dyn` to handle
+/// parameter conversion in a consistent manner across all repository implementations.
 fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::ValueRef::Null => Box::new(None::<String>),
@@ -272,6 +249,13 @@ fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite:
 }
 
 /// Helper function to convert a Value to an owned ToSql value
+/// 
+/// **Purpose**: Converts owned SQLite values (Value) to boxed ToSql trait objects
+/// that can be safely used in dynamic database operations across thread boundaries.
+/// This complements `convert_value_ref_to_owned` by handling already-owned values.
+///
+/// **Usage**: Called internally by `execute_query_dyn` and `query_row_dyn` when
+/// parameter conversion yields owned values rather than borrowed references.
 fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::Value::Null => Box::new(None::<String>),
@@ -280,6 +264,33 @@ fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql 
         rusqlite::types::Value::Text(s) => Box::new(s),
         rusqlite::types::Value::Blob(b) => Box::new(b),
     }
+}
+
+/// Efficient parameter conversion function to eliminate duplication between dynamic methods
+/// 
+/// **Purpose**: Converts an array of SQL parameters to owned values suitable for dynamic
+/// database operations. This centralizes parameter conversion logic and provides efficient
+/// error handling with early bailout on conversion failures.
+/// 
+/// **Performance**: Uses iterator chaining with early error propagation to minimize
+/// allocations and provide fast-fail behavior on invalid parameters.
+fn convert_params_efficiently(
+    params: &[&(dyn rusqlite::ToSql + Sync)]
+) -> Result<Vec<Box<dyn rusqlite::ToSql + Send>>, DatabaseError> {
+    params.iter()
+        .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
+            match p.to_sql() {
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
+                    Ok(convert_value_ref_to_owned(v))
+                }
+                Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
+                    Ok(convert_value_to_owned(v))
+                }
+                Ok(_) => Ok(Box::new(None::<String>)),
+                Err(e) => Err(DatabaseError::from(e)),
+            }
+        })
+        .collect()
 }
 
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
