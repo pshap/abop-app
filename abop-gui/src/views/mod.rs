@@ -5,6 +5,9 @@ pub mod audio_processing;
 pub mod library;
 pub mod settings;
 
+#[cfg(test)]
+mod tests;
+
 use iced::widget::{center, column, container, mouse_area, opaque, stack};
 use iced::{Color, Element};
 

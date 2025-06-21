@@ -41,6 +41,9 @@ pub mod library;
 // Utility functions
 pub mod utils;
 
+// Constants used throughout the application
+pub mod constants;
+
 // Component modules
 /// UI component modules for the ABOP graphical interface
 ///
@@ -70,17 +73,65 @@ pub mod styling;
 #[cfg(test)]
 pub mod testing;
 
-// Re-exports (simplified for new implementation)
+/// Test utilities module for shared test fixtures and helpers
+///
+/// This module provides reusable test components, mock objects, and helper functions
+/// for testing the ABOP GUI. It includes:
+/// - Mock application state builders
+/// - Test event generators
+/// - Common assertion utilities
+/// - Test renderers and simulators
+/// - Example data factories
+///
+/// # Examples
+/// ```no_run
+/// use abop_gui::test_utils::{create_test_app, simulate_click};
+/// # let _ = create_test_app();
+/// ```
+#[cfg(test)]
+pub mod test_utils;
 
+/// Re-exports of commonly used types and traits
+///
+/// This module provides convenient access to frequently used types from Iced
+/// and application-specific modules. It's recommended to import this prelude
+/// in your application code for better ergonomics.
+///
+/// # Example
+/// ```no_run
+/// use abop_gui::prelude::*;
+/// ```
 /// Prelude module for convenient imports
+///
+/// This module re-exports commonly used types and traits from Iced and
+/// application-specific modules to reduce import boilerplate.
+///
+/// # Usage
+/// ```no_run
+/// use abop_gui::prelude::*;
+///
+/// // Now you have access to common Iced types and app-specific types
+/// fn example() -> Element<'static, Message> {
+///     Column::new()
+///         .push(Text::new("Hello, ABOP!"))
+///         .into()
+/// }
+/// ```
 pub mod prelude {
+    // Core Iced types
     pub use iced::{
-        Alignment, Element, Length, Padding, Settings, Theme,
+        Alignment, Element, Length, Padding, Settings, Task, Theme,
         widget::{Button, Checkbox, Column, Container, PickList, Row, Text, TextInput},
     };
 
-    // Re-export the new message and app types
+    // Application-specific types
     pub use crate::app::App;
     pub use crate::messages::Message;
+
+    // Core domain types
     pub use abop_core::AppState;
+
+    // Common traits
+    pub use iced::Application;
+    pub use iced::executor::Default;
 }

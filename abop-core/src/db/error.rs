@@ -114,6 +114,10 @@ pub enum DatabaseError {
     /// I/O error occurred.
     #[error("I/O error: {0}")]
     Io(String),
+
+    /// Custom error message.
+    #[error("Database error: {0}")]
+    Custom(String),
 }
 
 /// Convenient Result type for database operations
@@ -172,6 +176,41 @@ impl DatabaseError {
         Self::ExecutionFailed {
             message: message.to_string(),
         }
+    }
+
+    /// Create a parameter conversion error for SQL parameter processing failures
+    /// 
+    /// This method is specifically designed for errors that occur during the conversion
+    /// of Rust types to SQL parameters in dynamic database operations. Common scenarios
+    /// include:
+    /// - Type conversion failures (e.g., invalid Unicode in strings)
+    /// - Unsupported parameter types for the current SQLite version
+    /// - Memory allocation failures during parameter serialization
+    /// - Custom `ToSql` implementations that return errors
+    /// 
+    /// # Arguments
+    /// * `message` - Detailed error description including context about which parameter
+    ///               failed and why (e.g., "Failed to convert parameter at index 2: invalid UTF-8")
+    /// 
+    /// # Usage
+    /// ```rust
+    /// use abop_core::db::error::DatabaseError;
+    /// 
+    /// let error = DatabaseError::parameter_conversion_failed(
+    ///     "Failed to convert parameter at index 1: string contains invalid UTF-8 sequence"
+    /// );
+    /// ```
+    #[must_use]
+    pub fn parameter_conversion_failed(message: &str) -> Self {
+        Self::ExecutionFailed {
+            message: format!("Parameter conversion failed: {}", message),
+        }
+    }
+
+    /// Create a custom error with the given message
+    #[must_use]
+    pub fn custom<T: Into<String>>(message: T) -> Self {
+        Self::Custom(message.into())
     }
 }
 

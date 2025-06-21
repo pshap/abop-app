@@ -6,7 +6,7 @@ use rusqlite::{OptionalExtension, params};
 use std::sync::Arc;
 
 use super::super::error::DbResult;
-use super::{EnhancedRepository, Repository};
+use super::{EnhancedRepository, Repository, RepositoryBase};
 use crate::db::EnhancedConnection;
 use crate::db::datetime_serde::SqliteDateTime;
 use crate::models::Progress;
@@ -24,7 +24,6 @@ impl ProgressRepository {
             enhanced_connection,
         }
     }
-
     /// Save or update progress for an audiobook
     ///
     /// # Errors
@@ -36,16 +35,20 @@ impl ProgressRepository {
         let progress = progress.clone();
         self.execute_query(move |conn| {
             let last_played_sql = progress.last_played.map(SqliteDateTime::from);
+            let created_at_sql = SqliteDateTime::from(progress.created_at);
+            let updated_at_sql = SqliteDateTime::from(progress.updated_at);
             conn.execute(
                 "INSERT OR REPLACE INTO progress (
-                    id, audiobook_id, position_seconds, completed, last_played, updated_at
-                ) VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)",
+                    id, audiobook_id, position_seconds, completed, last_played, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 params![
                     &progress.id,
                     &progress.audiobook_id,
                     progress.position_seconds,
                     progress.completed,
                     last_played_sql,
+                    created_at_sql,
+                    updated_at_sql,
                 ],
             )?;
             Ok(())
@@ -239,7 +242,6 @@ impl ProgressRepository {
             Ok(progress_list)
         })
     }
-
     /// Update position for an audiobook
     ///
     /// # Errors
@@ -250,18 +252,18 @@ impl ProgressRepository {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
             let audiobook_id = audiobook_id.clone();
+            let now = SqliteDateTime::from(chrono::Utc::now());
             let rows_affected = conn.execute(
                 "UPDATE progress SET 
                     position_seconds = ?1,
-                    updated_at = CURRENT_TIMESTAMP,
-                    last_played = CURRENT_TIMESTAMP
-                 WHERE audiobook_id = ?2",
-                (position_seconds, audiobook_id),
+                    updated_at = ?2,
+                    last_played = ?3
+                 WHERE audiobook_id = ?4",
+                params![position_seconds, now, now, audiobook_id],
             )?;
             Ok(rows_affected > 0)
         })
     }
-
     /// Mark an audiobook as completed or not completed
     ///
     /// # Errors
@@ -272,12 +274,13 @@ impl ProgressRepository {
         let audiobook_id = audiobook_id.to_string();
         self.execute_query(move |conn| {
             let audiobook_id = audiobook_id.clone();
+            let now = SqliteDateTime::from(chrono::Utc::now());
             let rows_affected = conn.execute(
                 "UPDATE progress SET 
                     completed = ?1,
-                    updated_at = CURRENT_TIMESTAMP
-                 WHERE audiobook_id = ?2",
-                (completed, audiobook_id),
+                    updated_at = ?2
+                 WHERE audiobook_id = ?3",
+                params![completed, now, audiobook_id],
             )?;
             Ok(rows_affected > 0)
         })
@@ -360,10 +363,13 @@ impl ProgressRepository {
     }
 }
 
-impl Repository for ProgressRepository {
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+impl RepositoryBase for ProgressRepository {
+    fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
     }
 }
 
 impl EnhancedRepository for ProgressRepository {}
+
+#[cfg(test)]
+mod tests;

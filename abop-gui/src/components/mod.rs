@@ -33,3 +33,6 @@ pub mod table_core;
 pub mod table_header;
 /// Table row component for data display
 pub mod table_row;
+
+#[cfg(test)]
+mod tests;

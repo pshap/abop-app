@@ -207,11 +207,10 @@ fn get_migrations() -> Vec<Migration> {
             up_sql: include_str!("migrations/001_initial_schema.sql"),
             description: "Initial database schema with libraries, audiobooks, and progress tracking",
         },
-        Migration {
-            version: 2,
-            up_sql: include_str!("migrations/002_add_selected_column.sql"),
-            description: "Add selected column to audiobooks table for UI selection state",
-        },
+        // Migration version 2 (add selected column) was removed during schema consolidation.
+        // The selected column functionality is now included in the initial schema (version 1)
+        // to reduce complexity for new installations. This avoids the need for a separate
+        // migration step for basic UI state tracking functionality.
     ]
 }
 

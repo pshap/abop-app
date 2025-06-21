@@ -484,3 +484,6 @@ impl Default for TaskInfo {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

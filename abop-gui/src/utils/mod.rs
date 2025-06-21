@@ -60,6 +60,7 @@ pub fn get_file_format_simple(path: &Path) -> String {
 pub fn sort_audiobooks(state: &mut UiState) {
     let column = &state.table_state.sort_column;
     let ascending = state.table_state.sort_ascending;
+    
     state.audiobooks.sort_by(|a, b| {
         let ordering = match column.as_str() {
             "title" => a
@@ -75,7 +76,16 @@ pub fn sort_audiobooks(state: &mut UiState) {
             "duration" => a.duration_seconds.cmp(&b.duration_seconds),
             "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
             "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
-            _ => std::cmp::Ordering::Equal,
+            "path" => a.path.to_string_lossy().cmp(&b.path.to_string_lossy()),
+            "library_id" => a.library_id.cmp(&b.library_id),
+            // For unknown columns, fall back to sorting by title to provide consistent behavior
+            _ => {
+                log::warn!("Attempted to sort by unknown column '{}', falling back to title", column);
+                a.title
+                    .as_deref()
+                    .unwrap_or(&a.id)
+                    .cmp(b.title.as_deref().unwrap_or(&b.id))
+            }
         };
 
         if ascending {

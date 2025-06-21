@@ -30,7 +30,9 @@ pub fn create_strategy_button<'a, Message: Clone + 'a>(
     // Step 3: Apply the styling to create the button
     let button = iced::widget::button(
         iced::widget::text(label).color(styling.text_color), // Use strategy-provided color
-    );    // Apply click handler if provided
+    );
+
+    // Apply click handler if provided
     if let Some(message) = on_press {
         button.on_press(message).into()
     } else {

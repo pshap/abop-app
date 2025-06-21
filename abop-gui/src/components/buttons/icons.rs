@@ -38,8 +38,8 @@ impl IconSize {
     /// ```
     /// use abop_gui::components::buttons::icons::IconSize;
     ///
-    /// let size = IconSize::new(20.0)?; // Valid size
-    /// let invalid = IconSize::new(100.0); // Returns error
+    /// let size = IconSize::new(20.0).unwrap(); // Valid size
+    /// assert!(IconSize::new(100.0).is_err()); // Returns error
     /// ```
     pub fn new(size: f32) -> ButtonResult<Self> {
         if size < Self::MIN {
