@@ -419,11 +419,12 @@ mod state_workflow_tests {
         ];
 
         for (i, (title, test_path)) in test_audiobooks.iter().enumerate() {
-            let book_id = format!("playbook_test_{}", i);
+            let _book_id = format!("playbook_test_{}", i); // Keep for consistency with test naming pattern
             let library_id = "test-library";
             
-            // Setup: Create and add an audiobook to the state
-            let audiobook = Audiobook::new(library_id, PathBuf::from(test_path));
+            // Setup: Create and add an audiobook with title to the state
+            let mut audiobook = Audiobook::new(library_id, PathBuf::from(test_path));
+            audiobook.title = Some(title.to_string()); // Use the title from test data
             let audiobook_id = audiobook.id.clone();
             state.audiobooks.push(audiobook);
 

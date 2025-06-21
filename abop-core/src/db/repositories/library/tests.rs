@@ -552,10 +552,13 @@ mod library_tests {
         let created_count = repo.create_many(&BULK_TEST_LIBRARIES).expect("Failed to create libraries in batch");
         assert_eq!(created_count, BULK_TEST_LIBRARIES.len(), "Not all libraries were created in batch");
 
-        // For remaining libraries, we'll create them individually to avoid complex lifetime issues
-        // This is acceptable for test code where simplicity is preferred over micro-optimizations
-        let remaining = NUM_LIBRARIES - BULK_TEST_LIBRARIES.len();
-        for i in 0..remaining {
+        // Create remaining libraries using individual operations for simplicity
+        // Design rationale: While batch operations are more efficient, using individual
+        // creates for the remaining items keeps the test code simple and readable.
+        // The bulk operation above already tests the performance-critical path.
+        // For test code, maintainability is prioritized over micro-optimization.
+        let remaining_count = NUM_LIBRARIES - BULK_TEST_LIBRARIES.len();
+        for i in 0..remaining_count {
             let name = format!("Individual Library {i}");
             let path = std::path::PathBuf::from(format!("/individual/path/{i}"));
             repo.create(&name, path).expect("Failed to create individual library");
@@ -599,9 +602,19 @@ mod library_tests {
 
     /// Test transaction behavior in bulk operations
     /// 
-    /// This test verifies that database operations maintain consistency
-    /// when batch operations include both valid and invalid entries.
-    /// It ensures proper rollback behavior on constraint violations.
+    /// This test verifies database transaction isolation and rollback behavior
+    /// in bulk operations that contain both valid and invalid entries.
+    /// 
+    /// **Test Scenarios:**
+    /// 1. Creates valid individual libraries (separate transactions)
+    /// 2. Attempts bulk creation with duplicate paths (should fail atomically)
+    /// 3. Verifies no partial commits occurred (transaction rollback)
+    /// 
+    /// **Expected Behavior:**
+    /// - Individual valid libraries should be created successfully
+    /// - Bulk operation with constraint violations should fail entirely
+    /// - No partial state should be left in the database after failure
+    /// - Transaction boundaries should be properly maintained
     #[test]
     fn test_bulk_operations_transaction() {
         let repo = create_test_repo();
