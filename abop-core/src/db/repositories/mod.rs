@@ -184,60 +184,29 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
     ) -> DbResult<usize> {
-        // Simplify parameter handling by using rusqlite's built-in parameter conversion
+        // Convert parameters to owned values using the same helper functions
         let query = query.to_string();
-        let params: Vec<Box<dyn rusqlite::ToSql + Send>> = params
-            .iter()
-            .map(|p| {
-                // Convert to string representation for simplicity and safety
-                // This handles all common parameter types uniformly
+        let owned_params: Result<Vec<_>, _> = params.iter()
+            .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
                 match p.to_sql() {
-                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => match v {
-                        rusqlite::types::ValueRef::Null => {
-                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Integer(i) => {
-                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Real(f) => {
-                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Text(s) => {
-                            Box::new(String::from_utf8_lossy(s).into_owned()) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Blob(b) => {
-                            Box::new(b.to_vec()) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                    },
-                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => match v {
-                        rusqlite::types::Value::Null => {
-                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Integer(i) => {
-                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Real(f) => {
-                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Text(s) => {
-                            Box::new(s) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Blob(b) => {
-                            Box::new(b) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                    },
-                    Ok(_) => {
-                        // Handle any other ToSqlOutput variants safely
-                        Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
+                        Ok(convert_value_ref_to_owned(v))
                     }
-                    Err(_) => Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>,
+                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
+                        Ok(convert_value_to_owned(v))
+                    }
+                    Ok(_) => Ok(Box::new(None::<String>)),
+                    Err(e) => Err(DatabaseError::from(e)),
                 }
             })
             .collect();
+        
+        let owned_params = owned_params?;
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> = 
+                owned_params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
             stmt.execute(rusqlite::params_from_iter(param_refs))
         })
     }
@@ -248,85 +217,68 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
         params: &[&(dyn rusqlite::ToSql + Sync)],
         callback: RowCallback,
     ) -> DbResult<Box<dyn Any + Send>> {
-        // Simplify parameter handling by using the same approach as execute_query_dyn
+        // Convert parameters to owned values for thread safety
         let query = query.to_string();
-        let params: Vec<Box<dyn rusqlite::ToSql + Send>> = params
-            .iter()
-            .map(|p| {
+        let owned_params: Result<Vec<_>, _> = params.iter()
+            .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
+                // Use rusqlite's built-in conversion to simplify parameter handling
                 match p.to_sql() {
-                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => match v {
-                        rusqlite::types::ValueRef::Null => {
-                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Integer(i) => {
-                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Real(f) => {
-                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Text(s) => {
-                            Box::new(String::from_utf8_lossy(s).into_owned()) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::ValueRef::Blob(b) => {
-                            Box::new(b.to_vec()) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                    },
-                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => match v {
-                        rusqlite::types::Value::Null => {
-                            Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Integer(i) => {
-                            Box::new(i) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Real(f) => {
-                            Box::new(f) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Text(s) => {
-                            Box::new(s) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                        rusqlite::types::Value::Blob(b) => {
-                            Box::new(b) as Box<dyn rusqlite::ToSql + Send>
-                        }
-                    },
-                    Ok(_) => {
-                        // Handle any other ToSqlOutput variants safely
-                        Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>
+                    Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
+                        Ok(convert_value_ref_to_owned(v))
                     }
-                    Err(_) => Box::new(None::<String>) as Box<dyn rusqlite::ToSql + Send>,
+                    Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
+                        Ok(convert_value_to_owned(v))
+                    }
+                    Ok(_) => Ok(Box::new(None::<String>)),
+                    Err(e) => Err(DatabaseError::from(e)),
                 }
             })
             .collect();
+        
+        let owned_params = owned_params.map_err(|e| e)?;
 
-        // Use Cell to allow interior mutability for single-use callback.
-        // Design rationale: We need to move the callback from within a closure that's
-        // called by rusqlite's query_row. Since the closure is FnMut (not FnOnce),
-        // we can't move the callback directly. Cell provides interior mutability
-        // that allows us to safely take ownership of the callback exactly once,
-        // which matches the expected usage pattern for this callback-based API.
+        // Use Cell for single-use callback ownership transfer
         use std::cell::Cell;
         let callback_option = Cell::new(Some(callback));
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> = 
+                owned_params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
 
-            // Execute the query and call callback
-            // Note: query_row expects exactly ONE row. If zero rows or multiple rows
-            // are returned, rusqlite will return an error (NoRows or TooManyRows).
-            // This is intentional behavior for this method - callers must ensure
-            // their query returns exactly one row.
+            // Execute query expecting exactly one row
             stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
-                // Take the callback from the Cell (only works once)
                 let callback = callback_option.take().ok_or_else(|| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
-                        Some("Callback already consumed - query_row_dyn can only be called once per instance".to_string())
+                        Some("Callback consumed - query_row_dyn single-use only".to_string())
                     )
                 })?;
-                
                 callback(row)
             })
         })
+    }
+}
+
+/// Helper function to convert a ValueRef to an owned ToSql value
+fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite::ToSql + Send> {
+    match v {
+        rusqlite::types::ValueRef::Null => Box::new(None::<String>),
+        rusqlite::types::ValueRef::Integer(i) => Box::new(i),
+        rusqlite::types::ValueRef::Real(f) => Box::new(f),
+        rusqlite::types::ValueRef::Text(s) => Box::new(String::from_utf8_lossy(s).into_owned()),
+        rusqlite::types::ValueRef::Blob(b) => Box::new(b.to_vec()),
+    }
+}
+
+/// Helper function to convert a Value to an owned ToSql value
+fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql + Send> {
+    match v {
+        rusqlite::types::Value::Null => Box::new(None::<String>),
+        rusqlite::types::Value::Integer(i) => Box::new(i),
+        rusqlite::types::Value::Real(f) => Box::new(f),
+        rusqlite::types::Value::Text(s) => Box::new(s),
+        rusqlite::types::Value::Blob(b) => Box::new(b),
     }
 }
 

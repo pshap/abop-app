@@ -14,8 +14,11 @@ mod ui_state_tests {
         pub const TEST_BOOK2_PATH: &str = "/test/book2.mp3";
         pub const TEST_BOOK3_PATH: &str = "/test/book3.mp3";
         pub const TEST_RECENT_PATH: &str = "/test/recent/path";
+        pub const TEST_DIRECTORY_PATH: &str = "/test";
         pub const TEST_LIBRARY_ID: &str = "lib1";
         pub const TEST_AUDIOBOOK_ID: &str = "test-audiobook-id";
+        pub const TEST_AUDIOBOOK_ID_1: &str = "test1";
+        pub const TEST_AUDIOBOOK_ID_2: &str = "test2";
         pub const TEST_AUTHOR_A: &str = "Author A";
         pub const TEST_AUTHOR_B: &str = "Author B";
         pub const TEST_AUTHOR_C: &str = "Author C";
@@ -307,8 +310,8 @@ mod ui_state_tests {
         
         // Verify that an invalid sort doesn't crash the sort operation
         // This tests that the sort utility handles unknown columns gracefully
-        state.audiobooks.push(create_test_audiobook("test1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
-        state.audiobooks.push(create_test_audiobook("test2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
+        state.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_1, TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
+        state.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_2, TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
         crate::utils::sort_audiobooks(&mut state); // Should not panic
         
         // Restore to a valid column for subsequent operations
@@ -322,7 +325,7 @@ mod ui_state_tests {
         // Test with a message that's not handled by UI handler
         let task = handle_ui_message(
             &mut state,
-            Message::DirectorySelected(Some(PathBuf::from("/test"))),
+            Message::DirectorySelected(Some(PathBuf::from(TEST_DIRECTORY_PATH))),
         );
         assert!(task.is_none());
     }
