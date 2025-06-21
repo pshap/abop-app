@@ -353,3 +353,135 @@ impl ProcessingConfigBuilder {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_builder_creation() {
+        let builder = ProcessingConfigBuilder::new();
+
+        // Check that all fields are initialized to None
+        assert!(builder.resampler.is_none());
+        assert!(builder.channel_mixer.is_none());
+        assert!(builder.normalizer.is_none());
+        assert!(builder.silence_detector.is_none());
+        assert!(builder.output.is_none());
+        assert!(builder.num_threads.is_none());
+        assert!(builder.enable_parallel.is_none());
+    }
+
+    #[test]
+    fn test_default_creation() {
+        let builder = ProcessingConfigBuilder::default();
+
+        // Default should be the same as new()
+        assert!(builder.resampler.is_none());
+        assert!(builder.channel_mixer.is_none());
+        assert!(builder.normalizer.is_none());
+        assert!(builder.silence_detector.is_none());
+        assert!(builder.output.is_none());
+        assert!(builder.num_threads.is_none());
+        assert!(builder.enable_parallel.is_none());
+    }
+
+    #[test]
+    fn test_with_target_sample_rate() {
+        let builder = ProcessingConfigBuilder::new().with_target_sample_rate(48000);
+
+        assert!(builder.resampler.is_some());
+        assert_eq!(builder.resampler.unwrap().target_sample_rate, Some(48000));
+    }
+
+    #[test]
+    fn test_with_target_channels() {
+        let builder = ProcessingConfigBuilder::new().with_target_channels(2);
+
+        assert!(builder.channel_mixer.is_some());
+        assert_eq!(builder.channel_mixer.unwrap().target_channels, Some(2));
+    }
+
+    #[test]
+    fn test_with_target_loudness() {
+        let builder = ProcessingConfigBuilder::new().with_target_loudness(-23.0);
+
+        assert!(builder.normalizer.is_some());
+        assert_eq!(builder.normalizer.unwrap().target_loudness, -23.0);
+    }
+
+    #[test]
+    fn test_with_silence_threshold() {
+        let builder = ProcessingConfigBuilder::new().with_silence_threshold(-40.0);
+
+        assert!(builder.silence_detector.is_some());
+        assert_eq!(builder.silence_detector.unwrap().threshold_db, -40.0);
+    }
+
+    #[test]
+    fn test_with_filename_suffix() {
+        let builder = ProcessingConfigBuilder::new().with_filename_suffix("_processed");
+
+        assert!(builder.output.is_some());
+        assert_eq!(builder.output.unwrap().filename_suffix, "_processed");
+    }
+
+    #[test]
+    fn test_with_num_threads() {
+        let builder = ProcessingConfigBuilder::new().with_num_threads(4);
+
+        assert_eq!(builder.num_threads, Some(4));
+    }
+
+    #[test]
+    fn test_with_parallel_processing() {
+        let builder = ProcessingConfigBuilder::new().with_parallel_processing(true);
+
+        assert_eq!(builder.enable_parallel, Some(true));
+    }
+
+    #[test]
+    fn test_fluent_chaining() {
+        let builder = ProcessingConfigBuilder::new()
+            .with_target_sample_rate(48000)
+            .with_target_channels(1)
+            .with_target_loudness(-23.0)
+            .with_silence_threshold(-40.0)
+            .with_filename_suffix("_processed")
+            .with_num_threads(4)
+            .with_parallel_processing(true);
+
+        // Verify all configurations were set
+        assert!(builder.resampler.is_some());
+        assert!(builder.channel_mixer.is_some());
+        assert!(builder.normalizer.is_some());
+        assert!(builder.silence_detector.is_some());
+        assert!(builder.output.is_some());
+        assert_eq!(builder.num_threads, Some(4));
+        assert_eq!(builder.enable_parallel, Some(true));
+    }
+
+    #[test]
+    fn test_override_configurations() {
+        let builder = ProcessingConfigBuilder::new()
+            .with_target_sample_rate(44100)
+            .with_target_sample_rate(48000); // Override
+
+        assert!(builder.resampler.is_some());
+        assert_eq!(builder.resampler.unwrap().target_sample_rate, Some(48000));
+    }
+
+    #[test]
+    fn test_build_config() {
+        let builder = ProcessingConfigBuilder::new();
+        let config = builder.build();
+
+        // All components should be None when not configured
+        assert!(config.resampler.is_none());
+        assert!(config.channel_mixer.is_none());
+        assert!(config.normalizer.is_none());
+        assert!(config.silence_detector.is_none());
+        assert!(config.num_threads.is_none());
+        assert!(config.enable_parallel); // Default is true
+    }
+}

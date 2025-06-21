@@ -9,13 +9,13 @@ fn test_theme_from_seed() {
     // Test creating a theme from a seed color
     let seed = Srgb::new(0.3, 0.5, 0.8);
     let theme = Theme::from_seed(seed, ThemeVariant::Light);
-    
+
     // Verify the theme was created with the correct variant
     assert!(theme.is_light());
-    
+
     // Verify the primary color matches the seed
     assert_eq!(theme.colors.primary, seed);
-    
+
     // Verify on_primary has sufficient contrast
     let primary_lum = luma(theme.colors.primary);
     let on_primary_lum = luma(theme.colors.on_primary);
@@ -24,7 +24,7 @@ fn test_theme_from_seed() {
     } else {
         (on_primary_lum + 0.05) / (primary_lum + 0.05)
     };
-    
+
     // WCAG AA requires at least 4.5:1 for normal text
     assert!(contrast >= 4.5, "Insufficient contrast: {}", contrast);
 }
@@ -37,10 +37,10 @@ fn test_dynamic_theme_builder() {
         .with_variant(ThemeVariant::Dark)
         .with_custom_color("error", Srgb::new(0.9, 0.2, 0.2))
         .generate_theme();
-    
+
     // Verify the theme variant
     assert!(theme.is_dark());
-    
+
     // Verify custom error color was applied
     assert_eq!(theme.colors.error, Srgb::new(0.9, 0.2, 0.2));
 }
@@ -50,10 +50,10 @@ fn test_theme_toggle() {
     // Test toggling between light and dark themes
     let mut theme = Theme::light();
     assert!(theme.is_light());
-    
+
     theme.toggle();
     assert!(theme.is_dark());
-    
+
     theme.toggle();
     assert!(theme.is_light());
 }

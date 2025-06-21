@@ -6,6 +6,9 @@
 pub mod data_updates;
 pub mod ui_state;
 
+#[cfg(test)]
+mod tests;
+
 use iced::Task;
 
 use crate::commands;

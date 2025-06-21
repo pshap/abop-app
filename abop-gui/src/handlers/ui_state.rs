@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use iced::Task;
 
+use crate::constants::{VALID_SORT_COLUMNS, DEFAULT_SORT_COLUMN};
 use crate::messages::Message;
 use crate::state::UiState;
 use crate::theme::ThemeMode;
@@ -244,15 +245,22 @@ fn handle_reset_redraw_flag(state: &mut UiState) -> Option<Task<Message>> {
 }
 
 fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message>> {
-    log::info!("Sorting by column: {column_id}");
+    log::info!("Sorting by column: {}", column_id);
+    // Validate the column ID against known valid columns
+    let validated_column = if VALID_SORT_COLUMNS.contains(&column_id.as_str()) {
+        column_id
+    } else {
+        log::warn!("Invalid sort column '{}', defaulting to '{}'", column_id, DEFAULT_SORT_COLUMN);
+        DEFAULT_SORT_COLUMN.to_string()
+    };
 
     // Update the sort state
-    if state.table_state.sort_column == column_id {
+    if state.table_state.sort_column == validated_column {
         // If clicking the same column, toggle sort direction
         state.table_state.sort_ascending = !state.table_state.sort_ascending;
     } else {
         // If clicking a different column, sort ascending by default
-        state.table_state.sort_column = column_id;
+        state.table_state.sort_column = validated_column;
         state.table_state.sort_ascending = true;
     }
 

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::super::error::{DatabaseError, DbResult};
-use super::{EnhancedRepository, Repository};
+use super::{EnhancedRepository, Repository, RepositoryBase};
 use crate::db::EnhancedConnection;
 use crate::models::Library;
 
@@ -31,61 +31,72 @@ impl LibraryRepository {
     ///
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails due to constraint violations or invalid data.
-    /// Returns [`DatabaseError::DuplicateEntry`] if a library with the same name already exists.
+    /// Returns [`DatabaseError::DuplicateEntry`] if a library with the same name or path already exists.
     /// Returns [`DatabaseError::ValidationFailed`] if the library data fails validation.
     pub fn create<P: AsRef<Path> + Send + 'static>(
         &self,
         name: &str,
         path: P,
     ) -> DbResult<Library> {
+        // Validate input
+        if name.trim().is_empty() {
+            return Err(DatabaseError::validation_failed(
+                "name",
+                "Library name cannot be empty or whitespace only",
+            ));
+        }
+
+        let path_str = path.as_ref().to_string_lossy().to_string();
+        if path_str.trim().is_empty() {
+            return Err(DatabaseError::validation_failed(
+                "path",
+                "Library path cannot be empty or whitespace only",
+            ));
+        }
+
         let id = Uuid::new_v4().to_string();
         let name_owned = name.to_string();
-        let path_str = path.as_ref().to_string_lossy().to_string();
         let path_buf = path.as_ref().to_path_buf();
+        // Clone values that will be used in the closure
+        let name_clone = name_owned.clone();
+        let path_str = path_buf.to_string_lossy().to_string();
+        let path_clone = path_buf.clone();
+        let id_clone = id.clone();
 
-        let result = self.execute_query(move |conn| {
-            let id = id.clone();
-            let name_owned = name_owned.clone();
-            let path_str = path_str.clone();
-            let path_buf = path_buf.clone();
-
-            // Check if library with same name already exists
-            let existing_check = conn
+        self.execute_query(move |conn| {
+            // First, check for existing libraries with the same name or path
+            let existing = conn
                 .query_row(
-                    "SELECT id FROM libraries WHERE name = ?1",
-                    [&name_owned],
-                    |row| row.get::<_, String>(0),
+                    "SELECT name, path FROM libraries WHERE name = ?1 OR path = ?2",
+                    [&name_owned, &path_str],
+                    |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
                 )
-                .optional();
+                .optional()?;
 
-            if let Ok(Some(_)) = existing_check {
+            if let Some((existing_name, _)) = existing {
+                let error = if existing_name == name_clone {
+                    DatabaseError::duplicate_entry("Library", "name", &name_clone)
+                } else {
+                    DatabaseError::duplicate_entry("Library", "path", &path_str)
+                };
                 return Err(rusqlite::Error::SqliteFailure(
                     rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
-                    Some(format!("Library with name '{name_owned}' already exists")),
+                    Some(error.to_string()),
                 ));
             }
 
             // Insert the new library
             conn.execute(
                 "INSERT INTO libraries (id, name, path) VALUES (?1, ?2, ?3)",
-                (&id, &name_owned, &path_str),
+                (&id, &name_clone, &path_str),
             )?;
 
+            // Clone values again when constructing the Library to avoid moving them out of the closure
             Ok(Library {
-                id,
-                name: name_owned,
-                path: path_buf,
+                id: id_clone.clone(),
+                name: name_clone.clone(),
+                path: path_clone.clone(),
             })
-        });
-
-        result.map_err(|e| {
-            // Convert constraint violations to our specific error type
-            match &e {
-                DatabaseError::Sqlite(err_msg) if err_msg.contains("UNIQUE constraint failed") => {
-                    DatabaseError::duplicate_entry("Library", "name", name)
-                }
-                _ => e,
-            }
         })
     }
 
@@ -266,10 +277,111 @@ impl LibraryRepository {
     }
 }
 
-impl Repository for LibraryRepository {
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+impl RepositoryBase for LibraryRepository {
+    fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
     }
 }
 
 impl EnhancedRepository for LibraryRepository {}
+
+impl LibraryRepository {
+    /// Create multiple libraries in a single transaction
+    ///
+    /// # Arguments
+    /// * `libraries` - A slice of tuples containing (name, path) for each library
+    ///
+    /// # Returns
+    /// The number of libraries successfully created
+    ///
+    /// # Errors
+    /// Returns an error if the transaction fails or if any library creation fails
+    pub fn create_many<P: AsRef<Path> + Send + Sync + 'static>(
+        &self,
+        libraries: &[(&str, P)],
+    ) -> DbResult<usize> {
+        // Validate inputs first
+        for (name, path) in libraries {
+            if name.trim().is_empty() {
+                return Err(DatabaseError::validation_failed(
+                    "name",
+                    "Library name cannot be empty or whitespace only",
+                ));
+            }
+
+            let path_str = path.as_ref().to_string_lossy();
+            if path_str.trim().is_empty() {
+                return Err(DatabaseError::validation_failed(
+                    "path",
+                    "Library path cannot be empty or whitespace only",
+                ));
+            }
+        }
+
+        // Convert libraries to owned values before moving into the closure
+        let libraries_owned: Vec<(String, String)> = libraries
+            .iter()
+            .map(|(name, path)| {
+                (
+                    name.to_string(),
+                    path.as_ref().to_string_lossy().into_owned(),
+                )
+            })
+            .collect();
+
+        self.enhanced_connection.with_connection_mut(move |conn| {
+            // Start a transaction
+            let tx = conn.transaction()?;
+            let mut count = 0;
+            let mut last_error = None;
+
+            for (name, path) in &libraries_owned {
+                // Check for existing library with the same name or path
+                let exists: Option<(String, String)> = tx
+                    .query_row(
+                        "SELECT name, path FROM libraries WHERE name = ?1 OR path = ?2",
+                        [name, path],
+                        |row| Ok((row.get(0)?, row.get(1)?)),
+                    )
+                    .optional()?;
+
+                if let Some((existing_name, existing_path)) = exists {
+                    let err = if existing_name == *name {
+                        DatabaseError::duplicate_entry("Library", "name", name)
+                    } else {
+                        DatabaseError::duplicate_entry("Library", "path", &existing_path)
+                    };
+                    last_error = Some(err);
+                    continue;
+                }
+
+                // Insert the new library
+                tx.execute(
+                    "INSERT INTO libraries (id, name, path) VALUES (?1, ?2, ?3)",
+                    (Uuid::new_v4().to_string(), name, path),
+                )?;
+
+                count += 1;
+            }
+
+            // If we encountered any errors, rollback the transaction
+            if let Some(err) = last_error {
+                tx.rollback()?;
+                return Err(DatabaseError::Sqlite(
+                    rusqlite::Error::SqliteFailure(
+                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT),
+                        Some(err.to_string()),
+                    )
+                    .to_string(),
+                ));
+            }
+
+            // Otherwise, commit the transaction
+            tx.commit()?;
+            Ok(count)
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests;

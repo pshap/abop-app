@@ -6,15 +6,14 @@ use rusqlite::OptionalExtension;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::super::error::DbResult;
-use super::{EnhancedRepository, Repository};
+use super::super::error::{DatabaseError, DbResult};
+use super::{EnhancedRepository, Repository, RepositoryBase};
 use crate::db::{
     EnhancedConnection,
-    datetime_serde::{SqliteDateTime, datetime_from_sql, datetime_to_sql},
+    datetime_serde::{SqliteDateTime, datetime_to_sql},
 };
 use crate::error::{AppError, Result};
 use crate::models::Audiobook;
-use rusqlite::types::ToSql;
 
 /// Repository for audiobook-related database operations
 pub struct AudiobookRepository {
@@ -68,8 +67,8 @@ impl AudiobookRepository {
                     audiobook.duration_seconds,
                     audiobook.size_bytes,
                     audiobook.cover_art,
-                    SqliteDateTime::from(audiobook.created_at).to_sql()?,
-                    SqliteDateTime::from(audiobook.updated_at).to_sql()?,
+                    SqliteDateTime::from(audiobook.created_at),
+                    SqliteDateTime::from(audiobook.updated_at),
                     audiobook.selected,
                 ],
             )?;
@@ -82,9 +81,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the ID is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn find_by_id(&self, id: &str) -> Result<Option<Audiobook>> {
+        if id.is_empty() {
+            return Err(crate::AppError::Database(DatabaseError::validation_failed(
+                "audiobook_id",
+                "Audiobook ID cannot be empty",
+            )));
+        }
         let id = id.to_string();
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(
@@ -94,6 +100,9 @@ impl AudiobookRepository {
             )?;
             let audiobook = stmt
                 .query_row([&id], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -105,8 +114,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                         selected: row.get(12)?,
                     })
                 })
@@ -120,9 +129,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the library ID is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn find_by_library(&self, library_id: &str) -> Result<Vec<Audiobook>> {
+        if library_id.is_empty() {
+            return Err(crate::AppError::Database(DatabaseError::validation_failed(
+                "library_id",
+                "Library ID cannot be empty",
+            )));
+        }
         let library_id = library_id.to_string();
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(
@@ -132,6 +148,9 @@ impl AudiobookRepository {
             )?;
             let audiobooks = stmt
                 .query_map([&library_id], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -143,8 +162,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                         selected: row.get(12)?,
                     })
                 })?
@@ -183,6 +202,9 @@ impl AudiobookRepository {
                      LIMIT ?2 OFFSET ?3"
                 )?;
                 let rows = stmt.query_map(rusqlite::params![library_id, limit_value as i64, offset as i64], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -194,9 +216,10 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,                    selected: row.get(12)?,
-                })
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
+                        selected: row.get(12)?,
+                    })
                 })?;
                 rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
             } else {
@@ -208,6 +231,9 @@ impl AudiobookRepository {
                      OFFSET ?2"
                 )?;
                 let rows = stmt.query_map(rusqlite::params![library_id, offset as i64], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -219,9 +245,10 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,                    selected: row.get(12)?,
-                })
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
+                        selected: row.get(12)?,
+                    })
                 })?;
                 rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
             };
@@ -234,9 +261,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the library ID is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn count_by_library(&self, library_id: &str) -> Result<usize> {
+        if library_id.is_empty() {
+            return Err(crate::AppError::Database(DatabaseError::validation_failed(
+                "library_id",
+                "Library ID cannot be empty",
+            )));
+        }
         let library_id = library_id.to_string();
         self.execute_query(move |conn| {
             let count: i64 = conn.query_row(
@@ -253,9 +287,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the author string is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn find_by_author(&self, author: &str) -> Result<Vec<Audiobook>> {
+        if author.is_empty() {
+            return Err(AppError::Database(DatabaseError::validation_failed(
+                "author",
+                "Author cannot be empty",
+            )));
+        }
         let author = author.to_string();
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(
@@ -265,6 +306,9 @@ impl AudiobookRepository {
             )?;
             let audiobooks = stmt
                 .query_map([&format!("%{author}%")], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -276,12 +320,12 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                         selected: row.get(12)?,
                     })
                 })?
-                .collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
+                .collect::<std::result::Result<Vec<_>, _>>()?;
             Ok(audiobooks)
         })
         .map_err(AppError::from)
@@ -294,6 +338,12 @@ impl AudiobookRepository {
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL query execution fails.
     pub fn find_by_path(&self, path: &str) -> Result<Option<Audiobook>> {
+        if path.is_empty() {
+            return Err(crate::AppError::Database(DatabaseError::validation_failed(
+                "path",
+                "Audiobook path cannot be empty",
+            )));
+        }
         let path = path.to_string();
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(
@@ -303,6 +353,9 @@ impl AudiobookRepository {
             )?;
             let audiobook = stmt
                 .query_row([&path], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -314,8 +367,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                         selected: row.get(12)?,
                     })
                 })
@@ -340,6 +393,9 @@ impl AudiobookRepository {
             )?;
             let audiobooks = stmt
                 .query_map([], |row| {
+                    let created_at: SqliteDateTime = row.get(10)?;
+                    let updated_at: SqliteDateTime = row.get(11)?;
+
                     Ok(Audiobook {
                         id: row.get(0)?,
                         library_id: row.get(1)?,
@@ -351,8 +407,8 @@ impl AudiobookRepository {
                         duration_seconds: row.get(7)?,
                         size_bytes: row.get(8)?,
                         cover_art: row.get(9)?,
-                        created_at: datetime_from_sql(&row.get::<_, String>(10)?)?,
-                        updated_at: datetime_from_sql(&row.get::<_, String>(11)?)?,
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
                         selected: row.get(12)?,
                     })
                 })?
@@ -422,9 +478,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the ID is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
     pub fn delete(&self, id: &str) -> DbResult<bool> {
+        if id.is_empty() {
+            return Err(DatabaseError::validation_failed(
+                "id",
+                "Audiobook ID cannot be empty",
+            ));
+        }
         let id = id.to_string();
         self.execute_query(move |conn| {
             let rows_affected = conn.execute("DELETE FROM audiobooks WHERE id = ?1", [&id])?;
@@ -453,9 +516,16 @@ impl AudiobookRepository {
     ///
     /// # Errors
     ///
+    /// Returns [`DatabaseError::ValidationFailed`] if the ID is empty.
     /// Returns [`DatabaseError::ConnectionFailed`] if unable to acquire database connection.
     /// Returns [`DatabaseError::Sqlite`] if the SQL execution fails.
     pub fn exists(&self, id: &str) -> DbResult<bool> {
+        if id.is_empty() {
+            return Err(DatabaseError::validation_failed(
+                "id",
+                "Audiobook ID cannot be empty",
+            ));
+        }
         let id = id.to_string();
         self.execute_query(move |conn| {
             let exists: bool = conn.query_row(
@@ -468,10 +538,13 @@ impl AudiobookRepository {
     }
 }
 
-impl Repository for AudiobookRepository {
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
+impl RepositoryBase for AudiobookRepository {
+    fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
     }
 }
 
 impl EnhancedRepository for AudiobookRepository {}
+
+#[cfg(test)]
+mod tests;

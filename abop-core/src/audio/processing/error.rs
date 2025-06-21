@@ -9,7 +9,7 @@ pub type Result<T> = std::result::Result<T, AudioProcessingError>;
 pub type AudioProcessingResult<T> = Result<T>;
 
 /// Specialized error types for audio processing operations
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum AudioProcessingError {
     /// Channel mixer related errors
     #[error("Channel mixer error: {0}")]
@@ -67,6 +67,10 @@ pub enum AudioProcessingError {
     /// Parallel processing errors
     #[error("Parallel processing error: {0}")]
     Parallel(String),
+
+    /// Operation was cancelled
+    #[error("Operation was cancelled: {0}")]
+    Cancelled(String),
 }
 
 impl From<AudioProcessingError> for crate::error::AppError {

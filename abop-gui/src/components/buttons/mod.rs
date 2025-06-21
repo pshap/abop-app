@@ -14,7 +14,7 @@
 //! #[derive(Debug, Clone)]
 //! enum Message { Save, Cancel }
 //!
-//! # fn example(tokens: &MaterialTokens) -> Element<'static, Message> {
+//! fn example<'a>(tokens: &'a MaterialTokens) -> Element<'a, Message> {
 //! // Create a primary button with error handling
 //! let save_btn = buttons::create_button(
 //!     || buttons::button(tokens)
@@ -33,9 +33,12 @@
 //!     .variant(ButtonVariant::Outlined)
 //!     .on_press(Message::Save)
 //!     .build()
-//!     .expect("Failed to build button");
-//! # save_btn
-//! # }
+//!     .unwrap_or_else(|err| {
+//!         log::warn!("Failed to build export button: {}", err);
+//!         iced::widget::text("Export").into()
+//!     });
+//! save_btn
+//! }
 //! ```
 
 pub mod builder;
