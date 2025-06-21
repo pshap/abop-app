@@ -207,20 +207,19 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                     Ok(r)
                 }                Err(e) => {
                     // Attempt rollback with improved logging for transaction context
-                    if let Err(rollback_err) = tx.rollback() {
-                        log::error!(
+                    if let Err(rollback_err) = tx.rollback() {                        log::error!(
                             "Repository transaction rollback failed during error recovery. \
-                             Transaction state: failed, Rollback error: {rollback_err}, \
-                             Original transaction error: {e}, \
-                             Context: Standard repository transaction"
+                             Transaction state: failed, Rollback state: failed, \
+                             Context: standard_repository_transaction, Operation: rollback_on_error, \
+                             Rollback error: {rollback_err}, Original error: {e}"
                         );
                         // Still return the original error as primary concern
                         Err(e)
-                    } else {
-                        log::debug!(
+                    } else {                        log::debug!(
                             "Repository transaction rolled back successfully. \
-                             Transaction state: rolled_back, Original error: {e}, \
-                             Context: Standard repository transaction with automatic rollback"
+                             Transaction state: rolled_back, Rollback state: success, \
+                             Context: standard_repository_transaction, Operation: rollback_on_error, \
+                             Original error: {e}"
                         );
                         Err(e)
                     }
@@ -423,24 +422,24 @@ impl RepositoryManager {
                 Ok(result) => {
                     tx.commit().map_err(DatabaseError::from)?;
                     Ok(result)
-                }                Err(e) => {
+                }
+                Err(e) => {
                     // Attempt to rollback, but preserve the original error if rollback fails
-                    if let Err(rollback_err) = tx.rollback() {
-                        log::error!(
+                    if let Err(rollback_err) = tx.rollback() {                        log::error!(
                             "Database transaction rollback failed during error recovery. \
-                             Transaction state: failed, Rollback error: {rollback_err}, \
-                             Original transaction error: {e}, \
-                             Context: Enhanced repository transaction with connection recovery"
+                             Transaction state: failed, Rollback state: failed, \
+                             Context: enhanced_repository_transaction, Operation: rollback_on_error, \
+                             Rollback error: {rollback_err}, Original error: {e}"
                         );
                         // Return a compound error that includes both the original and rollback errors
                         Err(DatabaseError::transaction_failed(&format!(
                             "Transaction failed: {e}. Rollback also failed: {rollback_err}", 
                         )))
-                    } else {
-                        log::warn!(
+                    } else {                        log::warn!(
                             "Database transaction rolled back successfully after error. \
-                             Transaction state: rolled_back, Original error: {e}, \
-                             Context: Enhanced repository transaction with automatic rollback"
+                             Transaction state: rolled_back, Rollback state: success, \
+                             Context: enhanced_repository_transaction, Operation: rollback_on_error, \
+                             Original error: {e}"
                         );
                         Err(e)
                     }
