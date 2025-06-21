@@ -205,10 +205,25 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                 Ok(r) => {
                     tx.commit().map_err(DatabaseError::from)?;
                     Ok(r)
-                }
-                Err(e) => {
-                    let _ = tx.rollback(); // Ignore rollback errors
-                    Err(e)
+                }                Err(e) => {
+                    // Attempt rollback with improved logging for transaction context
+                    if let Err(rollback_err) = tx.rollback() {
+                        log::error!(
+                            "Repository transaction rollback failed during error recovery. \
+                             Transaction state: failed, Rollback error: {rollback_err}, \
+                             Original transaction error: {e}, \
+                             Context: Standard repository transaction"
+                        );
+                        // Still return the original error as primary concern
+                        Err(e)
+                    } else {
+                        log::debug!(
+                            "Repository transaction rolled back successfully. \
+                             Transaction state: rolled_back, Original error: {e}, \
+                             Context: Standard repository transaction with automatic rollback"
+                        );
+                        Err(e)
+                    }
                 }
             }
         })
@@ -412,7 +427,10 @@ impl RepositoryManager {
                     // Attempt to rollback, but preserve the original error if rollback fails
                     if let Err(rollback_err) = tx.rollback() {
                         log::error!(
-                            "Transaction rollback failed: {rollback_err}. Original error: {e}",
+                            "Database transaction rollback failed during error recovery. \
+                             Transaction state: failed, Rollback error: {rollback_err}, \
+                             Original transaction error: {e}, \
+                             Context: Enhanced repository transaction with connection recovery"
                         );
                         // Return a compound error that includes both the original and rollback errors
                         Err(DatabaseError::transaction_failed(&format!(
@@ -420,7 +438,9 @@ impl RepositoryManager {
                         )))
                     } else {
                         log::warn!(
-                            "Transaction rolled back successfully after error: {e}",
+                            "Database transaction rolled back successfully after error. \
+                             Transaction state: rolled_back, Original error: {e}, \
+                             Context: Enhanced repository transaction with automatic rollback"
                         );
                         Err(e)
                     }
