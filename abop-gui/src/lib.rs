@@ -41,6 +41,9 @@ pub mod library;
 // Utility functions
 pub mod utils;
 
+// Constants used throughout the application
+pub mod constants;
+
 // Component modules
 /// UI component modules for the ABOP graphical interface
 ///

@@ -299,25 +299,28 @@ fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql 
 /// database operations. This centralizes parameter conversion logic and provides efficient
 /// error handling with early bailout on conversion failures.
 /// 
-/// **Performance**: Uses iterator chaining with early error propagation to minimize
-/// allocations and provide fast-fail behavior on invalid parameters.
+/// **Performance**: Pre-allocates result vector and uses direct conversion for efficiency,
+/// avoiding iterator overhead and providing fast-fail behavior on invalid parameters.
 fn convert_params_efficiently(
     params: &[&(dyn rusqlite::ToSql + Sync)]
 ) -> Result<Vec<Box<dyn rusqlite::ToSql + Send>>, DatabaseError> {
-    params.iter()
-        .map(|p| -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
-            match p.to_sql() {
-                Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
-                    Ok(convert_value_ref_to_owned(v))
-                }
-                Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
-                    Ok(convert_value_to_owned(v))
-                }
-                Ok(_) => Ok(Box::new(None::<String>)),
-                Err(e) => Err(DatabaseError::from(e)),
+    // Pre-allocate vector with exact capacity to avoid reallocations
+    let mut result = Vec::with_capacity(params.len());
+    
+    for p in params {
+        match p.to_sql() {
+            Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
+                result.push(convert_value_ref_to_owned(v));
             }
-        })
-        .collect()
+            Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
+                result.push(convert_value_to_owned(v));
+            }
+            Ok(_) => result.push(Box::new(None::<String>)),
+            Err(e) => return Err(DatabaseError::from(e)),
+        }
+    }
+    
+    Ok(result)
 }
 
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
@@ -396,8 +399,17 @@ impl RepositoryManager {
                     Ok(result)
                 }
                 Err(e) => {
-                    let _ = tx.rollback(); // Ignore rollback errors
-                    Err(e)
+                    // Attempt to rollback, but preserve the original error if rollback fails
+                    if let Err(rollback_err) = tx.rollback() {
+                        log::error!("Transaction rollback failed: {}. Original error: {}", rollback_err, e);
+                        // Return a compound error that includes both the original and rollback errors
+                        Err(DatabaseError::transaction_failed(&format!(
+                            "Transaction failed: {}. Rollback also failed: {}", 
+                            e, rollback_err
+                        )))
+                    } else {
+                        Err(e)
+                    }
                 }
             }
         })
