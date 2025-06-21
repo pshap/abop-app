@@ -356,7 +356,7 @@ mod ui_state_tests {
             );
             
             // Additional validation: verify that sorting actually changed the order if needed
-            let original_order = vec![TEST_TITLE_1, TEST_TITLE_2];
+            let _original_order = vec![TEST_TITLE_1, TEST_TITLE_2]; // Kept for reference
             let current_order: Vec<&str> = titles.iter().map(|s| s.as_str()).collect();
             
             // The order should either match the expected sort direction or be unchanged if already sorted
