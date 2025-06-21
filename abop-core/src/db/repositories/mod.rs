@@ -326,6 +326,10 @@ fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql 
 /// 
 /// **Performance**: Pre-allocates result vector and uses direct conversion for efficiency,
 /// avoiding iterator overhead and providing fast-fail behavior on invalid parameters.
+/// 
+/// **Architecture**: This function is decomposed into smaller helper functions for better
+/// maintainability and readability. Each helper function handles a specific aspect of the
+/// conversion process with detailed documentation.
 fn convert_params_efficiently(
     params: &[&(dyn rusqlite::ToSql + Sync)]
 ) -> Result<Vec<Box<dyn rusqlite::ToSql + Send>>, DatabaseError> {
@@ -333,21 +337,62 @@ fn convert_params_efficiently(
     let mut result = Vec::with_capacity(params.len());
     
     for p in params {
-        match p.to_sql() {
-            Ok(rusqlite::types::ToSqlOutput::Borrowed(v)) => {
-                result.push(convert_value_ref_to_owned(v));
-            }
-            Ok(rusqlite::types::ToSqlOutput::Owned(v)) => {
-                result.push(convert_value_to_owned(v));
-            }
-            Ok(_) => result.push(Box::new(None::<String>)),
-            Err(e) => return Err(DatabaseError::from(e)),
-        }
+        let converted_param = convert_single_param(p)?;
+        result.push(converted_param);
     }
     
     Ok(result)
 }
 
+/// Converts a single SQL parameter to an owned value
+/// 
+/// **Purpose**: Handles the conversion of individual SQL parameters, providing clear
+/// error messages and consistent behavior across all parameter types.
+/// 
+/// **Error Handling**: Returns early on conversion failures with contextual error information
+/// to help with debugging parameter-related issues.
+/// 
+/// **Safety**: Ensures all returned values implement both `ToSql` and `Send` traits
+/// for safe use in concurrent database operations.
+fn convert_single_param(
+    param: &(dyn rusqlite::ToSql + Sync)
+) -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
+    match param.to_sql() {
+        Ok(output) => Ok(convert_sql_output_to_owned(output)),
+        Err(e) => Err(DatabaseError::parameter_conversion_failed(&format!(
+            "Failed to convert SQL parameter: {}", e
+        ))),
+    }
+}
+
+/// Converts SQLite ToSqlOutput to owned boxed values
+/// 
+/// **Purpose**: Handles the conversion of SQLite's output types to owned values that can
+/// be safely moved across thread boundaries. This function centralizes the logic for
+/// handling both borrowed and owned SQL values.
+/// 
+/// **Design**: Uses pattern matching to handle all possible SQLite output types,
+/// ensuring comprehensive coverage and preventing runtime panics from unhandled cases.
+/// 
+/// **Performance**: Directly converts values without intermediate allocations where possible,
+/// and provides fallback handling for unexpected or future SQLite output types.
+fn convert_sql_output_to_owned(
+    output: rusqlite::types::ToSqlOutput<'_>
+) -> Box<dyn rusqlite::ToSql + Send> {
+    match output {
+        rusqlite::types::ToSqlOutput::Borrowed(value_ref) => {
+            convert_value_ref_to_owned(value_ref)
+        }
+        rusqlite::types::ToSqlOutput::Owned(value) => {
+            convert_value_to_owned(value)
+        }
+        // Handle any other potential variants (future-proofing)
+        _ => {
+            log::warn!("Encountered unexpected ToSqlOutput variant, converting to NULL");
+            Box::new(None::<String>)
+        }
+    }
+}
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
 pub trait EnhancedRepository: Repository {
     /// Get access to enhanced connection

@@ -178,6 +178,14 @@ impl DatabaseError {
         }
     }
 
+    /// Create a parameter conversion error
+    #[must_use]
+    pub fn parameter_conversion_failed(message: &str) -> Self {
+        Self::ExecutionFailed {
+            message: format!("Parameter conversion failed: {}", message),
+        }
+    }
+
     /// Create a custom error with the given message
     #[must_use]
     pub fn custom<T: Into<String>>(message: T) -> Self {
