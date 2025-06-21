@@ -33,6 +33,12 @@ use std::sync::Arc;
 /// and perform safe downcasting of the returned `Box<dyn Any + Send>`.
 type RowCallback = Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 
+/// Type alias for typed row processing callback to reduce complexity
+/// 
+/// This callback provides type safety while allowing dynamic query construction.
+/// Unlike `RowCallback`, this returns a concrete type `T` known at compile time.
+type TypedRowCallback<T> = Box<dyn FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send>;
+
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
@@ -131,14 +137,13 @@ pub trait SafeDynRepository: RepositoryBase {
     /// **Type Safety**: This method provides a type-safe alternative to `query_row_dyn`
     /// by using generics to ensure compile-time type checking while still allowing
     /// dynamic query construction.
-    /// 
-    /// **Preferred Usage**: Use this method instead of `query_row_dyn` for new code
+    ///    /// **Preferred Usage**: Use this method instead of `query_row_dyn` for new code
     /// that requires dynamic queries with type safety.
     fn query_row_safe<T: Send + 'static>(
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: Box<dyn FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send>,
+        callback: TypedRowCallback<T>,
     ) -> DbResult<T> {
         let query = query.to_string();
         let owned_params = convert_params_efficiently(params)?;
@@ -403,24 +408,19 @@ impl RepositoryManager {
                 Ok(result) => {
                     tx.commit().map_err(DatabaseError::from)?;
                     Ok(result)
-                }
-                Err(e) => {
+                }                Err(e) => {
                     // Attempt to rollback, but preserve the original error if rollback fails
                     if let Err(rollback_err) = tx.rollback() {
                         log::error!(
-                            "Transaction rollback failed: {rollback_error}. Original error: {original_error}",
-                            rollback_error = rollback_err,
-                            original_error = e,
+                            "Transaction rollback failed: {rollback_err}. Original error: {e}",
                         );
                         // Return a compound error that includes both the original and rollback errors
                         Err(DatabaseError::transaction_failed(&format!(
-                            "Transaction failed: {}. Rollback also failed: {}", 
-                            e, rollback_err
+                            "Transaction failed: {e}. Rollback also failed: {rollback_err}", 
                         )))
                     } else {
                         log::warn!(
-                            "Transaction rolled back successfully after error: {error}",
-                            error = e,
+                            "Transaction rolled back successfully after error: {e}",
                         );
                         Err(e)
                     }

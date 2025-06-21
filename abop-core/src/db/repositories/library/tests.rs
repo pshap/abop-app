@@ -110,8 +110,7 @@ mod library_tests {
             error_msg.contains("unique")
                 || error_msg.contains("duplicate")
                 || error_msg.contains("constraint"),
-            "Error message should indicate a constraint violation, got: {}",
-            error_msg
+            "Error message should indicate a constraint violation, got: {error_msg}",
         );
     }
 
@@ -145,8 +144,7 @@ mod library_tests {
                 || error_msg.contains("duplicate")
                 || error_msg.contains("constraint")
                 || error_msg.contains("path"),
-            "Error message should indicate a path constraint violation, got: {}",
-            error_msg
+            "Error message should indicate a path constraint violation, got: {error_msg}",
         );
     }
 
@@ -443,59 +441,50 @@ mod library_tests {
             let result = repo.create(name, path);
             assert!(
                 result.is_ok(),
-                "Failed to create library for case '{}': {:?}",
-                test_case,
-                result.err()
+                "Failed to create library for case '{test_case}': {result:?}",
             );
 
             let library = result.unwrap();
-            assert_eq!(library.name, name, "Name mismatch for case '{}'", test_case);
+            assert_eq!(library.name, name, "Name mismatch for case '{test_case}'");
             assert_eq!(
                 library.path,
                 PathBuf::from(path),
-                "Path mismatch for case '{}'",
-                test_case
+                "Path mismatch for case '{test_case}'",
             );
 
             // Test retrieval
             let found = repo.find_by_id(&library.id);
             assert!(
                 found.is_ok(),
-                "Failed to find library by ID for case '{}'",
-                test_case
+                "Failed to find library by ID for case '{test_case}'",
             );
             let found_lib = found.unwrap();
             assert!(
                 found_lib.is_some(),
-                "Library not found by ID for case '{}'",
-                test_case
+                "Library not found by ID for case '{test_case}'",
             );
             assert_eq!(
                 found_lib.unwrap().id,
                 library.id,
-                "Found library ID mismatch for case '{}'",
-                test_case
+                "Found library ID mismatch for case '{test_case}'",
             );
 
             // Test that the library can be found by name with special characters
             let found_by_name = repo.find_by_name(name);
             assert!(
                 found_by_name.is_ok(),
-                "Failed to find library by name for case '{}'",
-                test_case
+                "Failed to find library by name for case '{test_case}'",
             );
             assert_eq!(
                 found_by_name.unwrap().unwrap().id,
                 library.id,
-                "Found library by name ID mismatch for case '{}'",
-                test_case
+                "Found library by name ID mismatch for case '{test_case}'",
             );
 
             // Clean up
             assert!(
                 repo.delete(&library.id).is_ok(),
-                "Failed to clean up library for case '{}'",
-                test_case
+                "Failed to clean up library for case '{test_case}'",
             );
         }
     }
@@ -577,8 +566,7 @@ mod library_tests {
         for id in &created_ids {
             assert!(
                 repo.find_by_id(id).is_ok(),
-                "Failed to find library with ID: {}",
-                id
+                "Failed to find library with ID: {id}",
             );
         }
 
@@ -586,8 +574,7 @@ mod library_tests {
         for id in created_ids {
             assert!(
                 repo.delete(&id).is_ok(),
-                "Failed to delete library with ID: {}",
-                id
+                "Failed to delete library with ID: {id}",
             );
         }
 
@@ -633,9 +620,7 @@ mod library_tests {
         for (name, path) in &VALID_LIBS {
             assert!(
                 repo.create(name, *path).is_ok(),
-                "Failed to create valid library: {} at {}",
-                name,
-                path
+                "Failed to create valid library: {name} at {path}",
             );
         }
 
