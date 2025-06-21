@@ -93,22 +93,37 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
                 owned_params.iter().map(|p| p.as_ref() as &dyn rusqlite::ToSql).collect();
             stmt.execute(rusqlite::params_from_iter(param_refs))
         })
-    }
-
-    /// Execute a query that returns a single row (dynamic version)
+    }    /// Execute a query that returns a single row (dynamic version)
     /// 
     /// **⚠️ DEPRECATED**: This method uses unsafe type erasure and should be avoided.
     /// Use the `SafeDynRepository` trait and its `query_row_safe` method instead for type safety.
     /// 
-    /// # Warning
+    /// # ⚠️ CRITICAL SECURITY WARNING ⚠️
     /// 
-    /// This method has a complex signature with unsafe type erasure via `Box<dyn Any + Send>`.
+    /// This method performs type erasure and returns `Box<dyn Any + Send>`, creating significant security risks:
     /// 
-    /// This method performs type erasure and returns `Box<dyn Any + Send>`, creating security risks:
-    /// - Runtime panics if types are mismatched during downcasting
-    /// - Potential for type confusion vulnerabilities
-    /// - Memory corruption in debug builds
-    /// - No compile-time type checking
+    /// ## Security Vulnerabilities:
+    /// - **Runtime panics**: Mismatched types during downcasting cause immediate program crashes
+    /// - **Type confusion attacks**: Malicious code could exploit type mismatches for memory corruption
+    /// - **Memory safety violations**: Incorrect downcasting can lead to undefined behavior
+    /// - **No compile-time safety**: Type errors only surface at runtime in production
+    /// 
+    /// ## Attack Vectors:
+    /// - Malicious SQL injection could return unexpected data types
+    /// - Race conditions in concurrent access could cause type confusion
+    /// - External dependencies changing return types could break type assumptions
+    /// 
+    /// ## Recommended Migration:
+    /// ```rust
+    /// // Instead of this unsafe pattern:
+    /// let result = repo.query_row_dyn(sql, params, callback)?;
+    /// let value: MyType = *result.downcast::<MyType>().unwrap(); // UNSAFE!
+    /// 
+    /// // Use this type-safe approach:
+    /// let value: MyType = repo.query_row_safe(sql, params, |row| {
+    ///     Ok(MyType::from(row))
+    /// })?; // SAFE!
+    /// ```
     /// 
     /// **Use `SafeDynRepository::query_row_safe` instead for type safety.**
     /// 
@@ -117,6 +132,7 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     /// - Query must return exactly one row (enforced by rusqlite)
     /// - Callback can only be called once per method invocation
     /// - Caller must ensure correct type casting to prevent security issues
+    /// - **CRITICAL**: Never use this method with untrusted input or in security-sensitive contexts
     #[deprecated(since = "0.1.0", note = "Use SafeDynRepository::query_row_safe for type safety")]
     fn query_row_dyn(
         &self,
@@ -350,7 +366,8 @@ fn convert_params_efficiently(
 /// error messages and consistent behavior across all parameter types.
 /// 
 /// **Error Handling**: Returns early on conversion failures with contextual error information
-/// to help with debugging parameter-related issues.
+/// to help with debugging parameter-related issues. No longer performs silent failure
+/// conversions that could mask underlying problems.
 /// 
 /// **Safety**: Ensures all returned values implement both `ToSql` and `Send` traits
 /// for safe use in concurrent database operations.
@@ -358,7 +375,7 @@ fn convert_single_param(
     param: &(dyn rusqlite::ToSql + Sync)
 ) -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
     match param.to_sql() {
-        Ok(output) => Ok(convert_sql_output_to_owned(output)),
+        Ok(output) => convert_sql_output_to_owned(output),
         Err(e) => Err(DatabaseError::parameter_conversion_failed(&format!(
             "Failed to convert SQL parameter: {}", e
         ))),
@@ -376,20 +393,37 @@ fn convert_single_param(
 /// 
 /// **Performance**: Directly converts values without intermediate allocations where possible,
 /// and provides fallback handling for unexpected or future SQLite output types.
+/// 
+/// **Error Handling**: Unlike silent failure patterns, this function properly logs
+/// unexpected variants and provides detailed diagnostic information for debugging.
 fn convert_sql_output_to_owned(
     output: rusqlite::types::ToSqlOutput<'_>
-) -> Box<dyn rusqlite::ToSql + Send> {
+) -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
     match output {
         rusqlite::types::ToSqlOutput::Borrowed(value_ref) => {
-            convert_value_ref_to_owned(value_ref)
+            Ok(convert_value_ref_to_owned(value_ref))
         }
         rusqlite::types::ToSqlOutput::Owned(value) => {
-            convert_value_to_owned(value)
+            Ok(convert_value_to_owned(value))
         }
-        // Handle any other potential variants (future-proofing)
+        // Handle any other potential variants with comprehensive error reporting
         _ => {
-            log::warn!("Encountered unexpected ToSqlOutput variant, converting to NULL");
-            Box::new(None::<String>)
+            // Log detailed diagnostic information for debugging and monitoring
+            log::error!(
+                "Database parameter conversion failed: Encountered unexpected ToSqlOutput variant. \
+                 Context: convert_sql_output_to_owned, Variant: {:?}, \
+                 Action: Failing conversion instead of silent NULL conversion. \
+                 This may indicate a SQLite version compatibility issue or corrupted parameter data.",
+                std::mem::discriminant(&output)
+            );
+            
+            // Instead of silently converting to NULL (which masks errors), 
+            // return a proper error that can be handled by the caller
+            Err(DatabaseError::parameter_conversion_failed(
+                "Encountered unexpected SQLite ToSqlOutput variant. \
+                 This may indicate a version compatibility issue or data corruption. \
+                 Check logs for detailed diagnostic information."
+            ))
         }
     }
 }
