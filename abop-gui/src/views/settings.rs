@@ -11,7 +11,7 @@ use crate::components::buttons::builder::ButtonBuilder;
 use crate::styling::material::components::selection::builder::CommonSelectionBuilder;
 use crate::components::buttons::variants::ButtonVariant;
 use crate::messages::Message;
-use crate::state::UiState;
+use crate::state::AppState;
 use crate::styling::container::dialog::DialogContainerStyles;
 
 // Import Material Design 3 selection components
@@ -31,7 +31,7 @@ fn dialog_size_to_width(size: DialogSize) -> Length {
 
 /// Creates the enhanced settings view with Material Design 3 selection components
 #[must_use]
-pub fn settings_view(state: &UiState) -> Element<'_, Message> {
+pub fn settings_view(state: &AppState) -> Element<'_, Message> {
     // Create switches for each setting using the Material Design 3 selection components
     let theme_switch = create_theme_switch(state);
     let auto_save_switch = create_auto_save_switch(state);
@@ -39,47 +39,47 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
 
     // Create the settings content with proper spacing
     let settings_content = column![
-        text("Application Settings").size(state.material_tokens.typography().title_medium.size),
+        text("Application Settings").size(state.ui.material_tokens.typography().title_medium.size),
         // Theme Setting
         row![
             column![
-                text("Theme").size(state.material_tokens.typography().label_large.size),
+                text("Theme").size(state.ui.material_tokens.typography().label_large.size),
                 text("Switch between light and dark theme")
-                    .size(state.material_tokens.typography().body_small.size)
+                    .size(state.ui.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             theme_switch
         ]
-        .spacing(state.material_tokens.spacing().md)
+        .spacing(state.ui.material_tokens.spacing().md)
         .align_y(iced::Alignment::Center),
         // Auto-save Library Setting
         row![
             column![
-                text("Auto-save Library").size(state.material_tokens.typography().label_large.size),
+                text("Auto-save Library").size(state.ui.material_tokens.typography().label_large.size),
                 text("Automatically save library changes")
-                    .size(state.material_tokens.typography().body_small.size)
+                    .size(state.ui.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             auto_save_switch
         ]
-        .spacing(state.material_tokens.spacing().md)
+        .spacing(state.ui.material_tokens.spacing().md)
         .align_y(iced::Alignment::Center),
         // Scan Subdirectories Setting
         row![
             column![
                 text("Scan Subdirectories")
-                    .size(state.material_tokens.typography().label_large.size),
+                    .size(state.ui.material_tokens.typography().label_large.size),
                 text("Include subdirectories when scanning for audiobooks")
-                    .size(state.material_tokens.typography().body_small.size)
+                    .size(state.ui.material_tokens.typography().body_small.size)
             ]
             .width(Length::Fill),
             scan_subdirs_switch
         ]
-        .spacing(state.material_tokens.spacing().md)
+        .spacing(state.ui.material_tokens.spacing().md)
         .align_y(iced::Alignment::Center),
     ]
-    .spacing(state.material_tokens.spacing().lg)
-    .padding(state.material_tokens.spacing().lg); // Create the settings modal container with proper styling
+    .spacing(state.ui.material_tokens.spacing().lg)
+    .padding(state.ui.material_tokens.spacing().lg); // Create the settings modal container with proper styling
     container(
         column![
             settings_content,
@@ -87,7 +87,7 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
             row![
                 Space::new(Length::Fill, 0),
                 buttons::create_button(
-                    || ButtonBuilder::new(&state.material_tokens)
+                    || ButtonBuilder::new(&state.ui.material_tokens)
                         .label("Close")
                         .variant(ButtonVariant::Filled)
                         .on_press(Message::CloseSettings)
@@ -97,24 +97,24 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
                 )
             ]
         ]
-        .spacing(state.material_tokens.spacing().md),
+        .spacing(state.ui.material_tokens.spacing().md),
     )
     .width(dialog_size_to_width(DialogSize::Medium))
-    .style(DialogContainerStyles::modal(state.theme_mode))
+    .style(DialogContainerStyles::modal(state.ui.theme_mode))
     .into()
 }
 
 /// Helper function to create MD3 switches with consistent styling
 fn create_settings_switch<'a, ToggleHandler>(
     label: &'a str,
-    state: &'a UiState,
+    state: &'a AppState,
     is_enabled: bool,
     on_toggle: ToggleHandler,
 ) -> Element<'a, Message>
 where
     ToggleHandler: Fn(SwitchState) -> Message + 'static,
 {
-    let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
+    let is_dark = matches!(state.ui.theme_mode, crate::theme::ThemeMode::Dark);
     let switch_state = if is_enabled {
         SwitchState::On
     } else {
@@ -146,24 +146,24 @@ where
 }
 
 /// Creates a switch for theme toggling using Material Design 3 Switch component
-fn create_theme_switch(state: &UiState) -> Element<'_, Message> {
-    let is_dark = matches!(state.theme_mode, crate::theme::ThemeMode::Dark);
+fn create_theme_switch(state: &AppState) -> Element<'_, Message> {
+    let is_dark = matches!(state.ui.theme_mode, crate::theme::ThemeMode::Dark);
     create_settings_switch("Dark Theme", state, is_dark, |_| Message::ToggleTheme)
 }
 
 /// Creates a switch for auto-save library setting using Material Design 3 Switch component
-fn create_auto_save_switch(state: &UiState) -> Element<'_, Message> {
-    create_settings_switch("Auto-save", state, state.auto_save_library, |_| {
+fn create_auto_save_switch(state: &AppState) -> Element<'_, Message> {
+    create_settings_switch("Auto-save", state, state.library.auto_save_library, |_| {
         Message::ToggleAutoSaveLibrary
     })
 }
 
 /// Creates a switch for scan subdirectories setting using Material Design 3 Switch component
-fn create_scan_subdirs_switch(state: &UiState) -> Element<'_, Message> {
+fn create_scan_subdirs_switch(state: &AppState) -> Element<'_, Message> {
     create_settings_switch(
         "Scan subdirectories",
         state,
-        state.scan_subdirectories,
+        state.library.scan_subdirectories,
         |_| Message::ToggleScanSubdirectories,
     )
 }

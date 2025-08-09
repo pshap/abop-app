@@ -5,22 +5,18 @@ use std::collections::HashSet;
 
 use crate::audio::{convert_selected_to_mono, play_selected_audio, stop_audio};
 use crate::messages::{Command as GuiCommand, Message};
-use crate::state::UiState;
+use crate::state::AppState;
 
 /// Handles audio-related commands
 #[must_use]
-pub fn handle_audio_command(state: &mut UiState, command: GuiCommand) -> Option<Task<Message>> {
+pub fn handle_audio_command(state: &mut AppState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
         GuiCommand::ConvertToMono {
             selected_ids,
             audiobooks,
         } => {
-            state.processing_audio = true;
-            state.processing_status = Some("Converting selected audiobooks to mono...".to_string());
-            state.processing_progress = Some(0.0);
-            // Update cache for processing progress
-            state.last_processing_progress = Some(0.0);
-            state.cached_processing_progress_text = Some("0.0%".to_string());
+            state.player.start_processing(Some("Converting selected audiobooks to mono...".to_string()));
+            state.progress_cache.clear_processing_cache();
             log::info!(
                 "Executing ConvertToMono command for {} audiobooks",
                 selected_ids.len()

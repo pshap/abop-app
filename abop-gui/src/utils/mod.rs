@@ -3,7 +3,7 @@
 //! This module contains various utility functions and safe conversion
 //! utilities used throughout the GUI components.
 
-use crate::state::UiState;
+use crate::state::AppState;
 use std::path::Path;
 
 pub mod path_utils;
@@ -50,18 +50,18 @@ pub fn get_file_format_simple(path: &Path) -> String {
 /// # Examples
 /// ```
 /// use abop_gui::utils::sort_audiobooks;
-/// use abop_gui::state::UiState;
+/// use abop_gui::state::AppState;
 /// use abop_gui::state::TableState;
 /// use std::collections::HashMap;
 ///
-/// let mut state = UiState::default();
+/// let mut state = AppState::default();
 /// sort_audiobooks(&mut state);
 /// ```
-pub fn sort_audiobooks(state: &mut UiState) {
-    let column = &state.table_state.sort_column;
-    let ascending = state.table_state.sort_ascending;
+pub fn sort_audiobooks(state: &mut AppState) {
+    let column = &state.library.table_state.sort_column;
+    let ascending = state.library.table_state.sort_ascending;
     
-    state.audiobooks.sort_by(|a, b| {
+    state.library.audiobooks.sort_by(|a, b| {
         let ordering = match column.as_str() {
             "title" => a
                 .title

@@ -8,13 +8,13 @@ use iced::Task;
 
 use crate::constants::{VALID_SORT_COLUMNS, DEFAULT_SORT_COLUMN};
 use crate::messages::Message;
-use crate::state::UiState;
+use crate::state::AppState;
 use crate::theme::ThemeMode;
 use crate::utils::path_utils::PathCompare;
 
 /// Handles UI state changes that don't require async operations
 #[must_use]
-pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<Message>> {
+pub fn handle_ui_message(state: &mut AppState, message: Message) -> Option<Task<Message>> {
     match message {
         Message::ShowSettings => handle_show_settings(state),
         Message::CloseSettings => handle_close_settings(state),
@@ -38,47 +38,47 @@ pub fn handle_ui_message(state: &mut UiState, message: Message) -> Option<Task<M
     }
 }
 
-fn handle_show_settings(state: &mut UiState) -> Option<Task<Message>> {
-    state.settings_open = true;
+fn handle_show_settings(state: &mut AppState) -> Option<Task<Message>> {
+    state.ui.open_settings();
     Some(Task::none())
 }
 
-fn handle_close_settings(state: &mut UiState) -> Option<Task<Message>> {
-    state.settings_open = false;
+fn handle_close_settings(state: &mut AppState) -> Option<Task<Message>> {
+    state.ui.close_settings();
     Some(Task::none())
 }
 
-fn handle_show_recent_directories(state: &mut UiState) -> Option<Task<Message>> {
-    state.recent_directories_open = true;
+fn handle_show_recent_directories(state: &mut AppState) -> Option<Task<Message>> {
+    state.ui.recent_directories_open = true;
     Some(Task::none())
 }
 
-fn handle_set_theme(state: &mut UiState, theme_mode: ThemeMode) -> Option<Task<Message>> {
-    state.theme_mode = theme_mode;
+fn handle_set_theme(state: &mut AppState, theme_mode: ThemeMode) -> Option<Task<Message>> {
+    state.ui.theme_mode = theme_mode;
     Some(Task::none())
 }
 
-fn handle_select_recent_directory(state: &mut UiState, path: PathBuf) -> Option<Task<Message>> {
+fn handle_select_recent_directory(state: &mut AppState, path: PathBuf) -> Option<Task<Message>> {
     log::info!("Selected recent directory: {}", path.display());
-    state.library_path = path;
+    state.library.library_path = path;
     Some(Task::none())
 }
 
-fn handle_play_pause(state: &mut UiState) -> Option<Task<Message>> {
+fn handle_play_pause(state: &mut AppState) -> Option<Task<Message>> {
     log::info!("Play/Pause button pressed");
     // Check current audio player state and respond accordingly
     let current_state = crate::audio::player::get_player_state();
     if current_state == abop_core::PlayerState::Playing {
         // Stop audio playback
         crate::audio::player::stop_audio();
-        state.player_state = abop_core::PlayerState::Paused;
+        state.player.player_state = abop_core::PlayerState::Paused;
     } else {
         // Start playback if we have a file selected
-        if let Some(current_file) = &state.current_playing_file {
+        if let Some(current_file) = &state.player.current_playing_file {
             // Find the audiobook and start playing
             if let Some(audiobook) =
                 state
-                    .audiobooks
+                    .library.audiobooks
                     .iter()
                     .find(|ab| match ab.path.eq_path(current_file) {
                         Ok(result) => result,
@@ -97,15 +97,15 @@ fn handle_play_pause(state: &mut UiState) -> Option<Task<Message>> {
                     Message::PlaybackStarted,
                 ));
             }
-        } else if !state.selected_audiobooks.is_empty() {
+        } else if !state.library.selected_audiobooks.is_empty() {
             // Play first selected audiobook
-            if let Some(first_selected_id) = state.selected_audiobooks.iter().next()
+            if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
                 && let Some(audiobook) = state
-                    .audiobooks
+                    .library.audiobooks
                     .iter()
                     .find(|ab| &ab.id == first_selected_id)
             {
-                state.current_playing_file = Some(audiobook.path.clone());
+                state.player.current_playing_file = Some(audiobook.path.clone());
                 return Some(Task::perform(
                     crate::audio::player::play_selected_audio(
                         vec![audiobook.id.clone()],
@@ -115,36 +115,36 @@ fn handle_play_pause(state: &mut UiState) -> Option<Task<Message>> {
                 ));
             }
         }
-        state.player_state = abop_core::PlayerState::Playing;
+        state.player.player_state = abop_core::PlayerState::Playing;
     }
     Some(Task::none())
 }
 
-fn handle_stop(state: &mut UiState) -> Option<Task<Message>> {
+fn handle_stop(state: &mut AppState) -> Option<Task<Message>> {
     log::info!("Stop button pressed");
     crate::audio::player::stop_audio();
-    state.player_state = abop_core::PlayerState::Stopped;
+    state.player.player_state = abop_core::PlayerState::Stopped;
     Some(Task::none())
 }
 
-fn handle_previous(state: &mut UiState) -> Option<Task<Message>> {
+fn handle_previous(state: &mut AppState) -> Option<Task<Message>> {
     log::info!("Previous button pressed");
     // Find currently playing or first selected audiobook and move to previous
-    if let Some(current_file) = &state.current_playing_file {
+    if let Some(current_file) = &state.player.current_playing_file {
         if let Some(current_index) = state
-            .audiobooks
+            .library.audiobooks
             .iter()
             .position(|ab| ab.path == *current_file)
         {
             if current_index > 0 {
-                let previous_audiobook = &state.audiobooks[current_index - 1];
+                let previous_audiobook = &state.library.audiobooks[current_index - 1];
                 log::info!(
                     "Moving to previous track: {}",
                     previous_audiobook.title.as_deref().unwrap_or("Unknown")
                 );
                 // Start playing the previous audiobook
-                state.current_playing_file = Some(previous_audiobook.path.clone());
-                state.player_state = abop_core::PlayerState::Playing;
+                state.player.current_playing_file = Some(previous_audiobook.path.clone());
+                state.player.player_state = abop_core::PlayerState::Playing;
                 return Some(Task::perform(
                     crate::audio::player::play_selected_audio(
                         vec![previous_audiobook.id.clone()],
@@ -157,11 +157,11 @@ fn handle_previous(state: &mut UiState) -> Option<Task<Message>> {
         } else {
             log::warn!("Current playing file not found in audiobooks list");
         }
-    } else if !state.selected_audiobooks.is_empty() {
+    } else if !state.library.selected_audiobooks.is_empty() {
         // If nothing is playing but audiobooks are selected, play the first selected one
-        if let Some(first_selected_id) = state.selected_audiobooks.iter().next()
+        if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
             && let Some(audiobook) = state
-                .audiobooks
+                .library.audiobooks
                 .iter()
                 .find(|ab| &ab.id == first_selected_id)
         {
@@ -169,8 +169,8 @@ fn handle_previous(state: &mut UiState) -> Option<Task<Message>> {
                 "Starting playback from first selected: {}",
                 audiobook.title.as_deref().unwrap_or("Unknown")
             );
-            state.current_playing_file = Some(audiobook.path.clone());
-            state.player_state = abop_core::PlayerState::Playing;
+            state.player.current_playing_file = Some(audiobook.path.clone());
+            state.player.player_state = abop_core::PlayerState::Playing;
             return Some(Task::perform(
                 crate::audio::player::play_selected_audio(
                     vec![audiobook.id.clone()],
@@ -183,24 +183,24 @@ fn handle_previous(state: &mut UiState) -> Option<Task<Message>> {
     Some(Task::none())
 }
 
-fn handle_next(state: &mut UiState) -> Option<Task<Message>> {
+fn handle_next(state: &mut AppState) -> Option<Task<Message>> {
     log::info!("Next button pressed");
     // Find currently playing or first selected audiobook and move to next
-    if let Some(current_file) = &state.current_playing_file {
+    if let Some(current_file) = &state.player.current_playing_file {
         if let Some(current_index) = state
-            .audiobooks
+            .library.audiobooks
             .iter()
             .position(|ab| ab.path == *current_file)
         {
-            if current_index < state.audiobooks.len() - 1 {
-                let next_audiobook = &state.audiobooks[current_index + 1];
+            if current_index < state.library.audiobooks.len() - 1 {
+                let next_audiobook = &state.library.audiobooks[current_index + 1];
                 log::info!(
                     "Moving to next track: {}",
                     next_audiobook.title.as_deref().unwrap_or("Unknown")
                 );
                 // Start playing the next audiobook
-                state.current_playing_file = Some(next_audiobook.path.clone());
-                state.player_state = abop_core::PlayerState::Playing;
+                state.player.current_playing_file = Some(next_audiobook.path.clone());
+                state.player.player_state = abop_core::PlayerState::Playing;
                 return Some(Task::perform(
                     crate::audio::player::play_selected_audio(
                         vec![next_audiobook.id.clone()],
@@ -213,11 +213,11 @@ fn handle_next(state: &mut UiState) -> Option<Task<Message>> {
         } else {
             log::warn!("Current playing file not found in audiobooks list");
         }
-    } else if !state.selected_audiobooks.is_empty() {
+    } else if !state.library.selected_audiobooks.is_empty() {
         // If nothing is playing but audiobooks are selected, play the first selected one
-        if let Some(first_selected_id) = state.selected_audiobooks.iter().next()
+        if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
             && let Some(audiobook) = state
-                .audiobooks
+                .library.audiobooks
                 .iter()
                 .find(|ab| &ab.id == first_selected_id)
         {
@@ -225,8 +225,8 @@ fn handle_next(state: &mut UiState) -> Option<Task<Message>> {
                 "Starting playback from first selected: {}",
                 audiobook.title.as_deref().unwrap_or("Unknown")
             );
-            state.current_playing_file = Some(audiobook.path.clone());
-            state.player_state = abop_core::PlayerState::Playing;
+            state.player.current_playing_file = Some(audiobook.path.clone());
+            state.player.player_state = abop_core::PlayerState::Playing;
             return Some(Task::perform(
                 crate::audio::player::play_selected_audio(
                     vec![audiobook.id.clone()],
@@ -239,12 +239,12 @@ fn handle_next(state: &mut UiState) -> Option<Task<Message>> {
     Some(Task::none())
 }
 
-fn handle_reset_redraw_flag(state: &mut UiState) -> Option<Task<Message>> {
-    state.needs_redraw = false;
+fn handle_reset_redraw_flag(state: &mut AppState) -> Option<Task<Message>> {
+    state.clear_redraw_flags();
     Some(Task::none())
 }
 
-fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message>> {
+fn handle_sort_by(state: &mut AppState, column_id: String) -> Option<Task<Message>> {
     log::info!("Sorting by column: {}", column_id);
     // Validate the column ID against known valid columns
     let validated_column = if VALID_SORT_COLUMNS.contains(&column_id.as_str()) {
@@ -255,21 +255,21 @@ fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message
     };
 
     // Update the sort state
-    if state.table_state.sort_column == validated_column {
+    if state.library.table_state.sort_column == validated_column {
         // If clicking the same column, toggle sort direction
-        state.table_state.sort_ascending = !state.table_state.sort_ascending;
+        state.library.table_state.sort_ascending = !state.library.table_state.sort_ascending;
     } else {
         // If clicking a different column, sort ascending by default
-        state.table_state.sort_column = validated_column;
-        state.table_state.sort_ascending = true;
+        state.library.table_state.sort_column = validated_column;
+        state.library.table_state.sort_ascending = true;
     }
 
     // Apply the sort to the audiobooks
     crate::utils::sort_audiobooks(state);
     log::info!(
         "Sorted by {} ({})",
-        state.table_state.sort_column,
-        if state.table_state.sort_ascending {
+        state.library.table_state.sort_column,
+        if state.library.table_state.sort_ascending {
             "ascending"
         } else {
             "descending"
@@ -279,54 +279,54 @@ fn handle_sort_by(state: &mut UiState, column_id: String) -> Option<Task<Message
     Some(Task::none())
 }
 
-fn handle_toggle_theme(state: &mut UiState) -> Option<Task<Message>> {
-    state.theme_mode = match state.theme_mode {
+fn handle_toggle_theme(state: &mut AppState) -> Option<Task<Message>> {
+    state.ui.theme_mode = match state.ui.theme_mode {
         ThemeMode::Light => ThemeMode::Dark,
         ThemeMode::Dark => ThemeMode::Light,
         // For other modes, default to Light
         _ => ThemeMode::Light,
     };
-    log::info!("Theme toggled to: {:?}", state.theme_mode);
+    log::info!("Theme toggled to: {:?}", state.ui.theme_mode);
     Some(Task::none())
 }
 
-fn handle_toggle_select_all(state: &mut UiState) -> Option<Task<Message>> {
-    if state.selected_audiobooks.len() == state.audiobooks.len() {
+fn handle_toggle_select_all(state: &mut AppState) -> Option<Task<Message>> {
+    if state.library.selected_audiobooks.len() == state.library.audiobooks.len() {
         // All are selected, so deselect all
-        state.selected_audiobooks.clear();
+        state.library.selected_audiobooks.clear();
         log::info!("Deselected all audiobooks");
     } else {
         // Not all are selected, so select all
-        state.selected_audiobooks = state.audiobooks.iter().map(|ab| ab.id.clone()).collect();
-        log::info!("Selected all {} audiobooks", state.audiobooks.len());
+        state.library.selected_audiobooks = state.library.audiobooks.iter().map(|ab| ab.id.clone()).collect();
+        log::info!("Selected all {} audiobooks", state.library.audiobooks.len());
     }
     Some(Task::none())
 }
 
-fn handle_toggle_auto_save_library(state: &mut UiState) -> Option<Task<Message>> {
-    state.auto_save_library = !state.auto_save_library;
-    log::info!("Auto-save library toggled to: {}", state.auto_save_library);
+fn handle_toggle_auto_save_library(state: &mut AppState) -> Option<Task<Message>> {
+    state.library.auto_save_library = !state.library.auto_save_library;
+    log::info!("Auto-save library toggled to: {}", state.library.auto_save_library);
     Some(Task::none())
 }
 
-fn handle_toggle_scan_subdirectories(state: &mut UiState) -> Option<Task<Message>> {
-    state.scan_subdirectories = !state.scan_subdirectories;
+fn handle_toggle_scan_subdirectories(state: &mut AppState) -> Option<Task<Message>> {
+    state.library.scan_subdirectories = !state.library.scan_subdirectories;
     log::info!(
         "Scan subdirectories toggled to: {}",
-        state.scan_subdirectories
+        state.library.scan_subdirectories
     );
     Some(Task::none())
 }
 
 fn handle_toggle_audiobook_selection(
-    state: &mut UiState,
+    state: &mut AppState,
     audiobook_id: String,
 ) -> Option<Task<Message>> {
-    if state.selected_audiobooks.contains(&audiobook_id) {
-        state.selected_audiobooks.remove(&audiobook_id);
+    if state.library.selected_audiobooks.contains(&audiobook_id) {
+        state.library.selected_audiobooks.remove(&audiobook_id);
         log::info!("Deselected audiobook: {audiobook_id}");
     } else {
-        state.selected_audiobooks.insert(audiobook_id.clone());
+        state.library.selected_audiobooks.insert(audiobook_id.clone());
         log::info!("Selected audiobook: {audiobook_id}");
     }
     Some(Task::none())

@@ -13,7 +13,7 @@ use iced::{Color, Element};
 
 use crate::components::main_toolbar::MainToolbar;
 use crate::messages::Message;
-use crate::state::UiState;
+use crate::state::AppState;
 
 pub use about::about_view;
 pub use audio_processing::audio_processing_view;
@@ -49,12 +49,12 @@ fn modal<'a>(
 
 /// View function that renders the application UI based on current state and route
 #[must_use]
-pub fn view(state: &UiState, route: crate::router::Route) -> Element<'_, Message> {
+pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Message> {
     // Unified toolbar at the top combining navigation and actions
     let toolbar = MainToolbar::view(
-        &state.recent_directories,
-        &state.library_path,
-        &state.material_tokens,
+        &state.library.recent_directories,
+        &state.library.library_path,
+        &state.ui.material_tokens,
     );
 
     // Route-specific content
@@ -66,11 +66,11 @@ pub fn view(state: &UiState, route: crate::router::Route) -> Element<'_, Message
     };
 
     let main_content = column![toolbar, content]
-        .spacing(state.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.material_tokens.spacing().md); // Reduced from LG to MD (16px)
+        .spacing(state.ui.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
+        .padding(state.ui.material_tokens.spacing().md); // Reduced from LG to MD (16px)
 
     // If settings dialog is open, show it as a modal overlay
-    if state.settings_open {
+    if state.ui.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
         main_content.into()
