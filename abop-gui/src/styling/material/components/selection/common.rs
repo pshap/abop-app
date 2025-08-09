@@ -749,11 +749,20 @@ pub trait AnimatedComponent {
 /// 
 /// This function checks environment variables and provides a simple cross-platform
 /// reduced motion detection. In production, this could be enhanced with OS-specific APIs.
+/// 
+/// # Environment Variables
+/// - `ABOP_REDUCE_MOTION`: Application-specific setting ("1" or "true")
+/// - `PREFER_REDUCED_MOTION`: General accessibility setting ("1" or "true")
 #[must_use]
 pub fn system_has_reduced_motion() -> bool {
-    // Check common environment variables for reduced motion preference
-    std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true") ||
-    std::env::var("PREFER_REDUCED_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
+    /// Check if an environment variable indicates reduced motion preference
+    fn env_var_is_enabled(var_name: &str) -> bool {
+        std::env::var(var_name)
+            .map(|v| v == "1" || v.to_ascii_lowercase() == "true")
+            .unwrap_or(false)
+    }
+    
+    env_var_is_enabled("ABOP_REDUCE_MOTION") || env_var_is_enabled("PREFER_REDUCED_MOTION")
 }
 
 /// Helper function to create validation config for specific use cases

@@ -17,9 +17,17 @@ use crate::styling::container::dialog::DialogContainerStyles;
 // Import Material Design 3 selection components
 use crate::styling::material::components::selection::Switch;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
+use crate::styling::material::components::feedback::dialog::DialogSize;
 
-/// Standard width for settings dialogs
-const SETTINGS_DIALOG_WIDTH: f32 = 400.0;
+/// Convert DialogSize to Length for consistent width values
+fn dialog_size_to_width(size: DialogSize) -> Length {
+    match size {
+        DialogSize::Small => Length::Fixed(280.0),
+        DialogSize::Medium => Length::Fixed(400.0),
+        DialogSize::Large => Length::Fixed(560.0),
+        DialogSize::ExtraLarge => Length::Fixed(720.0),
+    }
+}
 
 /// Creates the enhanced settings view with Material Design 3 selection components
 #[must_use]
@@ -91,7 +99,7 @@ pub fn settings_view(state: &UiState) -> Element<'_, Message> {
         ]
         .spacing(state.material_tokens.spacing().md),
     )
-    .width(Length::Fixed(SETTINGS_DIALOG_WIDTH))
+    .width(dialog_size_to_width(DialogSize::Medium))
     .style(DialogContainerStyles::modal(state.theme_mode))
     .into()
 }
@@ -113,18 +121,18 @@ where
         SwitchState::Off
     };
 
-    // Create Material Design 3 Switch component
+    // Create Material Design 3 Switch component with fallback
     let md3_switch = Switch::builder(switch_state)
         .label(label)
         .size(ComponentSize::Medium)
         .build()
-        .unwrap_or_else(|_| {
-            // Fallback to a basic switch without customization
-            // This should never fail as it uses minimal configuration
-            Switch::off().build().unwrap_or_else(|_| {
-                // Ultimate fallback - create a completely default switch
-                Switch::default()
-            })
+        .unwrap_or_else(|_err| {
+            // Log validation error for debugging
+            #[cfg(debug_assertions)]
+            log::warn!("Switch validation failed: {_err}. Using fallback.");
+            
+            // Fallback to basic switch - this should always succeed
+            Switch::builder(switch_state).build_unchecked()
         });
 
     // Use static MaterialColors to solve lifetime issues

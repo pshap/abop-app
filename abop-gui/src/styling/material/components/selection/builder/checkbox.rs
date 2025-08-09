@@ -144,9 +144,27 @@ impl CheckboxBuilder {
     }
 
     /// Validate the checkbox configuration
+    /// 
+    /// This method performs comprehensive validation of the checkbox builder state,
+    /// including state consistency, label validation, and common property validation.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `SelectionError` if:
+    /// - The checkbox state is incompatible with the current properties
+    /// - The label exceeds maximum length or violates validation rules
+    /// - Common validation rules fail (disabled state conflicts, etc.)
     pub fn validate(&self) -> Result<(), SelectionError> {
-        validate_checkbox_state(self.state, &self.common.props)?;
-        self.validate_common()?;
+        validate_checkbox_state(self.state, &self.common.props)
+            .map_err(|e| SelectionError::InvalidState { 
+                details: format!("Checkbox validation failed: {e}") 
+            })?;
+        
+        self.validate_common()
+            .map_err(|e| SelectionError::ValidationError(
+                format!("Common validation failed: {e}")
+            ))?;
+        
         Ok(())
     }
 }

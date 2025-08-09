@@ -41,6 +41,32 @@ impl CommonBuilderState {
 // ============================================================================
 
 /// Trait providing common builder methods for all selection components
+/// 
+/// This trait provides a consistent API for building Material Design 3 selection
+/// components (checkboxes, switches, radios) while eliminating code duplication.
+/// All builders that implement this trait gain access to common functionality
+/// like label setting, size configuration, animation controls, and validation.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use abop_gui::styling::material::components::selection::*;
+/// 
+/// // All selection builders support the same common methods
+/// let checkbox = CheckboxBuilder::unchecked()
+///     .label("Enable notifications")
+///     .size(ComponentSize::Large)
+///     .animations_enabled(true)
+///     .build()
+///     .expect("Valid checkbox");
+/// 
+/// let switch = SwitchBuilder::off()
+///     .label("Dark mode")
+///     .size(ComponentSize::Medium)
+///     .with_metadata("theme", "primary")
+///     .build()
+///     .expect("Valid switch");
+/// ```
 pub trait CommonSelectionBuilder {
     /// Get mutable access to the common builder state
     fn common_state_mut(&mut self) -> &mut CommonBuilderState;
@@ -84,7 +110,9 @@ pub trait CommonSelectionBuilder {
     where 
         Self: Sized,
     {
-        self.common_state_mut().props = self.common_state().props.clone().with_metadata(key, value);
+        // Preserve ComponentProps validation while avoiding a clone
+        let props = std::mem::take(&mut self.common_state_mut().props);
+        self.common_state_mut().props = props.with_metadata(key, value);
         self
     }
 
@@ -205,6 +233,21 @@ pub trait CommonSelectionBuilder {
 macro_rules! impl_common_selection_builder {
     ($builder_type:ty, $common_field:ident) => {
         impl CommonSelectionBuilder for $builder_type {
+            fn common_state_mut(&mut self) -> &mut CommonBuilderState {
+                &mut self.$common_field
+            }
+            
+            fn common_state(&self) -> &CommonBuilderState {
+                &self.$common_field
+            }
+        }
+    };
+    // Generic version for builders with type parameters
+    ($builder_type:ident<$($generic:ident),+>, $common_field:ident, where $($bounds:tt)+) => {
+        impl<$($generic),+> CommonSelectionBuilder for $builder_type<$($generic),+>
+        where
+            $($bounds)+
+        {
             fn common_state_mut(&mut self) -> &mut CommonBuilderState {
                 &mut self.$common_field
             }

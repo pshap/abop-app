@@ -77,11 +77,12 @@ cargo doc --workspace --open
 - **Tokio**: Async runtime for concurrent operations
 
 ### Key Design Principles
-1. **Modular Architecture**: Clear separation between core logic and UI
+1. **Modular Architecture**: Clear separation between core logic and UI with DRY-compliant patterns
 2. **Type Safety**: Extensive use of Rust's type system for configuration validation
 3. **Performance**: Streaming audio processing, parallel operations, memory efficiency
-4. **Material Design 3**: Professional theming system with design tokens
+4. **Material Design 3**: Professional theming system with unified builder patterns and design tokens
 5. **Safe Casting**: All numeric conversions use safe conversion utilities (no direct `as` casts)
+6. **Accessibility First**: Built-in support for reduced motion and cross-platform accessibility features
 
 ### Project Structure
 ```
@@ -118,15 +119,22 @@ abop/
 ### GUI Development
 - Uses Iced 0.13.1 with component-based architecture
 - Material Design 3 theming system with comprehensive design tokens
-- Professional styling system in `abop-gui/src/styling/`
+- Professional styling system in `abop-gui/src/styling/` with DRY-compliant builder patterns
 - All components use centralized design tokens for spacing, typography, colors
 - Theme switching between sunset and Material Design themes
+- Unified `CommonSelectionBuilder` trait eliminates code duplication across selection components
 
 ### Error Handling
 - Custom error types in `abop-core/src/error.rs` using `thiserror`
 - Comprehensive error propagation with `Result<T, AppError>`
 - Graceful error handling in GUI with user-friendly messages
 - Structured logging with `tracing` for debugging
+
+### Accessibility & User Experience
+- **Reduced Motion Support**: Honors `ABOP_REDUCE_MOTION` and `PREFER_REDUCED_MOTION` environment variables
+- **Material Design Compliance**: Minimum touch targets, contrast ratios, and spacing per MD3 guidelines
+- **Robust Error Handling**: UI components gracefully degrade with informative fallbacks
+- **Cross-Platform**: Environment-variable based accessibility detection works across all platforms
 
 ### Safe Casting Practices
 **CRITICAL**: This codebase enforces safe numeric conversions
@@ -173,6 +181,37 @@ abop/
 3. Follow Iced component patterns with proper message handling
 4. Add to the component module exports
 
+### Material Design Selection Components
+The selection components (`CheckboxBuilder`, `SwitchBuilder`) use a unified architecture:
+1. **CommonSelectionBuilder Trait**: Provides shared methods (label, size, validation, animations)
+2. **CommonBuilderState**: Contains shared fields (props, error_state, validation_config, animation_config)
+3. **DRY Compliance**: Common functionality implemented once, reused across builders
+4. **Consistent API**: All selection builders support the same fluent interface methods
+
+#### Adding New Selection Components
+```rust
+// 1. Define your builder struct with CommonBuilderState
+#[derive(Debug, Clone)]
+pub struct MySelectionBuilder {
+    state: MyState,
+    common: CommonBuilderState,
+}
+
+// 2. Implement the common trait
+impl_common_selection_builder!(MySelectionBuilder, common);
+
+// 3. Add component-specific methods
+impl MySelectionBuilder {
+    pub fn new(state: MyState) -> Self {
+        Self {
+            state,
+            common: CommonBuilderState::new(default_animation_config()),
+        }
+    }
+    // ... component-specific methods
+}
+```
+
 ### Database Schema Changes
 1. Create migration SQL files in `abop-core/src/db/migrations/`
 2. Update models in `abop-core/src/models/`
@@ -186,3 +225,24 @@ abop/
 4. Update default configurations
 
 This is a mature codebase with established patterns. When making changes, follow existing architectural decisions and coding standards. The project emphasizes safety, performance, and maintainability through Rust's type system and modern development practices.
+
+## Recent Architectural Improvements
+
+### Builder Pattern Consolidation (2024)
+- Implemented `CommonSelectionBuilder` trait to eliminate DRY violations
+- Created `CommonBuilderState` struct for shared builder functionality
+- Refactored `CheckboxBuilder` and `SwitchBuilder` to use unified architecture
+- Reduced code duplication by ~200+ lines while maintaining full API compatibility
+
+### Accessibility Enhancements (2024)
+- Enhanced reduced motion detection with environment variable support
+- Improved error handling in UI components with robust fallback strategies
+- Added comprehensive documentation following Rust best practices
+- Implemented cross-platform accessibility features
+
+### Development Status
+The codebase is actively maintained with a focus on:
+- **Code Quality**: Continuous refactoring to eliminate duplication and improve maintainability
+- **Accessibility**: Ongoing improvements to support diverse user needs
+- **Performance**: Optimization of builder patterns and UI component creation
+- **Documentation**: Comprehensive inline documentation and architectural guides
