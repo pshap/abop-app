@@ -100,7 +100,7 @@ impl CheckboxState {
 // Phase 1: Implement unified state traits for CheckboxState
 impl ComponentState for CheckboxState {
     fn toggle(self) -> Self {
-        self.toggle()
+        Self::toggle(self)
     }
 
     fn is_active(self) -> bool {
@@ -108,7 +108,7 @@ impl ComponentState for CheckboxState {
     }
 
     fn to_bool(self) -> bool {
-        self.to_bool()
+        Self::to_bool(self)
     }
 
     fn from_bool(value: bool) -> Self {
@@ -181,7 +181,7 @@ impl SwitchState {
 // Phase 1: Implement unified state traits for SwitchState
 impl ComponentState for SwitchState {
     fn toggle(self) -> Self {
-        self.toggle()
+        Self::toggle(self)
     }
 
     fn is_active(self) -> bool {
@@ -189,7 +189,7 @@ impl ComponentState for SwitchState {
     }
 
     fn to_bool(self) -> bool {
-        self.to_bool()
+        Self::to_bool(self)
     }
 
     fn from_bool(value: bool) -> Self {
@@ -234,7 +234,7 @@ impl ChipState {
 // Phase 1: Implement unified state traits for ChipState
 impl ComponentState for ChipState {
     fn toggle(self) -> Self {
-        self.toggle()
+        Self::toggle(self)
     }
 
     fn is_active(self) -> bool {
@@ -612,6 +612,11 @@ pub enum EasingCurve {
 // Common Validation Functions
 // ============================================================================
 
+/// Generic validation helper for selection components
+fn validate_selection_component_props(props: &ComponentProps) -> Result<(), SelectionError> {
+    validate_props(props, &ValidationConfig::default())
+}
+
 /// Validate component properties
 pub fn validate_props(
     props: &ComponentProps,
@@ -644,7 +649,7 @@ pub fn validate_checkbox_state(
     _state: CheckboxState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())
+    validate_selection_component_props(props)
 }
 
 /// Validate switch state consistency
@@ -652,7 +657,7 @@ pub fn validate_switch_state(
     _state: SwitchState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())
+    validate_selection_component_props(props)
 }
 
 /// Validate chip state and configuration
@@ -777,9 +782,7 @@ pub const fn validation_config_for_toggles() -> ValidationConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
+    use super::*;    #[test]
     fn test_checkbox_state_transitions() {
         assert_eq!(CheckboxState::Unchecked.toggle(), CheckboxState::Checked);
         assert_eq!(CheckboxState::Checked.toggle(), CheckboxState::Unchecked);
@@ -950,5 +953,35 @@ mod tests {
             ComponentSize::Medium.size_px(),
             constants::sizes::MEDIUM_SIZE_PX
         );
+    }
+
+    #[test]
+    fn test_validation_helper_consistency() {
+        let props = ComponentProps::new().with_label("Test");
+        
+        // All component validation should use the same base validation
+        assert!(validate_checkbox_state(CheckboxState::Unchecked, &props).is_ok());
+        assert!(validate_switch_state(SwitchState::Off, &props).is_ok());
+        
+        // Test with invalid props
+        let invalid_props = ComponentProps::new().with_label("x".repeat(201));
+        assert!(validate_checkbox_state(CheckboxState::Unchecked, &invalid_props).is_err());
+        assert!(validate_switch_state(SwitchState::Off, &invalid_props).is_err());
+    }
+
+    #[test]
+    fn test_trait_delegation_consistency() {
+        use super::super::state_traits::ComponentState;
+        
+        // Test that trait methods delegate to inherent methods correctly
+        let checkbox = CheckboxState::Unchecked;
+        let inherent_toggle = checkbox.toggle();
+        let trait_toggle = ComponentState::toggle(checkbox);
+        assert_eq!(inherent_toggle, trait_toggle);
+        
+        let switch = SwitchState::Off;
+        let inherent_toggle = switch.toggle();
+        let trait_toggle = ComponentState::toggle(switch);
+        assert_eq!(inherent_toggle, trait_toggle);
     }
 }
