@@ -745,12 +745,15 @@ pub trait AnimatedComponent {
 // Utility Functions
 // ============================================================================
 
-/// Check if the system has reduced motion enabled (placeholder implementation)
-/// In a real implementation, this would check OS accessibility settings
+/// Check if the system has reduced motion enabled
+/// 
+/// This function checks environment variables and provides a simple cross-platform
+/// reduced motion detection. In production, this could be enhanced with OS-specific APIs.
 #[must_use]
 pub fn system_has_reduced_motion() -> bool {
-    // TODO: Implement actual system check
-    false
+    // Check common environment variables for reduced motion preference
+    std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true") ||
+    std::env::var("PREFER_REDUCED_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
 }
 
 /// Helper function to create validation config for specific use cases

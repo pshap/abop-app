@@ -14,6 +14,7 @@ use super::super::common::{CheckboxState, ChipVariant, SwitchState};
 use super::super::common::{ChipState, ComponentSize, SelectionComponent};
 use super::{
     checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
+    common_builder::CommonSelectionBuilder,
 };
 
 // ============================================================================

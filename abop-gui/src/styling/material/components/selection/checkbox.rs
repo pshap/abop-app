@@ -220,7 +220,7 @@ impl CustomCheckboxWidget {
 
 #[cfg(test)]
 mod tests {
-    use super::super::builder::ComponentBuilder;
+    use super::super::builder::CommonSelectionBuilder;
     use super::*;
 
     #[test]

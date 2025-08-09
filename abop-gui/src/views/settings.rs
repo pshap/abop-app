@@ -8,6 +8,7 @@ use iced::{Element, Length};
 
 use crate::components::buttons;
 use crate::components::buttons::builder::ButtonBuilder;
+use crate::styling::material::components::selection::builder::CommonSelectionBuilder;
 use crate::components::buttons::variants::ButtonVariant;
 use crate::messages::Message;
 use crate::state::UiState;
@@ -15,7 +16,6 @@ use crate::styling::container::dialog::DialogContainerStyles;
 
 // Import Material Design 3 selection components
 use crate::styling::material::components::selection::Switch;
-use crate::styling::material::components::selection::builder::ComponentBuilder;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
 
 /// Standard width for settings dialogs
