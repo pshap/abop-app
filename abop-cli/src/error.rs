@@ -85,17 +85,17 @@ mod tests {
     #[test]
     fn test_validate_library_path_success() {
         let temp_dir = TempDir::new().unwrap();
-        let path = temp_dir.path().to_path_buf();
+        let path = temp_dir.path();
         
-        let result = validate_library_path(&path);
+        let result = validate_library_path(path);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_validate_library_path_not_exists() {
-        let path = PathBuf::from("/nonexistent/path");
+        let path = std::path::Path::new("/nonexistent/path");
         
-        let result = validate_library_path(&path);
+        let result = validate_library_path(path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
@@ -123,9 +123,9 @@ mod tests {
 
     #[test]
     fn test_validate_existing_database_path_not_exists() {
-        let path = PathBuf::from("/nonexistent/database.db");
+        let path = std::path::Path::new("/nonexistent/database.db");
         
-        let result = validate_existing_database_path(&path);
+        let result = validate_existing_database_path(path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
@@ -133,9 +133,9 @@ mod tests {
     #[test]
     fn test_validate_existing_database_path_is_directory() {
         let temp_dir = TempDir::new().unwrap();
-        let dir_path = temp_dir.path().to_path_buf();
+        let dir_path = temp_dir.path();
         
-        let result = validate_existing_database_path(&dir_path);
+        let result = validate_existing_database_path(dir_path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
     }

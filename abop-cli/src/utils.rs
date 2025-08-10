@@ -205,12 +205,12 @@ mod tests {
         
         for (input, expected) in test_cases {
             let parsed = input.parse::<usize>().ok().unwrap_or(100).clamp(1, 1000);
-            assert_eq!(parsed, expected, "Input '{}' should parse to {}", input, expected);
+            assert_eq!(parsed, expected, "Input '{input}' should parse to {expected}");
         }
         
         // Test that function returns a reasonable default
         let default_page_size = get_pagination_size();
-        assert!((1..=1000).contains(&default_page_size), "Page size should be between 1 and 1000, got {}", default_page_size);
+        assert!((1..=1000).contains(&default_page_size), "Page size should be between 1 and 1000, got {default_page_size}");
     }
 
     #[test]
@@ -227,5 +227,4 @@ mod tests {
             abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR
         );
     }
-
 }

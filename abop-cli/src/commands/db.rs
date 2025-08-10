@@ -107,9 +107,6 @@ fn clean(database_path: PathBuf) -> CliResult<()> {
     // - Orphaned record cleanup
     // - Integrity checks
     
-    // Optional: Remove orphaned records or temporary data if needed
-    // This would be specific to your schema design
-    
     info!("✓ Database cleanup and optimization completed");
     Ok(())
 }
@@ -119,7 +116,6 @@ mod tests {
     use super::*;
     use tempfile::NamedTempFile;
     use std::fs;
-
 
     #[test]
     fn test_init_operation() {
@@ -219,7 +215,7 @@ mod tests {
         ];
 
         for op in operations {
-            let debug_str = format!("{:?}", op);
+            let debug_str = format!("{op:?}");
             assert!(!debug_str.is_empty());
         }
     }
