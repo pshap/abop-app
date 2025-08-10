@@ -16,7 +16,7 @@
 //! - [`components`] - Component struct definitions
 //! - [`factory`] - Builder factory functions
 //!
-//! ## Phase 2 Enhancements
+//! ## Key Features
 //! - Advanced validation system with result aggregation
 //! - Builder composition and conditional building
 //! - Enhanced error handling with context preservation

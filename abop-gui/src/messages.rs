@@ -50,10 +50,8 @@ pub enum Message {
     QuickScanComplete(Result<DirectoryInfo, String>),
     /// Result of a full library scan
     ScanComplete(Result<crate::library::ScanResult, String>),
-    /// Progress update for a scan operation (0.0 to 1.0)
-    ScanProgress(f32),
-    /// Enhanced progress information for a scan operation
-    ScanProgressEnhanced(abop_core::scanner::ScanProgress),
+    /// Progress information for a scan operation
+    ScanProgress(abop_core::scanner::ScanProgress),
 
     // ===== Audiobook Selection =====
     /// Select a single audiobook by ID

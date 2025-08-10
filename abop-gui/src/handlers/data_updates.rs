@@ -55,7 +55,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                 Ok(scan_result) => {
                     // Update state with scan results
                     state.library.set_audiobooks(scan_result.audiobooks);
-                    state.library.scan_progress = None;
+                    // scan_progress is cleared automatically by complete_scanning()
                     state.library.complete_scanning();
                     Some(Task::none())
                 }
@@ -66,13 +66,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
             }
         }
         Message::ScanProgress(progress) => {
-            state.library.scan_progress = Some(progress);
-            // Update cached progress text using the new progress cache
-            state.progress_cache.get_scan_progress_text(progress);
-            Some(Task::none())
-        }
-        Message::ScanProgressEnhanced(progress) => {
-            state.library.scanner_progress = Some(progress);
+            state.library.update_scan_progress(progress);
             Some(Task::none())
         }
         _ => None,

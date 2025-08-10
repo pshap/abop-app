@@ -10,7 +10,7 @@ use super::super::constants;
 use std::time::Duration;
 
 // ============================================================================
-// Constants (Phase 1: Use centralized constants)
+// Constants (using centralized constants)
 // ============================================================================
 
 /// Maximum allowed length for chip labels (from centralized constants)

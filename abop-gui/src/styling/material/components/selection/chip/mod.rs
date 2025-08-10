@@ -8,9 +8,9 @@
 //! - Modern builder pattern with fluent API
 //! - Unified view methods for consistent rendering
 //!
-//! # Phase 2 Architectural Improvements
+//! # Modular Architecture
 //!
-//! The chip system has been split into focused submodules:
+//! The chip system is organized into focused submodules:
 //! - `core`: Core chip implementation and state management
 //! - `collection`: Chip collection management and selection modes
 //! - `view`: Unified view methods for different chip rendering modes

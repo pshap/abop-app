@@ -29,7 +29,7 @@ pub fn library_view(state: &AppState) -> iced::Element<'_, Message> {
 fn create_status_display(state: &AppState) -> iced::Element<'_, Message> {
     StatusDisplay::enhanced_view(
         EnhancedStatusDisplayParams {
-            scanning: state.library.scanning,
+            scanning: state.library.is_scanning(),
             scan_progress: state.library.scanner_progress.clone(),
             cached_scan_progress_text: None, // TODO: implement progress cache retrieval
             processing_audio: state.player.processing_audio,

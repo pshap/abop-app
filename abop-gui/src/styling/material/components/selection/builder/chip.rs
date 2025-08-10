@@ -175,7 +175,7 @@ impl ChipBuilder {
     }
 
     // ========================================================================
-    // Phase 2: Advanced Chip Builder Methods
+    // Advanced Chip Builder Methods
     // ========================================================================
 
     /// Set label with validation
@@ -294,7 +294,7 @@ impl ComponentBuilder<ChipState> for ChipBuilder {
     }
 }
 
-// Phase 2: Enhanced ChipBuilder Trait Implementations
+// Enhanced ChipBuilder Trait Implementations
 impl BuilderValidation for ChipBuilder {
     fn validate_detailed(&self) -> ValidationResult {
         let context = ValidationContext::new("ChipBuilder".to_string(), "validation".to_string());

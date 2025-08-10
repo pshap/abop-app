@@ -96,7 +96,7 @@ mod library_tests {
     #[test]
     fn test_library_view_scanning_state() {
         let mut state = AppState::default();
-        state.library.scanning = true;
+        state.library.start_scanning();
 
         let element = library_view(&state);
         let _ = element; // Just verify it compiles and runs
