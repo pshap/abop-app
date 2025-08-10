@@ -120,6 +120,10 @@ pub mod domain {
         #[error("Invalid UI spacing: {0}")]
         InvalidSpacing(f32),
 
+        /// Invalid animation duration value
+        #[error("Invalid animation duration: {0}")]
+        InvalidDuration(f64),
+
         /// Invalid color value
         #[error("Invalid color value: {0}")]
         InvalidColor(String),

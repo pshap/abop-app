@@ -40,14 +40,17 @@ RUST_LOG=debug cargo run -p abop-gui
 
 ### Testing
 ```bash
-# Run all tests
-cargo test --workspace
+# Run all tests with nextest (preferred)
+cargo nextest run --workspace
 
-# Test specific crate
-cargo test -p abop-core
+# Run tests for specific crate
+cargo nextest run -p abop-core
 
 # Run tests with output
-cargo test --workspace -- --nocapture
+cargo nextest run --workspace --nocapture
+
+# Fallback: Standard cargo test
+cargo test --workspace
 
 # Run benchmarks (abop-core has criterion benchmarks)
 cargo bench -p abop-core

@@ -3,8 +3,17 @@
 //! This module provides caching mechanisms for progress text formatting to avoid
 //! expensive string operations during UI rendering.
 
-/// Minimum progress change threshold for updating cached progress text (0.1%)
-/// This prevents excessive string formatting on every UI render frame
+/// Minimum progress change threshold (0.1%) for updating cached text to prevent excessive formatting.
+///
+/// This constant defines the minimum change in progress value (as a fraction from 0.0 to 1.0)
+/// required before the cached progress text is regenerated. Values below this threshold will
+/// continue to use the previously cached text, preventing expensive string formatting operations
+/// on every UI render frame.
+///
+/// # Units
+/// - Value: 0.001 (represents 0.1% change)
+/// - Range: 0.0 to 1.0 (fractional progress values)
+/// - Example: Progress must change by at least 0.001 (0.1%) to trigger cache update
 const PROGRESS_CACHE_THRESHOLD: f32 = 0.001;
 
 /// Cached progress information

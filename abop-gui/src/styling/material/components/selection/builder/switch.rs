@@ -116,6 +116,27 @@ impl SwitchBuilder {
     }
 
     /// Build the switch component without validation (faster)
+    ///
+    /// # Safety Warning
+    ///
+    /// This method bypasses all validation checks for performance reasons. It should only
+    /// be used when you are confident that the builder state is valid. Invalid state may
+    /// result in:
+    /// - UI components that don't render correctly
+    /// - Inconsistent behavior in the application
+    /// - Potential panics in downstream code that assumes valid state
+    ///
+    /// # When to use
+    ///
+    /// Use this method only in scenarios where:
+    /// - You have previously validated the builder using [`validate`](Self::validate)
+    /// - You are constructing the builder programmatically with known-good values
+    /// - Performance is critical and validation overhead needs to be avoided
+    ///
+    /// # Recommendation
+    ///
+    /// In most cases, prefer [`build`](Self::build) which includes validation and provides
+    /// clearer error reporting.
     #[must_use]
     pub fn build_unchecked(self) -> Switch {
         Switch {
@@ -130,6 +151,20 @@ impl SwitchBuilder {
     /// 
     /// This method performs comprehensive validation of the switch builder state,
     /// including state consistency, label validation, and common property validation.
+    /// 
+    /// # When to use
+    /// 
+    /// Use this method if you want to check the validity of the builder's configuration
+    /// before attempting to build the `Switch` component. The [`build`](Self::build) method
+    /// automatically calls `validate()` and returns an error if validation fails, so
+    /// manual validation is only necessary if you need to check validity separately
+    /// (e.g., for user feedback or conditional logic before building).
+    /// 
+    /// # Validation types performed
+    /// 
+    /// - **State consistency**: Ensures the switch state is compatible with current properties
+    /// - **Label validation**: Checks label length and format according to validation rules  
+    /// - **Common property validation**: Validates size, disabled state, and metadata consistency
     /// 
     /// # Errors
     /// 
@@ -158,16 +193,32 @@ impl ComponentBuilder<SwitchState> for SwitchBuilder {
     type Error = SelectionError;
 
     fn build(self) -> Result<Self::Component, Self::Error> {
-        SwitchBuilder::build(self)
+        self.validate()?;
+        Ok(self.build_unchecked())
     }
 
     fn build_unchecked(self) -> Self::Component {
-        SwitchBuilder::build_unchecked(self)
+        Switch {
+            state: self.state,
+            props: self.common.props,
+            error_state: self.common.error_state,
+            animation_config: self.common.animation_config,
+        }
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
         validate_with_context(self, "SwitchBuilder", || {
-            SwitchBuilder::validate(self)
+            validate_switch_state(self.state, &self.common.props)
+                .map_err(|e| SelectionError::InvalidState { 
+                    details: format!("Switch validation failed: {e}") 
+                })?;
+            
+            self.validate_common()
+                .map_err(|e| SelectionError::ValidationError(
+                    format!("Common validation failed: {e}")
+                ))?;
+            
+            Ok(())
         })
     }
 }

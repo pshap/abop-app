@@ -242,20 +242,34 @@ impl LibraryState {
     pub fn update_scan_progress(&mut self, progress: ScanProgress) {
         self.scanner_progress = Some(progress.clone());
         self.enhanced_scan_progress = Some(progress.clone()); // Legacy
-        // Convert to legacy f32 progress
-        self.scan_progress = match &progress {
+        
+        // Convert to legacy f32 progress using dedicated function
+        self.scan_progress = Self::convert_scan_progress_to_legacy(&progress);
+        self.needs_redraw = true;
+    }
+    
+    /// Convert enhanced ScanProgress to legacy f32 progress for backwards compatibility
+    ///
+    /// This function provides a bridge between the new detailed `ScanProgress` enum
+    /// and the legacy f32 progress representation (0.0 to 1.0) used by older UI components.
+    ///
+    /// # Returns
+    /// - `Some(f32)`: Progress as a fraction from 0.0 to 1.0
+    /// - `None`: For progress states that don't map to a simple percentage
+    fn convert_scan_progress_to_legacy(progress: &ScanProgress) -> Option<f32> {
+        match progress {
             abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
                 Some(*progress_percentage)
             }
             abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
-                Some(*total_processed as f32 / 100.0) // Rough approximation
+                // Convert batch count to approximate percentage (rough approximation)
+                Some((*total_processed as f32 / 100.0).clamp(0.0, 1.0))
             }
             abop_core::scanner::ScanProgress::Complete { .. } => {
-                Some(1.0) // Complete
+                Some(1.0) // 100% complete
             }
-            _ => None,
-        };
-        self.needs_redraw = true;
+            _ => None, // Other progress states don't map to simple percentages
+        }
     }
 
     /// Complete scanning operation

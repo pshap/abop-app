@@ -38,24 +38,46 @@ pub fn spacing_to_pixels_clamped(spacing: f32) -> u16 {
     spacing.round().clamp(0.0, u16::MAX as f32) as u16
 }
 
-/// Safe animation duration conversion: seconds (f64) to milliseconds (u32), clamped
+/// Safe animation duration conversion: seconds (f64) to milliseconds (u32)
 ///
+/// # Errors
+/// Returns domain-specific UI errors for invalid duration values
+pub fn safe_duration_secs_to_millis(duration_secs: f64) -> Result<u32, DomainCastError> {
+    use crate::utils::casting::error::domain::UiCastError;
+
+    let millis = (duration_secs * 1000.0).round();
+    
+    if !millis.is_finite() {
+        return Err(UiCastError::InvalidDuration(duration_secs).into());
+    }
+
+    if millis < 0.0 {
+        return Err(CastError::NegativeValue(duration_secs.to_string()).into());
+    }
+
+    if millis > f64::from(u32::MAX) {
+        return Err(CastError::ValueTooLarge(duration_secs.to_string(), u32::MAX.to_string()).into());
+    }
+
+    Ok(millis as u32)
+}
+
+/// Infallible animation duration conversion: seconds (f64) to milliseconds (u32), clamped
+///
+/// This is a convenience function that handles edge cases gracefully:
 /// - Negative values clamp to 0
 /// - Very large values clamp to u32::MAX
-/// - Rounds to nearest millisecond
+/// - Rounds to nearest millisecond  
+/// - Non-finite values (NaN, infinity) are treated as 0 for UI safety
+///
+/// For error-reporting behavior, use [`safe_duration_secs_to_millis`] instead.
 #[must_use]
 pub fn duration_secs_to_millis_clamped(duration_secs: f64) -> u32 {
     let millis = (duration_secs * 1000.0).round();
     if !millis.is_finite() {
-        return 0;
+        return 0; // Treat non-finite values as 0 duration for UI safety
     }
-    if millis < 0.0 {
-        0
-    } else if millis > f64::from(u32::MAX) {
-        u32::MAX
-    } else {
-        millis as u32
-    }
+    millis.clamp(0.0, f64::from(u32::MAX)) as u32
 }
 
 /// Infallible opacity to alpha conversion (0.0..=1.0 -> 0..=255)
@@ -103,6 +125,15 @@ mod tests {
         assert_eq!(spacing_to_pixels_clamped(10.5), 11);
         assert_eq!(spacing_to_pixels_clamped(-5.0), 0);
         assert_eq!(spacing_to_pixels_clamped(u16::MAX as f32 + 10.0), u16::MAX);
+    }
+
+    #[test]
+    fn test_safe_duration_secs_to_millis() {
+        assert_eq!(safe_duration_secs_to_millis(1.0).unwrap(), 1000);
+        assert_eq!(safe_duration_secs_to_millis(1.5).unwrap(), 1500);
+        assert!(safe_duration_secs_to_millis(-1.0).is_err());
+        assert!(safe_duration_secs_to_millis(f64::INFINITY).is_err());
+        assert!(safe_duration_secs_to_millis(f64::NAN).is_err());
     }
 
     #[test]
