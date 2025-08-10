@@ -135,6 +135,17 @@ impl UiState {
         self.show_task_history = !self.show_task_history;
         self.needs_redraw = true;
     }
+
+    /// Check if the UI state needs a redraw
+    #[must_use]
+    pub const fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    /// Clear the redraw flag (typically called after redraw is complete)
+    pub fn clear_redraw_flag(&mut self) {
+        self.needs_redraw = false;
+    }
 }
 
 impl Default for UiState {

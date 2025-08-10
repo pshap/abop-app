@@ -74,18 +74,18 @@ impl AppStateContainer {
 
     /// Check if any state domain needs a UI redraw
     pub fn needs_redraw(&self) -> bool {
-        self.ui.needs_redraw 
-            || self.library.needs_redraw() 
-            || self.player.needs_redraw
-            || self.tasks.needs_redraw
+        self.ui.needs_redraw()
+            || self.library.needs_redraw()
+            || self.player.needs_redraw()
+            || self.tasks.needs_redraw()
     }
 
     /// Clear all redraw flags
     pub fn clear_redraw_flags(&mut self) {
-        self.ui.needs_redraw = false;
+        self.ui.clear_redraw_flag();
         self.library.clear_redraw_flag();
-        self.player.needs_redraw = false;
-        self.tasks.needs_redraw = false;
+        self.player.clear_redraw_flag();
+        self.tasks.clear_redraw_flag();
     }
 }
 

@@ -114,6 +114,17 @@ impl PlayerState {
     pub fn is_stopped(&self) -> bool {
         matches!(self.player_state, CorePlayerState::Stopped)
     }
+
+    /// Check if the player state needs a redraw
+    #[must_use]
+    pub const fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    /// Clear the redraw flag (typically called after redraw is complete)
+    pub fn clear_redraw_flag(&mut self) {
+        self.needs_redraw = false;
+    }
 }
 
 impl Default for PlayerState {
