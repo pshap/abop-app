@@ -121,8 +121,8 @@ pub mod domain {
         InvalidSpacing(f32),
 
         /// Invalid animation duration value
-        #[error("Invalid animation duration: {0}")]
-    InvalidDuration(f32),
+        #[error("Invalid animation duration: {0} seconds")]
+        InvalidDuration(f64),
 
         /// Invalid color value
         #[error("Invalid color value: {0}")]

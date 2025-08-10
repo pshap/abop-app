@@ -48,7 +48,7 @@ pub fn safe_duration_secs_to_millis(duration_secs: f64) -> Result<u32, DomainCas
     let millis = (duration_secs * 1000.0).round();
     
     if !millis.is_finite() {
-        return Err(UiCastError::InvalidDuration(duration_secs as f32).into());
+        return Err(UiCastError::InvalidDuration(duration_secs).into());
     }
 
     if millis < 0.0 {
