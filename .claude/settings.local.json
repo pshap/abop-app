@@ -9,7 +9,8 @@
       "Bash(cp:*)",
       "Bash(git branch:*)",
       "Bash(grep:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
