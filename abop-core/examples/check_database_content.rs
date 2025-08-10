@@ -39,11 +39,17 @@ fn main() -> Result<()> {
             println!(
                 "       {}. {}",
                 j + 1,
-                audiobook.title.as_deref().unwrap_or("Unknown Title")
+                audiobook
+                    .title
+                    .as_deref()
+                    .unwrap_or(abop_core::models::audiobook::fallbacks::UNKNOWN_TITLE)
             );
             println!(
                 "          Author: {}",
-                audiobook.author.as_deref().unwrap_or("Unknown")
+                audiobook
+                    .author
+                    .as_deref()
+                    .unwrap_or(abop_core::models::audiobook::fallbacks::UNKNOWN)
             );
             println!("          Path: {}", audiobook.path.display());
         }
