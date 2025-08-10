@@ -794,7 +794,9 @@ pub const fn validation_config_for_toggles() -> ValidationConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[test]
+    use super::*;
+    
+    #[test]
     fn test_checkbox_state_transitions() {
         assert_eq!(CheckboxState::Unchecked.toggle(), CheckboxState::Checked);
         assert_eq!(CheckboxState::Checked.toggle(), CheckboxState::Unchecked);

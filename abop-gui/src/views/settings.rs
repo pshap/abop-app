@@ -19,15 +19,6 @@ use crate::styling::material::components::selection::Switch;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
 use crate::styling::material::components::feedback::dialog::DialogSize;
 
-/// Convert DialogSize to Length for consistent width values
-fn dialog_size_to_width(size: DialogSize) -> Length {
-    match size {
-        DialogSize::Small => Length::Fixed(280.0),
-        DialogSize::Medium => Length::Fixed(400.0),
-        DialogSize::Large => Length::Fixed(560.0),
-        DialogSize::ExtraLarge => Length::Fixed(720.0),
-    }
-}
 
 /// Creates the enhanced settings view with Material Design 3 selection components
 #[must_use]
@@ -99,7 +90,7 @@ pub fn settings_view(state: &AppState) -> Element<'_, Message> {
         ]
         .spacing(state.ui.material_tokens.spacing().md),
     )
-    .width(dialog_size_to_width(DialogSize::Medium))
+    .width(Length::from(DialogSize::Medium))
     .style(DialogContainerStyles::modal(state.ui.theme_mode))
     .into()
 }

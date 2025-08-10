@@ -59,6 +59,18 @@ pub enum DialogSize {
     ExtraLarge,
 }
 
+/// Convert DialogSize to Length for consistent width values
+impl From<DialogSize> for Length {
+    fn from(size: DialogSize) -> Self {
+        match size {
+            DialogSize::Small => Length::Fixed(280.0),
+            DialogSize::Medium => Length::Fixed(400.0),
+            DialogSize::Large => Length::Fixed(560.0),
+            DialogSize::ExtraLarge => Length::Fixed(720.0),
+        }
+    }
+}
+
 /// Material Design 3 Dialog
 ///
 /// Dialogs inform users about a task and can contain critical information,

@@ -110,8 +110,8 @@ pub trait CommonSelectionBuilder {
     where 
         Self: Sized,
     {
-        // Preserve ComponentProps validation while avoiding a clone
-        let props = std::mem::take(&mut self.common_state_mut().props);
+        // Clone props to call with_metadata (simpler than mem::take pattern)
+        let props = self.common_state().props.clone();
         self.common_state_mut().props = props.with_metadata(key, value);
         self
     }

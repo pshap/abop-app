@@ -257,13 +257,16 @@ impl LibraryState {
     /// - `Some(f32)`: Progress as a fraction from 0.0 to 1.0
     /// - `None`: For progress states that don't map to a simple percentage
     fn convert_scan_progress_to_legacy(progress: &ScanProgress) -> Option<f32> {
+        // Denominator for batch progress calculation (legacy approximation)
+        const BATCH_PROGRESS_DENOMINATOR: f32 = 100.0;
+        
         match progress {
             abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
                 Some(*progress_percentage)
             }
             abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
                 // Convert batch count to approximate percentage (rough approximation)
-                Some((*total_processed as f32 / 100.0).clamp(0.0, 1.0))
+                Some((*total_processed as f32 / BATCH_PROGRESS_DENOMINATOR).clamp(0.0, 1.0))
             }
             abop_core::scanner::ScanProgress::Complete { .. } => {
                 Some(1.0) // 100% complete
