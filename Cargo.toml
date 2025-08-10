@@ -77,6 +77,9 @@ env_logger = "0.11.8"
 
 # Math
 num-complex = "0.4.6"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
 [workspace.lints.clippy]
 # Promote important lints to warnings (keeping best practices)
 missing_errors_doc = "warn"

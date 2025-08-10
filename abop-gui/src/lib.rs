@@ -77,18 +77,18 @@ pub mod testing;
 ///
 /// This module provides reusable test components, mock objects, and helper functions
 /// for testing the ABOP GUI. It includes:
-/// - Mock application state builders
-/// - Test event generators
-/// - Common assertion utilities
-/// - Test renderers and simulators
-/// - Example data factories
+/// - Test audiobook data factories
+/// - Common test data generators  
+/// - Utility functions for creating test fixtures
+///
+/// Only compiled during testing to avoid shipping test-only APIs.
 ///
 /// # Examples
 /// ```no_run
-/// use abop_gui::test_utils::{create_test_app, simulate_click};
-/// # let _ = create_test_app();
+/// use abop_gui::test_utils::create_test_audiobook;
+/// let book = create_test_audiobook("1", "Test Book");
 /// ```
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 pub mod test_utils;
 
 /// Re-exports of commonly used types and traits

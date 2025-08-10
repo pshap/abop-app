@@ -7,6 +7,10 @@ description = "Iced GUI for ABOP - Audiobook Organizer & Processor"
 license.workspace = true
 repository.workspace = true
 
+[features]
+# Enable test utilities for benchmarking
+bench = []
+
 [dependencies]
 # Internal dependencies
 abop-core = { path = "../abop-core" }
@@ -51,3 +55,4 @@ material-color-utilities-rs = "*"
 
 [dev-dependencies]
 approx = "*"  # For floating-point comparisons in tests
+criterion.workspace = true
