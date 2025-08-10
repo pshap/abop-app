@@ -92,3 +92,53 @@ pub fn progress_percentage_clamped(current: usize, total: usize) -> f32 {
     let pct = (current as f64 / total as f64) * 100.0;
     pct.clamp(0.0, 100.0) as f32
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spacing_to_pixels_clamped() {
+        assert_eq!(spacing_to_pixels_clamped(0.0), 0);
+        assert_eq!(spacing_to_pixels_clamped(10.5), 11);
+        assert_eq!(spacing_to_pixels_clamped(-5.0), 0);
+        assert_eq!(spacing_to_pixels_clamped(u16::MAX as f32 + 10.0), u16::MAX);
+    }
+
+    #[test]
+    fn test_duration_secs_to_millis_clamped() {
+        assert_eq!(duration_secs_to_millis_clamped(0.0), 0);
+        assert_eq!(duration_secs_to_millis_clamped(1.0), 1000);
+        assert_eq!(duration_secs_to_millis_clamped(1.5), 1500);
+        assert_eq!(duration_secs_to_millis_clamped(-1.0), 0);
+        assert_eq!(duration_secs_to_millis_clamped(f64::INFINITY), 0); // non-finite -> 0
+    }
+
+    #[test]
+    fn test_opacity_and_color_component_clamped() {
+        assert_eq!(opacity_to_alpha_clamped(0.0), 0);
+        assert_eq!(opacity_to_alpha_clamped(1.0), 255);
+        assert_eq!(opacity_to_alpha_clamped(0.5), 128);
+        assert_eq!(opacity_to_alpha_clamped(-0.1), 0);
+        assert_eq!(opacity_to_alpha_clamped(1.1), 255);
+
+        assert_eq!(color_component_to_u8_clamped(0.0), 0);
+        assert_eq!(color_component_to_u8_clamped(1.0), 255);
+        assert_eq!(color_component_to_u8_clamped(0.5), 128);
+        assert_eq!(color_component_to_u8_clamped(-0.1), 0);
+        assert_eq!(color_component_to_u8_clamped(1.1), 255);
+    }
+
+    #[test]
+    fn test_level_and_progress_clamped() {
+        assert_eq!(level_to_spacing_clamped(0), 0.0);
+        assert_eq!(level_to_spacing_clamped(1), 24.0);
+        assert_eq!(level_to_spacing_clamped(2), 48.0);
+        assert_eq!(level_to_spacing_clamped(100), level_to_spacing_clamped(50));
+
+        assert_eq!(progress_percentage_clamped(0, 100), 0.0);
+        assert_eq!(progress_percentage_clamped(50, 100), 50.0);
+        assert_eq!(progress_percentage_clamped(100, 100), 100.0);
+        assert_eq!(progress_percentage_clamped(10, 0), 0.0);
+    }
+}
