@@ -78,8 +78,8 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
         return Ok(());
     }
 
-    // Use the first available library
-    let library_id = libraries.first().map_or("1", |lib| lib.id.as_str());
+    // Use the first available library (we already checked libraries is not empty)
+    let library_id = libraries.first().unwrap().id.as_str();
 
     let total_count = db
         .count_audiobooks_in_library(library_id)
@@ -111,7 +111,7 @@ fn show_sample_audiobooks(db: &Database) -> CliResult<()> {
 
     let library_id = libraries
         .first()
-        .expect("First library should exist as we checked !libraries.is_empty()")
+        .unwrap() // Safe: we checked !libraries.is_empty() above
         .id
         .as_str();
 
