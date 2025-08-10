@@ -84,7 +84,7 @@ pub struct LibraryState {
     #[deprecated(since = "0.1.0", note = "Use scanner_state.is_scanning() instead")]
     /// Whether a library scan is in progress (legacy - use scanner_state instead)
     pub scanning: bool,
-    #[deprecated(since = "0.1.0", note = "Use scanner_progress with convert_scan_progress_to_legacy() instead")]
+    #[deprecated(since = "0.1.0", note = "Use get_scan_progress_legacy() instead")]
     /// Progress of the current scan (0.0 to 1.0) (legacy - use scanner_progress instead)
     pub scan_progress: Option<f32>,
     #[deprecated(since = "0.1.0", note = "Use scanner_progress directly instead")]

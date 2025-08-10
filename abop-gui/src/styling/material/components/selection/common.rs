@@ -100,7 +100,7 @@ impl CheckboxState {
 // Phase 1: Implement unified state traits for CheckboxState
 impl ComponentState for CheckboxState {
     fn toggle(self) -> Self {
-        Self::toggle(self)
+        self.toggle()
     }
 
     fn is_active(self) -> bool {
@@ -108,28 +108,28 @@ impl ComponentState for CheckboxState {
     }
 
     fn to_bool(self) -> bool {
-        Self::to_bool(self)
+        self.to_bool()
     }
 
     fn from_bool(value: bool) -> Self {
-        Self::from_bool(value)
+        CheckboxState::from_bool(value)
     }
 }
 
 impl MultiLevelState for CheckboxState {
     fn is_intermediate(self) -> bool {
-        matches!(self, Self::Indeterminate)
+        matches!(self, CheckboxState::Indeterminate)
     }
 
     fn all_states() -> &'static [Self] {
-        &[Self::Unchecked, Self::Checked, Self::Indeterminate]
+        &[CheckboxState::Unchecked, CheckboxState::Checked, CheckboxState::Indeterminate]
     }
 
     fn next_state(self) -> Self {
         match self {
-            Self::Unchecked => Self::Checked,
-            Self::Checked => Self::Indeterminate,
-            Self::Indeterminate => Self::Unchecked,
+            CheckboxState::Unchecked => CheckboxState::Checked,
+            CheckboxState::Checked => CheckboxState::Indeterminate,
+            CheckboxState::Indeterminate => CheckboxState::Unchecked,
         }
     }
 }
@@ -181,7 +181,7 @@ impl SwitchState {
 // Phase 1: Implement unified state traits for SwitchState
 impl ComponentState for SwitchState {
     fn toggle(self) -> Self {
-        Self::toggle(self)
+        self.toggle()
     }
 
     fn is_active(self) -> bool {
@@ -189,11 +189,11 @@ impl ComponentState for SwitchState {
     }
 
     fn to_bool(self) -> bool {
-        Self::to_bool(self)
+        self.to_bool()
     }
 
     fn from_bool(value: bool) -> Self {
-        Self::from_bool(value)
+        SwitchState::from_bool(value)
     }
 }
 
@@ -234,7 +234,7 @@ impl ChipState {
 // Phase 1: Implement unified state traits for ChipState
 impl ComponentState for ChipState {
     fn toggle(self) -> Self {
-        Self::toggle(self)
+        self.toggle()
     }
 
     fn is_active(self) -> bool {
@@ -242,33 +242,33 @@ impl ComponentState for ChipState {
     }
 
     fn to_bool(self) -> bool {
-        matches!(self, Self::Selected)
+        matches!(self, ChipState::Selected)
     }
 
     fn from_bool(value: bool) -> Self {
         if value {
-            Self::Selected
+            ChipState::Selected
         } else {
-            Self::Unselected
+            ChipState::Unselected
         }
     }
 }
 
 impl InteractiveState for ChipState {
     fn is_pressed(self) -> bool {
-        matches!(self, Self::Pressed)
+        matches!(self, ChipState::Pressed)
     }
 
     fn to_pressed(self) -> Self {
         match self {
-            Self::Selected => Self::Pressed,
+            ChipState::Selected => ChipState::Pressed,
             other => other,
         }
     }
 
     fn to_unpressed(self) -> Self {
         match self {
-            Self::Pressed => Self::Selected,
+            ChipState::Pressed => ChipState::Selected,
             other => other,
         }
     }
