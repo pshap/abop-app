@@ -206,11 +206,12 @@ An LLM coding agent uses AI to generate or assist with Rust code. Rust 1.85 (Jun
   * When possible, perform compile-time checks (e.g., `const _: () = assert!(SIZE <= MAX_SIZE);`).
 * **ABOP-Iced (2025 Update)**
 
-  * All audio, database, and GUI code must use safe conversion utilities in:
-
-    * `abop-core/src/audio/processing/casting_utils.rs`
-    * `db/safe_conversions.rs`
-    * `abop-gui/src/utils/safe_conversions.rs`
+  * Use the canonical utilities in core:
+    * Casting (builder + domains): `abop-core/src/utils/casting/` (re-exported via `abop_core::utils::casting`)
+    * File-size formatting: `abop_core::utils::{format_file_size_standard, format_file_size_exact, format_file_size}`
+    * Time formatting: `abop_core::utils::{format_seconds, format_duration, TimeFormat}`
+    * UI clamped helpers: `abop_core::utils::casting::domain::ui::*`
+  * The GUI crate must consume these core utilities. Don’t introduce new GUI-local conversion/formatting helpers; prefer calling into core. Legacy helpers in `abop-gui/src/utils/safe_conversions.rs` are deprecated and only delegate to core.
   * Direct `as` casts are forbidden in production (allowed only in tests with an explicit Clippy allow).
   * New modules must include property-based tests for conversion edge cases.
 * **Benefits for LLM Agents**

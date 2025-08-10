@@ -14,7 +14,6 @@
 pub mod casting;
 pub mod enhanced;
 pub mod path;
-pub mod size;
 pub mod time;
 pub mod timer;
 
@@ -27,7 +26,6 @@ pub use enhanced::{audio, database, file, ui};
 pub use path::{
     extension_matches, normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
 };
-pub use size::format_bytes;
 pub use time::{TimeFormat, format_duration, format_seconds};
 pub use timer::Timer;
 
@@ -49,15 +47,6 @@ mod tests {
         assert_eq!(format_file_size_standard(1_048_576), "1.00 MB");
         assert_eq!(format_file_size_exact(500), "500 B");
         assert_eq!(format_file_size(1536, FileSizePrecision::Standard), "1.50 KB");
-
-        // Legacy helper still behaves as before (until removal)
-        #[allow(deprecated)]
-        {
-            assert_eq!(format_bytes(1024), "1 KB");
-            assert_eq!(format_bytes(1_048_576), "1 MB");
-            assert_eq!(format_bytes(500), "500 B");
-            assert_eq!(format_bytes(1536), "1.5 KB");
-        }
     }
 
     #[test]

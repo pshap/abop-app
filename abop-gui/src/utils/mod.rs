@@ -8,10 +8,7 @@ use std::path::Path;
 
 pub mod path_utils;
 pub mod platform;
-pub mod safe_conversions;
-
-// Re-export commonly used utilities
-pub use safe_conversions::ui_conversions;
+// Deprecated safe_conversions module has been removed. Use abop_core::utils::casting::domain::ui instead.
 
 /// Detects the file format from a file path extension
 ///
