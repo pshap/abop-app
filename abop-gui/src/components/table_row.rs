@@ -264,17 +264,9 @@ impl TableRow {
         }
     }
 
-    /// Format duration in seconds to human-readable string
+    /// Format duration in seconds to human-readable string (delegates to core utils)
     fn format_duration(seconds: u64) -> String {
-        let hours = seconds / 3600;
-        let minutes = (seconds % 3600) / 60;
-        let secs = seconds % 60;
-
-        if hours > 0 {
-            format!("{hours}:{minutes:02}:{secs:02}")
-        } else {
-            format!("{minutes}:{secs:02}")
-        }
+        abop_core::utils::format_seconds(seconds, abop_core::utils::TimeFormat::HoursWhenNonZero)
     }
 
     /// Format file size in bytes to human-readable string

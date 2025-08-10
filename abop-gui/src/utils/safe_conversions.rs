@@ -81,37 +81,11 @@ pub mod ui_conversions {
         percentage.clamp(0.0, 100.0) as f32
     }
 
-    /// Safe file size formatting for UI display
-    ///
-    /// # Arguments
-    /// * `bytes` - File size in bytes
-    ///
-    /// # Returns
-    /// * `String` - Human-readable file size (e.g., "1.2 MB")
+    /// Safe file size formatting for UI display (deprecated; use abop_core canonical helpers)
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::format_file_size_* instead")]
     #[must_use]
     pub fn format_file_size_for_ui(bytes: u64) -> String {
-        const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
-        const THRESHOLD: f64 = 1024.0;
-
-        if bytes == 0 {
-            return "0 B".to_string();
-        }
-
-        let mut size = bytes as f64;
-        let mut unit_index = 0;
-
-        while size >= THRESHOLD && unit_index < UNITS.len() - 1 {
-            size /= THRESHOLD;
-            unit_index += 1;
-        }
-
-        if size >= 100.0 {
-            format!("{:.0} {}", size, UNITS[unit_index])
-        } else if size >= 10.0 {
-            format!("{:.1} {}", size, UNITS[unit_index])
-        } else {
-            format!("{:.2} {}", size, UNITS[unit_index])
-        }
+        abop_core::utils::casting::format_file_size_standard(bytes)
     }
 
     /// Safe opacity conversion (f32 to u8) for alpha channels
@@ -182,8 +156,8 @@ mod tests {
     fn test_format_file_size_for_ui() {
         assert_eq!(format_file_size_for_ui(0), "0 B");
         assert_eq!(format_file_size_for_ui(512), "512 B");
-        assert_eq!(format_file_size_for_ui(1024), "1.00 KB");
-        assert_eq!(format_file_size_for_ui(1536), "1.50 KB");
+    assert_eq!(format_file_size_for_ui(1024), "1.00 KB");
+    assert_eq!(format_file_size_for_ui(1536), "1.50 KB");
         assert!(format_file_size_for_ui(1048576).contains("MB"));
     }
 

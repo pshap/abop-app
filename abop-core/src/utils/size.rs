@@ -1,4 +1,7 @@
-//! File size formatting utilities
+//! File size formatting utilities (legacy)
+//!
+//! Deprecated in favor of `crate::utils::casting::domain::file_size` which
+//! provides a single, configurable source of truth for file size formatting.
 
 /// Formats bytes as a human-readable size string
 ///
@@ -17,6 +20,7 @@
 /// assert_eq!(format_bytes(1_048_576), "1 MB");
 /// assert_eq!(format_bytes(1536), "1.5 KB")
 /// ```
+#[deprecated(since = "0.1.0", note = "Use utils::casting::format_file_size_* instead")]
 #[must_use]
 pub fn format_bytes(bytes: u64) -> String {
     const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
@@ -63,6 +67,7 @@ pub fn format_bytes(bytes: u64) -> String {
 ///
 /// assert_eq!(format_as_mb(1_048_576), "1.0 MB");
 /// ```
+#[deprecated(since = "0.1.0", note = "Use utils::casting::format_file_size with FileSizePrecision instead")]
 #[must_use]
 pub fn format_as_mb(bytes: u64) -> String {
     // Convert to f64 with explicit handling of precision loss
