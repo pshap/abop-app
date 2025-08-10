@@ -32,6 +32,7 @@ dirs.workspace = true
 walkdir.workspace = true
 r2d2.workspace = true
 r2d2_sqlite.workspace = true
+# Inherit the workspace version and features (workspace enables `all`).
 symphonia.workspace = true
 rodio.workspace = true
 hound.workspace = true

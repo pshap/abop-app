@@ -43,6 +43,7 @@ iced = { workspace = true, features = [
     "advanced"
 ] }
 rusqlite.workspace = true
+# Use workspace symphonia config (features = ["all"]).
 symphonia.workspace = true
 rodio.workspace = true
 num-complex.workspace = true

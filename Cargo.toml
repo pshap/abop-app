@@ -43,7 +43,9 @@ tempfile = "3.20.0"
 rfd = "0.15.3"
 
 # Audio processing
-symphonia = "0.5.4"
+# Enable MP4/M4B (isomp4) container and AAC/ALAC codecs so audiobook files are recognized.
+# Using the consolidated "all" feature keeps config simple and ensures broad compatibility.
+symphonia = { version = "0.5.4", features = ["all"] }
 rodio = "0.20.1"
 hound = "3.5.1"
 id3 = "1.15.0"
