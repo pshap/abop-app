@@ -166,9 +166,16 @@ impl SwitchBuilder {
     /// - **Label validation**: Checks label length and format according to validation rules  
     /// - **Common property validation**: Validates size, disabled state, and metadata consistency
     /// 
+    /// # Error aggregation behavior
+    /// 
+    /// This method aggregates all validation errors into a single `SelectionError::ValidationError`
+    /// with a semicolon-separated error message containing all failed validation rules. This
+    /// approach allows developers to see all validation issues at once rather than having to
+    /// fix them one by one. If no errors are found, returns `Ok(())`.
+    /// 
     /// # Errors
     /// 
-    /// Returns `SelectionError` if:
+    /// Returns `SelectionError::ValidationError` containing a combined message if any of these fail:
     /// - The switch state is incompatible with the current properties
     /// - The label exceeds maximum length or violates validation rules
     /// - Common validation rules fail (disabled state conflicts, etc.)

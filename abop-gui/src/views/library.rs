@@ -61,7 +61,10 @@ fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
         &state.ui.material_tokens,
     );
 
-    log::debug!("CREATING TABLE CONTAINER");
+    log::debug!(
+        "Creating table container with Material Design styling, {} audiobooks in table",
+        state.library.audiobooks.len()
+    );
 
     let debug_container = container(table_content)
         .width(Length::Fill)
@@ -121,6 +124,12 @@ fn build_content_layout<'a>(
 
 /// Creates the audio toolbar for selected audiobooks
 fn create_audio_toolbar(state: &AppState) -> iced::Element<'_, Message> {
+    log::debug!(
+        "Creating audio toolbar for {} selected audiobooks, player state: {:?}", 
+        state.library.selected_audiobooks.len(),
+        state.player.player_state
+    );
+    
     let mut toolbar = AudioToolbar::new();
     toolbar.set_playing(matches!(
         state.player.player_state,
@@ -138,8 +147,11 @@ fn assemble_final_container<'a>(
     state: &'a AppState,
     content_items: Vec<iced::Element<'a, Message>>,
 ) -> iced::Element<'a, Message> {
+    // Material Design 3: minimal vertical spacing between components
+    const MD3_MINIMAL_SPACING: u16 = 4;
+    
     let content = column(content_items)
-        .spacing(4) // MD3: minimal vertical spacing between toolbars
+        .spacing(MD3_MINIMAL_SPACING)
         .width(Length::Fill)
         .height(Length::Fill)
         .padding(state.ui.material_tokens.spacing.md);
