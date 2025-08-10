@@ -110,9 +110,8 @@ pub trait CommonSelectionBuilder {
     where 
         Self: Sized,
     {
-        // Clone props to call with_metadata (simpler than mem::take pattern)
-        let props = self.common_state().props.clone();
-        self.common_state_mut().props = props.with_metadata(key, value);
+        // Use efficient mutable insert instead of cloning entire props
+        self.common_state_mut().props.insert_metadata(key, value);
         self
     }
 

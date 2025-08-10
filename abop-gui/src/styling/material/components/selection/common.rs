@@ -457,6 +457,25 @@ impl ComponentProps {
         self
     }
 
+    /// Insert metadata key-value pair mutably (more efficient than with_metadata for single updates)
+    pub fn insert_metadata<K: Into<String>, V: Into<String>>(&mut self, key: K, value: V) {
+        let key_string = key.into();
+
+        // Use const lookup for better performance in release builds
+        let is_known_key = constants::metadata_keys::ALL_SUPPORTED
+            .iter()
+            .any(|&k| k == key_string);
+
+        if is_known_key {
+            self.metadata.insert(key_string, value.into());
+        } else {
+            // Allow unknown keys for extensibility but warn in debug builds
+            #[cfg(debug_assertions)]
+            log::warn!("Unknown metadata key '{key_string}'. Consider using predefined constants.");
+            self.metadata.insert(key_string, value.into());
+        }
+    }
+
     /// Get metadata value by key
     ///
     /// # Arguments
