@@ -47,7 +47,7 @@ pub struct Checkbox {
 }
 
 // ============================================================================
-// Phase 1: Core Trait Implementations for Checkbox
+// Core Trait Implementations for Checkbox
 // ============================================================================
 
 impl SelectionComponent for Checkbox {

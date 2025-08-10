@@ -178,114 +178,6 @@ impl SwitchDimensions {
     }
 }
 
-/// Custom switch widget that follows Material Design 3 specifications
-///
-/// TODO: Phase 4 - Implement this as a proper Iced widget
-/// This would provide native switch appearance with:
-/// - Rounded track with proper dimensions
-/// - Animated thumb that slides between positions
-/// - State-based track and thumb colors
-/// - Proper shadow and elevation effects
-/// - Smooth animations with Material Design timing
-#[allow(dead_code)]
-struct CustomSwitchWidget {
-    state: SwitchState,
-    label: String,
-    disabled: bool,
-    error_state: bool,
-    size: ComponentSize,
-    dimensions: SwitchDimensions,
-    animation_config: AnimationConfig,
-}
-
-#[allow(dead_code)]
-impl CustomSwitchWidget {
-    /// Create a new custom switch widget
-    fn new(state: SwitchState, label: String) -> Self {
-        let size = ComponentSize::Medium;
-        Self {
-            state,
-            label,
-            disabled: false,
-            error_state: false,
-            size,
-            dimensions: SwitchDimensions::for_size(size),
-            animation_config: AnimationConfig::default(),
-        }
-    }
-
-    /// Set disabled state
-    fn disabled(mut self, disabled: bool) -> Self {
-        self.disabled = disabled;
-        self
-    }
-
-    /// Set error state
-    fn error(mut self, error: bool) -> Self {
-        self.error_state = error;
-        self
-    }
-
-    /// Set size
-    fn size(mut self, size: ComponentSize) -> Self {
-        self.size = size;
-        self.dimensions = SwitchDimensions::for_size(size);
-        self
-    }
-
-    /// Set animation configuration
-    fn animation(mut self, config: AnimationConfig) -> Self {
-        self.animation_config = config;
-        self
-    }
-
-    /// Calculate thumb position based on state and animation progress
-    fn thumb_position(&self, animation_progress: f32) -> f32 {
-        match self.state {
-            SwitchState::Off => {
-                // Thumb starts at left side
-                (self.dimensions.track_height - self.dimensions.thumb_diameter) / 2.0
-            }
-            SwitchState::On => {
-                // Thumb ends at right side
-                let base_position =
-                    (self.dimensions.track_height - self.dimensions.thumb_diameter) / 2.0;
-                base_position + (self.dimensions.thumb_travel * animation_progress)
-            }
-        }
-    }
-
-    /// Get track color based on state and theme
-    fn track_color(&self, colors: &MaterialColors) -> iced::Color {
-        match (self.state, self.disabled, self.error_state) {
-            (_, true, _) => colors.outline_variant, // Disabled
-            (_, _, true) => colors.error.base,      // Error state
-            (SwitchState::On, false, false) => colors.primary.base, // On state
-            (SwitchState::Off, false, false) => colors.outline, // Off state
-        }
-    }
-    /// Get thumb color based on state and theme
-    fn thumb_color(&self, colors: &MaterialColors) -> iced::Color {
-        match (self.state, self.disabled, self.error_state) {
-            (_, true, _) => {
-                // Disabled - create color with alpha
-                let base = colors.on_surface;
-                iced::Color::from_rgba(base.r, base.g, base.b, 0.38)
-            }
-            (_, _, true) => colors.on_error(), // Error state
-            (SwitchState::On, false, false) => colors.on_primary(), // On state
-            (SwitchState::Off, false, false) => colors.outline, // Off state
-        }
-    }
-}
-
-// TODO: Phase 4 - Implement Widget trait for CustomSwitchWidget
-// This would involve:
-// 1. Implementing iced::Widget trait
-// 2. Custom drawing using Canvas or primitive shapes
-// 3. Animation state management
-// 4. Event handling for mouse/touch interaction
-// 5. Accessibility support
 
 // ============================================================================
 // Convenience Functions
@@ -442,21 +334,16 @@ mod tests {
     }
 
     #[test]
-    fn test_custom_switch_widget_preparation() {
-        // Test the helper structures for Phase 4 implementation
-        let widget = CustomSwitchWidget::new(SwitchState::On, "Test".to_string())
-            .size(ComponentSize::Large)
-            .disabled(false)
-            .error(false);
+    fn test_switch_dimension_scaling() {
+        // Test switch dimension calculations across sizes
+        let small_dims = SwitchDimensions::for_size(ComponentSize::Small);
+        let medium_dims = SwitchDimensions::for_size(ComponentSize::Medium);
+        let large_dims = SwitchDimensions::for_size(ComponentSize::Large);
 
-        assert_eq!(widget.state, SwitchState::On);
-        assert_eq!(widget.size, ComponentSize::Large);
-        assert!(!widget.disabled);
-        assert!(!widget.error_state);
-
-        // Test thumb position calculation
-        let off_position = widget.thumb_position(0.0);
-        let on_position = widget.thumb_position(1.0);
-        assert!(on_position > off_position);
+        assert!(small_dims.track_width < medium_dims.track_width);
+        assert!(medium_dims.track_width < large_dims.track_width);
+        
+        assert!(small_dims.thumb_diameter < medium_dims.thumb_diameter);
+        assert!(medium_dims.thumb_diameter < large_dims.thumb_diameter);
     }
 }

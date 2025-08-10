@@ -106,7 +106,7 @@ impl Checkbox {
             checkbox = checkbox.on_toggle(move |_checked| on_toggle(current_state.toggle()));
         }
 
-        // TODO: Phase 5 - Add special visual handling for indeterminate state
+        // Note: Visual handling for indeterminate state could be enhanced in future
         // This would require custom checkbox widget implementation or icon overlay
 
         checkbox.into()
@@ -159,60 +159,6 @@ pub fn checkbox_from_bool(checked: bool) -> CheckboxBuilder {
     CheckboxBuilder::from_bool(checked)
 }
 
-// ============================================================================
-// Future: Custom Indeterminate Widget (Phase 5 Implementation)
-// ============================================================================
-
-/// Custom checkbox widget that supports indeterminate state
-///
-/// TODO: Phase 5 - Implement this as a proper Iced widget
-/// This would provide native indeterminate state rendering with:
-/// - Horizontal line icon for indeterminate state
-/// - Proper state transitions and animations
-/// - Full Material Design 3 compliance
-#[allow(dead_code)]
-struct CustomCheckboxWidget {
-    state: CheckboxState,
-    label: String,
-    disabled: bool,
-    error_state: bool,
-    size: ComponentSize,
-}
-
-#[allow(dead_code)]
-impl CustomCheckboxWidget {
-    /// Create a new custom checkbox widget
-    fn new(state: CheckboxState, label: String) -> Self {
-        Self {
-            state,
-            label,
-            disabled: false,
-            error_state: false,
-            size: ComponentSize::Medium,
-        }
-    }
-
-    /// Set disabled state
-    fn disabled(mut self, disabled: bool) -> Self {
-        self.disabled = disabled;
-        self
-    }
-
-    /// Set error state
-    fn error(mut self, error: bool) -> Self {
-        self.error_state = error;
-        self
-    }
-
-    /// Set size
-    fn size(mut self, size: ComponentSize) -> Self {
-        self.size = size;
-        self
-    }
-}
-
-// TODO: Phase 5 - Implement Widget trait for CustomCheckboxWidget
-// This would provide proper indeterminate state rendering
 
 // ============================================================================
 // Tests

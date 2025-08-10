@@ -59,18 +59,24 @@
 //! - `switch`: Switch component with Material Design 3 dimensions
 //! - `chip`: Chip variants and collection management
 //!
-//! # Phase 4+ Preparation
+//! # Architecture Design
 //!
-//! This module includes preparation for future phases:
+//! The modular architecture supports:
 //!
-//! - **Phase 4**: Custom switch widget with Material Design 3 appearance
-//! - **Phase 5**: Indeterminate checkbox visual rendering
-//! - **Phase 6**: Animation support integration
+//! - **Custom Widgets**: Extensible widget system with Material Design 3 styling
+//! - **Visual Features**: Advanced rendering capabilities like indeterminate states
+//! - **Animation Integration**: Smooth transitions and micro-interactions
 //!
-//! The API design ensures forward compatibility while providing immediate
-//! modern functionality.
+//! The API design ensures extensibility while providing modern functionality.
 
 // Core module exports
+// New modular structure
+pub mod animation;
+pub mod properties;
+pub mod states;
+pub mod traits;
+pub mod validation;
+
 pub mod builder;
 pub mod checkbox;
 pub mod chip;
@@ -186,8 +192,8 @@ pub mod builders {
     }
 }
 
-/// Validation utilities for selection components
-pub mod validation {
+/// Collection validation utilities for selection components
+pub mod collection_validation {
     use super::*;
 
     /// Validate a collection of checkboxes
@@ -300,13 +306,8 @@ pub mod state_utils {
     }
 }
 
-/// Version information for the selection module
-pub const VERSION: &str = "3.0.0";
-/// Current development phase of the selection components
-///
-/// This constant tracks the current architectural phase of the selection components.
-/// Phase 3+ indicates a modular architecture with future preparation for additional features.
-pub const PHASE: &str = "Phase 3+ - Modular Architecture with Future Preparation";
+/// Version constant for the selection component system
+pub const VERSION: &str = "1.0 - Modular Architecture";
 
 #[cfg(test)]
 mod module_tests {
@@ -346,9 +347,9 @@ mod module_tests {
                 .unwrap(),
         ];
 
-        assert!(validation::validate_checkboxes(&checkboxes).is_ok());
-        assert!(validation::all_checkboxes_valid(&checkboxes));
-        assert!(validation::collect_checkbox_errors(&checkboxes).is_empty());
+        assert!(collection_validation::validate_checkboxes(&checkboxes).is_ok());
+        assert!(collection_validation::all_checkboxes_valid(&checkboxes));
+        assert!(collection_validation::collect_checkbox_errors(&checkboxes).is_empty());
     }
 
     #[test]
