@@ -13,7 +13,7 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{
-    system_has_reduced_motion, validate_chip_state, validate_label, validate_props,
+    env_has_reduced_motion, validate_chip_state, validate_label, validate_props,
     validation_config_for_chips,
 };
 use super::super::defaults;
@@ -207,7 +207,7 @@ impl ChipBuilder {
     /// Apply configuration based on system preferences
     #[must_use]
     pub fn with_system_preferences(mut self) -> Self {
-        if system_has_reduced_motion() {
+        if env_has_reduced_motion() {
             self.animation_config.enabled = false;
         }
         self
@@ -315,7 +315,7 @@ impl BuilderValidation for ChipBuilder {
             result.add_warning("Chip label is very long, consider shortening for better UX");
         }
 
-        if self.animation_config.enabled && system_has_reduced_motion() {
+        if self.animation_config.enabled && env_has_reduced_motion() {
             result.add_warning("Animations enabled but system has reduced motion preference");
         }
 

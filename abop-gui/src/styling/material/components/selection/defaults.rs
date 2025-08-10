@@ -24,7 +24,7 @@ pub fn default_animation_config() -> AnimationConfig {
 
 /// Check if the system has reduced motion enabled (placeholder implementation)
 #[must_use]
-pub fn system_has_reduced_motion() -> bool {
+pub fn env_has_reduced_motion() -> bool {
     // In a real implementation, this would check OS accessibility settings
     // For now, return false (no reduced motion)
     false

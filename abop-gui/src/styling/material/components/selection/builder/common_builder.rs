@@ -4,7 +4,7 @@
 //! without changing the public API structure.
 
 use super::super::common::prelude::*;
-use super::super::common::{system_has_reduced_motion, validate_props};
+use super::super::common::{env_has_reduced_motion, validate_props};
 
 // ============================================================================
 // Common Builder Fields (Composition over Inheritance)
@@ -191,7 +191,7 @@ pub trait CommonSelectionBuilder {
     where 
         Self: Sized,
     {
-        if system_has_reduced_motion() {
+        if env_has_reduced_motion() {
             self.common_state_mut().animation_config.enabled = false;
         }
         self
@@ -219,7 +219,7 @@ pub trait CommonSelectionBuilder {
     fn should_animate(&self) -> bool {
         let config = &self.common_state().animation_config;
         config.enabled && 
-        (!config.respect_reduced_motion || !system_has_reduced_motion())
+        (!config.respect_reduced_motion || !env_has_reduced_motion())
     }
 }
 

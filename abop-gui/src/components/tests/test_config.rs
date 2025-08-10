@@ -88,7 +88,7 @@ pub mod performance_observations {
             let _ = element;
             
             // Log performance for analysis (no assertions to avoid flaky tests)
-            println!("📊 AudioControls with {size} books rendered in {elapsed}ms");
+            log::debug!("📊 AudioControls with {size} books rendered in {elapsed}ms");
         }
     }
 
@@ -111,7 +111,7 @@ pub mod performance_observations {
             
             let _ = element;
             
-            println!("📊 AudiobookTable with {size} books rendered in {elapsed}ms");
+            log::debug!("📊 AudiobookTable with {size} books rendered in {elapsed}ms");
         }
     }
 }

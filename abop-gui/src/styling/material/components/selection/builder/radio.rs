@@ -11,7 +11,7 @@
 //! - Performance optimizations with inline hints
 
 use super::super::common::prelude::*;
-use super::super::common::{system_has_reduced_motion, validate_label, validate_props};
+use super::super::common::{env_has_reduced_motion, validate_label, validate_props};
 use super::super::defaults;
 use super::components::Radio;
 use super::patterns::*;
@@ -144,7 +144,7 @@ where
     /// Apply configuration based on system preferences
     #[must_use]
     pub fn with_system_preferences(mut self) -> Self {
-        if system_has_reduced_motion() {
+        if env_has_reduced_motion() {
             self.animation_config.enabled = false;
         }
         self
@@ -230,7 +230,7 @@ where
             result.add_warning("Label is very long, consider shortening for better UX");
         }
 
-        if self.animation_config.enabled && system_has_reduced_motion() {
+        if self.animation_config.enabled && env_has_reduced_motion() {
             result.add_warning("Animations enabled but system has reduced motion preference");
         }
 

@@ -56,7 +56,7 @@ pub trait AnimatedComponent {
     #[must_use]
     fn should_animate(&self) -> bool {
         let config = self.animation_config();
-        config.enabled && (!config.respect_reduced_motion || !system_has_reduced_motion())
+        config.enabled && (!config.respect_reduced_motion || !env_has_reduced_motion())
     }
 }
 
@@ -64,16 +64,16 @@ pub trait AnimatedComponent {
 // Utility Functions
 // ============================================================================
 
-/// Check if the system has reduced motion enabled
-/// 
+/// Check if reduced motion is requested via environment variables
+///
 /// This function checks environment variables and provides a simple cross-platform
-/// reduced motion detection. In production, this could be enhanced with OS-specific APIs.
-/// 
+/// reduced motion detection. It does **not** check OS-level accessibility settings.
+///
 /// # Environment Variables
 /// - `ABOP_REDUCE_MOTION`: Application-specific setting ("1" or "true")
 /// - `PREFER_REDUCED_MOTION`: General accessibility setting ("1" or "true")
 #[must_use]
-pub fn system_has_reduced_motion() -> bool {
+pub fn env_has_reduced_motion() -> bool {
     /// Check if an environment variable indicates reduced motion preference
     fn env_var_is_enabled(var_name: &str) -> bool {
         std::env::var(var_name)

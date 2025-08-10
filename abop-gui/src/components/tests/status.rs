@@ -112,10 +112,10 @@ fn status_display_handles_extreme_values() {
         current: usize::MAX,
         total: usize::MAX,
         file_name: "x".repeat(1000), // Very long filename
-        progress_percentage: f32::INFINITY.min(1.0), // Extreme percentage
+        progress_percentage: f32::INFINITY, // Extreme percentage
     });
     params.processing_audio = true;
-    params.processing_progress = Some(f32::INFINITY.min(1.0));
+    params.processing_progress = Some(f32::INFINITY);
     params.current_playing_file = Some(&very_long_path);
     params.selected_count = usize::MAX;
     params.total_count = usize::MAX;

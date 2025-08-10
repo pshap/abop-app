@@ -166,13 +166,13 @@ pub fn validate_chip_state(
     }
 
     // Validate label length for chips (stricter than other components)
-    if let Some(ref label) = props.label
-        && label.len() > constants::chips::MAX_LABEL_LENGTH
-    {
-        return Err(SelectionError::LabelTooLong {
-            len: label.len(),
-            max: constants::chips::MAX_LABEL_LENGTH,
-        });
+    if let Some(ref label) = props.label {
+        if label.len() > constants::chips::MAX_LABEL_LENGTH {
+            return Err(SelectionError::LabelTooLong {
+                len: label.len(),
+                max: constants::chips::MAX_LABEL_LENGTH,
+            });
+        }
     }
 
     Ok(())
