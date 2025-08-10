@@ -42,10 +42,18 @@ mod tests {
 
     #[test]
     fn test_file_size_formatting() {
-        // Canonical helpers
+        // Test standard precision formatting (2 decimal places)
+        // 1024 bytes = 1 KB with 2 decimal precision
         assert_eq!(format_file_size_standard(1024), "1.00 KB");
+        // 1,048,576 bytes = 1 MB with 2 decimal precision  
         assert_eq!(format_file_size_standard(1_048_576), "1.00 MB");
+        
+        // Test exact formatting (no decimal places for bytes)
+        // 500 bytes displayed as exact count with unit
         assert_eq!(format_file_size_exact(500), "500 B");
+        
+        // Test configurable precision using enum
+        // 1536 bytes = 1.5 KB with standard precision setting
         assert_eq!(format_file_size(1536, FileSizePrecision::Standard), "1.50 KB");
     }
 

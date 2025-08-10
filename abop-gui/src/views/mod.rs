@@ -57,11 +57,15 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
         &state.ui.material_tokens,
     );
 
-    // Route-specific content
+    // Route-specific content (avoid double rendering settings)
     let content = match route {
         crate::router::Route::Library => library_view(state),
         crate::router::Route::Player => audio_processing_view(state),
-        crate::router::Route::Settings => settings_view(state),
+        crate::router::Route::Settings if !state.ui.settings_open => settings_view(state),
+        crate::router::Route::Settings => {
+            // Settings are handled as modal, show library instead to avoid empty content
+            library_view(state)
+        }
         crate::router::Route::About => about_view(state),
     };
 
@@ -69,7 +73,7 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
         .spacing(state.ui.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
         .padding(state.ui.material_tokens.spacing().md); // Reduced from LG to MD (16px)
 
-    // If settings dialog is open, show it as a modal overlay
+    // If settings dialog is open, show it as a modal overlay (single render)
     if state.ui.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {

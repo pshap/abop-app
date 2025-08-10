@@ -173,17 +173,25 @@ impl SwitchBuilder {
     /// - The label exceeds maximum length or violates validation rules
     /// - Common validation rules fail (disabled state conflicts, etc.)
     pub fn validate(&self) -> Result<(), SelectionError> {
-        validate_switch_state(self.state, &self.common.props)
-            .map_err(|e| SelectionError::InvalidState { 
-                details: format!("Switch validation failed: {e}") 
-            })?;
+        // Unified validation approach - collect all validation errors first
+        let mut validation_errors = Vec::new();
         
-        self.validate_common()
-            .map_err(|e| SelectionError::ValidationError(
-                format!("Common validation failed: {e}")
-            ))?;
+        // Validate switch-specific state
+        if let Err(e) = validate_switch_state(self.state, &self.common.props) {
+            validation_errors.push(format!("Switch state: {e}"));
+        }
         
-        Ok(())
+        // Validate common properties
+        if let Err(e) = self.validate_common() {
+            validation_errors.push(format!("Common properties: {e}"));
+        }
+        
+        // Return comprehensive error if any validation failed
+        if validation_errors.is_empty() {
+            Ok(())
+        } else {
+            Err(SelectionError::ValidationError(validation_errors.join("; ")))
+        }
     }
 }
 
