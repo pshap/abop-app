@@ -45,6 +45,8 @@ pub struct ProgressCache {
     save_progress: Option<CachedProgress>,
     /// Cached task progress text
     task_progress: Option<CachedProgress>,
+    /// Cached simple percentage text
+    simple_percentage: Option<CachedProgress>,
 }
 
 impl ProgressCache {
@@ -56,6 +58,7 @@ impl ProgressCache {
             processing_progress: None,
             save_progress: None,
             task_progress: None,
+            simple_percentage: None,
         }
     }
 
@@ -103,8 +106,8 @@ impl ProgressCache {
 
     /// Get simple percentage text (just the percentage)
     pub fn get_simple_percentage_text(&mut self, progress_percentage: f32) -> String {
-        // Use processing cache slot for simple percentages
-        let cache_slot = &mut self.processing_progress;
+        // Use a dedicated cache slot for simple percentages to avoid interference
+        let cache_slot = &mut self.simple_percentage;
         Self::get_cached_progress_text_impl(
             cache_slot,
             progress_percentage,
@@ -118,6 +121,7 @@ impl ProgressCache {
         self.processing_progress = None;
         self.save_progress = None;
         self.task_progress = None;
+        self.simple_percentage = None;
     }
 
     /// Clear scan progress cache
@@ -138,6 +142,11 @@ impl ProgressCache {
     /// Clear task progress cache
     pub fn clear_task_cache(&mut self) {
         self.task_progress = None;
+    }
+
+    /// Clear simple percentage cache
+    pub fn clear_simple_percentage_cache(&mut self) {
+        self.simple_percentage = None;
     }
 
     /// Generic method to get cached progress text with custom formatter

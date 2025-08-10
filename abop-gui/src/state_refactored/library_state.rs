@@ -245,13 +245,16 @@ impl LibraryState {
                 abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
                     Some(*progress_percentage)
                 }
-                abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
-                    // Convert batch count to approximate percentage (rough approximation)
-                    const BATCH_TO_PERCENTAGE_SCALE: f32 = 100.0;
-                    Some((*total_processed as f32 / BATCH_TO_PERCENTAGE_SCALE).clamp(0.0, 1.0))
+                abop_core::scanner::ScanProgress::BatchCommitted { .. } => {
+                    // BatchCommitted doesn't have total file count, so we can't accurately 
+                    // calculate percentage. Return None to indicate progress is indeterminate.
+                    None
                 }
                 abop_core::scanner::ScanProgress::Complete { .. } => {
                     Some(1.0) // 100% complete
+                }
+                abop_core::scanner::ScanProgress::Started { .. } => {
+                    Some(0.0) // Just started
                 }
                 _ => None, // Other progress states don't map to simple percentages
             }
