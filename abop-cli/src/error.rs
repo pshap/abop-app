@@ -5,7 +5,7 @@
 //! code and clear error messages for users.
 
 use anyhow::{Context, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Application-level errors for the ABOP CLI
 ///
@@ -16,9 +16,6 @@ pub type CliResult<T> = Result<T>;
 
 /// Extension trait for adding CLI-specific context to errors
 pub trait CliResultExt<T> {
-    /// Add context for library path validation errors
-    fn with_library_context(self, path: &PathBuf) -> CliResult<T>;
-    
     /// Add context for database operation errors
     fn with_database_context(self, operation: &str) -> CliResult<T>;
     
@@ -30,14 +27,9 @@ impl<T, E> CliResultExt<T> for std::result::Result<T, E>
 where
     E: Into<anyhow::Error>,
 {
-    fn with_library_context(self, path: &PathBuf) -> CliResult<T> {
-        self.map_err(|e| e.into())
-            .with_context(|| format!("Failed to process library at path: {}", path.display()))
-    }
-    
     fn with_database_context(self, operation: &str) -> CliResult<T> {
         self.map_err(|e| e.into())
-            .with_context(|| format!("Database operation '{}' failed", operation))
+            .with_context(|| format!("Database operation '{operation}' failed"))
     }
     
     fn with_scan_context(self) -> CliResult<T> {
@@ -47,7 +39,7 @@ where
 }
 
 /// Validate that a library path exists and is a directory
-pub fn validate_library_path(path: &PathBuf) -> CliResult<()> {
+pub fn validate_library_path(path: &Path) -> CliResult<()> {
     if !path.exists() {
         return Err(anyhow::anyhow!(
             "Library path does not exist: {}",
@@ -66,7 +58,7 @@ pub fn validate_library_path(path: &PathBuf) -> CliResult<()> {
 }
 
 /// Validate that a database path is valid for operations that require an existing file
-pub fn validate_existing_database_path(path: &PathBuf) -> CliResult<()> {
+pub fn validate_existing_database_path(path: &Path) -> CliResult<()> {
     if !path.exists() {
         return Err(anyhow::anyhow!(
             "Database file does not exist: {}",
@@ -151,14 +143,7 @@ mod tests {
     #[test]
     fn test_cli_result_extensions() {
         let temp_dir = TempDir::new().unwrap();
-        let path = temp_dir.path().to_path_buf();
-        
-        // Test with_library_context
-        let error: std::result::Result<(), std::io::Error> = 
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "test error"));
-        let result = error.with_library_context(&path);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Failed to process library"));
+        let _path = temp_dir.path().to_path_buf();
         
         // Test with_database_context
         let error: std::result::Result<(), std::io::Error> = 

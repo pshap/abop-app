@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_args_parsing_scan_command() {
         // Test basic scan command parsing
-        let args = Args::try_parse_from(&["abop-cli", "scan", "--library", "/test/path"]).unwrap();
+        let args = Args::try_parse_from(["abop-cli", "scan", "--library", "/test/path"]).unwrap();
 
         assert!(!args.verbose);
         assert!(!args.debug);
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn test_args_parsing_scan_command_with_all_options() {
         // Test scan command with all optional parameters
-        let args = Args::try_parse_from(&[
+        let args = Args::try_parse_from([
             "abop-cli",
             "--verbose",
             "--debug",
@@ -212,7 +212,7 @@ mod tests {
         ];
 
         for (op_name, expected_op) in operations {
-            let args = Args::try_parse_from(&[
+            let args = Args::try_parse_from([
                 "abop-cli",
                 "db",
                 "--database",
@@ -234,17 +234,17 @@ mod tests {
     #[test]
     fn test_args_parsing_missing_required_args() {
         // Test that missing required arguments cause parsing to fail
-        let result = Args::try_parse_from(&["abop-cli", "scan"]);
+        let result = Args::try_parse_from(["abop-cli", "scan"]);
         assert!(result.is_err());
 
-        let result = Args::try_parse_from(&["abop-cli", "db", "init"]);
+        let result = Args::try_parse_from(["abop-cli", "db", "init"]);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_global_flags() {
         // Test that global flags work with any command
-        let args = Args::try_parse_from(&[
+        let args = Args::try_parse_from([
             "abop-cli",
             "--verbose",
             "scan",
@@ -254,7 +254,7 @@ mod tests {
         
         assert!(args.verbose);
         
-        let args = Args::try_parse_from(&[
+        let args = Args::try_parse_from([
             "abop-cli",
             "--debug",
             "db",
