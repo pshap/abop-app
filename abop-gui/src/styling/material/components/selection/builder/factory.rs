@@ -28,6 +28,7 @@ use super::{
 /// use abop_gui::styling::material::components::selection::builder::factory::checkbox;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::{CheckboxState, ComponentSize};
+/// use abop_gui::styling::material::components::selection::builder::CommonSelectionBuilder;
 ///
 /// let cb = checkbox(CheckboxState::Checked)
 ///     .label("Accept terms")
@@ -69,6 +70,7 @@ where
 /// use abop_gui::styling::material::components::selection::builder::factory::switch;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::{SwitchState, ComponentSize};
+/// use abop_gui::styling::material::components::selection::builder::CommonSelectionBuilder;
 ///
 /// let sw = switch(SwitchState::On)
 ///     .label("Enable notifications")

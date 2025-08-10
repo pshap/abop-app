@@ -67,11 +67,11 @@ impl PlayerState {
             self.processing_progress = Some(progress);
             self.needs_redraw = true;
         }
-        if let Some(new_status) = status {
-            if self.processing_status.as_ref() != Some(&new_status) {
-                self.processing_status = Some(new_status);
-                self.needs_redraw = true;
-            }
+        if let Some(new_status) = status
+            && self.processing_status.as_ref() != Some(&new_status)
+        {
+            self.processing_status = Some(new_status);
+            self.needs_redraw = true;
         }
     }
 

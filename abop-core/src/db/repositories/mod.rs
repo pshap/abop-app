@@ -114,7 +114,7 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
     /// - External dependencies changing return types could break type assumptions
     /// 
     /// ## Recommended Migration:
-    /// ```rust
+    /// ```ignore
     /// // Instead of this unsafe pattern:
     /// let result = repo.query_row_dyn(sql, params, callback)?;
     /// let value: MyType = *result.downcast::<MyType>().unwrap(); // UNSAFE!
@@ -144,8 +144,7 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
         log::error!(
             "SECURITY WARNING: Deprecated unsafe method query_row_dyn called! \
              This method uses type erasure and creates security vulnerabilities. \
-             Query: '{}', Caller should migrate to SafeDynRepository::query_row_safe", 
-            query
+             Query: '{query}', Caller should migrate to SafeDynRepository::query_row_safe"
         );
         
         // Implement the unsafe functionality but with additional safety checks
@@ -230,7 +229,7 @@ pub trait SafeDynRepository: RepositoryBase {
     /// 
     /// # Migration Example
     /// 
-    /// ```rust
+    /// ```ignore
     /// // Old unsafe pattern:
     /// let result = repo.query_row_dyn(sql, params, |row| {
     ///     Ok(Box::new(MyStruct::from(row)) as Box<dyn Any + Send>)
@@ -307,9 +306,11 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                 Ok(r) => {
                     tx.commit().map_err(DatabaseError::from)?;
                     Ok(r)
-                }                Err(e) => {
+                }
+                Err(e) => {
                     // Attempt rollback with improved logging for transaction context
-                    if let Err(rollback_err) = tx.rollback() {                        log::error!(
+                    if let Err(rollback_err) = tx.rollback() {
+                        log::error!(
                             "Repository transaction rollback failed during error recovery. \
                              Transaction state: failed, Rollback state: failed, \
                              Context: standard_repository_transaction, Operation: rollback_on_error, \
@@ -317,7 +318,8 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                         );
                         // Still return the original error as primary concern
                         Err(e)
-                    } else {                        log::debug!(
+                    } else {
+                        log::debug!(
                             "Repository transaction rolled back successfully. \
                              Transaction state: rolled_back, Rollback state: success, \
                              Context: standard_repository_transaction, Operation: rollback_on_error, \
@@ -461,7 +463,7 @@ fn convert_single_param(
     match param.to_sql() {
         Ok(output) => convert_sql_output_to_owned(output),
         Err(e) => Err(DatabaseError::parameter_conversion_failed(&format!(
-            "Failed to convert SQL parameter: {}", e
+            "Failed to convert SQL parameter: {e}"
         ))),
     }
 }
@@ -588,7 +590,8 @@ impl RepositoryManager {
                 }
                 Err(e) => {
                     // Attempt to rollback, but preserve the original error if rollback fails
-                    if let Err(rollback_err) = tx.rollback() {                        log::error!(
+                    if let Err(rollback_err) = tx.rollback() {
+                        log::error!(
                             "Database transaction rollback failed during error recovery. \
                              Transaction state: failed, Rollback state: failed, \
                              Context: enhanced_repository_transaction, Operation: rollback_on_error, \
@@ -598,7 +601,8 @@ impl RepositoryManager {
                         Err(DatabaseError::transaction_failed(&format!(
                             "Transaction failed: {e}. Rollback also failed: {rollback_err}", 
                         )))
-                    } else {                        log::warn!(
+                    } else {
+                        log::warn!(
                             "Database transaction rolled back successfully after error. \
                              Transaction state: rolled_back, Rollback state: success, \
                              Context: enhanced_repository_transaction, Operation: rollback_on_error, \

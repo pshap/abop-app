@@ -13,7 +13,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use crate::state::AppState;
 //!
 //! // Access different state domains

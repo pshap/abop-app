@@ -141,7 +141,7 @@ impl ProgressCache {
         F: FnOnce(f32) -> String,
     {
         // Check if we need to update the cache
-        let needs_update = cache_slot.as_ref().map_or(true, |cached| {
+        let needs_update = cache_slot.as_ref().is_none_or(|cached| {
             (cached.last_value - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD
         });
 

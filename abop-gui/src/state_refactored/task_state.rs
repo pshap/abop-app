@@ -133,11 +133,11 @@ impl TaskState {
                 task.progress = progress;
                 self.needs_redraw = true;
             }
-            if let Some(new_status) = status {
-                if task.status != new_status {
-                    task.status = new_status;
-                    self.needs_redraw = true;
-                }
+            if let Some(new_status) = status
+                && task.status != new_status
+            {
+                task.status = new_status;
+                self.needs_redraw = true;
             }
         }
     }
@@ -227,7 +227,7 @@ impl TaskState {
 
     /// Check if any task is currently running
     pub fn has_active_task(&self) -> bool {
-        self.active_task.as_ref().map_or(false, |t| t.is_running)
+        self.active_task.as_ref().is_some_and(|t| t.is_running)
     }
 
     /// Check if saving is in progress

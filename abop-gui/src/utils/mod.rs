@@ -80,7 +80,7 @@ pub fn sort_audiobooks(state: &mut AppState) {
             "library_id" => a.library_id.cmp(&b.library_id),
             // For unknown columns, fall back to sorting by title to provide consistent behavior
             _ => {
-                log::warn!("Attempted to sort by unknown column '{}', falling back to title", column);
+                log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
                 a.title
                     .as_deref()
                     .unwrap_or(&a.id)

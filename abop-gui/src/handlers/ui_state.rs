@@ -245,12 +245,12 @@ fn handle_reset_redraw_flag(state: &mut AppState) -> Option<Task<Message>> {
 }
 
 fn handle_sort_by(state: &mut AppState, column_id: String) -> Option<Task<Message>> {
-    log::info!("Sorting by column: {}", column_id);
+    log::info!("Sorting by column: {column_id}");
     // Validate the column ID against known valid columns
     let validated_column = if VALID_SORT_COLUMNS.contains(&column_id.as_str()) {
         column_id
     } else {
-        log::warn!("Invalid sort column '{}', defaulting to '{}'", column_id, DEFAULT_SORT_COLUMN);
+        log::warn!("Invalid sort column '{column_id}', defaulting to '{DEFAULT_SORT_COLUMN}'");
         DEFAULT_SORT_COLUMN.to_string()
     };
 

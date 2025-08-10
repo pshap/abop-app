@@ -190,7 +190,7 @@ impl DatabaseError {
     /// 
     /// # Arguments
     /// * `message` - Detailed error description including context about which parameter
-    ///               failed and why (e.g., "Failed to convert parameter at index 2: invalid UTF-8")
+    ///   failed and why (e.g., "Failed to convert parameter at index 2: invalid UTF-8")
     /// 
     /// # Usage
     /// ```rust
@@ -203,7 +203,7 @@ impl DatabaseError {
     #[must_use]
     pub fn parameter_conversion_failed(message: &str) -> Self {
         Self::ExecutionFailed {
-            message: format!("Parameter conversion failed: {}", message),
+            message: format!("Parameter conversion failed: {message}"),
         }
     }
 
