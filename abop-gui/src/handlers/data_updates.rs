@@ -66,16 +66,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
             }
         }
         Message::ScanProgress(progress) => {
-            // Note: This needs to be converted to ScanProgress enum for proper handling
-            // For now, maintain legacy compatibility
-            // TODO: Convert to use proper ScanProgress enum
-            // state.library.update_scan_progress(progress);
-            // Update cached progress text using the new progress cache
-            state.progress_cache.get_scan_progress_text(progress);
-            Some(Task::none())
-        }
-        Message::ScanProgressEnhanced(progress) => {
-            state.library.scanner_progress = Some(progress);
+            state.library.update_scan_progress(progress);
             Some(Task::none())
         }
         _ => None,
