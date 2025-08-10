@@ -67,11 +67,11 @@ pub struct LibraryState {
     
     // Scanning state
     /// Current state of the library scanner
-    pub scanner_state: ScannerState,
+    scanner_state: ScannerState,
     /// Current progress information for an active scan
     pub scanner_progress: Option<ScanProgress>,
     /// Active library scanner instance if a scan is in progress
-    pub scanner: Option<Arc<Mutex<LibraryScanner>>>,
+    scanner: Option<Arc<Mutex<LibraryScanner>>>,
     
     // Legacy scanning fields (DEPRECATED - will be removed in v0.2.0)
     // 
@@ -92,7 +92,7 @@ pub struct LibraryState {
     pub enhanced_scan_progress: Option<ScanProgress>,
     
     /// Flag to indicate library state needs UI redraw
-    pub needs_redraw: bool,
+    needs_redraw: bool,
 }
 
 impl LibraryState {
@@ -159,14 +159,14 @@ impl LibraryState {
                 }
             }
         }
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Set the current library path
     pub fn set_library_path(&mut self, path: PathBuf) {
         if self.library_path != path {
             self.library_path = path;
-            self.needs_redraw = true;
+            self.mark_for_redraw();
         }
     }
 
@@ -188,27 +188,27 @@ impl LibraryState {
             };
             self.recent_directories.push(dir_info);
         }
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Update audiobooks list
     pub fn set_audiobooks(&mut self, audiobooks: Vec<Audiobook>) {
         self.audiobooks = audiobooks;
         self.sync_directory_metadata();
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Add an audiobook to the selection
     pub fn select_audiobook(&mut self, id: String) {
         if self.selected_audiobooks.insert(id) {
-            self.needs_redraw = true;
+            self.mark_for_redraw();
         }
     }
 
     /// Remove an audiobook from the selection
     pub fn deselect_audiobook(&mut self, id: &str) {
         if self.selected_audiobooks.remove(id) {
-            self.needs_redraw = true;
+            self.mark_for_redraw();
         }
     }
 
@@ -216,7 +216,7 @@ impl LibraryState {
     pub fn clear_selection(&mut self) {
         if !self.selected_audiobooks.is_empty() {
             self.selected_audiobooks.clear();
-            self.needs_redraw = true;
+            self.mark_for_redraw();
         }
     }
 
@@ -234,7 +234,7 @@ impl LibraryState {
         if self.table_state.sort_column != column || self.table_state.sort_ascending != ascending {
             self.table_state.sort_column = column;
             self.table_state.sort_ascending = ascending;
-            self.needs_redraw = true;
+            self.mark_for_redraw();
         }
     }
 
@@ -245,10 +245,16 @@ impl LibraryState {
         self.scan_progress = None;
         self.enhanced_scan_progress = None;
         self.scanner_progress = None;
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     // Modern API methods - prefer these over legacy fields
+    
+    /// Get current scanner state (read-only access)
+    #[must_use]
+    pub const fn scanner_state(&self) -> ScannerState {
+        self.scanner_state
+    }
     
     /// Check if a scan is currently in progress (modern API)
     #[must_use]
@@ -270,7 +276,7 @@ impl LibraryState {
         
         // Convert to legacy f32 progress using dedicated function
         self.scan_progress = Self::convert_scan_progress_to_legacy(&progress);
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
     
     /// Convert enhanced ScanProgress to legacy f32 progress for backwards compatibility
@@ -304,21 +310,27 @@ impl LibraryState {
     pub fn complete_scanning(&mut self) {
         self.scanner_state = ScannerState::Complete;
         self.scanning = false; // Legacy
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Handle scanning error
     pub fn error_scanning(&mut self) {
         self.scanner_state = ScannerState::Error;
         self.scanning = false; // Legacy
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Cancel scanning operation
     pub fn cancel_scanning(&mut self) {
         self.scanner_state = ScannerState::Cancelled;
         self.scanning = false; // Legacy
-        self.needs_redraw = true;
+        self.mark_for_redraw();
+    }
+
+    /// Get scanner instance (read-only access)
+    #[must_use]
+    pub fn scanner(&self) -> Option<&Arc<Mutex<LibraryScanner>>> {
+        self.scanner.as_ref()
     }
 
     /// Set scanner instance
@@ -326,16 +338,32 @@ impl LibraryState {
         self.scanner = scanner;
     }
 
+    /// Check if the library state needs a UI redraw
+    #[must_use]
+    pub const fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    /// Mark that the library state needs a UI redraw
+    pub fn mark_for_redraw(&mut self) {
+        self.mark_for_redraw();
+    }
+
+    /// Clear the redraw flag (typically called after redraw is complete)
+    pub fn clear_redraw_flag(&mut self) {
+        self.needs_redraw = false;
+    }
+
     /// Toggle auto-save library preference
     pub fn toggle_auto_save_library(&mut self) {
         self.auto_save_library = !self.auto_save_library;
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 
     /// Toggle scan subdirectories preference
     pub fn toggle_scan_subdirectories(&mut self) {
         self.scan_subdirectories = !self.scan_subdirectories;
-        self.needs_redraw = true;
+        self.mark_for_redraw();
     }
 }
 
@@ -349,10 +377,10 @@ impl std::fmt::Debug for LibraryState {
             .field("table_state", &self.table_state)
             .field("auto_save_library", &self.auto_save_library)
             .field("scan_subdirectories", &self.scan_subdirectories)
-            .field("scanner_state", &self.scanner_state)
+            .field("scanner_state", &self.scanner_state())
             .field("scanner_progress", &self.scanner_progress)
-            .field("scanner", &"<LibraryScanner>")
-            .field("needs_redraw", &self.needs_redraw)
+            .field("scanner", &if self.scanner().is_some() { "Some(<LibraryScanner>)" } else { "None" })
+            .field("needs_redraw", &self.needs_redraw())
             .finish()
     }
 }
