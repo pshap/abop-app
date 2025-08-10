@@ -14,8 +14,8 @@ use crate::styling::container::LayoutContainerStyles;
 pub fn audio_processing_view(state: &AppState) -> iced::Element<'_, Message> {
     // Use the StatusDisplay component for processing status
     let status_display = StatusDisplay::view(
-        state.library.scanning,
-        state.library.scan_progress,
+        state.library.is_scanning(),
+        state.library.get_scan_progress_legacy(),
         state.player.processing_audio,
         state.player.processing_progress,
         state.player.processing_status.as_deref(),

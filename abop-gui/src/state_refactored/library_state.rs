@@ -266,7 +266,7 @@ impl LibraryState {
     #[must_use]
     pub fn get_scan_progress_legacy(&self) -> Option<f32> {
         self.scanner_progress.as_ref()
-            .and_then(|progress| Self::convert_scan_progress_to_legacy(progress))
+            .and_then(Self::convert_scan_progress_to_legacy)
     }
 
     /// Update scanning progress

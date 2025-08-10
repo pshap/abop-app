@@ -222,8 +222,8 @@ mod audio_controls_tests {
             "4",
             "Book with large numbers",
             "Author",
-            Some(std::u64::MAX),
-            Some(std::u64::MAX),
+            Some(u64::MAX),
+            Some(u64::MAX),
         );
 
         let test_audiobooks = vec![
@@ -640,8 +640,8 @@ mod status_tests {
         );
         max_values.player_state = PlayerState::Playing;
         max_values.current_playing_file = Some(&long_path);
-        max_values.selected_count = std::usize::MAX;
-        max_values.total_count = std::usize::MAX;
+        max_values.selected_count = usize::MAX;
+        max_values.total_count = usize::MAX;
         max_values.theme = ThemeMode::Dark;
         let _element = StatusDisplay::enhanced_view(max_values, &tokens);
 
