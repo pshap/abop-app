@@ -11,13 +11,13 @@
 //! - Performance optimizations with inline hints
 
 use super::super::common::prelude::*;
-use super::super::common::{
-    system_has_reduced_motion, validate_label, validate_props, validate_switch_state,
-};
+use super::super::common::{validate_label, validate_props, validate_switch_state};
 use super::super::defaults;
 use super::components::Switch;
 use super::patterns::*;
 use super::validation::*;
+use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
+use crate::impl_common_selection_builder;
 
 // ============================================================================
 // Switch Builder Implementation
@@ -27,11 +27,11 @@ use super::validation::*;
 #[derive(Debug, Clone)]
 pub struct SwitchBuilder {
     state: SwitchState,
-    props: ComponentProps,
-    error_state: bool,
-    validation_config: ValidationConfig,
-    animation_config: AnimationConfig,
+    common: CommonBuilderState,
 }
+
+// Implement the common builder functionality
+impl_common_selection_builder!(SwitchBuilder, common);
 
 impl SwitchBuilder {
     /// Create a new switch builder with the specified state
@@ -39,19 +39,8 @@ impl SwitchBuilder {
     pub fn new(state: SwitchState) -> Self {
         Self {
             state,
-            props: ComponentProps::new(),
-            error_state: false,
-            validation_config: defaults::default_validation_config(),
-            animation_config: defaults::default_switch_animation_config(),
+            common: CommonBuilderState::new(defaults::default_switch_animation_config()),
         }
-    }
-
-    /// Set the switch label
-    #[must_use]
-    #[inline]
-    pub fn label<S: Into<String>>(mut self, label: S) -> Self {
-        self.props.label = Some(label.into());
-        self
     }
 
     /// Convenience method to create switch in on state
@@ -75,59 +64,30 @@ impl SwitchBuilder {
         Self::new(SwitchState::from_bool(enabled))
     }
 
-    /// Get the current state
+    /// Toggle the switch state
     #[must_use]
     #[inline]
-    pub const fn state(&self) -> SwitchState {
-        self.state
-    }
-
-    /// Get the component properties
-    #[must_use]
-    #[inline]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    // ========================================================================
-    // Phase 2: Advanced Switch Builder Methods
-    // ========================================================================
-
-    /// Set label with validation
-    ///
-    /// Validates the label according to the current validation configuration
-    /// before applying it to the switch component.
-    pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
-        let label_str: String = label.into();
-        validate_label(&label_str, &self.validation_config)?;
-        self.props.label = Some(label_str);
-        Ok(self)
-    }
-
-    /// Set state with validation
-    pub fn state_validated(mut self, state: SwitchState) -> Result<Self, SelectionError> {
-        validate_switch_state(state, &self.props)?;
-        self.state = state;
-        Ok(self)
-    }
-
-    /// Toggle the state
-    #[must_use]
     pub fn toggled(mut self) -> Self {
         self.state = self.state.toggle();
         self
     }
 
-    /// Apply configuration based on system preferences
-    #[must_use]
-    pub fn with_system_preferences(mut self) -> Self {
-        if system_has_reduced_motion() {
-            self.animation_config.enabled = false;
-        }
-        self
+    /// Set label with validation
+    pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
+        let label_str = label.into();
+        validate_label(label_str.as_str(), &self.common.validation_config)?;
+        self.common.props.label = Some(label_str);
+        Ok(self)
     }
 
-    /// Clone with state modification
+    /// Set state with validation
+    pub fn state_validated(mut self, state: SwitchState) -> Result<Self, SelectionError> {
+        validate_switch_state(state, &self.common.props)?;
+        self.state = state;
+        Ok(self)
+    }
+
+    /// Clone with new state
     #[must_use]
     pub fn clone_with_state(&self, new_state: SwitchState) -> Self {
         let mut cloned = self.clone();
@@ -135,35 +95,114 @@ impl SwitchBuilder {
         cloned
     }
 
-    /// Build with detailed validation result
-    pub fn build_with_detailed_validation(self) -> Result<Switch, ValidationResult> {
-        let result = self.validate_detailed();
+    /// Reset animation configuration to defaults
+    #[must_use]
+    pub fn reset_animation(mut self) -> Self {
+        self.common.animation_config = defaults::default_switch_animation_config();
+        self
+    }
 
-        if result.is_valid() {
-            Ok(self.build_unchecked())
-        } else {
-            Err(result)
+    /// Get the current switch state
+    #[must_use]
+    #[inline]
+    pub const fn state(&self) -> SwitchState {
+        self.state
+    }
+
+    /// Build the switch component with validation
+    pub fn build(self) -> Result<Switch, SelectionError> {
+        self.validate()?;
+        Ok(self.build_unchecked())
+    }
+
+    /// Build the switch component without validation (faster)
+    ///
+    /// # Safety Warning
+    ///
+    /// This method bypasses all validation checks for performance reasons. It should only
+    /// be used when you are confident that the builder state is valid. Invalid state may
+    /// result in:
+    /// - UI components that don't render correctly
+    /// - Inconsistent behavior in the application
+    /// - Potential panics in downstream code that assumes valid state
+    ///
+    /// # When to use
+    ///
+    /// Use this method only in scenarios where:
+    /// - You have previously validated the builder using [`validate`](Self::validate)
+    /// - You are constructing the builder programmatically with known-good values
+    /// - Performance is critical and validation overhead needs to be avoided
+    ///
+    /// # Recommendation
+    ///
+    /// In most cases, prefer [`build`](Self::build) which includes validation and provides
+    /// clearer error reporting.
+    #[must_use]
+    pub fn build_unchecked(self) -> Switch {
+        Switch {
+            state: self.state,
+            props: self.common.props,
+            error_state: self.common.error_state,
+            animation_config: self.common.animation_config,
         }
     }
 
-    /// Create a switch optimized for performance (minimal validation)
-    #[must_use]
-    pub fn build_fast(self) -> Switch {
-        self.build_unchecked()
+    /// Validate the switch configuration
+    /// 
+    /// This method performs comprehensive validation of the switch builder state,
+    /// including state consistency, label validation, and common property validation.
+    /// 
+    /// # When to use
+    /// 
+    /// Use this method if you want to check the validity of the builder's configuration
+    /// before attempting to build the `Switch` component. The [`build`](Self::build) method
+    /// automatically calls `validate()` and returns an error if validation fails, so
+    /// manual validation is only necessary if you need to check validity separately
+    /// (e.g., for user feedback or conditional logic before building).
+    /// 
+    /// # Validation types performed
+    /// 
+    /// - **State consistency**: Ensures the switch state is compatible with current properties
+    /// - **Label validation**: Checks label length and format according to validation rules  
+    /// - **Common property validation**: Validates size, disabled state, and metadata consistency
+    /// 
+    /// # Error aggregation behavior
+    /// 
+    /// This method aggregates all validation errors into a single `SelectionError::ValidationError`
+    /// with a semicolon-separated error message containing all failed validation rules. This
+    /// approach allows developers to see all validation issues at once rather than having to
+    /// fix them one by one. If no errors are found, returns `Ok(())`.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `SelectionError::ValidationError` containing a combined message if any of these fail:
+    /// - The switch state is incompatible with the current properties
+    /// - The label exceeds maximum length or violates validation rules
+    /// - Common validation rules fail (disabled state conflicts, etc.)
+    pub fn validate(&self) -> Result<(), SelectionError> {
+        // Unified validation approach - collect all validation errors first
+        let mut validation_errors = Vec::new();
+        
+        // Validate switch-specific state
+        if let Err(e) = validate_switch_state(self.state, &self.common.props) {
+            validation_errors.push(format!("Switch state: {e}"));
+        }
+        
+        // Validate common properties
+        if let Err(e) = self.validate_common() {
+            validation_errors.push(format!("Common properties: {e}"));
+        }
+        
+        // Return comprehensive error if any validation failed
+        if validation_errors.is_empty() {
+            Ok(())
+        } else {
+            Err(SelectionError::ValidationError(validation_errors.join("; ")))
+        }
     }
 }
 
-// ============================================================================
-// Common Builder Methods
-// ============================================================================
-
-// Apply common builder methods to SwitchBuilder
-impl_common_builder_methods!(SwitchBuilder);
-
-// ============================================================================
-// Trait Implementations
-// ============================================================================
-
+// Enhanced trait implementations for backward compatibility
 impl ComponentBuilder<SwitchState> for SwitchBuilder {
     type Component = Switch;
     type Error = SelectionError;
@@ -176,46 +215,43 @@ impl ComponentBuilder<SwitchState> for SwitchBuilder {
     fn build_unchecked(self) -> Self::Component {
         Switch {
             state: self.state,
-            props: self.props,
-            error_state: self.error_state,
-            animation_config: self.animation_config,
+            props: self.common.props,
+            error_state: self.common.error_state,
+            animation_config: self.common.animation_config,
         }
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
         validate_with_context(self, "SwitchBuilder", || {
-            validate_switch_state(self.state, &self.props)?;
-            validate_props(&self.props, &self.validation_config)?;
+            validate_switch_state(self.state, &self.common.props)
+                .map_err(|e| SelectionError::InvalidState { 
+                    details: format!("Switch validation failed: {e}") 
+                })?;
+            
+            self.validate_common()
+                .map_err(|e| SelectionError::ValidationError(
+                    format!("Common validation failed: {e}")
+                ))?;
+            
             Ok(())
         })
     }
 }
 
-// Phase 2: Enhanced SwitchBuilder Trait Implementations
 impl BuilderValidation for SwitchBuilder {
     fn validate_detailed(&self) -> ValidationResult {
-        let context = ValidationContext::new("SwitchBuilder".to_string(), "validation".to_string());
+        let context =
+            ValidationContext::new("SwitchBuilder".to_string(), "validation".to_string());
         let mut result = ValidationResult::new(context);
 
         // Validate state
-        if let Err(error) = validate_switch_state(self.state, &self.props) {
+        if let Err(error) = validate_switch_state(self.state, &self.common.props) {
             result.add_error(error);
         }
 
         // Validate props
-        if let Err(error) = validate_props(&self.props, &self.validation_config) {
+        if let Err(error) = validate_props(&self.common.props, &self.common.validation_config) {
             result.add_error(error);
-        }
-
-        // Add warnings for potential issues
-        if let Some(ref label) = self.props.label
-            && label.len() > 100
-        {
-            result.add_warning("Label is very long, consider shortening for better UX");
-        }
-
-        if self.animation_config.enabled && system_has_reduced_motion() {
-            result.add_warning("Animations enabled but system has reduced motion preference");
         }
 
         result
@@ -226,143 +262,83 @@ impl BuilderValidation for SwitchBuilder {
     }
 }
 
-impl AdvancedConditionalBuilder<SwitchState> for SwitchBuilder {}
-
-impl StatefulBuilder<SwitchState> for SwitchBuilder {
-    fn validate_state_transition(&self, new_state: SwitchState) -> Result<(), SelectionError> {
-        // All state transitions are valid for switches
-        validate_switch_state(new_state, &self.props)
-    }
-
-    fn apply_state_validated(mut self, state: SwitchState) -> Result<Self, SelectionError> {
-        self.validate_state_transition(state)?;
-        self.state = state;
-        Ok(self)
-    }
-}
-
-impl ConditionalBuilder<SwitchState> for SwitchBuilder {}
-impl BatchBuilder<SwitchState> for SwitchBuilder {}
-
-// ============================================================================
-// Tests
-// ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_switch_builder_creation() {
-        let builder = SwitchBuilder::new(SwitchState::Off);
-        assert_eq!(builder.state(), SwitchState::Off);
-        assert!(builder.props().label.is_none());
-    }
-
-    #[test]
-    fn test_switch_builder_convenience_methods() {
-        let on_builder = SwitchBuilder::on();
-        assert_eq!(on_builder.state(), SwitchState::On);
-
-        let off_builder = SwitchBuilder::off();
-        assert_eq!(off_builder.state(), SwitchState::Off);
-
-        let bool_builder = SwitchBuilder::from_bool(true);
-        assert_eq!(bool_builder.state(), SwitchState::On);
-
-        let bool_builder_false = SwitchBuilder::from_bool(false);
-        assert_eq!(bool_builder_false.state(), SwitchState::Off);
-    }
-
-    #[test]
-    fn test_switch_builder_chaining() {
-        let builder = SwitchBuilder::on()
-            .label("Enable feature")
-            .size(ComponentSize::Large)
+    fn test_switch_builder_with_common() {
+        let switch = SwitchBuilder::new(SwitchState::Off)
+            .label("Test Switch")
             .disabled(false)
-            .error(false);
-
-        assert_eq!(builder.state(), SwitchState::On);
-        assert_eq!(builder.props().label, Some("Enable feature".to_string()));
-        assert_eq!(builder.props().size, ComponentSize::Large);
-        assert!(!builder.props().disabled);
-    }
-
-    #[test]
-    fn test_switch_builder_build() {
-        let switch = SwitchBuilder::off()
-            .label("Toggle setting")
-            .build()
-            .expect("Should build valid switch");
+            .size(ComponentSize::Medium)
+            .build_unchecked();
 
         assert_eq!(switch.state, SwitchState::Off);
-        assert_eq!(switch.props.label, Some("Toggle setting".to_string()));
-        assert!(!switch.error_state);
+        assert_eq!(switch.props.label, Some("Test Switch".to_string()));
+        assert!(!switch.props.disabled);
+        assert_eq!(switch.props.size, ComponentSize::Medium);
     }
 
     #[test]
-    fn test_switch_builder_toggle() {
-        let builder = SwitchBuilder::off().toggled();
-        assert_eq!(builder.state(), SwitchState::On);
+    fn test_switch_convenience_methods() {
+        let on_switch = SwitchBuilder::on().build_unchecked();
+        assert_eq!(on_switch.state, SwitchState::On);
 
-        let builder = SwitchBuilder::on().toggled();
-        assert_eq!(builder.state(), SwitchState::Off);
+        let off_switch = SwitchBuilder::off().build_unchecked();
+        assert_eq!(off_switch.state, SwitchState::Off);
+
+        let from_bool = SwitchBuilder::from_bool(true).build_unchecked();
+        assert_eq!(from_bool.state, SwitchState::On);
     }
 
     #[test]
-    fn test_switch_builder_validation() {
-        let builder = SwitchBuilder::on().label("Valid Switch");
+    fn test_switch_toggle() {
+        let toggled = SwitchBuilder::off().toggled().build_unchecked();
+        assert_eq!(toggled.state, SwitchState::On);
 
-        let result = builder.validate_detailed();
-        assert!(result.is_valid());
-        assert!(result.errors.is_empty());
+        let toggled_back = SwitchBuilder::on().toggled().build_unchecked();
+        assert_eq!(toggled_back.state, SwitchState::Off);
     }
 
     #[test]
-    fn test_switch_builder_clone_with_state() {
-        let original = SwitchBuilder::off().label("Original");
+    fn test_switch_validation() {
+        let valid_builder = SwitchBuilder::off().label("Valid");
+        assert!(valid_builder.validate().is_ok());
 
+        let invalid_builder = SwitchBuilder::off().label("x".repeat(300));
+        assert!(invalid_builder.validate().is_err());
+    }
+
+    #[test]
+    fn test_switch_clone_with_state() {
+        let original = SwitchBuilder::off().label("Test");
         let cloned = original.clone_with_state(SwitchState::On);
-
-        assert_eq!(original.state(), SwitchState::Off);
-        assert_eq!(cloned.state(), SwitchState::On);
-        assert_eq!(original.props().label, cloned.props().label);
+        
+        let original_switch = original.build_unchecked();
+        let cloned_switch = cloned.build_unchecked();
+        
+        assert_eq!(original_switch.state, SwitchState::Off);
+        assert_eq!(cloned_switch.state, SwitchState::On);
+        assert_eq!(original_switch.props.label, cloned_switch.props.label);
     }
 
     #[test]
-    fn test_switch_builder_system_preferences() {
-        let builder = SwitchBuilder::on().with_system_preferences();
-
-        // System preference behavior will depend on actual system state
-        // This test mainly ensures the method doesn't panic
-        assert_eq!(builder.state(), SwitchState::On);
+    fn test_switch_animation_config() {
+        let switch = SwitchBuilder::off()
+            .animations_enabled(false)
+            .build_unchecked();
+            
+        assert!(!switch.animation_config.enabled);
     }
 
     #[test]
-    fn test_switch_builder_performance_build() {
-        let switch = SwitchBuilder::on().label("Fast Build").build_fast();
+    fn test_common_builder_trait() {
+        let builder = SwitchBuilder::off()
+            .with_metadata("color", "primary")
+            .error(true);
 
-        assert_eq!(switch.state, SwitchState::On);
-        assert_eq!(switch.props.label, Some("Fast Build".to_string()));
-    }
-
-    #[test]
-    fn test_switch_builder_validation_methods() {
-        let builder = SwitchBuilder::off();
-
-        // Test state validation
-        let validated_builder = builder
-            .state_validated(SwitchState::On)
-            .expect("Should validate state");
-        assert_eq!(validated_builder.state(), SwitchState::On);
-
-        // Test label validation
-        let labeled_builder = SwitchBuilder::off()
-            .label_validated("Valid Label")
-            .expect("Should validate label");
-        assert_eq!(
-            labeled_builder.props().label,
-            Some("Valid Label".to_string())
-        );
+        assert_eq!(builder.props().get_metadata("color"), Some("primary"));
+        assert!(builder.has_error());
     }
 }

@@ -3,15 +3,12 @@
 //! This module contains various utility functions and safe conversion
 //! utilities used throughout the GUI components.
 
-use crate::state::UiState;
+use crate::state::AppState;
 use std::path::Path;
 
 pub mod path_utils;
 pub mod platform;
-pub mod safe_conversions;
-
-// Re-export commonly used utilities
-pub use safe_conversions::ui_conversions;
+// Deprecated safe_conversions module has been removed. Use abop_core::utils::casting::domain::ui instead.
 
 /// Detects the file format from a file path extension
 ///
@@ -50,18 +47,18 @@ pub fn get_file_format_simple(path: &Path) -> String {
 /// # Examples
 /// ```
 /// use abop_gui::utils::sort_audiobooks;
-/// use abop_gui::state::UiState;
+/// use abop_gui::state::AppState;
 /// use abop_gui::state::TableState;
 /// use std::collections::HashMap;
 ///
-/// let mut state = UiState::default();
+/// let mut state = AppState::default();
 /// sort_audiobooks(&mut state);
 /// ```
-pub fn sort_audiobooks(state: &mut UiState) {
-    let column = &state.table_state.sort_column;
-    let ascending = state.table_state.sort_ascending;
+pub fn sort_audiobooks(state: &mut AppState) {
+    let column = &state.library.table_state.sort_column;
+    let ascending = state.library.table_state.sort_ascending;
     
-    state.audiobooks.sort_by(|a, b| {
+    state.library.audiobooks.sort_by(|a, b| {
         let ordering = match column.as_str() {
             "title" => a
                 .title
@@ -80,7 +77,7 @@ pub fn sort_audiobooks(state: &mut UiState) {
             "library_id" => a.library_id.cmp(&b.library_id),
             // For unknown columns, fall back to sorting by title to provide consistent behavior
             _ => {
-                log::warn!("Attempted to sort by unknown column '{}', falling back to title", column);
+                log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
                 a.title
                     .as_deref()
                     .unwrap_or(&a.id)

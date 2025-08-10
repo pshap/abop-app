@@ -7,24 +7,25 @@
 //! The module provides specific exports instead of glob imports for better clarity:
 //! - Casting utilities: [`CastingBuilder`], [`CastError`], [`CastResult`]
 //! - Enhanced utilities: [`audio`], [`database`], [`ui`], [`file`] modules
-//! - Size formatting: [`format_bytes`]
+//! - Size formatting: [`format_file_size_standard`], [`format_file_size_exact`], [`format_file_size`]
 //! - Time utilities: [`format_seconds`], [`format_duration`], [`TimeFormat`]
 //! - Timer: [`Timer`]
 
 pub mod casting;
 pub mod enhanced;
 pub mod path;
-pub mod size;
 pub mod time;
 pub mod timer;
 
 // Re-export commonly used utilities (specific items)
-pub use casting::{CastError, CastResult, CastingBuilder};
+pub use casting::{
+    CastError, CastResult, CastingBuilder, FileSizePrecision, format_file_size,
+    format_file_size_exact, format_file_size_standard,
+};
 pub use enhanced::{audio, database, file, ui};
 pub use path::{
     extension_matches, normalize_path_for_comparison, paths_equal, paths_equal_case_insensitive,
 };
-pub use size::format_bytes;
 pub use time::{TimeFormat, format_duration, format_seconds};
 pub use timer::Timer;
 
@@ -40,11 +41,20 @@ mod tests {
     }
 
     #[test]
-    fn test_format_bytes() {
-        assert_eq!(format_bytes(1024), "1 KB");
-        assert_eq!(format_bytes(1_048_576), "1 MB");
-        assert_eq!(format_bytes(500), "500 B");
-        assert_eq!(format_bytes(1536), "1.5 KB");
+    fn test_file_size_formatting() {
+        // Test standard precision formatting (2 decimal places)
+        // 1024 bytes = 1 KB with 2 decimal precision
+        assert_eq!(format_file_size_standard(1024), "1.00 KB");
+        // 1,048,576 bytes = 1 MB with 2 decimal precision  
+        assert_eq!(format_file_size_standard(1_048_576), "1.00 MB");
+        
+        // Test exact formatting (no decimal places for bytes)
+        // 500 bytes displayed as exact count with unit
+        assert_eq!(format_file_size_exact(500), "500 B");
+        
+        // Test configurable precision using enum
+        // 1536 bytes = 1.5 KB with standard precision setting
+        assert_eq!(format_file_size(1536, FileSizePrecision::Standard), "1.50 KB");
     }
 
     #[test]

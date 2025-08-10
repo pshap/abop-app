@@ -4,12 +4,13 @@
 
 use abop_core::{
     db::Database,
+    models::audiobook::fallbacks::{UNKNOWN_AUTHOR, UNKNOWN_TITLE},
     scanner::{LibraryScanner, ScannerConfig},
 };
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use log::{debug, info, warn};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 /// Command line arguments for ABOP CLI
@@ -284,6 +285,23 @@ fn show_scan_results(db: &Database) -> Result<()> {
     Ok(())
 }
 
+// Fast-fail helper for operations that require an existing database file
+fn ensure_existing_db_file(path: &Path) -> Result<()> {
+    if !path.exists() {
+        return Err(anyhow::anyhow!(
+            "Database file does not exist: {}",
+            path.display()
+        ));
+    }
+    if path.is_dir() {
+        return Err(anyhow::anyhow!(
+            "Database path is a directory, expected a file: {}",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
 fn handle_db_operation(database_path: PathBuf, operation: DbOperations) -> Result<()> {
     debug!("Starting database operation: {operation:?}");
     match operation {
@@ -305,6 +323,8 @@ fn handle_db_init(database_path: PathBuf) -> Result<()> {
 
 fn handle_db_list(database_path: PathBuf) -> Result<()> {
     info!("Listing audiobooks in: {database_path:?}");
+    // Fast-fail if the database file doesn't exist or is invalid to avoid long connection timeouts
+    ensure_existing_db_file(&database_path)?;
     debug!("About to call Database::open() for list operation");
     let db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for list operation");
@@ -367,6 +387,8 @@ fn handle_db_list(database_path: PathBuf) -> Result<()> {
 
 fn handle_db_stats(database_path: PathBuf) -> Result<()> {
     info!("Database statistics: {database_path:?}");
+    // Fast-fail if the database file doesn't exist or is invalid to avoid long connection timeouts
+    ensure_existing_db_file(&database_path)?;
     debug!("About to call Database::open() for stats operation");
     let db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for stats operation");
@@ -380,6 +402,8 @@ fn handle_db_stats(database_path: PathBuf) -> Result<()> {
 
 fn handle_db_clean(database_path: PathBuf) -> Result<()> {
     info!("Cleaning database: {database_path:?}");
+    // Fast-fail if the database file doesn't exist or is invalid to avoid long connection timeouts
+    ensure_existing_db_file(&database_path)?;
     debug!("About to call Database::open() for clean operation");
     let _db = Database::open(&database_path).context("Failed to open database")?;
     debug!("Database::open() completed for clean operation");
@@ -389,9 +413,7 @@ fn handle_db_clean(database_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-// Constants for fallback strings
-const UNKNOWN_TITLE: &str = "Unknown Title";
-const UNKNOWN_AUTHOR: &str = "Unknown Author";
+// Fallback strings are provided by abop_core::models::audiobook::fallbacks
 
 #[cfg(test)]
 mod tests {
@@ -412,8 +434,8 @@ mod tests {
         // Test that constants are defined and not empty
         assert!(!UNKNOWN_TITLE.is_empty());
         assert!(!UNKNOWN_AUTHOR.is_empty());
-        assert_eq!(UNKNOWN_TITLE, "Unknown Title");
-        assert_eq!(UNKNOWN_AUTHOR, "Unknown Author");
+    assert_eq!(UNKNOWN_TITLE, abop_core::models::audiobook::fallbacks::UNKNOWN_TITLE);
+    assert_eq!(UNKNOWN_AUTHOR, abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR);
     }
 
     #[test]

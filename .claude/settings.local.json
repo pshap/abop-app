@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo:*)",
+      "Bash(rg:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(git branch:*)"
+    ],
+    "deny": []
+  }
+}

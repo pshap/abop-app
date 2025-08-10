@@ -7,11 +7,11 @@
 //! - Performance optimizations and advanced patterns
 
 use super::super::common::prelude::*;
-use super::super::common::{
-    system_has_reduced_motion, validate_checkbox_state, validate_label, validate_props,
-};
+use super::super::common::{validate_checkbox_state, validate_label, validate_props};
 use super::patterns::*;
 use super::validation::*;
+use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
+use crate::impl_common_selection_builder;
 
 /// Default constants for checkbox configuration
 pub mod defaults {
@@ -37,11 +37,11 @@ pub mod defaults {
 #[derive(Debug, Clone)]
 pub struct CheckboxBuilder {
     state: CheckboxState,
-    props: ComponentProps,
-    error_state: bool,
-    validation_config: ValidationConfig,
-    animation_config: AnimationConfig,
+    common: CommonBuilderState,
 }
+
+// Implement the common builder functionality
+impl_common_selection_builder!(CheckboxBuilder, common);
 
 impl CheckboxBuilder {
     /// Create a new checkbox builder with the specified state
@@ -49,26 +49,8 @@ impl CheckboxBuilder {
     pub fn new(state: CheckboxState) -> Self {
         Self {
             state,
-            props: ComponentProps::new(),
-            error_state: false,
-            validation_config: super::super::defaults::default_validation_config(),
-            animation_config: defaults::default_checkbox_animation_config(),
+            common: CommonBuilderState::new(defaults::default_checkbox_animation_config()),
         }
-    }
-
-    /// Set the checkbox label
-    #[must_use]
-    #[inline]
-    pub fn label<S: Into<String>>(mut self, label: S) -> Self {
-        self.props.label = Some(label.into());
-        self
-    }
-
-    /// Convenience method to create checked checkbox
-    #[must_use]
-    #[inline]
-    pub fn checked() -> Self {
-        Self::new(CheckboxState::Checked)
     }
 
     /// Convenience method to create unchecked checkbox
@@ -76,6 +58,13 @@ impl CheckboxBuilder {
     #[inline]
     pub fn unchecked() -> Self {
         Self::new(CheckboxState::Unchecked)
+    }
+
+    /// Convenience method to create checked checkbox
+    #[must_use]
+    #[inline]
+    pub fn checked() -> Self {
+        Self::new(CheckboxState::Checked)
     }
 
     /// Convenience method to create indeterminate checkbox
@@ -92,85 +81,30 @@ impl CheckboxBuilder {
         Self::new(CheckboxState::from_bool(checked))
     }
 
-    /// Get the current state
+    /// Toggle the checkbox state
     #[must_use]
     #[inline]
-    pub const fn state(&self) -> CheckboxState {
-        self.state
-    }
-
-    /// Get the component properties
-    #[must_use]
-    #[inline]
-    pub const fn props(&self) -> &ComponentProps {
-        &self.props
-    }
-
-    // ========================================================================
-    // Phase 2: Advanced Builder Methods
-    // ========================================================================
-
-    /// Set label with validation
-    pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
-        let label_str = label.into();
-        validate_label(label_str.as_str(), &self.validation_config)?;
-        self.props.label = Some(label_str);
-        Ok(self)
-    }
-
-    /// Set state with validation
-    pub fn state_validated(mut self, state: CheckboxState) -> Result<Self, SelectionError> {
-        validate_checkbox_state(state, &self.props)?;
-        self.state = state;
-        Ok(self)
-    }
-
-    /// Toggle the state
-    #[must_use]
     pub fn toggled(mut self) -> Self {
         self.state = self.state.toggle();
         self
     }
 
-    /// Apply a custom validation rule
-    pub fn with_custom_validation<F>(self, validator: F) -> Result<Self, SelectionError>
-    where
-        F: FnOnce(&Self) -> Result<(), SelectionError>,
-    {
-        validator(&self)?;
+    /// Set label with validation
+    pub fn label_validated<S: Into<String>>(mut self, label: S) -> Result<Self, SelectionError> {
+        let label_str = label.into();
+        validate_label(label_str.as_str(), &self.common.validation_config)?;
+        self.common.props.label = Some(label_str);
         Ok(self)
     }
 
-    /// Build with detailed validation result
-    pub fn build_with_detailed_validation(
-        self,
-    ) -> Result<super::components::Checkbox, ValidationResult> {
-        let _context = ValidationContext::new("CheckboxBuilder".to_string(), "build".to_string());
-        let result = self.validate_detailed();
-
-        if result.is_valid() {
-            Ok(self.build_unchecked())
-        } else {
-            Err(result)
-        }
+    /// Set state with validation
+    pub fn state_validated(mut self, state: CheckboxState) -> Result<Self, SelectionError> {
+        validate_checkbox_state(state, &self.common.props)?;
+        self.state = state;
+        Ok(self)
     }
 
-    /// Create a checkbox optimized for performance (minimal validation)
-    #[must_use]
-    pub fn build_fast(self) -> super::components::Checkbox {
-        self.build_unchecked()
-    }
-
-    /// Apply configuration based on system preferences
-    #[must_use]
-    pub fn with_system_preferences(mut self) -> Self {
-        if system_has_reduced_motion() {
-            self.animation_config.enabled = false;
-        }
-        self
-    }
-
-    /// Clone with state modification
+    /// Clone with new state (for radio group patterns)
     #[must_use]
     pub fn clone_with_state(&self, new_state: CheckboxState) -> Self {
         let mut cloned = self.clone();
@@ -181,42 +115,80 @@ impl CheckboxBuilder {
     /// Reset animation configuration to defaults
     #[must_use]
     pub fn reset_animation(mut self) -> Self {
-        self.animation_config = defaults::default_checkbox_animation_config();
+        self.common.animation_config = defaults::default_checkbox_animation_config();
         self
+    }
+
+    /// Get the current checkbox state
+    #[must_use]
+    #[inline]
+    pub const fn state(&self) -> CheckboxState {
+        self.state
+    }
+
+    /// Build the checkbox component with validation
+    pub fn build(self) -> Result<super::components::Checkbox, SelectionError> {
+        self.validate()?;
+        Ok(self.build_unchecked())
+    }
+
+    /// Build the checkbox component without validation (faster)
+    #[must_use]
+    pub fn build_unchecked(self) -> super::components::Checkbox {
+        super::components::Checkbox {
+            state: self.state,
+            props: self.common.props,
+            error_state: self.common.error_state,
+            animation_config: self.common.animation_config,
+        }
+    }
+
+    /// Validate the checkbox configuration
+    /// 
+    /// This method performs comprehensive validation of the checkbox builder state,
+    /// including state consistency, label validation, and common property validation.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `SelectionError` if:
+    /// - The checkbox state is incompatible with the current properties
+    /// - The label exceeds maximum length or violates validation rules
+    /// - Common validation rules fail (disabled state conflicts, etc.)
+    pub fn validate(&self) -> Result<(), SelectionError> {
+        validate_checkbox_state(self.state, &self.common.props)
+            .map_err(|e| SelectionError::InvalidState { 
+                details: format!("Checkbox validation failed: {e}") 
+            })?;
+        
+        self.validate_common()
+            .map_err(|e| SelectionError::ValidationError(
+                format!("Common validation failed: {e}")
+            ))?;
+        
+        Ok(())
     }
 }
 
-// Apply common builder methods to CheckboxBuilder
-impl_common_builder_methods!(CheckboxBuilder);
-
+// Enhanced trait implementations for backward compatibility
 impl ComponentBuilder<CheckboxState> for CheckboxBuilder {
     type Component = super::components::Checkbox;
     type Error = SelectionError;
 
     fn build(self) -> Result<Self::Component, Self::Error> {
-        self.validate()?;
-        Ok(self.build_unchecked())
+        CheckboxBuilder::build(self)
     }
 
     fn build_unchecked(self) -> Self::Component {
-        super::components::Checkbox {
-            state: self.state,
-            props: self.props,
-            error_state: self.error_state,
-            animation_config: self.animation_config,
-        }
+        CheckboxBuilder::build_unchecked(self)
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
         validate_with_context(self, "CheckboxBuilder", || {
-            validate_checkbox_state(self.state, &self.props)?;
-            validate_props(&self.props, &self.validation_config)?;
-            Ok(())
+            CheckboxBuilder::validate(self)
         })
     }
 }
 
-// Phase 2: Enhanced Trait Implementations
 impl BuilderValidation for CheckboxBuilder {
     fn validate_detailed(&self) -> ValidationResult {
         let context =
@@ -224,24 +196,13 @@ impl BuilderValidation for CheckboxBuilder {
         let mut result = ValidationResult::new(context);
 
         // Validate state
-        if let Err(error) = validate_checkbox_state(self.state, &self.props) {
+        if let Err(error) = validate_checkbox_state(self.state, &self.common.props) {
             result.add_error(error);
         }
 
         // Validate props
-        if let Err(error) = validate_props(&self.props, &self.validation_config) {
+        if let Err(error) = validate_props(&self.common.props, &self.common.validation_config) {
             result.add_error(error);
-        }
-
-        // Add warnings for potential issues
-        if let Some(ref label) = self.props.label
-            && label.len() > 100
-        {
-            result.add_warning("Label is very long, consider shortening for better UX");
-        }
-
-        if self.animation_config.enabled && system_has_reduced_motion() {
-            result.add_warning("Animations enabled but system has reduced motion preference");
         }
 
         result
@@ -252,20 +213,89 @@ impl BuilderValidation for CheckboxBuilder {
     }
 }
 
-impl AdvancedConditionalBuilder<CheckboxState> for CheckboxBuilder {}
+// The common methods are provided by the CommonSelectionBuilder trait
+// which is automatically implemented via the impl_common_selection_builder! macro
 
-impl StatefulBuilder<CheckboxState> for CheckboxBuilder {
-    fn validate_state_transition(&self, new_state: CheckboxState) -> Result<(), SelectionError> {
-        // All state transitions are valid for checkboxes
-        validate_checkbox_state(new_state, &self.props)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_checkbox_builder_with_common() {
+        let checkbox = CheckboxBuilder::new(CheckboxState::Unchecked)
+            .label("Test Checkbox")
+            .disabled(false)
+            .size(ComponentSize::Medium)
+            .build_unchecked();
+
+        assert_eq!(checkbox.state, CheckboxState::Unchecked);
+        assert_eq!(checkbox.props.label, Some("Test Checkbox".to_string()));
+        assert!(!checkbox.props.disabled);
+        assert_eq!(checkbox.props.size, ComponentSize::Medium);
     }
 
-    fn apply_state_validated(mut self, state: CheckboxState) -> Result<Self, SelectionError> {
-        self.validate_state_transition(state)?;
-        self.state = state;
-        Ok(self)
+    #[test]
+    fn test_checkbox_convenience_methods() {
+        let unchecked = CheckboxBuilder::unchecked().build_unchecked();
+        assert_eq!(unchecked.state, CheckboxState::Unchecked);
+
+        let checked = CheckboxBuilder::checked().build_unchecked();
+        assert_eq!(checked.state, CheckboxState::Checked);
+
+        let indeterminate = CheckboxBuilder::indeterminate().build_unchecked();
+        assert_eq!(indeterminate.state, CheckboxState::Indeterminate);
+
+        let from_bool = CheckboxBuilder::from_bool(true).build_unchecked();
+        assert_eq!(from_bool.state, CheckboxState::Checked);
+    }
+
+    #[test]
+    fn test_checkbox_toggle() {
+        let toggled = CheckboxBuilder::unchecked().toggled().build_unchecked();
+        assert_eq!(toggled.state, CheckboxState::Checked);
+
+        let toggled_back = CheckboxBuilder::checked().toggled().build_unchecked();
+        assert_eq!(toggled_back.state, CheckboxState::Unchecked);
+    }
+
+    #[test]
+    fn test_checkbox_validation() {
+        let valid_builder = CheckboxBuilder::unchecked().label("Valid");
+        assert!(valid_builder.validate().is_ok());
+
+        let invalid_builder = CheckboxBuilder::unchecked().label("x".repeat(300));
+        assert!(invalid_builder.validate().is_err());
+    }
+
+    #[test]
+    fn test_checkbox_clone_with_state() {
+        let original = CheckboxBuilder::unchecked().label("Test");
+        let cloned = original.clone_with_state(CheckboxState::Checked);
+        
+        let original_checkbox = original.build_unchecked();
+        let cloned_checkbox = cloned.build_unchecked();
+        
+        assert_eq!(original_checkbox.state, CheckboxState::Unchecked);
+        assert_eq!(cloned_checkbox.state, CheckboxState::Checked);
+        assert_eq!(original_checkbox.props.label, cloned_checkbox.props.label);
+    }
+
+    #[test]
+    fn test_checkbox_animation_config() {
+        let checkbox = CheckboxBuilder::unchecked()
+            .animations_enabled(false)
+            .build_unchecked();
+            
+        assert!(!checkbox.animation_config.enabled);
+    }
+
+    #[test]
+    fn test_common_builder_trait() {
+        let builder = CheckboxBuilder::unchecked()
+            .with_metadata("icon", "check")
+            .error(true);
+
+        assert_eq!(builder.props().get_metadata("icon"), Some("check"));
+        assert!(builder.has_error());
     }
 }
-
-impl ConditionalBuilder<CheckboxState> for CheckboxBuilder {}
-impl BatchBuilder<CheckboxState> for CheckboxBuilder {}

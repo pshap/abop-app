@@ -3,12 +3,12 @@
 #[cfg(test)]
 mod about_tests {
     use super::super::about::about_view;
-    use crate::state::UiState;
+    use crate::state::AppState;
     use crate::theme::ThemeMode;
 
     #[test]
     fn test_about_view_creation() {
-        let state = UiState::default();
+        let state = AppState::default();
         let element = about_view(&state);
 
         // The function should return an Element without panicking
@@ -20,16 +20,16 @@ mod about_tests {
     fn test_about_view_with_different_themes() {
         // Test with light theme
         {
-            let mut state = UiState::default();
-            state.theme_mode = ThemeMode::Light;
+            let mut state = AppState::default();
+            state.ui.theme_mode = ThemeMode::Light;
             let light_element = about_view(&state);
             let _ = light_element; // Just verify it compiles and runs
         }
 
         // Test with dark theme
         {
-            let mut state = UiState::default();
-            state.theme_mode = ThemeMode::Dark;
+            let mut state = AppState::default();
+            state.ui.theme_mode = ThemeMode::Dark;
             let dark_element = about_view(&state);
             let _ = dark_element; // Just verify it compiles and runs
         }
@@ -39,7 +39,7 @@ mod about_tests {
 #[cfg(test)]
 mod library_tests {
     use super::super::library::library_view;
-    use crate::state::UiState;
+    use crate::state::AppState;
     use abop_core::models::audiobook::Audiobook;
     use std::path::PathBuf;
 
@@ -56,7 +56,7 @@ mod library_tests {
 
     #[test]
     fn test_library_view_empty_state() {
-        let state = UiState::default();
+        let state = AppState::default();
         let element = library_view(&state);
 
         // Should create view without crashing
@@ -65,10 +65,10 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_audiobooks() {
-        let mut state = UiState::default();
+        let mut state = AppState::default();
 
         // Add some test audiobooks
-        state.audiobooks = vec![
+        state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];
@@ -79,15 +79,15 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_selected_audiobooks() {
-        let mut state = UiState::default();
+        let mut state = AppState::default();
 
         // Add audiobooks and select some
-        state.audiobooks = vec![
+        state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];
 
-        state.selected_audiobooks.insert("1".to_string());
+        state.library.selected_audiobooks.insert("1".to_string());
 
         let element = library_view(&state);
         let _ = element; // Just verify it compiles and runs
@@ -95,8 +95,8 @@ mod library_tests {
 
     #[test]
     fn test_library_view_scanning_state() {
-        let mut state = UiState::default();
-        state.scanning = true;
+        let mut state = AppState::default();
+        state.library.scanning = true;
 
         let element = library_view(&state);
         let _ = element; // Just verify it compiles and runs
@@ -104,9 +104,9 @@ mod library_tests {
 
     #[test]
     fn test_library_view_processing_state() {
-        let mut state = UiState::default();
-        state.processing_audio = true;
-        state.processing_progress = Some(0.5);
+        let mut state = AppState::default();
+        state.player.processing_audio = true;
+        state.player.processing_progress = Some(0.5);
 
         let element = library_view(&state);
         let _ = element; // Just verify it compiles and runs
@@ -116,12 +116,12 @@ mod library_tests {
 #[cfg(test)]
 mod settings_tests {
     use super::super::settings::settings_view;
-    use crate::state::UiState;
+    use crate::state::AppState;
     use crate::theme::ThemeMode;
 
     #[test]
     fn test_settings_view_creation() {
-        let state = UiState::default();
+        let state = AppState::default();
         let element = settings_view(&state);
 
         let _ = element; // Just verify it compiles and runs
@@ -130,16 +130,16 @@ mod settings_tests {
     fn test_settings_view_with_different_themes() {
         // Test light theme
         {
-            let mut state = UiState::default();
-            state.theme_mode = ThemeMode::Light;
+            let mut state = AppState::default();
+            state.ui.theme_mode = ThemeMode::Light;
             let light_element = settings_view(&state);
             let _ = light_element; // Just verify it compiles and runs
         }
 
         // Test dark theme
         {
-            let mut state = UiState::default();
-            state.theme_mode = ThemeMode::Dark;
+            let mut state = AppState::default();
+            state.ui.theme_mode = ThemeMode::Dark;
             let dark_element = settings_view(&state);
             let _ = dark_element; // Just verify it compiles and runs
         }
@@ -147,8 +147,8 @@ mod settings_tests {
 
     #[test]
     fn test_settings_view_with_auto_save_enabled() {
-        let mut state = UiState::default();
-        state.auto_save_library = true;
+        let mut state = AppState::default();
+        state.library.auto_save_library = true;
 
         let element = settings_view(&state);
         let _ = element; // Just verify it compiles and runs
@@ -156,8 +156,8 @@ mod settings_tests {
 
     #[test]
     fn test_settings_view_with_scan_subdirectories_enabled() {
-        let mut state = UiState::default();
-        state.scan_subdirectories = true;
+        let mut state = AppState::default();
+        state.library.scan_subdirectories = true;
 
         let element = settings_view(&state);
         let _ = element; // Just verify it compiles and runs
@@ -167,13 +167,13 @@ mod settings_tests {
 #[cfg(test)]
 mod audio_processing_tests {
     use super::super::audio_processing::audio_processing_view;
-    use crate::state::UiState;
+    use crate::state::AppState;
     use abop_core::PlayerState;
     use std::path::PathBuf;
 
     #[test]
     fn test_audio_processing_view_creation() {
-        let state = UiState::default();
+        let state = AppState::default();
         let element = audio_processing_view(&state);
 
         let _ = element; // Just verify it compiles and runs
@@ -181,7 +181,7 @@ mod audio_processing_tests {
 
     #[test]
     fn test_audio_processing_view_with_player_states() {
-        let mut state = UiState::default();
+        let mut state = AppState::default();
 
         // Test with different player states
         let player_states = vec![
@@ -191,7 +191,7 @@ mod audio_processing_tests {
         ];
 
         for player_state in player_states {
-            state.player_state = player_state;
+            state.player.player_state = player_state;
             let element = audio_processing_view(&state);
             let _ = element; // Just verify it compiles and runs
         }
@@ -199,8 +199,8 @@ mod audio_processing_tests {
 
     #[test]
     fn test_audio_processing_view_with_current_file() {
-        let mut state = UiState::default();
-        state.current_playing_file = Some(PathBuf::from("/test/path/audiobook.mp3"));
+        let mut state = AppState::default();
+        state.player.current_playing_file = Some(PathBuf::from("/test/path/audiobook.mp3"));
 
         let element = audio_processing_view(&state);
         let _ = element; // Just verify it compiles and runs

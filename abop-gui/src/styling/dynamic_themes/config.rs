@@ -74,8 +74,7 @@ impl ThemeConfig {
             ..Default::default()
         };
 
-        // TODO: Add conversion for radius, elevation, sizing in Phase 3
-        // For now, these remain as default values
+        // Radius, elevation, and sizing use default values from Material tokens
 
         Ok(material_tokens)
     }

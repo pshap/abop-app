@@ -321,7 +321,7 @@ pub fn switch_from_bool(enabled: bool) -> SwitchBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::super::builder::ComponentBuilder;
+    use super::super::builder::CommonSelectionBuilder;
     use super::*;
 
     #[test]

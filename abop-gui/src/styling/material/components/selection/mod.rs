@@ -87,7 +87,7 @@ pub mod tests;
 // Re-export core types and traits - modern, clean API
 pub use builder::{
     BatchBuilder, Checkbox, CheckboxBuilder, Chip, ChipBuilder, ComponentBuilder,
-    ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder,
+    ConditionalBuilder, Radio, RadioBuilder, Switch, SwitchBuilder, CommonSelectionBuilder,
 };
 pub use chip::{
     ChipCollection, ChipCollectionBuilder, ChipSelectionMode, filter_chip_collection,
@@ -119,6 +119,7 @@ pub type AgreementCheckbox = Checkbox;
 /// Convenient builder functions for quick component creation
 pub mod builders {
     use super::*;
+    use super::builder::CommonSelectionBuilder;
 
     /// Create a checkbox with common settings
     pub fn checkbox() -> CheckboxBuilder {
@@ -310,6 +311,7 @@ pub const PHASE: &str = "Phase 3+ - Modular Architecture with Future Preparation
 #[cfg(test)]
 mod module_tests {
     use super::*;
+    use super::CommonSelectionBuilder;
 
     #[test]
     fn test_module_exports() {

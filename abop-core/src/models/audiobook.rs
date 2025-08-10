@@ -5,9 +5,12 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// Common fallback text constants for better performance
-mod fallbacks {
+pub mod fallbacks {
+    /// Default title to use when an audiobook has no title metadata.
     pub const UNKNOWN_TITLE: &str = "Unknown Title";
+    /// Default author to use when an audiobook has no author/artist metadata.
     pub const UNKNOWN_AUTHOR: &str = "Unknown Author";
+    /// Generic unknown placeholder used for miscellaneous fields (e.g., duration/size).
     pub const UNKNOWN: &str = "Unknown";
 }
 
@@ -108,10 +111,10 @@ impl Audiobook {
     }
     /// Gets the file size formatted as human-readable string
     pub fn formatted_size(&self) -> String {
-        self.size_bytes.map_or_else(
-            || fallbacks::UNKNOWN.to_string(),
-            crate::utils::size::format_bytes,
-        )
+        self.size_bytes
+            .map_or_else(|| fallbacks::UNKNOWN.to_string(), |b| {
+                crate::utils::casting::format_file_size_exact(b)
+            })
     }
 }
 

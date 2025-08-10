@@ -4,7 +4,7 @@ use iced::Task;
 
 use crate::library::{open_directory_dialog, scan_library};
 use crate::messages::{Command as GuiCommand, Message};
-use crate::state::{DirectoryInfo, UiState};
+use crate::state::{DirectoryInfo, AppState};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -33,13 +33,12 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 
 /// Handles library-related commands
 #[must_use]
-pub fn handle_library_command(state: &mut UiState, command: GuiCommand) -> Option<Task<Message>> {
+pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
         GuiCommand::ScanLibrary { library_path } => {
             use abop_core::db::Database;
 
-            state.scanning = true;
-            state.scan_progress = Some(0.0);
+            state.library.start_scanning();
             log::info!(
                 "Executing ScanLibrary command for path: {}",
                 library_path.display()

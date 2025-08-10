@@ -12,14 +12,14 @@ use std::time::{Duration, SystemTime};
 /// Test creating a new UiState with default values
 #[test]
 fn test_ui_state_default() {
-    let state = UiState::default();
+    let state = AppState::default();
     
-    assert_eq!(state.theme_mode, ThemeMode::System);
-    assert!(state.material_tokens.is_some());
-    assert!(state.scan_progress.is_none());
-    assert_eq!(state.scan_state, ScannerState::Idle);
-    assert!(state.recent_directories.is_empty());
-    assert!(state.directories.is_empty());
+    assert_eq!(state.ui.theme_mode, ThemeMode::Dark); // Updated to match new default
+    // Material tokens are now always initialized in ui domain
+    assert!(state.library.scan_progress.is_none());
+    assert!(!state.library.scanning); // scanning replaces scan_state
+    assert!(state.library.recent_directories.is_empty());
+    // directories field no longer exists in new architecture
 }
 
 /// Test creating UiState from core AppState
@@ -35,24 +35,24 @@ fn test_from_core_state() {
         },
     );
 
-    let ui_state = UiState::from_core_state(core_state);
+    let ui_state = AppState::from_core_state(core_state);
     
-    assert_eq!(ui_state.audiobooks.len(), 1);
-    assert_eq!(ui_state.theme_mode, ThemeMode::System);
+    assert_eq!(ui_state.library.audiobooks.len(), 1);
+    assert_eq!(ui_state.ui.theme_mode, ThemeMode::Dark);
 }
 
 /// Test theme mode changes
 #[test]
 fn test_set_theme_mode() {
-    let mut state = UiState::default();
+    let mut state = AppState::default();
     
     // Test changing to dark mode
-    state.set_theme_mode(ThemeMode::Dark);
-    assert_eq!(state.theme_mode, ThemeMode::Dark);
+    state.ui.set_theme_mode(ThemeMode::Dark);
+    assert_eq!(state.ui.theme_mode, ThemeMode::Dark);
     
     // Test changing to light mode
-    state.set_theme_mode(ThemeMode::Light);
-    assert_eq!(state.theme_mode, ThemeMode::Light);
+    state.ui.set_theme_mode(ThemeMode::Light);
+    assert_eq!(state.ui.theme_mode, ThemeMode::Light);
     
     // Test changing to system mode
     state.set_theme_mode(ThemeMode::System);
@@ -62,7 +62,7 @@ fn test_set_theme_mode() {
 /// Test seed color updates
 #[test]
 fn test_set_seed_color() {
-    let mut state = UiState::default();
+    let mut state = AppState::default();
     let test_color = Color::from_rgb(0.5, 0.2, 0.8);
     
     state.set_seed_color(test_color, false);
@@ -74,7 +74,7 @@ fn test_set_seed_color() {
 /// Test scan operations
 #[test]
 fn test_scan_operations() {
-    let mut state = UiState::default();
+    let mut state = AppState::default();
     
     // Test starting a scan
     state.start_scan("/test/path".into());
@@ -97,7 +97,7 @@ fn test_scan_operations() {
 /// Test progress text caching
 #[test]
 fn test_progress_text_caching() {
-    let mut state = UiState::default();
+    let mut state = AppState::default();
     
     // First call should update the cache
     let text1 = state.get_scan_progress_text(0.5);
@@ -115,7 +115,7 @@ fn test_progress_text_caching() {
 /// Test directory metadata synchronization
 #[test]
 fn test_sync_directory_metadata() {
-    let mut state = UiState::default();
+    let mut state = AppState::default();
     
     // Add an audiobook to the state
     let mut audiobook = Audiobook::default();

@@ -13,10 +13,10 @@ use iced::Task;
 
 use crate::commands;
 use crate::messages::Message;
-use crate::state::UiState;
+use crate::state::AppState;
 
 /// Routes messages to appropriate specialized handlers
-pub fn handle_message(state: &mut UiState, message: Message) -> Task<Message> {
+pub fn handle_message(state: &mut AppState, message: Message) -> Task<Message> {
     // Handle command execution messages
     if let Message::ExecuteCommand(command) = message {
         return commands::handle_command(state, command);

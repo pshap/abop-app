@@ -129,7 +129,7 @@ pub mod prelude {
     pub use crate::messages::Message;
 
     // Core domain types
-    pub use abop_core::AppState;
+    pub use crate::state::AppState;
 
     // Common traits
     pub use iced::Application;

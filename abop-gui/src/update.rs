@@ -7,9 +7,9 @@ use iced::Task;
 
 use crate::handlers;
 use crate::messages::Message;
-use crate::state::UiState;
+use crate::state::AppState;
 
 /// Updates application state in response to messages
-pub fn update(state: &mut UiState, message: Message) -> Task<Message> {
+pub fn update(state: &mut AppState, message: Message) -> Task<Message> {
     handlers::handle_message(state, message)
 }

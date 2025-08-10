@@ -112,24 +112,24 @@ impl ComponentState for CheckboxState {
     }
 
     fn from_bool(value: bool) -> Self {
-        Self::from_bool(value)
+        CheckboxState::from_bool(value)
     }
 }
 
 impl MultiLevelState for CheckboxState {
     fn is_intermediate(self) -> bool {
-        matches!(self, Self::Indeterminate)
+        matches!(self, CheckboxState::Indeterminate)
     }
 
     fn all_states() -> &'static [Self] {
-        &[Self::Unchecked, Self::Checked, Self::Indeterminate]
+        &[CheckboxState::Unchecked, CheckboxState::Checked, CheckboxState::Indeterminate]
     }
 
     fn next_state(self) -> Self {
         match self {
-            Self::Unchecked => Self::Checked,
-            Self::Checked => Self::Indeterminate,
-            Self::Indeterminate => Self::Unchecked,
+            CheckboxState::Unchecked => CheckboxState::Checked,
+            CheckboxState::Checked => CheckboxState::Indeterminate,
+            CheckboxState::Indeterminate => CheckboxState::Unchecked,
         }
     }
 }
@@ -193,7 +193,7 @@ impl ComponentState for SwitchState {
     }
 
     fn from_bool(value: bool) -> Self {
-        Self::from_bool(value)
+        SwitchState::from_bool(value)
     }
 }
 
@@ -242,33 +242,33 @@ impl ComponentState for ChipState {
     }
 
     fn to_bool(self) -> bool {
-        matches!(self, Self::Selected)
+        matches!(self, ChipState::Selected)
     }
 
     fn from_bool(value: bool) -> Self {
         if value {
-            Self::Selected
+            ChipState::Selected
         } else {
-            Self::Unselected
+            ChipState::Unselected
         }
     }
 }
 
 impl InteractiveState for ChipState {
     fn is_pressed(self) -> bool {
-        matches!(self, Self::Pressed)
+        matches!(self, ChipState::Pressed)
     }
 
     fn to_pressed(self) -> Self {
         match self {
-            Self::Selected => Self::Pressed,
+            ChipState::Selected => ChipState::Pressed,
             other => other,
         }
     }
 
     fn to_unpressed(self) -> Self {
         match self {
-            Self::Pressed => Self::Selected,
+            ChipState::Pressed => ChipState::Selected,
             other => other,
         }
     }
@@ -449,12 +449,31 @@ impl ComponentProps {
         if is_known_key {
             self.metadata.insert(key_string, value.into());
         } else {
-            // Allow unknown keys for extensibility but warn in debug builds
-            #[cfg(debug_assertions)]
-            log::warn!("Unknown metadata key '{key_string}'. Consider using predefined constants.");
+            // Log unknown keys in all builds for better debugging
+            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys.");
+            // Allow unknown keys for extensibility 
             self.metadata.insert(key_string, value.into());
         }
         self
+    }
+
+    /// Insert metadata key-value pair mutably (more efficient than with_metadata for single updates)
+    pub fn insert_metadata<K: Into<String>, V: Into<String>>(&mut self, key: K, value: V) {
+        let key_string = key.into();
+
+        // Use const lookup for better performance in release builds
+        let is_known_key = constants::metadata_keys::ALL_SUPPORTED
+            .iter()
+            .any(|&k| k == key_string);
+
+        if is_known_key {
+            self.metadata.insert(key_string, value.into());
+        } else {
+            // Log unknown keys in all builds for better debugging
+            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys.");
+            // Allow unknown keys for extensibility 
+            self.metadata.insert(key_string, value.into());
+        }
     }
 
     /// Get metadata value by key
@@ -612,6 +631,11 @@ pub enum EasingCurve {
 // Common Validation Functions
 // ============================================================================
 
+/// Generic validation helper for selection components
+fn validate_selection_component_props(props: &ComponentProps) -> Result<(), SelectionError> {
+    validate_props(props, &ValidationConfig::default())
+}
+
 /// Validate component properties
 pub fn validate_props(
     props: &ComponentProps,
@@ -644,7 +668,7 @@ pub fn validate_checkbox_state(
     _state: CheckboxState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())
+    validate_selection_component_props(props)
 }
 
 /// Validate switch state consistency
@@ -652,7 +676,7 @@ pub fn validate_switch_state(
     _state: SwitchState,
     props: &ComponentProps,
 ) -> Result<(), SelectionError> {
-    validate_props(props, &ValidationConfig::default())
+    validate_selection_component_props(props)
 }
 
 /// Validate chip state and configuration
@@ -740,12 +764,24 @@ pub trait AnimatedComponent {
 // Utility Functions
 // ============================================================================
 
-/// Check if the system has reduced motion enabled (placeholder implementation)
-/// In a real implementation, this would check OS accessibility settings
+/// Check if the system has reduced motion enabled
+/// 
+/// This function checks environment variables and provides a simple cross-platform
+/// reduced motion detection. In production, this could be enhanced with OS-specific APIs.
+/// 
+/// # Environment Variables
+/// - `ABOP_REDUCE_MOTION`: Application-specific setting ("1" or "true")
+/// - `PREFER_REDUCED_MOTION`: General accessibility setting ("1" or "true")
 #[must_use]
 pub fn system_has_reduced_motion() -> bool {
-    // TODO: Implement actual system check
-    false
+    /// Check if an environment variable indicates reduced motion preference
+    fn env_var_is_enabled(var_name: &str) -> bool {
+        std::env::var(var_name)
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false)
+    }
+    
+    env_var_is_enabled("ABOP_REDUCE_MOTION") || env_var_is_enabled("PREFER_REDUCED_MOTION")
 }
 
 /// Helper function to create validation config for specific use cases
@@ -778,7 +814,7 @@ pub const fn validation_config_for_toggles() -> ValidationConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    
     #[test]
     fn test_checkbox_state_transitions() {
         assert_eq!(CheckboxState::Unchecked.toggle(), CheckboxState::Checked);
@@ -950,5 +986,35 @@ mod tests {
             ComponentSize::Medium.size_px(),
             constants::sizes::MEDIUM_SIZE_PX
         );
+    }
+
+    #[test]
+    fn test_validation_helper_consistency() {
+        let props = ComponentProps::new().with_label("Test");
+        
+        // All component validation should use the same base validation
+        assert!(validate_checkbox_state(CheckboxState::Unchecked, &props).is_ok());
+        assert!(validate_switch_state(SwitchState::Off, &props).is_ok());
+        
+        // Test with invalid props
+        let invalid_props = ComponentProps::new().with_label("x".repeat(201));
+        assert!(validate_checkbox_state(CheckboxState::Unchecked, &invalid_props).is_err());
+        assert!(validate_switch_state(SwitchState::Off, &invalid_props).is_err());
+    }
+
+    #[test]
+    fn test_trait_delegation_consistency() {
+        use super::super::state_traits::ComponentState;
+        
+        // Test that trait methods delegate to inherent methods correctly
+        let checkbox = CheckboxState::Unchecked;
+        let inherent_toggle = checkbox.toggle();
+        let trait_toggle = ComponentState::toggle(checkbox);
+        assert_eq!(inherent_toggle, trait_toggle);
+        
+        let switch = SwitchState::Off;
+        let inherent_toggle = switch.toggle();
+        let trait_toggle = ComponentState::toggle(switch);
+        assert_eq!(inherent_toggle, trait_toggle);
     }
 }

@@ -14,7 +14,7 @@ use crate::{
     handlers,
     messages::Message,
     router::{self, Route},
-    state::UiState,
+    state::AppState,
     views,
 };
 use abop_core::services::ServiceContainer;
@@ -35,7 +35,7 @@ enum TaskMessage {
 #[derive(Debug)]
 pub struct App {
     /// Current application state
-    state: UiState,
+    state: AppState,
     /// Application router for view navigation
     router: router::Router,
     /// Service container for managing services and background tasks
@@ -82,7 +82,7 @@ impl App {
         });
 
         Self {
-            state: UiState::default(),
+            state: AppState::default(),
             router: router::Router::new(),
             services,
             task_tx: Some(task_tx),
