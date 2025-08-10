@@ -75,7 +75,7 @@ impl AppStateContainer {
     /// Check if any state domain needs a UI redraw
     pub fn needs_redraw(&self) -> bool {
         self.ui.needs_redraw 
-            || self.library.needs_redraw 
+            || self.library.needs_redraw() 
             || self.player.needs_redraw
             || self.tasks.needs_redraw
     }
@@ -83,7 +83,7 @@ impl AppStateContainer {
     /// Clear all redraw flags
     pub fn clear_redraw_flags(&mut self) {
         self.ui.needs_redraw = false;
-        self.library.needs_redraw = false;
+        self.library.clear_redraw_flag();
         self.player.needs_redraw = false;
         self.tasks.needs_redraw = false;
     }

@@ -252,8 +252,8 @@ impl LibraryState {
     
     /// Get current scanner state (read-only access)
     #[must_use]
-    pub const fn scanner_state(&self) -> ScannerState {
-        self.scanner_state
+    pub fn scanner_state(&self) -> ScannerState {
+        self.scanner_state.clone()
     }
     
     /// Check if a scan is currently in progress (modern API)
@@ -346,7 +346,7 @@ impl LibraryState {
 
     /// Mark that the library state needs a UI redraw
     pub fn mark_for_redraw(&mut self) {
-        self.mark_for_redraw();
+        self.needs_redraw = true;
     }
 
     /// Clear the redraw flag (typically called after redraw is complete)
