@@ -122,7 +122,7 @@ pub mod domain {
 
         /// Invalid animation duration value
         #[error("Invalid animation duration: {0}")]
-        InvalidDuration(f64),
+    InvalidDuration(f32),
 
         /// Invalid color value
         #[error("Invalid color value: {0}")]
