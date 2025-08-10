@@ -16,9 +16,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `u16` - Pixel value, clamped to valid range
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::spacing_to_pixels_clamped")]
     #[must_use]
     pub fn safe_spacing_to_pixels(spacing: f32) -> u16 {
-        spacing.round().clamp(0.0, f32::from(u16::MAX)).max(0.0) as u16
+        abop_core::utils::casting::domain::ui::spacing_to_pixels_clamped(spacing)
     }
 
     /// Safe animation duration conversion with bounds checking
@@ -28,10 +29,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `u32` - Duration in milliseconds, clamped to valid range
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::duration_secs_to_millis_clamped")]
     #[must_use]
     pub fn safe_duration_to_millis(duration: f64) -> u32 {
-        let millis = duration * 1000.0;
-        millis.clamp(0.0, f64::from(u32::MAX)).round() as u32
+        abop_core::utils::casting::domain::ui::duration_secs_to_millis_clamped(duration)
     }
 
     /// Safe thickness conversion for UI borders and dividers
@@ -41,9 +42,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `u16` - Pixel thickness, clamped to valid range
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::spacing_to_pixels_clamped")]
     #[must_use]
     pub fn safe_thickness_to_pixels(thickness: f32) -> u16 {
-        thickness.round().clamp(0.0, f32::from(u16::MAX)).max(0.0) as u16
+        abop_core::utils::casting::domain::ui::spacing_to_pixels_clamped(thickness)
     }
 
     /// Safe level to spacing conversion for nested UI elements
@@ -53,13 +55,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `f32` - Spacing in logical pixels
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::level_to_spacing_clamped")]
     #[must_use]
     pub fn safe_level_to_spacing(level: usize) -> f32 {
-        const SPACING_PER_LEVEL: f32 = 24.0;
-        const MAX_LEVELS: usize = 50; // Reasonable UI depth limit
-
-        let clamped_level = level.min(MAX_LEVELS);
-        (clamped_level as f32) * SPACING_PER_LEVEL
+        abop_core::utils::casting::domain::ui::level_to_spacing_clamped(level)
     }
 
     /// Safe progress percentage calculation for UI progress bars
@@ -70,15 +69,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `f32` - Progress percentage (0.0 to 100.0), or 0.0 if total is zero
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::progress_percentage_clamped")]
     #[must_use]
     pub fn safe_progress_percentage(current: usize, total: usize) -> f32 {
-        if total == 0 {
-            return 0.0;
-        }
-
-        // Use f64 for intermediate calculation to preserve precision
-        let percentage = (current as f64 / total as f64) * 100.0;
-        percentage.clamp(0.0, 100.0) as f32
+        abop_core::utils::casting::domain::ui::progress_percentage_clamped(current, total)
     }
 
     /// Safe file size formatting for UI display (deprecated; use abop_core canonical helpers)
@@ -95,10 +89,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `u8` - Alpha value (0 to 255)
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::opacity_to_alpha_clamped")]
     #[must_use]
     pub fn safe_opacity_to_alpha(opacity: f32) -> u8 {
-        let clamped = opacity.clamp(0.0, 1.0);
-        (clamped * 255.0).round() as u8
+        abop_core::utils::casting::domain::ui::opacity_to_alpha_clamped(opacity)
     }
 
     /// Safe color component conversion (f32 to u8)
@@ -108,10 +102,10 @@ pub mod ui_conversions {
     ///
     /// # Returns
     /// * `u8` - Color component (0 to 255)
+    #[deprecated(since = "0.1.0", note = "Use abop_core::utils::casting::domain::ui::color_component_to_u8_clamped")]
     #[must_use]
     pub fn safe_color_component_to_u8(component: f32) -> u8 {
-        let clamped = component.clamp(0.0, 1.0);
-        (clamped * 255.0).round() as u8
+        abop_core::utils::casting::domain::ui::color_component_to_u8_clamped(component)
     }
 }
 
