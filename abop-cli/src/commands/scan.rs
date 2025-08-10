@@ -201,8 +201,7 @@ mod tests {
             let result = build_scanner_config(preset, None, None);
             assert!(
                 result.is_ok(),
-                "Config preset '{}' should not fail",
-                preset
+                "Config preset '{preset}' should not fail"
             );
         }
     }

@@ -5,7 +5,7 @@
 //! code and clear error messages for users.
 
 use anyhow::{Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Type alias for CLI operation results
 ///
@@ -91,13 +91,12 @@ pub fn validate_existing_database_path(path: &Path) -> CliResult<()> {
     }
     
     // Additional validation: check if it's likely a SQLite file
-    if let Some(ext) = path.extension() {
-        if !["db", "sqlite", "sqlite3"].contains(&ext.to_str().unwrap_or("")) {
-            log::warn!(
-                "Database file {} does not have a typical SQLite extension (.db, .sqlite, .sqlite3)",
-                path.display()
-            );
-        }
+    if let Some(ext) = path.extension()
+        && !["db", "sqlite", "sqlite3"].contains(&ext.to_str().unwrap_or("")) {
+        log::warn!(
+            "Database file {} does not have a typical SQLite extension (.db, .sqlite, .sqlite3)",
+            path.display()
+        );
     }
     
     Ok(())
@@ -174,14 +173,14 @@ mod tests {
         
         // Test with_database_context
         let error: std::result::Result<(), std::io::Error> = 
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "test error"));
+            Err(std::io::Error::other("test error"));
         let result = error.with_database_context("test operation");
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Database operation 'test operation' failed"));
         
         // Test with_scan_context
         let error: std::result::Result<(), std::io::Error> = 
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "test error"));
+            Err(std::io::Error::other("test error"));
         let result = error.with_scan_context();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Library scan operation failed"));
