@@ -73,24 +73,6 @@ pub struct LibraryState {
     /// Active library scanner instance if a scan is in progress
     scanner: Option<Arc<Mutex<LibraryScanner>>>,
     
-    // Legacy scanning fields (DEPRECATED - will be removed in v0.2.0)
-    // 
-    // MIGRATION STRATEGY: These redundant fields exist temporarily during the state
-    // architecture refactoring. They are automatically synchronized with the modern
-    // scanner_state/scanner_progress fields to maintain compatibility while code is
-    // gradually migrated to use the modern API methods (is_scanning(), scanner_progress).
-    // 
-    // TODO: Remove in v0.2.0 after all usage sites are updated to use modern API
-    #[deprecated(since = "0.1.0", note = "Use scanner_state.is_scanning() instead")]
-    /// Whether a library scan is in progress (legacy - use scanner_state instead)
-    pub scanning: bool,
-    #[deprecated(since = "0.1.0", note = "Use get_scan_progress_legacy() instead")]
-    /// Progress of the current scan (0.0 to 1.0) (legacy - use scanner_progress instead)
-    pub scan_progress: Option<f32>,
-    #[deprecated(since = "0.1.0", note = "Use scanner_progress directly instead")]
-    /// Enhanced scan progress with detailed information (legacy - use scanner_progress instead)
-    pub enhanced_scan_progress: Option<ScanProgress>,
-    
     /// Flag to indicate library state needs UI redraw
     needs_redraw: bool,
 }
@@ -126,10 +108,6 @@ impl LibraryState {
             scanner_state: ScannerState::Idle,
             scanner_progress: None,
             scanner: None,
-            // Legacy fields
-            scanning: false,
-            scan_progress: None,
-            enhanced_scan_progress: None,
             needs_redraw: false,
         }
     }
@@ -241,9 +219,6 @@ impl LibraryState {
     /// Start a new scanning operation
     pub fn start_scanning(&mut self) {
         self.scanner_state = ScannerState::Scanning;
-        self.scanning = true; // Legacy
-        self.scan_progress = None;
-        self.enhanced_scan_progress = None;
         self.scanner_progress = None;
         self.mark_for_redraw();
     }
@@ -263,67 +238,47 @@ impl LibraryState {
     }
     
     /// Get current scan progress as legacy f32 (modern API with legacy compatibility)
-    #[must_use]
+    #[must_use] 
     pub fn get_scan_progress_legacy(&self) -> Option<f32> {
-        self.scanner_progress.as_ref()
-            .and_then(Self::convert_scan_progress_to_legacy)
+        self.scanner_progress.as_ref().and_then(|progress| {
+            match progress {
+                abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
+                    Some(*progress_percentage)
+                }
+                abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
+                    // Convert batch count to approximate percentage (rough approximation)
+                    const BATCH_TO_PERCENTAGE_SCALE: f32 = 100.0;
+                    Some((*total_processed as f32 / BATCH_TO_PERCENTAGE_SCALE).clamp(0.0, 1.0))
+                }
+                abop_core::scanner::ScanProgress::Complete { .. } => {
+                    Some(1.0) // 100% complete
+                }
+                _ => None, // Other progress states don't map to simple percentages
+            }
+        })
     }
 
     /// Update scanning progress
     pub fn update_scan_progress(&mut self, progress: ScanProgress) {
-        self.scanner_progress = Some(progress.clone());
-        self.enhanced_scan_progress = Some(progress.clone()); // Legacy
-        
-        // Convert to legacy f32 progress using dedicated function
-        self.scan_progress = Self::convert_scan_progress_to_legacy(&progress);
+        self.scanner_progress = Some(progress);
         self.mark_for_redraw();
-    }
-    
-    /// Convert enhanced ScanProgress to legacy f32 progress for backwards compatibility
-    ///
-    /// This function provides a bridge between the new detailed `ScanProgress` enum
-    /// and the legacy f32 progress representation (0.0 to 1.0) used by older UI components.
-    ///
-    /// # Returns
-    /// - `Some(f32)`: Progress as a fraction from 0.0 to 1.0
-    /// - `None`: For progress states that don't map to a simple percentage
-    fn convert_scan_progress_to_legacy(progress: &ScanProgress) -> Option<f32> {
-        // Legacy approximation: treat batch count as percentage (batches out of 100)
-        const LEGACY_BATCH_TO_PERCENTAGE_SCALE: f32 = 100.0;
-        
-        match progress {
-            abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
-                Some(*progress_percentage)
-            }
-            abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
-                // Convert batch count to approximate percentage (rough approximation)
-                Some((*total_processed as f32 / LEGACY_BATCH_TO_PERCENTAGE_SCALE).clamp(0.0, 1.0))
-            }
-            abop_core::scanner::ScanProgress::Complete { .. } => {
-                Some(1.0) // 100% complete
-            }
-            _ => None, // Other progress states don't map to simple percentages
-        }
     }
 
     /// Complete scanning operation
     pub fn complete_scanning(&mut self) {
         self.scanner_state = ScannerState::Complete;
-        self.scanning = false; // Legacy
         self.mark_for_redraw();
     }
 
     /// Handle scanning error
     pub fn error_scanning(&mut self) {
         self.scanner_state = ScannerState::Error;
-        self.scanning = false; // Legacy
         self.mark_for_redraw();
     }
 
     /// Cancel scanning operation
     pub fn cancel_scanning(&mut self) {
         self.scanner_state = ScannerState::Cancelled;
-        self.scanning = false; // Legacy
         self.mark_for_redraw();
     }
 
