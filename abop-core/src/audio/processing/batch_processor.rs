@@ -13,11 +13,11 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 /// Wrapper that adds cancellation support to AudioFileProcessor
-/// 
+///
 /// **Purpose**: Provides cancellation-aware file processing without modifying
 /// the underlying AudioFileProcessor implementation. This wrapper pattern allows
 /// for responsive cancellation while maintaining compatibility with existing code.
-/// 
+///
 /// **Architecture**: Uses composition over inheritance to add cancellation capability,
 /// following the decorator pattern for clean separation of concerns.
 struct CancellationAwareProcessor<'a> {
@@ -27,39 +27,45 @@ struct CancellationAwareProcessor<'a> {
 
 impl<'a> CancellationAwareProcessor<'a> {
     /// Process a file with integrated cancellation checks
-    /// 
+    ///
     /// **Cancellation Points**: Checks for cancellation before and after processing
     /// to ensure responsive behavior without requiring changes to the underlying
     /// processor implementation.
-    /// 
+    ///
     /// **Error Handling**: Provides detailed error context to distinguish between
     /// processing failures and cancellation requests.
     fn process_file_with_cancellation(&self, input_path: &Path) -> Result<PathBuf> {
         // Pre-processing cancellation check
         if self.cancellation_token.load(Ordering::SeqCst) {
-            return Err(AudioProcessingError::Cancelled(
-                format!("Processing cancelled before starting file: {}", input_path.display())
-            ));
+            return Err(AudioProcessingError::Cancelled(format!(
+                "Processing cancelled before starting file: {}",
+                input_path.display()
+            )));
         }
 
         // Clone the processor to get a mutable instance for processing
         // This is more efficient than creating a new processor from scratch
         // as it reuses the pipeline and options configuration
         let mut processor_clone = self.processor.clone();
-        
+
         // Perform the actual file processing
         let result = processor_clone.process_file(input_path);
-        
+
         // Post-processing cancellation check
         if self.cancellation_token.load(Ordering::SeqCst) {
-            return Err(AudioProcessingError::Cancelled(
-                format!("Processing cancelled after completing file: {}", input_path.display())
-            ));
+            return Err(AudioProcessingError::Cancelled(format!(
+                "Processing cancelled after completing file: {}",
+                input_path.display()
+            )));
         }
-        
-        result.map_err(|e| AudioProcessingError::FileIo(
-            format!("Failed to process file '{}': {}", input_path.display(), e)
-        ))
+
+        result.map_err(|e| {
+            AudioProcessingError::FileIo(format!(
+                "Failed to process file '{}': {}",
+                input_path.display(),
+                e
+            ))
+        })
     }
 }
 
@@ -319,7 +325,7 @@ impl BatchProcessor {
                 self.report_progress(index, total_files);
 
                 let input_path = path.as_ref().to_path_buf();
-                
+
                 // Process file with additional cancellation checks during processing
                 match self.process_single_file_with_cancellation_checks(&input_path) {
                     Ok(output_path) => Ok((input_path, output_path)),
@@ -357,7 +363,7 @@ impl BatchProcessor {
     }
 
     /// Helper method to add cancellation errors for all remaining files
-    /// 
+    ///
     /// **Purpose**: Efficiently handles the scenario where processing is cancelled
     /// before or during batch operations, ensuring all unprocessed files are marked
     /// as cancelled rather than left in an undefined state.
@@ -369,29 +375,32 @@ impl BatchProcessor {
         for path in input_paths {
             failed.push((
                 path.as_ref().to_path_buf(),
-                AudioProcessingError::Cancelled("Processing was cancelled before file processing".to_string()),
+                AudioProcessingError::Cancelled(
+                    "Processing was cancelled before file processing".to_string(),
+                ),
             ));
         }
     }
 
     /// Process a single file with additional cancellation checks during processing
-    /// 
+    ///
     /// **Cancellation Safety**: This method provides more granular cancellation checking
     /// during individual file processing operations, particularly important for large files
     /// or complex processing pipelines that may take significant time.
-    /// 
+    ///
     /// **Performance**: Uses a wrapper approach to add cancellation support while
     /// maintaining the existing file processor interface and avoiding unnecessary
     /// resource allocation.
-    /// 
+    ///
     /// **Implementation**: Provides periodic cancellation checks and proper error handling
     /// for responsive cancellation even during intensive processing operations.
     fn process_single_file_with_cancellation_checks(&self, input_path: &Path) -> Result<PathBuf> {
         // Pre-processing cancellation check
         if self.is_cancelled() {
-            return Err(AudioProcessingError::Cancelled(
-                format!("Processing cancelled before starting file: {}", input_path.display())
-            ));
+            return Err(AudioProcessingError::Cancelled(format!(
+                "Processing cancelled before starting file: {}",
+                input_path.display()
+            )));
         }
 
         // Use a custom processing approach that integrates cancellation checks
@@ -400,14 +409,14 @@ impl BatchProcessor {
     }
 
     /// Process a file with integrated cancellation support
-    /// 
+    ///
     /// **Cancellation Integration**: This method provides cancellation checking at
     /// key points during file processing without requiring changes to the underlying
     /// AudioFileProcessor implementation.
-    /// 
+    ///
     /// **Architecture**: Uses a wrapper pattern to add cancellation capability while
     /// preserving the existing processor interface and avoiding performance penalties.
-    /// 
+    ///
     /// **Future Enhancement**: This approach allows for easy migration to a cancellation-aware
     /// processor implementation when available.
     fn process_file_with_integrated_cancellation(&self, input_path: &Path) -> Result<PathBuf> {
@@ -421,11 +430,11 @@ impl BatchProcessor {
     }
 
     /// Process files sequentially with detailed result tracking and cancellation checks
-    /// 
+    ///
     /// **Cancellation Safety**: This method provides responsive cancellation checking
     /// in sequential processing mode, ensuring prompt termination when requested.
     /// Cancellation is checked before processing each individual file.
-    /// 
+    ///
     /// **Error Handling**: Each file is processed independently, so failures in one
     /// file don't prevent processing of subsequent files. Failed files are tracked
     /// separately from successful ones.
@@ -451,7 +460,7 @@ impl BatchProcessor {
                 }
                 break;
             }
-            
+
             self.report_progress(index, total_files);
 
             let input_path = path.as_ref().to_path_buf();

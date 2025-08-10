@@ -51,7 +51,9 @@ impl UiState {
         if self.theme_mode != theme_mode {
             self.theme_mode = theme_mode;
             self.material_tokens = match theme_mode {
-                ThemeMode::Dark | ThemeMode::System | ThemeMode::MaterialDark => MaterialTokens::dark(),
+                ThemeMode::Dark | ThemeMode::System | ThemeMode::MaterialDark => {
+                    MaterialTokens::dark()
+                }
                 ThemeMode::Light | ThemeMode::MaterialLight => MaterialTokens::light(),
                 ThemeMode::MaterialDynamic => {
                     // Use purple seed color for dynamic Material Design theme

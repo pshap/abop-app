@@ -158,14 +158,21 @@ impl ScanOrchestrator {
             for (file_index, path) in file_chunk.iter().enumerate() {
                 let overall_index = batch_index * batch_size + file_index;
 
-                // Report progress
+                // Report per-file processed progress before processing the file
                 if options.enable_progress
                     && let Some(reporter) = &self.progress_reporter
                 {
-                    let progress = overall_index as f32 / total_files as f32;
                     let rt = tokio::runtime::Handle::try_current();
+                    let file_name = path
+                        .file_name()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_else(|| path.display().to_string());
                     if let Ok(rt) = rt {
-                        rt.block_on(async { reporter.report_progress(progress).await });
+                        rt.block_on(async {
+                            reporter
+                                .report_file_processed(overall_index + 1, total_files, file_name)
+                                .await
+                        });
                     }
                 }
 

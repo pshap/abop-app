@@ -3,9 +3,9 @@
 //! This module defines the core traits that selection components implement,
 //! providing unified interfaces for state management, validation, and animation.
 
+use super::animation::AnimationConfig;
 use super::properties::ComponentProps;
 use super::validation::SelectionError;
-use super::animation::AnimationConfig;
 
 // ============================================================================
 // Core Selection Component Traits (Simplified and Focused)
@@ -80,6 +80,6 @@ pub fn env_has_reduced_motion() -> bool {
             .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
             .unwrap_or(false)
     }
-    
+
     env_var_is_enabled("ABOP_REDUCE_MOTION") || env_var_is_enabled("PREFER_REDUCED_MOTION")
 }

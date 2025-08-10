@@ -6,8 +6,8 @@
 use thiserror::Error;
 
 use super::constants;
-use super::properties::{ComponentProps, ChipVariant};
-use super::states::{CheckboxState, SwitchState, ChipState};
+use super::properties::{ChipVariant, ComponentProps};
+use super::states::{CheckboxState, ChipState, SwitchState};
 
 // ============================================================================
 // Validation Configuration
@@ -219,11 +219,11 @@ mod tests {
     #[test]
     fn test_validation_helper_consistency() {
         let props = ComponentProps::new().with_label("Test");
-        
+
         // All component validation should use the same base validation
         assert!(validate_checkbox_state(CheckboxState::Unchecked, &props).is_ok());
         assert!(validate_switch_state(SwitchState::Off, &props).is_ok());
-        
+
         // Test with invalid props
         let invalid_props = ComponentProps::new().with_label("x".repeat(201));
         assert!(validate_checkbox_state(CheckboxState::Unchecked, &invalid_props).is_err());

@@ -7,6 +7,13 @@
 
 use abop_core::models::audiobook::Audiobook;
 use std::path::PathBuf;
+use std::sync::LazyLock;
+
+// Pre-computed long strings to avoid repeated allocations in tests
+static EXTREME_LONG_TITLE: LazyLock<String> =
+    LazyLock::new(|| "Very Long Title That Goes On And On ".repeat(20));
+static EXTREME_LONG_AUTHOR: LazyLock<String> =
+    LazyLock::new(|| "Extremely Long Author Name ".repeat(10));
 
 /// Creates a test audiobook with default realistic values.
 ///
@@ -16,7 +23,7 @@ use std::path::PathBuf;
 ///
 /// # Returns
 /// A fully configured `Audiobook` instance suitable for testing
-/// 
+///
 /// # Examples
 /// ```rust,no_run
 /// use abop_gui::test_utils::create_test_audiobook;
@@ -24,7 +31,7 @@ use std::path::PathBuf;
 /// assert_eq!(audiobook.id, "test-1");
 /// ```
 pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-    let path = PathBuf::from(format!("/test/audiobooks/{}/{}.mp3", id, title));
+    let path = PathBuf::from(format!("/test/audiobooks/{id}/{title}.mp3"));
     let mut audiobook = Audiobook::new("test-library-id", &path);
     audiobook.id = id.to_string();
     audiobook.title = Some(title.to_string());
@@ -50,7 +57,7 @@ pub fn create_custom_test_audiobook(
     author: &str,
     duration: Option<u64>,
 ) -> Audiobook {
-    let path = PathBuf::from(format!("/test/custom/{}/{}.mp3", id, title));
+    let path = PathBuf::from(format!("/test/custom/{id}/{title}.mp3"));
     let mut audiobook = Audiobook::new("test-library-id", &path);
     audiobook.id = id.to_string();
     audiobook.title = Some(title.to_string());
@@ -70,7 +77,12 @@ pub fn create_custom_test_audiobook(
 /// Vector of audiobooks with sequential IDs and titles
 pub fn create_test_audiobook_batch(count: usize, prefix: &str) -> Vec<Audiobook> {
     (0..count)
-        .map(|i| create_test_audiobook(&format!("{prefix}_{i:03}"), &format!("{prefix} Book {i:03}")))
+        .map(|i| {
+            create_test_audiobook(
+                &format!("{prefix}_{i:03}"),
+                &format!("{prefix} Book {i:03}"),
+            )
+        })
         .collect()
 }
 
@@ -83,9 +95,9 @@ pub fn create_minimal_audiobook(id: &str) -> Audiobook {
 pub fn create_extreme_audiobook(id: &str) -> Audiobook {
     let mut audiobook = create_custom_test_audiobook(
         id,
-        &"Very Long Title That Goes On And On ".repeat(20),
-        &"Extremely Long Author Name ".repeat(10), 
-        Some(86400) // 24 hours
+        &EXTREME_LONG_TITLE,
+        &EXTREME_LONG_AUTHOR,
+        Some(86400), // 24 hours
     );
     audiobook.size_bytes = Some(u64::MAX / 1000); // Very large but not overflowing
     audiobook

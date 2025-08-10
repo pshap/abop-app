@@ -14,14 +14,17 @@ use crate::styling::material::{MaterialSurface, SurfaceVariant};
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
 pub fn library_view(state: &AppState) -> iced::Element<'_, Message> {
-    log::debug!("LIBRARY VIEW RENDER: {} audiobooks", state.library.audiobooks.len());
-    
+    log::debug!(
+        "LIBRARY VIEW RENDER: {} audiobooks",
+        state.library.audiobooks.len()
+    );
+
     let status_display = create_status_display(state);
     let table_content = create_audiobook_table(state);
     let footer = create_footer(state);
-    
+
     let content_items = build_content_layout(state, status_display, table_content, footer);
-    
+
     assemble_final_container(state, content_items)
 }
 
@@ -125,11 +128,11 @@ fn build_content_layout<'a>(
 /// Creates the audio toolbar for selected audiobooks
 fn create_audio_toolbar(state: &AppState) -> iced::Element<'_, Message> {
     log::debug!(
-        "Creating audio toolbar for {} selected audiobooks, player state: {:?}", 
+        "Creating audio toolbar for {} selected audiobooks, player state: {:?}",
         state.library.selected_audiobooks.len(),
         state.player.player_state
     );
-    
+
     let mut toolbar = AudioToolbar::new();
     toolbar.set_playing(matches!(
         state.player.player_state,
@@ -138,7 +141,9 @@ fn create_audio_toolbar(state: &AppState) -> iced::Element<'_, Message> {
 
     container(toolbar.view(&state.ui.material_tokens))
         .width(Length::Fill)
-        .height(Length::Fixed(state.ui.material_tokens.sizing().toolbar_height))
+        .height(Length::Fixed(
+            state.ui.material_tokens.sizing().toolbar_height,
+        ))
         .into()
 }
 
@@ -149,7 +154,7 @@ fn assemble_final_container<'a>(
 ) -> iced::Element<'a, Message> {
     // Material Design 3: minimal vertical spacing between components
     const MD3_MINIMAL_SPACING: u16 = 4;
-    
+
     let content = column(content_items)
         .spacing(MD3_MINIMAL_SPACING)
         .width(Length::Fill)

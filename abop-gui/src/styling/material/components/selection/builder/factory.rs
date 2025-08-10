@@ -13,8 +13,8 @@ use super::super::common::{CheckboxState, ChipVariant, SwitchState};
 #[cfg(test)]
 use super::super::common::{ChipState, ComponentSize, SelectionComponent};
 use super::{
-    checkbox::CheckboxBuilder, chip::ChipBuilder, radio::RadioBuilder, switch::SwitchBuilder,
-    common_builder::CommonSelectionBuilder,
+    checkbox::CheckboxBuilder, chip::ChipBuilder, common_builder::CommonSelectionBuilder,
+    radio::RadioBuilder, switch::SwitchBuilder,
 };
 
 // ============================================================================

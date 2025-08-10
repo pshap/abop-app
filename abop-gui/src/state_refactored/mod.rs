@@ -7,18 +7,18 @@
 //! - TaskState: Background task management  
 //! - ProgressCache: Performance optimization for progress display
 
-pub mod ui_state;
 pub mod library_state;
 pub mod player_state;
-pub mod task_state;
 pub mod progress_cache;
+pub mod task_state;
+pub mod ui_state;
 
 // Re-export the main state types
-pub use ui_state::UiState;
-pub use library_state::{LibraryState, DirectoryInfo, TableState};
+pub use library_state::{DirectoryInfo, LibraryState, TableState};
 pub use player_state::PlayerState;
-pub use task_state::{TaskState, TaskInfo, TaskType};
 pub use progress_cache::ProgressCache;
+pub use task_state::{TaskInfo, TaskState, TaskType};
+pub use ui_state::UiState;
 
 use abop_core::models::AppState;
 

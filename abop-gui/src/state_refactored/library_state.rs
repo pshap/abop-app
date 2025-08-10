@@ -9,10 +9,10 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::Mutex;
 
-use abop_core::models::{AppState, Audiobook};
-use abop_core::scanner::{LibraryScanner, ScannerState};
-use abop_core::scanner::progress::ScanProgress;
 use crate::utils::platform;
+use abop_core::models::{AppState, Audiobook};
+use abop_core::scanner::progress::ScanProgress;
+use abop_core::scanner::{LibraryScanner, ScannerState};
 
 /// Directory information with scan metadata
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,13 +58,13 @@ pub struct LibraryState {
     pub selected_audiobooks: HashSet<String>,
     /// State of the audiobook table (sorting, selection, etc.)
     pub table_state: TableState,
-    
+
     // User preferences
     /// Whether to automatically save library state after scanning
     pub auto_save_library: bool,
     /// Whether to include subdirectories when scanning
     pub scan_subdirectories: bool,
-    
+
     // Scanning state
     /// Current state of the library scanner
     scanner_state: ScannerState,
@@ -72,7 +72,7 @@ pub struct LibraryState {
     pub scanner_progress: Option<ScanProgress>,
     /// Active library scanner instance if a scan is in progress
     scanner: Option<Arc<Mutex<LibraryScanner>>>,
-    
+
     /// Flag to indicate library state needs UI redraw
     needs_redraw: bool,
 }
@@ -82,7 +82,7 @@ impl LibraryState {
     #[must_use]
     pub fn from_core_state(core_state: &AppState) -> Self {
         let default_directory = platform::get_default_audiobook_directory();
-        
+
         Self {
             library_path: core_state
                 .user_preferences
@@ -151,7 +151,7 @@ impl LibraryState {
     /// Add or update a directory in recent directories
     pub fn add_recent_directory(&mut self, path: PathBuf, scan_duration: Duration) {
         let now = SystemTime::now();
-        
+
         // Check if directory already exists and update it
         if let Some(existing) = self.recent_directories.iter_mut().find(|d| d.path == path) {
             existing.last_scan = now;
@@ -224,28 +224,31 @@ impl LibraryState {
     }
 
     // Modern API methods - prefer these over legacy fields
-    
+
     /// Get current scanner state (read-only access)
     #[must_use]
     pub fn scanner_state(&self) -> ScannerState {
         self.scanner_state.clone()
     }
-    
+
     /// Check if a scan is currently in progress (modern API)
     #[must_use]
     pub fn is_scanning(&self) -> bool {
         matches!(self.scanner_state, ScannerState::Scanning)
     }
-    
+
     /// Get current scan progress as legacy f32 (modern API with legacy compatibility)
-    #[must_use] 
+    #[must_use]
     pub fn get_scan_progress_legacy(&self) -> Option<f32> {
         self.scanner_progress.as_ref().and_then(|progress| {
             match progress {
-                abop_core::scanner::ScanProgress::FileProcessed { progress_percentage, .. } => {
-                    Some(*progress_percentage)
-                }
-                abop_core::scanner::ScanProgress::BatchCommitted { total_processed, .. } => {
+                abop_core::scanner::ScanProgress::FileProcessed {
+                    progress_percentage,
+                    ..
+                } => Some(*progress_percentage),
+                abop_core::scanner::ScanProgress::BatchCommitted {
+                    total_processed, ..
+                } => {
                     // Convert batch count to approximate percentage (rough approximation)
                     const BATCH_TO_PERCENTAGE_SCALE: f32 = 100.0;
                     Some((*total_processed as f32 / BATCH_TO_PERCENTAGE_SCALE).clamp(0.0, 1.0))
@@ -334,7 +337,14 @@ impl std::fmt::Debug for LibraryState {
             .field("scan_subdirectories", &self.scan_subdirectories)
             .field("scanner_state", &self.scanner_state())
             .field("scanner_progress", &self.scanner_progress)
-            .field("scanner", &if self.scanner().is_some() { "Some(<LibraryScanner>)" } else { "None" })
+            .field(
+                "scanner",
+                &if self.scanner().is_some() {
+                    "Some(<LibraryScanner>)"
+                } else {
+                    "None"
+                },
+            )
             .field("needs_redraw", &self.needs_redraw())
             .finish()
     }

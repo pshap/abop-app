@@ -8,6 +8,39 @@ use std::collections::HashMap;
 
 use super::constants;
 
+/// Maximum allowed length for metadata keys
+const MAX_METADATA_KEY_LENGTH: usize = 256;
+/// Maximum allowed length for metadata values
+const MAX_METADATA_VALUE_LENGTH: usize = 1024;
+
+/// Validates metadata key and value lengths for security
+fn validate_metadata_input(key: &str, value: &str) -> bool {
+    if key.len() > MAX_METADATA_KEY_LENGTH || value.len() > MAX_METADATA_VALUE_LENGTH {
+        log::warn!(
+            "Metadata key or value too long, skipping: key_len={}, value_len={}",
+            key.len(),
+            value.len()
+        );
+        false
+    } else {
+        true
+    }
+}
+
+/// Logs unknown metadata keys with context for debugging
+fn log_unknown_metadata_key(key: &str) {
+    log::debug!(
+        "Unknown metadata key '{key}' for component properties. Consider using predefined metadata keys or refer to the documentation for supported keys."
+    );
+}
+
+/// Checks if a metadata key is in the supported list
+fn is_supported_metadata_key(key: &str) -> bool {
+    constants::metadata_keys::ALL_SUPPORTED
+        .iter()
+        .any(|&k| k == key)
+}
+
 // ============================================================================
 // Component Size System
 // ============================================================================
@@ -40,11 +73,19 @@ impl ComponentSize {
         }
     }
 
-    /// Get the appropriate touch target size (Material Design minimum 48px)
+    /// Get the appropriate touch target size based on component size and Material Design guidelines
     #[must_use]
     pub const fn touch_target_size(self) -> f32 {
-        // Material Design minimum touch target size is 48px
-        constants::ui::MIN_TOUCH_TARGET_SIZE
+        // Always use Material Design minimum touch target size, but consider component size for spacing
+        let min_size = constants::ui::MIN_TOUCH_TARGET_SIZE;
+        let component_size = self.size_px();
+
+        // Return the larger of minimum touch target or component size with padding
+        if component_size + 8.0 > min_size {
+            component_size + 8.0 // Add padding around component
+        } else {
+            min_size
+        }
     }
 
     /// Get the appropriate border width for the size
@@ -90,7 +131,7 @@ impl ComponentSize {
 pub enum ChipVariant {
     /// Action chips for common tasks and quick actions
     Assist,
-    /// Filter chips for filtering content and making selections  
+    /// Filter chips for filtering content and making selections
     Filter,
     /// Input chips for user-generated content and tags
     Input,
@@ -176,19 +217,20 @@ impl ComponentProps {
     #[must_use]
     pub fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         let key_string = key.into();
+        let value_string = value.into();
 
-        // Use const lookup for better performance in release builds
-        let is_known_key = constants::metadata_keys::ALL_SUPPORTED
-            .iter()
-            .any(|&k| k == key_string);
+        // Basic input validation for security
+        if !validate_metadata_input(&key_string, &value_string) {
+            return self;
+        }
 
-        if is_known_key {
-            self.metadata.insert(key_string, value.into());
+        if is_supported_metadata_key(&key_string) {
+            self.metadata.insert(key_string, value_string);
         } else {
-            // Log unknown keys in all builds for better debugging
-            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined metadata keys or refer to the documentation for supported keys.");
-            // Allow unknown keys for extensibility 
-            self.metadata.insert(key_string, value.into());
+            // Log unknown keys with context for debugging
+            log_unknown_metadata_key(&key_string);
+            // Allow unknown keys for extensibility
+            self.metadata.insert(key_string, value_string);
         }
         self
     }
@@ -196,19 +238,20 @@ impl ComponentProps {
     /// Insert metadata key-value pair mutably (more efficient than with_metadata for single updates)
     pub fn insert_metadata<K: Into<String>, V: Into<String>>(&mut self, key: K, value: V) {
         let key_string = key.into();
+        let value_string = value.into();
 
-        // Use const lookup for better performance in release builds
-        let is_known_key = constants::metadata_keys::ALL_SUPPORTED
-            .iter()
-            .any(|&k| k == key_string);
+        // Basic input validation for security
+        if !validate_metadata_input(&key_string, &value_string) {
+            return;
+        }
 
-        if is_known_key {
-            self.metadata.insert(key_string, value.into());
+        if is_supported_metadata_key(&key_string) {
+            self.metadata.insert(key_string, value_string);
         } else {
-            // Log unknown keys in all builds for better debugging
-            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined metadata keys or refer to the documentation for supported keys.");
-            // Allow unknown keys for extensibility 
-            self.metadata.insert(key_string, value.into());
+            // Log unknown keys with context for debugging
+            log_unknown_metadata_key(&key_string);
+            // Allow unknown keys for extensibility
+            self.metadata.insert(key_string, value_string);
         }
     }
 

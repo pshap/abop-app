@@ -37,12 +37,12 @@ fn audio_toolbar_handles_state_transitions() {
 fn audio_toolbar_state_consistency() {
     let mut toolbar = AudioToolbar::new();
     let tokens = MaterialTokens::default();
-    
+
     // Test multiple state transitions to ensure consistency
     for i in 0..10 {
         let expected_state = i % 2 == 1;
         toolbar.set_playing(expected_state);
-        
+
         // Verify the toolbar still renders successfully after state changes
         let element = toolbar.view(&tokens);
         let _ = element;

@@ -7,7 +7,6 @@ use crate::messages::Message;
 use crate::state::AppState;
 use iced::Task;
 
-
 /// Handles GUI messages that require async operations
 #[must_use]
 pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task<Message>> {

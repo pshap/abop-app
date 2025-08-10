@@ -69,19 +69,23 @@ pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> 
         error_count: 0,
     };
 
+    // Emit a best-effort 'Started' event so UI shows scanning immediately
+    crate::subscriptions::scan_progress::publish(ScanProgress::Started { total_files: 0 });
+
     while let Some(progress) = rx.recv().await {
-        match progress {
-            ScanProgress::Complete {
-                processed,
-                errors,
-                duration,
-            } => {
-                result.processed_count = processed;
-                result.error_count = errors;
-                result.scan_duration = duration;
-                break;
-            }
-            _ => continue,
+        // Publish progress to UI subscription for live updates
+        crate::subscriptions::scan_progress::publish(progress.clone());
+
+        if let ScanProgress::Complete {
+            processed,
+            errors,
+            duration,
+        } = progress
+        {
+            result.processed_count = processed;
+            result.error_count = errors;
+            result.scan_duration = duration;
+            break;
         }
     }
 

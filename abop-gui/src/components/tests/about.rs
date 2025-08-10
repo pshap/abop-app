@@ -13,12 +13,8 @@ fn about_view_creates_successfully() {
 
 #[test]
 fn about_view_supports_all_themes() {
-    let themes = [
-        ThemeMode::Light,
-        ThemeMode::Dark,
-        ThemeMode::MaterialDark,
-    ];
-    
+    let themes = [ThemeMode::Light, ThemeMode::Dark, ThemeMode::MaterialDark];
+
     for theme in themes {
         let element = AboutView::view(theme);
         let _ = element; // Verify each theme renders without panic
@@ -31,7 +27,7 @@ fn about_view_is_deterministic() {
     let theme = ThemeMode::Light;
     let element1 = AboutView::view(theme);
     let element2 = AboutView::view(theme);
-    
+
     // Both should succeed (testing for consistency, not equality)
     let _ = (element1, element2);
 }

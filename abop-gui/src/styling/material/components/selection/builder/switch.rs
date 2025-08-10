@@ -13,10 +13,10 @@
 use super::super::common::prelude::*;
 use super::super::common::{validate_label, validate_props, validate_switch_state};
 use super::super::defaults;
+use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
 use super::components::Switch;
 use super::patterns::*;
 use super::validation::*;
-use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
 use crate::impl_common_selection_builder;
 
 // ============================================================================
@@ -148,33 +148,33 @@ impl SwitchBuilder {
     }
 
     /// Validate the switch configuration
-    /// 
+    ///
     /// This method performs comprehensive validation of the switch builder state,
     /// including state consistency, label validation, and common property validation.
-    /// 
+    ///
     /// # When to use
-    /// 
+    ///
     /// Use this method if you want to check the validity of the builder's configuration
     /// before attempting to build the `Switch` component. The [`build`](Self::build) method
     /// automatically calls `validate()` and returns an error if validation fails, so
     /// manual validation is only necessary if you need to check validity separately
     /// (e.g., for user feedback or conditional logic before building).
-    /// 
+    ///
     /// # Validation types performed
-    /// 
+    ///
     /// - **State consistency**: Ensures the switch state is compatible with current properties
     /// - **Label validation**: Checks label length and format according to validation rules  
     /// - **Common property validation**: Validates size, disabled state, and metadata consistency
-    /// 
+    ///
     /// # Error aggregation behavior
-    /// 
+    ///
     /// This method aggregates all validation errors into a single `SelectionError::ValidationError`
     /// with a semicolon-separated error message containing all failed validation rules. This
     /// approach allows developers to see all validation issues at once rather than having to
     /// fix them one by one. If no errors are found, returns `Ok(())`.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns `SelectionError::ValidationError` containing a combined message if any of these fail:
     /// - The switch state is incompatible with the current properties
     /// - The label exceeds maximum length or violates validation rules
@@ -182,22 +182,24 @@ impl SwitchBuilder {
     pub fn validate(&self) -> Result<(), SelectionError> {
         // Unified validation approach - collect all validation errors first
         let mut validation_errors = Vec::new();
-        
+
         // Validate switch-specific state
         if let Err(e) = validate_switch_state(self.state, &self.common.props) {
             validation_errors.push(format!("Switch state: {e}"));
         }
-        
+
         // Validate common properties
         if let Err(e) = self.validate_common() {
             validation_errors.push(format!("Common properties: {e}"));
         }
-        
+
         // Return comprehensive error if any validation failed
         if validation_errors.is_empty() {
             Ok(())
         } else {
-            Err(SelectionError::ValidationError(validation_errors.join("; ")))
+            Err(SelectionError::ValidationError(
+                validation_errors.join("; "),
+            ))
         }
     }
 }
@@ -223,16 +225,16 @@ impl ComponentBuilder<SwitchState> for SwitchBuilder {
 
     fn validate(&self) -> Result<(), Self::Error> {
         validate_with_context(self, "SwitchBuilder", || {
-            validate_switch_state(self.state, &self.common.props)
-                .map_err(|e| SelectionError::InvalidState { 
-                    details: format!("Switch validation failed: {e}") 
-                })?;
-            
-            self.validate_common()
-                .map_err(|e| SelectionError::ValidationError(
-                    format!("Common validation failed: {e}")
-                ))?;
-            
+            validate_switch_state(self.state, &self.common.props).map_err(|e| {
+                SelectionError::InvalidState {
+                    details: format!("Switch validation failed: {e}"),
+                }
+            })?;
+
+            self.validate_common().map_err(|e| {
+                SelectionError::ValidationError(format!("Common validation failed: {e}"))
+            })?;
+
             Ok(())
         })
     }
@@ -240,8 +242,7 @@ impl ComponentBuilder<SwitchState> for SwitchBuilder {
 
 impl BuilderValidation for SwitchBuilder {
     fn validate_detailed(&self) -> ValidationResult {
-        let context =
-            ValidationContext::new("SwitchBuilder".to_string(), "validation".to_string());
+        let context = ValidationContext::new("SwitchBuilder".to_string(), "validation".to_string());
         let mut result = ValidationResult::new(context);
 
         // Validate state
@@ -314,10 +315,10 @@ mod tests {
     fn test_switch_clone_with_state() {
         let original = SwitchBuilder::off().label("Test");
         let cloned = original.clone_with_state(SwitchState::On);
-        
+
         let original_switch = original.build_unchecked();
         let cloned_switch = cloned.build_unchecked();
-        
+
         assert_eq!(original_switch.state, SwitchState::Off);
         assert_eq!(cloned_switch.state, SwitchState::On);
         assert_eq!(original_switch.props.label, cloned_switch.props.label);
@@ -328,7 +329,7 @@ mod tests {
         let switch = SwitchBuilder::off()
             .animations_enabled(false)
             .build_unchecked();
-            
+
         assert!(!switch.animation_config.enabled);
     }
 

@@ -12,6 +12,10 @@ use super::constants;
 // ============================================================================
 
 /// Animation configuration for selection components
+///
+/// This struct manages animation settings including duration, easing curves,
+/// and accessibility preferences for selection component transitions.
+/// It follows Material Design 3 motion guidelines for consistent user experience.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnimationConfig {
     /// Animation duration
@@ -58,6 +62,9 @@ mod tests {
         assert!(config.enabled);
         assert!(config.respect_reduced_motion);
         assert_eq!(config.easing, EasingCurve::Standard);
-        assert_eq!(config.duration.as_millis(), 200);
+        assert_eq!(
+            config.duration.as_millis(),
+            constants::animation::DEFAULT_DURATION_MS as u128
+        );
     }
 }

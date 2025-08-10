@@ -276,8 +276,9 @@ impl Animation {
     /// Can be enhanced with OS-specific APIs in the future.
     fn should_reduce_motion() -> bool {
         // Check common environment variables for reduced motion preference
-        std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true") ||
-        std::env::var("PREFER_REDUCED_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
+        std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
+            || std::env::var("PREFER_REDUCED_MOTION")
+                .is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
     }
 }
 

@@ -44,6 +44,9 @@ pub mod utils;
 // Constants used throughout the application
 pub mod constants;
 
+// Subscriptions for async events
+pub mod subscriptions;
+
 // Component modules
 /// UI component modules for the ABOP graphical interface
 ///

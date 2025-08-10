@@ -283,11 +283,13 @@ mod ui_state_tests {
             let task = handle_ui_message(&mut state, Message::SortBy(field.to_string()));
             assert!(
                 task.is_some(),
-                "Sorting by valid field '{}' should return a task", field
+                "Sorting by valid field '{}' should return a task",
+                field
             );
             assert_eq!(
                 state.library.table_state.sort_column, *field,
-                "Sort column should be set to '{}'", field
+                "Sort column should be set to '{}'",
+                field
             );
         }
 
@@ -302,62 +304,82 @@ mod ui_state_tests {
             task.is_some(),
             "Sorting by invalid field should still return a task"
         );
-        
+
         // With the new validation, invalid columns should default to 'title'
         assert_eq!(
             state.library.table_state.sort_column, "title",
             "Invalid column should default to 'title' for safety"
         );
-        
+
         // Verify that an invalid sort doesn't crash the sort operation
         // This tests that the sort utility handles unknown columns gracefully
-        state.library.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_1, TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
-        state.library.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_2, TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
+        state.library.audiobooks.push(create_test_audiobook(
+            TEST_AUDIOBOOK_ID_1,
+            TEST_TITLE_1,
+            TEST_AUTHOR_A,
+            TEST_BOOK1_PATH,
+        ));
+        state.library.audiobooks.push(create_test_audiobook(
+            TEST_AUDIOBOOK_ID_2,
+            TEST_TITLE_2,
+            TEST_AUTHOR_B,
+            TEST_BOOK2_PATH,
+        ));
         let original_len = state.library.audiobooks.len();
-        
+
         // Test that sort operation completes successfully
         crate::utils::sort_audiobooks(&mut state);
-        
+
         // Validate that the sort operation:
         // 1. Doesn't panic or crash
-        // 2. Preserves all audiobooks (no data loss)  
+        // 2. Preserves all audiobooks (no data loss)
         // 3. Handles the column validation properly (invalid column gets validated)
-        assert_eq!(state.library.audiobooks.len(), original_len, "Sort operation should preserve all audiobooks");
-        
+        assert_eq!(
+            state.library.audiobooks.len(),
+            original_len,
+            "Sort operation should preserve all audiobooks"
+        );
+
         // Verify that the sort column is a valid one (could be "title" or the original if it was valid)
         assert!(
-            VALID_SORT_COLUMNS.contains(&state.library.table_state.sort_column.as_str()), 
-            "Sort column '{}' should be valid after validation", 
+            VALID_SORT_COLUMNS.contains(&state.library.table_state.sort_column.as_str()),
+            "Sort column '{}' should be valid after validation",
             state.library.table_state.sort_column
         );
-        
+
         // Comprehensive sort order validation
         // Test that the entire collection is properly sorted, not just adjacent pairs
         if state.library.audiobooks.len() >= 2 {
-            let titles: Vec<String> = state.library.audiobooks
+            let titles: Vec<String> = state
+                .library
+                .audiobooks
                 .iter()
                 .map(|book| book.title.as_deref().unwrap_or(&book.id).to_string())
                 .collect();
-            
+
             // Verify the complete sort order across all items
             let is_properly_sorted = if state.library.table_state.sort_ascending {
                 // Check ascending order: each element should be <= next element
                 titles.windows(2).all(|pair| pair[0] <= pair[1])
             } else {
-                // Check descending order: each element should be >= next element  
+                // Check descending order: each element should be >= next element
                 titles.windows(2).all(|pair| pair[0] >= pair[1])
             };
-            
+
             assert!(
                 is_properly_sorted,
                 "Books should be properly sorted {} by title. Actual order: {:?}",
-                if state.library.table_state.sort_ascending { "ascending" } else { "descending" },
+                if state.library.table_state.sort_ascending {
+                    "ascending"
+                } else {
+                    "descending"
+                },
                 titles
             );
-            
+
             // Additional validation: verify that sorting actually changed the order if needed
             let current_order: Vec<&str> = titles.iter().map(|s| s.as_str()).collect();
-            
+
             // Enhanced sort validation: verify comprehensive sorting behavior
             // This validation ensures that:
             // 1. The sort direction is correctly applied
@@ -366,30 +388,39 @@ mod ui_state_tests {
             if state.library.table_state.sort_ascending {
                 // For ascending: "Alpha Book" should come before "Zebra Book"
                 let expected_ascending = vec![TEST_TITLE_2, TEST_TITLE_1]; // Alpha, Zebra
-                assert_eq!(current_order, expected_ascending, 
-                    "Ascending sort should put Alpha before Zebra. Column: {}, Ascending: {}", 
-                    state.library.table_state.sort_column, state.library.table_state.sort_ascending);
+                assert_eq!(
+                    current_order, expected_ascending,
+                    "Ascending sort should put Alpha before Zebra. Column: {}, Ascending: {}",
+                    state.library.table_state.sort_column, state.library.table_state.sort_ascending
+                );
             } else {
-                // For descending: "Zebra Book" should come before "Alpha Book"  
+                // For descending: "Zebra Book" should come before "Alpha Book"
                 let expected_descending = vec![TEST_TITLE_1, TEST_TITLE_2]; // Zebra, Alpha
-                assert_eq!(current_order, expected_descending, 
-                    "Descending sort should put Zebra before Alpha. Column: {}, Ascending: {}", 
-                    state.library.table_state.sort_column, state.library.table_state.sort_ascending);
+                assert_eq!(
+                    current_order, expected_descending,
+                    "Descending sort should put Zebra before Alpha. Column: {}, Ascending: {}",
+                    state.library.table_state.sort_column, state.library.table_state.sort_ascending
+                );
             }
-            
+
             // Additional validation: ensure sort stability and consistency
             // Apply the same sort operation again and verify it doesn't change the order
             let before_second_sort_len = state.library.audiobooks.len();
             let current_sort_column = state.library.table_state.sort_column.clone();
             let second_task = handle_ui_message(&mut state, Message::SortBy(current_sort_column));
-            assert!(second_task.is_some(), "Second sort operation should succeed");
-            
+            assert!(
+                second_task.is_some(),
+                "Second sort operation should succeed"
+            );
+
             // After second sort, direction should be toggled but content should be consistent
             let after_second_sort_len = state.library.audiobooks.len();
-            assert_eq!(before_second_sort_len, after_second_sort_len, 
-                "Repeated sort operations should preserve audiobook count");
+            assert_eq!(
+                before_second_sort_len, after_second_sort_len,
+                "Repeated sort operations should preserve audiobook count"
+            );
         }
-        
+
         // Restore to a valid column for subsequent operations
         let task = handle_ui_message(&mut state, Message::SortBy("title".to_string()));
         assert!(task.is_some());

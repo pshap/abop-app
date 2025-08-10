@@ -63,53 +63,43 @@ impl ProgressCache {
     /// This avoids frequent float-to-string formatting in UI renders
     pub fn get_scan_progress_text(&mut self, progress_percentage: f32) -> String {
         let cache_slot = &mut self.scan_progress;
-        Self::get_cached_progress_text_impl(
-            cache_slot,
-            progress_percentage,
-            |p| format!("Scanning: {:.1}%", p * 100.0)
-        )
+        Self::get_cached_progress_text_impl(cache_slot, progress_percentage, |p| {
+            format!("Scanning: {:.1}%", p * 100.0)
+        })
     }
 
     /// Get cached processing progress text, updating cache if needed
     pub fn get_processing_progress_text(&mut self, progress_percentage: f32) -> String {
         let cache_slot = &mut self.processing_progress;
-        Self::get_cached_progress_text_impl(
-            cache_slot,
-            progress_percentage,
-            |p| format!("Processing: {:.1}%", p * 100.0)
-        )
+        Self::get_cached_progress_text_impl(cache_slot, progress_percentage, |p| {
+            format!("Processing: {:.1}%", p * 100.0)
+        })
     }
 
     /// Get cached save progress text, updating cache if needed
     pub fn get_save_progress_text(&mut self, progress_percentage: f32) -> String {
         let cache_slot = &mut self.save_progress;
-        Self::get_cached_progress_text_impl(
-            cache_slot,
-            progress_percentage,
-            |p| format!("Saving: {:.1}%", p * 100.0)
-        )
+        Self::get_cached_progress_text_impl(cache_slot, progress_percentage, |p| {
+            format!("Saving: {:.1}%", p * 100.0)
+        })
     }
 
     /// Get cached task progress text, updating cache if needed
     pub fn get_task_progress_text(&mut self, progress_percentage: f32, task_name: &str) -> String {
         let cache_slot = &mut self.task_progress;
         let task_name = task_name.to_owned();
-        Self::get_cached_progress_text_impl(
-            cache_slot,
-            progress_percentage,
-            move |p| format!("{}: {:.1}%", task_name, p * 100.0)
-        )
+        Self::get_cached_progress_text_impl(cache_slot, progress_percentage, move |p| {
+            format!("{}: {:.1}%", task_name, p * 100.0)
+        })
     }
 
     /// Get simple percentage text (just the percentage)
     pub fn get_simple_percentage_text(&mut self, progress_percentage: f32) -> String {
         // Use processing cache slot for simple percentages
         let cache_slot = &mut self.processing_progress;
-        Self::get_cached_progress_text_impl(
-            cache_slot,
-            progress_percentage,
-            |p| format!("{:.1}%", p * 100.0)
-        )
+        Self::get_cached_progress_text_impl(cache_slot, progress_percentage, |p| {
+            format!("{:.1}%", p * 100.0)
+        })
     }
 
     /// Clear all progress caches
@@ -177,15 +167,15 @@ mod tests {
     #[test]
     fn test_progress_cache_threshold() {
         let mut cache = ProgressCache::new();
-        
+
         // First call should generate text
         let text1 = cache.get_scan_progress_text(0.5);
         assert_eq!(text1, "Scanning: 50.0%");
-        
+
         // Small change below threshold should return cached text
         let text2 = cache.get_scan_progress_text(0.5005); // 0.05% change
         assert_eq!(text2, "Scanning: 50.0%"); // Should still be cached
-        
+
         // Larger change above threshold should generate new text
         let text3 = cache.get_scan_progress_text(0.51); // 1% change
         assert_eq!(text3, "Scanning: 51.0%"); // Should be updated
@@ -194,12 +184,12 @@ mod tests {
     #[test]
     fn test_different_progress_types() {
         let mut cache = ProgressCache::new();
-        
+
         let scan_text = cache.get_scan_progress_text(0.3);
         let processing_text = cache.get_processing_progress_text(0.7);
         let save_text = cache.get_save_progress_text(0.9);
         let task_text = cache.get_task_progress_text(0.1, "Test Task");
-        
+
         assert_eq!(scan_text, "Scanning: 30.0%");
         assert_eq!(processing_text, "Processing: 70.0%");
         assert_eq!(save_text, "Saving: 90.0%");
@@ -209,19 +199,19 @@ mod tests {
     #[test]
     fn test_clear_caches() {
         let mut cache = ProgressCache::new();
-        
+
         // Generate some cached values
         cache.get_scan_progress_text(0.5);
         cache.get_processing_progress_text(0.3);
-        
+
         // Clear all caches
         cache.clear_all_caches();
-        
-        // Next calls should regenerate text (we can't directly test this, 
+
+        // Next calls should regenerate text (we can't directly test this,
         // but we can ensure the method doesn't panic and returns correct values)
         let text1 = cache.get_scan_progress_text(0.5);
         let text2 = cache.get_processing_progress_text(0.3);
-        
+
         assert_eq!(text1, "Scanning: 50.0%");
         assert_eq!(text2, "Processing: 30.0%");
     }

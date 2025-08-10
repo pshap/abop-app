@@ -244,7 +244,7 @@ impl App {
     pub fn subscription(&self) -> Subscription<Message> {
         use keyboard::key::Key;
 
-        iced::event::listen_with(|event, _status, _window| {
+        let keys = iced::event::listen_with(|event, _status, _window| {
             if let iced::Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
                 match key.as_ref() {
                     Key::Named(keyboard::key::Named::Space) => Some(Message::PlayPause),
@@ -256,6 +256,11 @@ impl App {
             } else {
                 None
             }
-        })
+        });
+
+        // Merge our scan progress subscription
+        let scan = crate::subscriptions::scan_progress::subscription();
+
+        Subscription::batch(vec![keys, scan])
     }
 }

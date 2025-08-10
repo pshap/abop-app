@@ -8,7 +8,7 @@ use crate::components::status::{EnhancedStatusDisplayParams, StatusDisplay};
 #[test]
 fn status_display_renders_all_states() {
     let tokens = MaterialTokens::default();
-    
+
     // Test basic status display
     let params = create_minimal_status_params();
     let element = StatusDisplay::enhanced_view(params, &tokens);
@@ -18,7 +18,7 @@ fn status_display_renders_all_states() {
 #[test]
 fn status_display_handles_scan_progress_variants() {
     let tokens = MaterialTokens::default();
-    
+
     let scan_progress_variants = [
         ScanProgress::Started { total_files: 100 },
         ScanProgress::FileProcessed {
@@ -53,15 +53,15 @@ fn status_display_handles_scan_progress_variants() {
 #[test]
 fn status_display_handles_processing_progress() {
     let tokens = MaterialTokens::default();
-    
+
     let progress_values = [
-        -0.1,  // Below bounds - should clamp to 0.0
-        0.0,   // Start
-        0.25,  // Quarter
-        0.5,   // Half
-        0.75,  // Three quarters
-        1.0,   // Complete
-        1.5,   // Above bounds - should clamp to 1.0
+        -0.1, // Below bounds - should clamp to 0.0
+        0.0,  // Start
+        0.25, // Quarter
+        0.5,  // Half
+        0.75, // Three quarters
+        1.0,  // Complete
+        1.5,  // Above bounds - should clamp to 1.0
     ];
 
     for progress in progress_values {
@@ -80,7 +80,7 @@ fn status_display_handles_processing_progress() {
 fn status_display_handles_player_states() {
     let tokens = MaterialTokens::default();
     let test_path = PathBuf::from("/test/audio.mp3");
-    
+
     let player_states = [
         (PlayerState::Stopped, None, "stopped without file"),
         (PlayerState::Playing, Some(&test_path), "playing with file"),
@@ -102,16 +102,17 @@ fn status_display_handles_player_states() {
 #[test]
 fn status_display_handles_extreme_values() {
     let tokens = MaterialTokens::default();
-    let very_long_path = PathBuf::from("/very/long/path/".to_string() + &"segment/".repeat(50) + "file.mp3");
-    
+    let very_long_path =
+        PathBuf::from("/very/long/path/".to_string() + &"segment/".repeat(50) + "file.mp3");
+
     let mut params = create_minimal_status_params();
-    
+
     // Test with extreme values
     params.scanning = true;
     params.scan_progress = Some(ScanProgress::FileProcessed {
         current: usize::MAX,
         total: usize::MAX,
-        file_name: "x".repeat(1000), // Very long filename
+        file_name: "x".repeat(1000),        // Very long filename
         progress_percentage: f32::INFINITY, // Extreme percentage
     });
     params.processing_audio = true;
@@ -132,7 +133,7 @@ fn status_display_handles_extreme_values() {
 fn status_display_app_footer_renders() {
     let element = StatusDisplay::app_footer(42, ThemeMode::Light);
     let _ = element;
-    
+
     // Test with different theme
     let element_dark = StatusDisplay::app_footer(0, ThemeMode::Dark);
     let _ = element_dark;
@@ -142,7 +143,7 @@ fn status_display_app_footer_renders() {
 fn status_display_concurrent_operations() {
     let tokens = MaterialTokens::default();
     let test_path = PathBuf::from("/test/concurrent.mp3");
-    
+
     // Test with all operations running simultaneously
     let params = EnhancedStatusDisplayParams {
         scanning: true,

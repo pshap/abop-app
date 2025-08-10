@@ -34,6 +34,5 @@ pub mod table_header;
 /// Table row component for data display
 pub mod table_row;
 
-// Modern organized tests in separate files
 #[cfg(test)]
 mod tests;

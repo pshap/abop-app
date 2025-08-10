@@ -434,8 +434,14 @@ mod tests {
         // Test that constants are defined and not empty
         assert!(!UNKNOWN_TITLE.is_empty());
         assert!(!UNKNOWN_AUTHOR.is_empty());
-    assert_eq!(UNKNOWN_TITLE, abop_core::models::audiobook::fallbacks::UNKNOWN_TITLE);
-    assert_eq!(UNKNOWN_AUTHOR, abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR);
+        assert_eq!(
+            UNKNOWN_TITLE,
+            abop_core::models::audiobook::fallbacks::UNKNOWN_TITLE
+        );
+        assert_eq!(
+            UNKNOWN_AUTHOR,
+            abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR
+        );
     }
 
     #[test]
@@ -682,7 +688,7 @@ mod tests {
     type TestDbSetup = (TempDir, std::path::PathBuf, Database);
 
     /// Creates a test database with temporary directory for isolated testing
-    /// 
+    ///
     /// Returns a tuple containing:
     /// - `TempDir`: Temporary directory that will be cleaned up when dropped
     /// - `PathBuf`: Path to the database file within the temporary directory  

@@ -86,13 +86,18 @@ impl ProgressReporter for ChannelReporter {
     }
 
     async fn report_file_processed(&self, current: usize, total: usize, file_name: String) {
+        let progress = if total > 0 {
+            current as f32 / total as f32
+        } else {
+            0.0
+        };
         let _ = self
             .tx
             .send(ScanProgress::FileProcessed {
                 current,
                 total,
                 file_name,
-                progress_percentage: 0.0,
+                progress_percentage: progress,
             })
             .await;
     }
