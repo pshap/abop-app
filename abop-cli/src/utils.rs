@@ -79,7 +79,7 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
     }
 
     // Use the first available library (we already checked libraries is not empty)
-    let library_id = libraries.first().unwrap().id.as_str();
+    let library_id = libraries.first().expect("No libraries found after non-empty check").id.as_str();
 
     let total_count = db
         .count_audiobooks_in_library(library_id)

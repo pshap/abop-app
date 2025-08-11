@@ -92,12 +92,6 @@ pub fn init_logging(args: &Args) {
         .init();
 }
 
-/// Main CLI dispatch function  
-pub fn run() -> CliResult<()> {
-    let args = Args::parse();
-    run_with_args(args)
-}
-
 /// Main CLI dispatch function with provided arguments
 pub fn run_with_args(args: Args) -> CliResult<()> {
     init_logging(&args);

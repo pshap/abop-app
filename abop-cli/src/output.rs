@@ -41,7 +41,6 @@ pub struct ScanOutput {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub sample_audiobooks: Vec<AudiobookInfo>,
     /// Scan performance metrics
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub metrics: Option<ScanMetrics>,
 }
 
@@ -85,7 +84,6 @@ pub struct AudiobookInfo {
     pub path: PathBuf,
     pub duration_seconds: Option<u64>,
     pub size_bytes: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
@@ -109,7 +107,6 @@ pub struct ScanMetrics {
 pub struct ErrorOutput {
     pub message: String,
     pub error_type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<Vec<String>>,
 }
 
