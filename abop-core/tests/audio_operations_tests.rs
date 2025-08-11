@@ -108,7 +108,7 @@ mod audio_operations_tests {
         // Create multiple test WAV files with longer duration to allow cancellation
         let input_files: Vec<_> = (0..5)
             .map(|i| {
-                let path = dir.path().join(format!("input_{}.wav", i));
+                let path = dir.path().join(format!("input_{i}.wav"));
                 let spec = hound::WavSpec {
                     channels: 2,
                     sample_rate: 44100,
@@ -185,7 +185,7 @@ mod audio_operations_tests {
                     );
                 }
             }
-            Err(e) => panic!("Unexpected error: {:?}", e),
+            Err(e) => panic!("Unexpected error: {e:?}"),
         }
 
         // Test parallel cancellation
@@ -245,7 +245,7 @@ mod audio_operations_tests {
                     );
                 }
             }
-            Err(e) => panic!("Unexpected error in parallel mode: {:?}", e),
+            Err(e) => panic!("Unexpected error in parallel mode: {e:?}"),
         }
     }
 
@@ -322,11 +322,11 @@ mod audio_operations_tests {
                 for (_, error) in result.failed {
                     match error {
                         AudioProcessingError::FileIo(_) => {}
-                        _ => panic!("Unexpected error type: {:?}", error),
+                        _ => panic!("Unexpected error type: {error:?}"),
                     }
                 }
             }
-            Err(e) => panic!("Unexpected error: {:?}", e),
+            Err(e) => panic!("Unexpected error: {e:?}"),
         }
 
         // Test with only invalid files
@@ -341,7 +341,7 @@ mod audio_operations_tests {
                 );
                 assert_eq!(result.failed.len(), 2, "Should fail on all files");
             }
-            Err(e) => panic!("Unexpected error: {:?}", e),
+            Err(e) => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -431,10 +431,7 @@ mod audio_operations_tests {
         for (progress, message) in updates.iter() {
             assert!(
                 *progress >= last_progress,
-                "Progress should never decrease: {}% -> {}% ({})",
-                last_progress,
-                progress,
-                message
+                "Progress should never decrease: {last_progress}% -> {progress}% ({message})"
             );
             last_progress = *progress;
         }

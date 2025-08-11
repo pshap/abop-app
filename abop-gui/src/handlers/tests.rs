@@ -283,11 +283,11 @@ mod ui_state_tests {
             let task = handle_ui_message(&mut state, Message::SortBy(field.to_string()));
             assert!(
                 task.is_some(),
-                "Sorting by valid field '{}' should return a task", field
+                "Sorting by valid field '{field}' should return a task"
             );
             assert_eq!(
                 state.library.table_state.sort_column, *field,
-                "Sort column should be set to '{}'", field
+                "Sort column should be set to '{field}'"
             );
         }
 

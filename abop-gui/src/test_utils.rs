@@ -15,7 +15,7 @@ use std::path::PathBuf;
 /// # Returns
 /// A fully configured `Audiobook` instance suitable for testing
 pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-    let path = PathBuf::from(format!("/test/path/{}.mp3", title));
+    let path = PathBuf::from(format!("/test/path/{title}.mp3"));
     let mut audiobook = Audiobook::new("test-library-id", &path);
     audiobook.id = id.to_string();
     audiobook.title = Some(title.to_string());
@@ -41,7 +41,7 @@ pub fn create_custom_test_audiobook(
     author: &str,
     duration: Option<u64>,
 ) -> Audiobook {
-    let path = PathBuf::from(format!("/test/path/{}.mp3", title));
+    let path = PathBuf::from(format!("/test/path/{title}.mp3"));
     let mut audiobook = Audiobook::new("test-library-id", &path);
     audiobook.id = id.to_string();
     audiobook.title = Some(title.to_string());

@@ -95,8 +95,16 @@ fn find_or_create_library(
         }
         None => {
             info!("Creating new library for path: {}", library_path.display());
+            
+            // Generate a meaningful library name from the path
+            let library_name = library_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("Unknown Library")
+                .to_string();
+            
             let library_id = db
-                .add_library_with_path("CLI Library", library_path.clone())
+                .add_library_with_path(&library_name, library_path.clone())
                 .context("Failed to create library record")?;
 
             // Get the newly created library
@@ -109,6 +117,17 @@ fn find_or_create_library(
 }
 
 /// Build scanner configuration from preset and overrides
+///
+/// # Available Presets:
+/// - `"default"` - Balanced configuration suitable for most systems
+/// - `"large"` - Optimized for large libraries with high concurrency
+/// - `"small"` - Conservative settings for smaller systems/libraries  
+/// - `"conservative"` - Minimal resource usage for constrained environments
+///
+/// # Arguments
+/// * `config_preset` - Configuration preset name
+/// * `max_concurrent_tasks` - Override for maximum concurrent file operations
+/// * `max_concurrent_db_operations` - Override for maximum concurrent database operations
 fn build_scanner_config(
     config_preset: &str,
     max_concurrent_tasks: Option<usize>,
@@ -182,8 +201,7 @@ mod tests {
             let result = build_scanner_config(preset, None, None);
             assert!(
                 result.is_ok(),
-                "Config preset '{}' should not fail",
-                preset
+                "Config preset '{preset}' should not fail"
             );
         }
     }

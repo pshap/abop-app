@@ -46,7 +46,7 @@ mod audio_controls_tests {
     /// # Returns
     /// A new `Audiobook` instance with test data
     fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-        let path = PathBuf::from(format!("/test/path/{}.mp3", title));
+        let path = PathBuf::from(format!("/test/path/{title}.mp3"));
         let mut audiobook = Audiobook::new("test-library-id", &path);
         audiobook.id = id.to_string();
         audiobook.title = Some(title.to_string());
@@ -74,7 +74,7 @@ mod audio_controls_tests {
         duration_seconds: Option<u64>,
         size_bytes: Option<u64>,
     ) -> Audiobook {
-        let path = PathBuf::from(format!("/test/path/{}.mp3", title));
+        let path = PathBuf::from(format!("/test/path/{title}.mp3"));
         let mut audiobook = Audiobook::new("test-library-id", &path);
         audiobook.id = id.to_string();
         audiobook.title = Some(title.to_string());
@@ -125,7 +125,7 @@ mod audio_controls_tests {
         // Test all combinations of selection states and player states
         for (selected, selection_desc) in &test_cases {
             for (state, state_desc) in &player_states {
-                println!("Testing with {} and {} state", selection_desc, state_desc);
+                println!("Testing with {selection_desc} and {state_desc} state");
                 let _element = AudioControls::view(selected, &audiobooks, state.clone(), &tokens);
                 // If we get here, the view function didn't panic
             }
@@ -164,7 +164,7 @@ mod audio_controls_tests {
         ];
 
         for (selected, description) in test_cases {
-            println!("Testing case: {}", description);
+            println!("Testing case: {description}");
             let selected_ids: HashSet<_> = selected.into_iter().map(String::from).collect();
 
             // Test with different player states
@@ -256,7 +256,7 @@ mod audio_controls_tests {
 
         // Test all combinations of edge cases
         for (selected, selection_desc) in &selection_sets {
-            println!("Testing edge cases with {}", selection_desc);
+            println!("Testing edge cases with {selection_desc}");
 
             // Test with different player states
             let player_states = [

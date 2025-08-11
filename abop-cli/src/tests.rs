@@ -85,8 +85,7 @@ mod integration_tests {
 
             assert!(
                 result.is_ok(),
-                "Config preset '{}' should not panic",
-                preset
+                "Config preset '{preset}' should not panic"
             );
         }
     }
@@ -206,7 +205,7 @@ mod integration_tests {
             },
         };
 
-        let debug_str = format!("{:?}", args);
+        let debug_str = format!("{args:?}");
         assert!(debug_str.contains("verbose: true"));
         assert!(debug_str.contains("debug: false"));
         assert!(debug_str.contains("Scan"));
@@ -223,7 +222,7 @@ mod integration_tests {
         ];
 
         for op in operations {
-            let debug_str = format!("{:?}", op);
+            let debug_str = format!("{op:?}");
             assert!(!debug_str.is_empty());
         }
     }
@@ -238,7 +237,7 @@ mod integration_tests {
 
         // Very long path names (within reasonable limits)
         let long_name = "a".repeat(100);
-        let long_path = PathBuf::from(format!("/tmp/{}", long_name));
+        let long_path = PathBuf::from(format!("/tmp/{long_name}"));
         // Just verify it doesn't panic when creating PathBuf
         assert!(!long_path.to_string_lossy().is_empty());
     }
@@ -249,7 +248,7 @@ mod integration_tests {
         let test_values = vec![1, 2, 4, 8, 16, 32, 100];
 
         for value in test_values {
-            let args = Args::try_parse_from(&[
+            let args = Args::try_parse_from([
                 "abop-cli",
                 "scan",
                 "--library",
@@ -293,12 +292,12 @@ mod integration_tests {
         let invalid_sizes = vec![0, 1001, 9999];
         for size in invalid_sizes {
             let clamped = size.clamp(1, 1000);
-            assert!(clamped >= 1 && clamped <= 1000);
+            assert!((1..=1000).contains(&clamped));
         }
 
         // Test default fallback
         let default_page_size = 100;
-        assert!(default_page_size >= 1 && default_page_size <= 1000);
+        assert!((1..=1000).contains(&default_page_size));
     }
 
     #[test]
