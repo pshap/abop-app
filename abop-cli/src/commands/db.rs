@@ -7,6 +7,7 @@ use crate::cli::DbOperations;
 use crate::error::{validate_existing_database_path, CliResult, CliResultExt};
 use crate::utils::{get_audiobook_count, show_audiobook_list};
 use abop_core::db::Database;
+use anyhow::Context;
 use log::{debug, info};
 use std::path::PathBuf;
 
@@ -15,25 +16,26 @@ use std::path::PathBuf;
 /// # Arguments
 /// * `database_path` - Path to the database file
 /// * `operation` - The specific database operation to perform
+/// * `json_output` - Whether to output results in JSON format
 ///
 /// # Errors
 /// Returns an error if:
 /// - Database path is invalid (for operations requiring existing file)
 /// - Database connection fails
 /// - The specific operation fails
-pub fn run(database_path: PathBuf, operation: DbOperations) -> CliResult<()> {
+pub fn run(database_path: PathBuf, operation: DbOperations, json_output: bool) -> CliResult<()> {
     debug!("Starting database operation: {operation:?}");
     
     match operation {
-        DbOperations::Init => init(database_path),
-        DbOperations::List => list(database_path),
-        DbOperations::Stats => stats(database_path),
-        DbOperations::Clean => clean(database_path),
+        DbOperations::Init => init(database_path, json_output),
+        DbOperations::List => list(database_path, json_output),
+        DbOperations::Stats => stats(database_path, json_output),
+        DbOperations::Clean => clean(database_path, json_output),
     }
 }
 
 /// Initialize a new database
-fn init(database_path: PathBuf) -> CliResult<()> {
+fn init(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     info!("Initializing database: {database_path:?}");
     debug!("About to call Database::open()");
     
@@ -41,12 +43,20 @@ fn init(database_path: PathBuf) -> CliResult<()> {
         .with_database_context("initialization")?;
     
     debug!("Database::open() completed successfully");
-    info!("✓ Database initialized successfully");
+    
+    if json_output {
+        let output = crate::output::CliOutput::database_init_success(database_path);
+        let json = output.to_json().with_context(|| "serializing init results to JSON")?;
+        println!("{json}");
+    } else {
+        info!("✓ Database initialized successfully");
+    }
+    
     Ok(())
 }
 
 /// List all audiobooks in the database
-fn list(database_path: PathBuf) -> CliResult<()> {
+fn list(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     info!("Listing audiobooks in: {database_path:?}");
     
     // Validate database exists before attempting connection
@@ -57,12 +67,16 @@ fn list(database_path: PathBuf) -> CliResult<()> {
         .with_database_context("opening for list operation")?;
     debug!("Database::open() completed for list operation");
 
-    show_audiobook_list(&db)?;
+    if json_output {
+        output_audiobook_list_json(&db)?;
+    } else {
+        show_audiobook_list(&db)?;
+    }
     Ok(())
 }
 
 /// Show database statistics
-fn stats(database_path: PathBuf) -> CliResult<()> {
+fn stats(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     info!("Database statistics: {database_path:?}");
     
     // Validate database exists before attempting connection
@@ -74,15 +88,27 @@ fn stats(database_path: PathBuf) -> CliResult<()> {
     debug!("Database::open() completed for stats operation");
 
     debug!("About to call get_audiobook_count()");
-    let count = get_audiobook_count(&db)?;
-    debug!("get_audiobook_count() completed with count: {count}");
+    let audiobook_count = get_audiobook_count(&db)?;
+    debug!("get_audiobook_count() completed with count: {audiobook_count}");
     
-    info!("Total audiobooks: {count}");
+    let libraries = db.get_libraries()
+        .with_database_context("retrieving libraries for stats")?;
+    let library_count = libraries.len();
+    
+    if json_output {
+        let output = crate::output::CliOutput::database_stats_success(audiobook_count, library_count);
+        let json = output.to_json().with_context(|| "serializing stats results to JSON")?;
+        println!("{json}");
+    } else {
+        info!("Total audiobooks: {audiobook_count}");
+        info!("Total libraries: {library_count}");
+    }
+    
     Ok(())
 }
 
 /// Clean and optimize the database
-fn clean(database_path: PathBuf) -> CliResult<()> {
+fn clean(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     info!("Cleaning database: {database_path:?}");
     
     // Validate database exists before attempting connection
@@ -99,7 +125,8 @@ fn clean(database_path: PathBuf) -> CliResult<()> {
     // For now, just validate that we can query basic statistics
     let libraries = db.get_libraries()
         .with_database_context("validating database structure")?;
-    info!("✓ Database structure validated ({} libraries found)", libraries.len());
+    let libraries_count = libraries.len();
+    info!("✓ Database structure validated ({libraries_count} libraries found)");
     
     // Future improvements could include:
     // - VACUUM operation for space reclamation
@@ -107,7 +134,42 @@ fn clean(database_path: PathBuf) -> CliResult<()> {
     // - Orphaned record cleanup
     // - Integrity checks
     
-    info!("✓ Database cleanup and optimization completed");
+    if json_output {
+        let output = crate::output::CliOutput::database_clean_success(libraries_count);
+        let json = output.to_json().with_context(|| "serializing clean results to JSON")?;
+        println!("{json}");
+    } else {
+        info!("✓ Database cleanup and optimization completed");
+    }
+    
+    Ok(())
+}
+
+/// Output audiobook list in JSON format
+fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
+    use crate::output::{AudiobookInfo, CliOutput};
+
+    // Get all audiobooks from all libraries
+    let libraries = db.get_libraries()
+        .with_database_context("retrieving libraries for list")?;
+    
+    let mut all_audiobooks = Vec::new();
+    
+    for library in &libraries {
+        let library_audiobooks = db
+            .get_audiobooks_in_library(&library.id)
+            .with_database_context("retrieving audiobooks for list")?;
+        
+        all_audiobooks.extend(library_audiobooks);
+    }
+
+    // Convert to output format
+    let audiobook_infos: Vec<AudiobookInfo> = all_audiobooks.iter().map(AudiobookInfo::from).collect();
+    
+    let output = CliOutput::database_list_success(audiobook_infos);
+    let json = output.to_json().with_context(|| "serializing list results to JSON")?;
+    println!("{json}");
+
     Ok(())
 }
 
@@ -125,7 +187,7 @@ mod tests {
         // Remove the temp file so we can test creation
         drop(temp_file);
         
-        let result = init(db_path.clone());
+        let result = init(db_path.clone(), false);
         // In test environment, this might fail due to missing dependencies
         // but it shouldn't panic
         assert!(result.is_ok() || result.is_err());
@@ -141,15 +203,15 @@ mod tests {
         let nonexistent_path = PathBuf::from("/nonexistent/database.db");
         
         // All operations except init should fail with nonexistent database
-        let result = list(nonexistent_path.clone());
+        let result = list(nonexistent_path.clone(), false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
         
-        let result = stats(nonexistent_path.clone());
+        let result = stats(nonexistent_path.clone(), false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
         
-        let result = clean(nonexistent_path);
+        let result = clean(nonexistent_path, false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
@@ -162,15 +224,15 @@ mod tests {
         let dir_path = temp_dir.path().to_path_buf();
         
         // Operations should fail when path points to directory
-        let result = list(dir_path.clone());
+        let result = list(dir_path.clone(), false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
         
-        let result = stats(dir_path.clone());
+        let result = stats(dir_path.clone(), false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
         
-        let result = clean(dir_path);
+        let result = clean(dir_path, false);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
     }
@@ -186,13 +248,13 @@ mod tests {
         // Test that the run function properly dispatches to sub-operations
         // Note: These might fail in test environment but shouldn't panic
         
-        let result = run(db_path.clone(), DbOperations::Stats);
+        let result = run(db_path.clone(), DbOperations::Stats, false);
         assert!(result.is_ok() || result.is_err());
         
-        let result = run(db_path.clone(), DbOperations::List);
+        let result = run(db_path.clone(), DbOperations::List, false);
         assert!(result.is_ok() || result.is_err());
         
-        let result = run(db_path.clone(), DbOperations::Clean);
+        let result = run(db_path.clone(), DbOperations::Clean, false);
         assert!(result.is_ok() || result.is_err());
         
         // Init should work with any path
@@ -200,7 +262,7 @@ mod tests {
         let new_path = new_file.path().to_path_buf();
         drop(new_file); // Remove file to test creation
         
-        let result = run(new_path, DbOperations::Init);
+        let result = run(new_path, DbOperations::Init, false);
         assert!(result.is_ok() || result.is_err());
     }
 

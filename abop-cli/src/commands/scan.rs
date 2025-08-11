@@ -3,8 +3,10 @@
 //! This module handles the scanning of audiobook libraries, including
 //! library creation/lookup, scanner configuration, and result reporting.
 
-use crate::error::{validate_library_path, CliResult, CliResultExt};
-use crate::utils::show_scan_results;
+use crate::{
+    error::{validate_library_path, CliResult, CliResultExt},
+    utils::show_scan_results,
+};
 use abop_core::{
     db::Database,
     scanner::{LibraryScanner, ScannerConfig},
@@ -22,6 +24,7 @@ use std::time::Instant;
 /// * `config_preset` - Configuration preset name
 /// * `max_concurrent_tasks` - Optional override for concurrent file tasks
 /// * `max_concurrent_db_operations` - Optional override for concurrent DB operations
+/// * `json_output` - Whether to output results in JSON format
 ///
 /// # Errors
 /// Returns an error if:
@@ -35,6 +38,7 @@ pub fn run(
     config_preset: String,
     max_concurrent_tasks: Option<usize>,
     max_concurrent_db_operations: Option<usize>,
+    json_output: bool,
 ) -> CliResult<()> {
     info!("Scanning library: {library_path:?}");
 
@@ -61,10 +65,16 @@ pub fn run(
     );
 
     // Execute scan
-    execute_scan(&db, library, scanner_config)?;
+    let scan_start = Instant::now();
+    execute_scan(&db, library.clone(), scanner_config)?;
+    let scan_duration = scan_start.elapsed();
 
     // Show results
-    show_scan_results(&db)?;
+    if json_output {
+        output_json_results(&db, &library, scan_duration)?;
+    } else {
+        show_scan_results(&db)?;
+    }
 
     Ok(())
 }
@@ -177,6 +187,67 @@ fn execute_scan(
         result.processed, result.errors
     );
     info!("Scan completed in {:.2}s", elapsed.as_secs_f64());
+
+    Ok(())
+}
+
+/// Output scan results in JSON format
+fn output_json_results(
+    db: &Database,
+    library: &abop_core::models::Library,
+    scan_duration: std::time::Duration,
+) -> CliResult<()> {
+    use crate::output::{AudiobookInfo, CliOutput, LibraryInfo, ScanMetrics};
+
+    // Get audiobooks from the library
+    let audiobooks = db
+        .get_audiobooks_in_library(&library.id)
+        .with_database_context("retrieving audiobooks")?;
+
+    // Convert to output format
+    let audiobook_infos: Vec<AudiobookInfo> = audiobooks.iter().map(AudiobookInfo::from).collect();
+    
+    // Create library info with actual count
+    let library_info = LibraryInfo {
+        id: library.id.clone(),
+        name: library.name.clone(),
+        path: library.path.clone(),
+        audiobook_count: audiobooks.len(),
+    };
+
+    // Create scan metrics
+    let metrics = ScanMetrics {
+        files_scanned: audiobooks.len(),
+        duration_ms: scan_duration.as_millis() as u64,
+        files_per_second: if scan_duration.as_secs_f64() > 0.0 {
+            audiobooks.len() as f64 / scan_duration.as_secs_f64()
+        } else {
+            0.0
+        },
+    };
+
+    // Create output with a sample of audiobooks (first 10)
+    let sample_size = 10;
+    let sample_audiobooks = if audiobook_infos.len() <= sample_size {
+        audiobook_infos.clone()
+    } else {
+        audiobook_infos[..sample_size].to_vec()
+    };
+
+    let mut output = CliOutput::scan_success(
+        audiobooks.len(),
+        vec![library_info],
+        sample_audiobooks,
+    );
+
+    // Add metrics to the output
+    if let CliOutput::Success { data: crate::output::OutputData::Scan(ref mut scan_output) } = output {
+        scan_output.metrics = Some(metrics);
+    }
+
+    // Serialize and print
+    let json = output.to_json().with_context(|| "serializing scan results to JSON")?;
+    println!("{json}");
 
     Ok(())
 }

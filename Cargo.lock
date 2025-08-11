@@ -24,9 +24,12 @@ version = "0.1.0"
 dependencies = [
  "abop-core",
  "anyhow",
+ "chrono",
  "clap",
  "env_logger",
  "log",
+ "serde",
+ "serde_json",
  "tempfile",
  "tokio",
 ]
