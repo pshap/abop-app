@@ -35,7 +35,7 @@ pub mod buffer {
         // Check if data length matches expected size
         let channels_usize = usize::from(buffer.channels);
         let _expected_samples = buffer.data.len() / channels_usize;
-        if buffer.data.len() % channels_usize != 0 {
+        if !buffer.data.len().is_multiple_of(channels_usize) {
             return Err(AudioProcessingError::buffer(format!(
                 "Buffer data length {} is not divisible by channel count {}",
                 buffer.data.len(),

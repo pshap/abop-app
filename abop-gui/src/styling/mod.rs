@@ -5,6 +5,7 @@
 
 pub mod color_utils;
 pub mod container;
+pub mod design_tokens;
 pub mod dynamic_themes;
 pub mod input;
 pub mod material;

@@ -20,10 +20,8 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct TaskManager {
     /// Maximum number of concurrent file operations
-    #[allow(dead_code)]
     max_concurrent_tasks: usize,
     /// Maximum number of concurrent database operations
-    #[allow(dead_code)]
     max_concurrent_db_operations: usize,
     /// Cancellation token for async operations
     cancel_token: CancellationToken,
@@ -65,6 +63,18 @@ impl TaskManager {
     #[must_use]
     pub fn get_cancel_token(&self) -> CancellationToken {
         self.cancel_token.clone()
+    }
+
+    /// Get the maximum number of concurrent file operations
+    #[must_use]
+    pub fn max_concurrent_tasks(&self) -> usize {
+        self.max_concurrent_tasks
+    }
+
+    /// Get the maximum number of concurrent database operations
+    #[must_use]
+    pub fn max_concurrent_db_operations(&self) -> usize {
+        self.max_concurrent_db_operations
     }
 
     /// Run a scan operation with the given reporter

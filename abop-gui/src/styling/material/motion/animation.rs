@@ -276,8 +276,9 @@ impl Animation {
     /// Can be enhanced with OS-specific APIs in the future.
     fn should_reduce_motion() -> bool {
         // Check common environment variables for reduced motion preference
-        std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true") ||
-        std::env::var("PREFER_REDUCED_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
+        std::env::var("ABOP_REDUCE_MOTION").is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
+            || std::env::var("PREFER_REDUCED_MOTION")
+                .is_ok_and(|v| v == "1" || v.to_lowercase() == "true")
     }
 }
 
@@ -346,7 +347,7 @@ impl AnimationBuilder {
     /// Build the animation
     #[must_use]
     pub fn build(self) -> Animation {
-        let duration = self.duration.unwrap_or(Duration::from_millis(300));
+        let duration = self.duration.unwrap_or(crate::styling::design_tokens::animation::SLOW_DURATION);
         let easing = self
             .easing
             .unwrap_or_else(|| MotionTokens::easing(EasingType::Standard));

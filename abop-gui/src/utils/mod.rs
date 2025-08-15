@@ -8,7 +8,6 @@ use std::path::Path;
 
 pub mod path_utils;
 pub mod platform;
-// Deprecated safe_conversions module has been removed. Use abop_core::utils::casting::domain::ui instead.
 
 /// Detects the file format from a file path extension
 ///
@@ -38,7 +37,7 @@ pub fn get_file_format_simple(path: &Path) -> String {
 
 /// Sorts the audiobooks in the application state based on the current table configuration
 ///
-/// This function sorts the `audiobooks` vector in `UiState` according to the selected column
+/// This function sorts the `audiobooks` vector in `AppState.library` according to the selected column
 /// and sort order (ascending/descending). Supported columns: title, author, duration, format.
 ///
 /// # Arguments
@@ -57,7 +56,7 @@ pub fn get_file_format_simple(path: &Path) -> String {
 pub fn sort_audiobooks(state: &mut AppState) {
     let column = &state.library.table_state.sort_column;
     let ascending = state.library.table_state.sort_ascending;
-    
+
     state.library.audiobooks.sort_by(|a, b| {
         let ordering = match column.as_str() {
             "title" => a
