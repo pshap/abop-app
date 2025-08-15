@@ -46,7 +46,7 @@ pub fn safe_duration_secs_to_millis(duration_secs: f64) -> Result<u32, DomainCas
     use crate::utils::casting::error::domain::UiCastError;
 
     let millis = (duration_secs * 1000.0).round();
-    
+
     if !millis.is_finite() {
         return Err(UiCastError::InvalidDuration(duration_secs).into());
     }
@@ -56,7 +56,9 @@ pub fn safe_duration_secs_to_millis(duration_secs: f64) -> Result<u32, DomainCas
     }
 
     if millis > f64::from(u32::MAX) {
-        return Err(CastError::ValueTooLarge(duration_secs.to_string(), u32::MAX.to_string()).into());
+        return Err(
+            CastError::ValueTooLarge(duration_secs.to_string(), u32::MAX.to_string()).into(),
+        );
     }
 
     Ok(millis as u32)

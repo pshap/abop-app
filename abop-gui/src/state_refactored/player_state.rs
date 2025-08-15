@@ -2,8 +2,8 @@
 //!
 //! This module handles all audio playback related state.
 
-use std::path::PathBuf;
 use abop_core::audio::player::PlayerState as CorePlayerState;
+use std::path::PathBuf;
 
 /// Audio player state management
 #[derive(Debug, Clone)]

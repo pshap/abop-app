@@ -273,3 +273,49 @@ pub fn safe_f64_to_usize_resampling(value: f64) -> Result<usize, CastError> {
     // Truncate fractional part - this is expected for resampling
     Ok(value as usize)
 }
+
+/// Safe conversion from i8 audio sample to normalized f32
+///
+/// Converts i8 samples in range [-128, 127] to f32 in range [-1.0, 1.0]
+/// This function avoids direct casting and ensures proper normalization.
+#[must_use]
+pub fn safe_i8_to_f32_sample(sample: i8) -> f32 {
+    // Convert i8 to f32: map [-128, 127] to [-1.0, 1.0]
+    // Using 128.0 as divisor for symmetric range around 0
+    f32::from(sample) / 128.0
+}
+
+/// Safe conversion from i16 audio sample to normalized f32  
+///
+/// Converts i16 samples in range [-32768, 32767] to f32 in range [-1.0, 1.0]
+/// This function avoids direct casting and ensures proper normalization.
+#[must_use]
+pub fn safe_i16_to_f32_sample(sample: i16) -> f32 {
+    // Convert i16 to f32: map [-32768, 32767] to [-1.0, 1.0]
+    // Using 32768.0 as divisor for maximum range utilization
+    f32::from(sample) / 32768.0
+}
+
+/// Safe conversion from i32 (24-bit) audio sample to normalized f32
+///
+/// Converts 24-bit audio samples (stored in i32) to f32 in range [-1.0, 1.0]
+/// This function avoids direct casting and ensures proper normalization.
+#[must_use]
+pub fn safe_i24_to_f32_sample(sample: i32) -> f32 {
+    // Convert i24 to f32: map [-2^23, 2^23-1] to [-1.0, 1.0]
+    // 24-bit audio uses 23 bits for magnitude (plus sign bit)
+    let divisor = (1u32 << 23) as f32; // 2^23 = 8,388,608
+    (sample as f32) / divisor
+}
+
+/// Safe conversion from i32 audio sample to normalized f32
+///
+/// Converts i32 samples in range [-2^31, 2^31-1] to f32 in range [-1.0, 1.0]
+/// This function avoids direct casting and ensures proper normalization.
+#[must_use]
+pub fn safe_i32_to_f32_sample(sample: i32) -> f32 {
+    // Convert i32 to f32: map [-2^31, 2^31-1] to [-1.0, 1.0]
+    // 32-bit audio uses 31 bits for magnitude (plus sign bit)
+    let divisor = (1u32 << 31) as f32; // 2^31 = 2,147,483,648
+    (sample as f32) / divisor
+}

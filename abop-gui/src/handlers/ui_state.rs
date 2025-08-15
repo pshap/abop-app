@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use iced::Task;
 
-use crate::constants::{VALID_SORT_COLUMNS, DEFAULT_SORT_COLUMN};
+use crate::constants::{DEFAULT_SORT_COLUMN, VALID_SORT_COLUMNS};
 use crate::messages::Message;
 use crate::state::AppState;
 use crate::theme::ThemeMode;
@@ -78,7 +78,8 @@ fn handle_play_pause(state: &mut AppState) -> Option<Task<Message>> {
             // Find the audiobook and start playing
             if let Some(audiobook) =
                 state
-                    .library.audiobooks
+                    .library
+                    .audiobooks
                     .iter()
                     .find(|ab| match ab.path.eq_path(current_file) {
                         Ok(result) => result,
@@ -101,7 +102,8 @@ fn handle_play_pause(state: &mut AppState) -> Option<Task<Message>> {
             // Play first selected audiobook
             if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
                 && let Some(audiobook) = state
-                    .library.audiobooks
+                    .library
+                    .audiobooks
                     .iter()
                     .find(|ab| &ab.id == first_selected_id)
             {
@@ -132,7 +134,8 @@ fn handle_previous(state: &mut AppState) -> Option<Task<Message>> {
     // Find currently playing or first selected audiobook and move to previous
     if let Some(current_file) = &state.player.current_playing_file {
         if let Some(current_index) = state
-            .library.audiobooks
+            .library
+            .audiobooks
             .iter()
             .position(|ab| ab.path == *current_file)
         {
@@ -161,7 +164,8 @@ fn handle_previous(state: &mut AppState) -> Option<Task<Message>> {
         // If nothing is playing but audiobooks are selected, play the first selected one
         if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
             && let Some(audiobook) = state
-                .library.audiobooks
+                .library
+                .audiobooks
                 .iter()
                 .find(|ab| &ab.id == first_selected_id)
         {
@@ -188,7 +192,8 @@ fn handle_next(state: &mut AppState) -> Option<Task<Message>> {
     // Find currently playing or first selected audiobook and move to next
     if let Some(current_file) = &state.player.current_playing_file {
         if let Some(current_index) = state
-            .library.audiobooks
+            .library
+            .audiobooks
             .iter()
             .position(|ab| ab.path == *current_file)
         {
@@ -217,7 +222,8 @@ fn handle_next(state: &mut AppState) -> Option<Task<Message>> {
         // If nothing is playing but audiobooks are selected, play the first selected one
         if let Some(first_selected_id) = state.library.selected_audiobooks.iter().next()
             && let Some(audiobook) = state
-                .library.audiobooks
+                .library
+                .audiobooks
                 .iter()
                 .find(|ab| &ab.id == first_selected_id)
         {
@@ -297,7 +303,12 @@ fn handle_toggle_select_all(state: &mut AppState) -> Option<Task<Message>> {
         log::info!("Deselected all audiobooks");
     } else {
         // Not all are selected, so select all
-        state.library.selected_audiobooks = state.library.audiobooks.iter().map(|ab| ab.id.clone()).collect();
+        state.library.selected_audiobooks = state
+            .library
+            .audiobooks
+            .iter()
+            .map(|ab| ab.id.clone())
+            .collect();
         log::info!("Selected all {} audiobooks", state.library.audiobooks.len());
     }
     Some(Task::none())
@@ -305,7 +316,10 @@ fn handle_toggle_select_all(state: &mut AppState) -> Option<Task<Message>> {
 
 fn handle_toggle_auto_save_library(state: &mut AppState) -> Option<Task<Message>> {
     state.library.auto_save_library = !state.library.auto_save_library;
-    log::info!("Auto-save library toggled to: {}", state.library.auto_save_library);
+    log::info!(
+        "Auto-save library toggled to: {}",
+        state.library.auto_save_library
+    );
     Some(Task::none())
 }
 
@@ -326,7 +340,10 @@ fn handle_toggle_audiobook_selection(
         state.library.selected_audiobooks.remove(&audiobook_id);
         log::info!("Deselected audiobook: {audiobook_id}");
     } else {
-        state.library.selected_audiobooks.insert(audiobook_id.clone());
+        state
+            .library
+            .selected_audiobooks
+            .insert(audiobook_id.clone());
         log::info!("Selected audiobook: {audiobook_id}");
     }
     Some(Task::none())

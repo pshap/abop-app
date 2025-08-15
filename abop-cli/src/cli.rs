@@ -91,9 +91,9 @@ pub fn init_logging(args: &Args) {
 /// Main CLI dispatch function
 pub fn run() -> CliResult<()> {
     let args = Args::parse();
-    
+
     init_logging(&args);
-    
+
     log::info!("Starting ABOP CLI");
     log::debug!("Command line arguments: {args:?}");
 
@@ -114,7 +114,10 @@ pub fn run() -> CliResult<()> {
                 max_concurrent_db_operations,
             )
         }
-        Commands::Db { database, operation } => {
+        Commands::Db {
+            database,
+            operation,
+        } => {
             log::debug!("Executing database command: {operation:?} on {database:?}");
             crate::commands::db::run(database, operation)
         }
@@ -212,19 +215,19 @@ mod tests {
         ];
 
         for (op_name, expected_op) in operations {
-            let args = Args::try_parse_from([
-                "abop-cli",
-                "db",
-                "--database",
-                "/test/db.sqlite",
-                op_name,
-            ])
-            .unwrap();
+            let args =
+                Args::try_parse_from(["abop-cli", "db", "--database", "/test/db.sqlite", op_name])
+                    .unwrap();
 
             match args.command {
-                Commands::Db { database, operation } => {
+                Commands::Db {
+                    database,
+                    operation,
+                } => {
                     assert_eq!(database, PathBuf::from("/test/db.sqlite"));
-                    assert!(std::mem::discriminant(&operation) == std::mem::discriminant(&expected_op));
+                    assert!(
+                        std::mem::discriminant(&operation) == std::mem::discriminant(&expected_op)
+                    );
                 }
                 _ => panic!("Expected db command"),
             }
@@ -244,25 +247,22 @@ mod tests {
     #[test]
     fn test_global_flags() {
         // Test that global flags work with any command
-        let args = Args::try_parse_from([
-            "abop-cli",
-            "--verbose",
-            "scan",
-            "--library", 
-            "/test/path"
-        ]).unwrap();
-        
+        let args =
+            Args::try_parse_from(["abop-cli", "--verbose", "scan", "--library", "/test/path"])
+                .unwrap();
+
         assert!(args.verbose);
-        
+
         let args = Args::try_parse_from([
             "abop-cli",
             "--debug",
             "db",
             "--database",
             "/test/db.sqlite",
-            "stats"
-        ]).unwrap();
-        
+            "stats",
+        ])
+        .unwrap();
+
         assert!(args.debug);
     }
 }

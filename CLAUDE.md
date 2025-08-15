@@ -131,7 +131,7 @@ abop/
 - Custom error types in `abop-core/src/error.rs` using `thiserror`
 - Comprehensive error propagation with `Result<T, AppError>`
 - Graceful error handling in GUI with user-friendly messages
-- Structured logging with `tracing` for debugging
+- Structured logging with `tracing` for debugging (standardized across codebase)
 
 ### Accessibility & User Experience
 - **Reduced Motion Support**: Honors `ABOP_REDUCE_MOTION` and `PREFER_REDUCED_MOTION` environment variables
@@ -218,7 +218,7 @@ impl MySelectionBuilder {
 ### Database Schema Changes
 1. Create migration SQL files in `abop-core/src/db/migrations/`
 2. Update models in `abop-core/src/models/`
-3. Modify queries in `abop-core/src/db/queries/`
+3. Update repository implementations in `abop-core/src/db/repositories/`
 4. Test migration with existing data
 
 ### Configuration Updates
@@ -228,6 +228,39 @@ impl MySelectionBuilder {
 4. Update default configurations
 
 This is a mature codebase with established patterns. When making changes, follow existing architectural decisions and coding standards. The project emphasizes safety, performance, and maintainability through Rust's type system and modern development practices.
+
+## 🚀 CUTTING-EDGE RUST FEATURES
+
+**Philosophy**: As an unreleased application, ABOP embraces cutting-edge Rust features to explore the language's evolving capabilities and provide a modern development experience.
+
+### Nightly Toolchain Usage
+**Decision**: Use Rust nightly toolchain to access experimental features
+**Rationale**: 
+- Unreleased app allows experimentation with upcoming language features
+- Provides early feedback to Rust language development
+- Demonstrates best practices for future Rust development
+- Enables more expressive and concise code patterns
+
+### Current Experimental Features in Use
+- **SIMD** (`#![cfg_attr(feature = "simd", feature(portable_simd))]`) - Performance optimization
+- **Nightly Toolchain** - Configured via `rust-toolchain.toml` for access to latest features
+
+### Recently Stabilized Features in Use
+- **Let Chains** - Expressive conditional patterns (stabilized in Rust 1.88.0)
+
+### Guidelines for Adding New Experimental Features
+1. **Evaluate carefully** - Only add features that provide clear value
+2. **Document usage** - Add to this section when adopting new features
+3. **Consider stability** - Prefer features likely to stabilize soon
+4. **Performance benefits** - Prioritize features that improve performance or ergonomics
+5. **Future-proofing** - Use features that align with Rust's long-term direction
+
+### Opportunities to Explore
+- **Generic associated types (GATs)** - For more flexible trait designs
+- **Async traits** - For cleaner async interfaces
+- **Const generics improvements** - For compile-time optimizations
+- **Pattern matching enhancements** - For more expressive code
+
 
 ## Recent Architectural Improvements
 
@@ -242,6 +275,14 @@ This is a mature codebase with established patterns. When making changes, follow
 - Improved error handling in UI components with robust fallback strategies
 - Added comprehensive documentation following Rust best practices
 - Implemented cross-platform accessibility features
+
+### Database Layer Improvements (2024)
+- **Security**: Removed deprecated unsafe `query_row_dyn` methods with type erasure
+- **Safety**: Standardized safe casting practices throughout database operations
+- **Consistency**: Unified error handling patterns using `DbResult<T>`
+- **Logging**: Migrated from `log::` to `tracing::` for structured debugging
+- **Architecture**: Simplified parameter conversion reducing code complexity
+- **Modularity**: Clean separation between core business logic and GUI dependencies
 
 ### Development Status
 The codebase is actively maintained with a focus on:

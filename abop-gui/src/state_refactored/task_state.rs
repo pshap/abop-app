@@ -238,10 +238,11 @@ impl TaskState {
     /// Add a completed task to history
     fn add_to_history(&mut self, task: TaskInfo) {
         self.recent_tasks.push(task);
-        
+
         // Trim history to max size
         if self.recent_tasks.len() > self.max_task_history {
-            self.recent_tasks.drain(0..self.recent_tasks.len() - self.max_task_history);
+            self.recent_tasks
+                .drain(0..self.recent_tasks.len() - self.max_task_history);
         }
     }
 

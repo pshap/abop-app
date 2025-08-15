@@ -20,7 +20,8 @@ use log::{info, warn};
 /// The total number of audiobooks, or an error if the query fails
 pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
     // Get all libraries first
-    let libraries = db.get_libraries()
+    let libraries = db
+        .get_libraries()
         .with_database_context("fetching libraries")?;
 
     if libraries.is_empty() {
@@ -30,11 +31,12 @@ pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
     // Sum across all libraries for total count
     let mut total_count = 0;
     for library in &libraries {
-        let count = db.count_audiobooks_in_library(library.id.as_str())
+        let count = db
+            .count_audiobooks_in_library(library.id.as_str())
             .with_database_context("counting audiobooks")?;
         total_count += count;
     }
-    
+
     Ok(total_count)
 }
 
@@ -57,7 +59,7 @@ pub fn show_scan_results(db: &Database) -> CliResult<()> {
 
     // Show sample audiobooks
     show_sample_audiobooks(db)?;
-    
+
     Ok(())
 }
 
@@ -70,9 +72,10 @@ pub fn show_scan_results(db: &Database) -> CliResult<()> {
 /// Returns an error if database operations fail
 pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
     // Get all libraries first
-    let libraries = db.get_libraries()
+    let libraries = db
+        .get_libraries()
         .with_database_context("fetching libraries")?;
-    
+
     if libraries.is_empty() {
         info!("No libraries found in database. You may need to scan a library first.");
         return Ok(());
@@ -95,16 +98,17 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
     info!("Found {total_count} audiobooks in library {library_id} (page_size={page_size})");
 
     show_paginated_audiobooks(db, library_id, total_count, page_size)?;
-    
+
     Ok(())
 }
 
 /// Show sample audiobooks from the database
 fn show_sample_audiobooks(db: &Database) -> CliResult<()> {
     // Get libraries to show audiobook examples
-    let libraries = db.get_libraries()
+    let libraries = db
+        .get_libraries()
         .with_database_context("fetching libraries for samples")?;
-    
+
     if libraries.is_empty() {
         return Ok(());
     }
@@ -119,7 +123,7 @@ fn show_sample_audiobooks(db: &Database) -> CliResult<()> {
     let sample_audiobooks = db
         .get_audiobooks_in_library_paginated(library_id, Some(5), 0)
         .with_database_context("fetching sample audiobooks")?;
-    
+
     let total_count = db
         .count_audiobooks_in_library(library_id)
         .with_database_context("counting total audiobooks")?;
@@ -155,7 +159,7 @@ fn show_paginated_audiobooks(
 
     while offset < total_count {
         log::debug!("Loading audiobooks with offset: {offset}, limit: {page_size}");
-        
+
         let audiobooks = db
             .get_audiobooks_in_library_paginated(library_id, Some(page_size), offset)
             .context("Failed to get paginated audiobooks")?;
@@ -194,23 +198,29 @@ mod tests {
     fn test_get_pagination_size() {
         // Test default value (when env var is not set)
         // We can't safely remove env vars in tests, so we test with known values
-        
+
         // Test clamping logic by directly testing the parsing
         let test_cases = vec![
-            ("50", 50),      // Valid value
-            ("0", 1),        // Too low, clamped to 1
-            ("2000", 1000),  // Too high, clamped to 1000
+            ("50", 50),       // Valid value
+            ("0", 1),         // Too low, clamped to 1
+            ("2000", 1000),   // Too high, clamped to 1000
             ("invalid", 100), // Invalid, falls back to default
         ];
-        
+
         for (input, expected) in test_cases {
             let parsed = input.parse::<usize>().ok().unwrap_or(100).clamp(1, 1000);
-            assert_eq!(parsed, expected, "Input '{input}' should parse to {expected}");
+            assert_eq!(
+                parsed, expected,
+                "Input '{input}' should parse to {expected}"
+            );
         }
-        
+
         // Test that function returns a reasonable default
         let default_page_size = get_pagination_size();
-        assert!((1..=1000).contains(&default_page_size), "Page size should be between 1 and 1000, got {default_page_size}");
+        assert!(
+            (1..=1000).contains(&default_page_size),
+            "Page size should be between 1 and 1000, got {default_page_size}"
+        );
     }
 
     #[test]

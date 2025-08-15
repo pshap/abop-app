@@ -53,7 +53,7 @@ serde.workspace = true
 directories = { version = "6.0.0", default-features = false }
 
 # Core-specific dependencies that override workspace versions for specific features
-iced = { workspace = true, features = ["tokio", "advanced"] }
+# Note: iced dependency removed - moved to abop-gui layer for proper separation
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }

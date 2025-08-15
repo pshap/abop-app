@@ -83,10 +83,7 @@ mod integration_tests {
                 _ => ScannerConfig::default(), // Unknown presets fall back to default
             });
 
-            assert!(
-                result.is_ok(),
-                "Config preset '{preset}' should not panic"
-            );
+            assert!(result.is_ok(), "Config preset '{preset}' should not panic");
         }
     }
 
@@ -168,8 +165,16 @@ mod integration_tests {
         let original_db_ops = config.max_concurrent_db_operations;
 
         // Use values that are guaranteed to be different from defaults
-        let max_concurrent_tasks = if original_tasks == 16 { Some(32) } else { Some(16) };
-        let max_concurrent_db_operations = if original_db_ops == 8 { Some(4) } else { Some(8) };
+        let max_concurrent_tasks = if original_tasks == 16 {
+            Some(32)
+        } else {
+            Some(16)
+        };
+        let max_concurrent_db_operations = if original_db_ops == 8 {
+            Some(4)
+        } else {
+            Some(8)
+        };
 
         if let Some(tasks) = max_concurrent_tasks {
             config.max_concurrent_tasks = tasks;

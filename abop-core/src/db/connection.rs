@@ -11,6 +11,7 @@ use rusqlite::{Connection, OpenFlags};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use tracing::{debug, error, info, warn};
 
 /// Configuration for enhanced connection management
 #[derive(Debug, Clone)]
@@ -92,13 +93,13 @@ impl EnhancedConnection {
     /// - Database configuration is invalid
     /// - Failed to record connection statistics
     pub fn connect(&self) -> DbResult<()> {
-        log::debug!(
+        debug!(
             "Establishing database connection to: {}",
             self.config.path.display()
         );
 
         if let Err(e) = self.health_monitor.set_connecting() {
-            log::warn!("Failed to set health status to connecting: {e}");
+            warn!("Failed to set health status to connecting: {e}");
         }
 
         let start_time = Instant::now();
@@ -115,7 +116,7 @@ impl EnhancedConnection {
                     .map_err(|e| {
                         DatabaseError::ConnectionFailed(format!("Failed to record success: {e}"))
                     })?;
-                log::info!("Database connection established successfully");
+                info!("Database connection established successfully");
                 Ok(())
             }
             Err(e) => {
@@ -127,7 +128,7 @@ impl EnhancedConnection {
                             "Failed to record failure: {stats_err}"
                         ))
                     })?;
-                log::error!("Failed to establish database connection: {e}");
+                error!("Failed to establish database connection: {e}");
                 Err(e)
             }
         }
@@ -360,7 +361,7 @@ impl EnhancedConnection {
     /// - Failed to properly close the database connection
     /// - Cleanup operations fail during shutdown
     pub fn close(&self) -> DbResult<()> {
-        log::debug!("Closing database connection");
+        debug!("Closing database connection");
 
         let conn_opt = {
             if let Ok(mut conn_guard) = self.connection.lock() {
@@ -375,14 +376,14 @@ impl EnhancedConnection {
         if let Some(conn) = conn_opt
             && let Err(e) = conn.close()
         {
-            log::error!("Error closing database connection: {e:?}");
+            error!("Error closing database connection: {e:?}");
             return Err(DatabaseError::ConnectionFailed(format!(
                 "Failed to close connection: {e:?}"
             )));
         }
 
         self.health_monitor.set_failed();
-        log::info!("Database connection closed successfully");
+        info!("Database connection closed successfully");
         Ok(())
     }
 

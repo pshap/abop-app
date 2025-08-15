@@ -102,7 +102,7 @@ impl ConfigValidator {
                     "Right weight must be between 0.0 and 1.0, got: {right_weight}"
                 )));
             }
-            
+
             // Validate that the sum of weights is reasonable to prevent audio clipping.
             // Rationale: In weighted sum mixing, the output amplitude is:
             // output = (left_channel * left_weight) + (right_channel * right_weight)
@@ -371,7 +371,7 @@ mod tests {
             ..Default::default()
         };
         assert!(ConfigValidator::validate_channel_mixer_config(&invalid_config).is_err());
-        
+
         // Test sum validation - weights individually valid but sum > 1.0
         let invalid_sum_config = ChannelMixerConfig {
             mix_algorithm: MixingAlgorithm::WeightedSum {

@@ -20,7 +20,6 @@ use crate::{
         result::ScanSummary,
     },
 };
-use iced::Task;
 
 /// Supported audio file extensions for scanning
 pub const SUPPORTED_AUDIO_EXTENSIONS: &[&str] = &["mp3", "m4a", "m4b", "flac", "ogg", "wav", "aac"];
@@ -142,45 +141,6 @@ impl LibraryScanner {
         progress_tx: std::sync::mpsc::Sender<ScanProgress>,
     ) -> ScanResult<ScanSummary> {
         self.scan_with_progress(progress_tx)
-    }
-
-    /// Creates a task for scanning the library (Iced integration)
-    /// This runs the scan in a background task to prevent UI freezing
-    pub fn scan_task(&self) -> Task<ScanResult<ScanSummary>> {
-        let scanner = self.clone();
-
-        Task::perform(
-            async move {
-                // Run CPU-bound work in a blocking task
-                tokio::task::spawn_blocking(move || scanner.scan_sync())
-                    .await
-                    .map_err(|e| {
-                        crate::error::AppError::Threading(format!("Scan task panicked: {e}"))
-                    })?
-            },
-            |result| result,
-        )
-    }
-
-    /// Creates a task for scanning with progress reporting (Iced integration)
-    /// This runs the scan in a background task with progress updates to prevent UI freezing
-    pub fn scan_task_with_progress(
-        &self,
-        progress_tx: std::sync::mpsc::Sender<ScanProgress>,
-    ) -> Task<ScanResult<ScanSummary>> {
-        let scanner = self.clone();
-
-        Task::perform(
-            async move {
-                // Run CPU-bound work in a blocking task
-                tokio::task::spawn_blocking(move || scanner.scan_with_progress_sync(progress_tx))
-                    .await
-                    .map_err(|e| {
-                        crate::error::AppError::Threading(format!("Scan task panicked: {e}"))
-                    })?
-            },
-            |result| result,
-        )
     }
 
     /// Performs an async scan with progress reporting

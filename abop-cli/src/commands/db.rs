@@ -4,7 +4,7 @@
 //! initialization, listing, statistics, and cleanup operations.
 
 use crate::cli::DbOperations;
-use crate::error::{validate_existing_database_path, CliResult, CliResultExt};
+use crate::error::{CliResult, CliResultExt, validate_existing_database_path};
 use crate::utils::{get_audiobook_count, show_audiobook_list};
 use abop_core::db::Database;
 use log::{debug, info};
@@ -23,7 +23,7 @@ use std::path::PathBuf;
 /// - The specific operation fails
 pub fn run(database_path: PathBuf, operation: DbOperations) -> CliResult<()> {
     debug!("Starting database operation: {operation:?}");
-    
+
     match operation {
         DbOperations::Init => init(database_path),
         DbOperations::List => list(database_path),
@@ -36,10 +36,9 @@ pub fn run(database_path: PathBuf, operation: DbOperations) -> CliResult<()> {
 fn init(database_path: PathBuf) -> CliResult<()> {
     info!("Initializing database: {database_path:?}");
     debug!("About to call Database::open()");
-    
-    let _db = Database::open(&database_path)
-        .with_database_context("initialization")?;
-    
+
+    let _db = Database::open(&database_path).with_database_context("initialization")?;
+
     debug!("Database::open() completed successfully");
     info!("✓ Database initialized successfully");
     Ok(())
@@ -48,13 +47,12 @@ fn init(database_path: PathBuf) -> CliResult<()> {
 /// List all audiobooks in the database
 fn list(database_path: PathBuf) -> CliResult<()> {
     info!("Listing audiobooks in: {database_path:?}");
-    
+
     // Validate database exists before attempting connection
     validate_existing_database_path(&database_path)?;
-    
+
     debug!("About to call Database::open() for list operation");
-    let db = Database::open(&database_path)
-        .with_database_context("opening for list operation")?;
+    let db = Database::open(&database_path).with_database_context("opening for list operation")?;
     debug!("Database::open() completed for list operation");
 
     show_audiobook_list(&db)?;
@@ -64,19 +62,18 @@ fn list(database_path: PathBuf) -> CliResult<()> {
 /// Show database statistics
 fn stats(database_path: PathBuf) -> CliResult<()> {
     info!("Database statistics: {database_path:?}");
-    
+
     // Validate database exists before attempting connection
     validate_existing_database_path(&database_path)?;
-    
+
     debug!("About to call Database::open() for stats operation");
-    let db = Database::open(&database_path)
-        .with_database_context("opening for stats operation")?;
+    let db = Database::open(&database_path).with_database_context("opening for stats operation")?;
     debug!("Database::open() completed for stats operation");
 
     debug!("About to call get_audiobook_count()");
     let count = get_audiobook_count(&db)?;
     debug!("get_audiobook_count() completed with count: {count}");
-    
+
     info!("Total audiobooks: {count}");
     Ok(())
 }
@@ -84,29 +81,32 @@ fn stats(database_path: PathBuf) -> CliResult<()> {
 /// Clean and optimize the database
 fn clean(database_path: PathBuf) -> CliResult<()> {
     info!("Cleaning database: {database_path:?}");
-    
+
     // Validate database exists before attempting connection
     validate_existing_database_path(&database_path)?;
-    
+
     debug!("About to call Database::open() for clean operation");
-    let db = Database::open(&database_path)
-        .with_database_context("opening for clean operation")?;
+    let db = Database::open(&database_path).with_database_context("opening for clean operation")?;
     debug!("Database::open() completed for clean operation");
 
     // Perform basic database validation
     info!("Running database validation...");
-    
+
     // For now, just validate that we can query basic statistics
-    let libraries = db.get_libraries()
+    let libraries = db
+        .get_libraries()
         .with_database_context("validating database structure")?;
-    info!("✓ Database structure validated ({} libraries found)", libraries.len());
-    
+    info!(
+        "✓ Database structure validated ({} libraries found)",
+        libraries.len()
+    );
+
     // Future improvements could include:
     // - VACUUM operation for space reclamation
     // - ANALYZE for query optimization statistics
     // - Orphaned record cleanup
     // - Integrity checks
-    
+
     info!("✓ Database cleanup and optimization completed");
     Ok(())
 }
@@ -114,22 +114,22 @@ fn clean(database_path: PathBuf) -> CliResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::fs;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_init_operation() {
         let temp_file = NamedTempFile::new().unwrap();
         let db_path = temp_file.path().to_path_buf();
-        
+
         // Remove the temp file so we can test creation
         drop(temp_file);
-        
+
         let result = init(db_path.clone());
         // In test environment, this might fail due to missing dependencies
         // but it shouldn't panic
         assert!(result.is_ok() || result.is_err());
-        
+
         // If successful, the file should exist
         if result.is_ok() {
             assert!(db_path.exists());
@@ -139,16 +139,16 @@ mod tests {
     #[test]
     fn test_operations_with_nonexistent_database() {
         let nonexistent_path = PathBuf::from("/nonexistent/database.db");
-        
+
         // All operations except init should fail with nonexistent database
         let result = list(nonexistent_path.clone());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
-        
+
         let result = stats(nonexistent_path.clone());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
-        
+
         let result = clean(nonexistent_path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
@@ -157,19 +157,19 @@ mod tests {
     #[test]
     fn test_operations_with_directory_path() {
         use tempfile::TempDir;
-        
+
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path().to_path_buf();
-        
+
         // Operations should fail when path points to directory
         let result = list(dir_path.clone());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
-        
+
         let result = stats(dir_path.clone());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
-        
+
         let result = clean(dir_path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("is a directory"));
@@ -178,28 +178,28 @@ mod tests {
     #[test]
     fn test_database_operations_dispatch() {
         let temp_file = NamedTempFile::new().unwrap();
-        
+
         // Create a minimal database file
         fs::write(temp_file.path(), b"test database content").unwrap();
         let db_path = temp_file.path().to_path_buf();
-        
+
         // Test that the run function properly dispatches to sub-operations
         // Note: These might fail in test environment but shouldn't panic
-        
+
         let result = run(db_path.clone(), DbOperations::Stats);
         assert!(result.is_ok() || result.is_err());
-        
+
         let result = run(db_path.clone(), DbOperations::List);
         assert!(result.is_ok() || result.is_err());
-        
+
         let result = run(db_path.clone(), DbOperations::Clean);
         assert!(result.is_ok() || result.is_err());
-        
+
         // Init should work with any path
         let new_file = NamedTempFile::new().unwrap();
         let new_path = new_file.path().to_path_buf();
         drop(new_file); // Remove file to test creation
-        
+
         let result = run(new_path, DbOperations::Init);
         assert!(result.is_ok() || result.is_err());
     }

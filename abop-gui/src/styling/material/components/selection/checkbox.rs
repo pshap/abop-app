@@ -159,7 +159,6 @@ pub fn checkbox_from_bool(checked: bool) -> CheckboxBuilder {
     CheckboxBuilder::from_bool(checked)
 }
 
-
 // ============================================================================
 // Tests
 // ============================================================================

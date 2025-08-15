@@ -3,7 +3,7 @@
 //! This module handles the scanning of audiobook libraries, including
 //! library creation/lookup, scanner configuration, and result reporting.
 
-use crate::error::{validate_library_path, CliResult, CliResultExt};
+use crate::error::{CliResult, CliResultExt, validate_library_path};
 use crate::utils::show_scan_results;
 use abop_core::{
     db::Database,
@@ -95,14 +95,14 @@ fn find_or_create_library(
         }
         None => {
             info!("Creating new library for path: {}", library_path.display());
-            
+
             // Generate a meaningful library name from the path
             let library_name = library_path
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("Unknown Library")
                 .to_string();
-            
+
             let library_id = db
                 .add_library_with_path(&library_name, library_path.clone())
                 .context("Failed to create library record")?;
@@ -192,24 +192,21 @@ mod tests {
         let configs = vec![
             "default",
             "large",
-            "small", 
+            "small",
             "conservative",
             "unknown_preset",
         ];
 
         for preset in configs {
             let result = build_scanner_config(preset, None, None);
-            assert!(
-                result.is_ok(),
-                "Config preset '{preset}' should not fail"
-            );
+            assert!(result.is_ok(), "Config preset '{preset}' should not fail");
         }
     }
 
     #[test]
     fn test_build_scanner_config_with_overrides() {
         let config = build_scanner_config("default", Some(16), Some(8)).unwrap();
-        
+
         assert_eq!(config.max_concurrent_tasks, 16);
         assert_eq!(config.max_concurrent_db_operations, 8);
     }
@@ -219,7 +216,7 @@ mod tests {
         // Test successful validation
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().to_path_buf();
-        
+
         let result = validate_library_path(&path);
         assert!(result.is_ok());
 
@@ -233,17 +230,17 @@ mod tests {
     #[test]
     fn test_initialize_database_modes() {
         use tempfile::NamedTempFile;
-        
+
         // Test with custom database path
         let temp_file = NamedTempFile::new().unwrap();
         let custom_path = temp_file.path().to_path_buf();
-        
+
         // Note: This test just verifies the function doesn't panic
         // Full database initialization requires more complex setup
         let result = initialize_database(Some(custom_path));
         // We expect this might fail in test environment, but shouldn't panic
         assert!(result.is_ok() || result.is_err());
-        
+
         // Test with centralized database
         let result = initialize_database(None);
         // We expect this might fail in test environment, but shouldn't panic
