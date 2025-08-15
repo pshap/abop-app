@@ -236,8 +236,8 @@ impl App {
 
     /// Get the theme for the application
     pub fn theme(&self) -> IcedTheme {
-        // Create a default theme based on the current theme mode
-        IcedTheme::default()
+        // Use the theme mode from application state
+        self.state.ui.theme_mode.theme()
     }
 
     /// Create subscriptions for the application

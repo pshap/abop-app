@@ -11,7 +11,8 @@
       "Bash(grep:*)",
       "Bash(wc:*)",
       "Bash(git add:*)",
-      "Bash(rustup:*)"
+      "Bash(rustup:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -9,7 +9,7 @@ pub mod error;
 pub mod health;
 pub mod helpers;
 pub mod mappers;
-mod migrations;
+pub mod migrations;
 pub mod operations;
 pub mod repositories;
 pub mod retry;

@@ -151,11 +151,15 @@ abop/
 - Property-based tests are required for new conversion utilities
 
 ### Testing Strategy
+- **Centralized Test Infrastructure**: All test utilities consolidated to eliminate duplication
+  - `abop-core/src/test_utils/db.rs`: Database testing utilities (TestDatabase, TestDataFactory, TestAssertions)
+  - `abop-gui/src/test_utils/components.rs`: GUI component testing utilities 
+  - See `docs/TESTING_PATTERNS.md` for comprehensive testing guidelines and templates
 - Unit tests for core logic in each module
-- Integration tests in `tests/` directories
+- Integration tests in `tests/` directories  
 - Property-based testing with `proptest` for audio processing
 - Benchmark tests using `criterion` for performance validation
-- GUI components have test utilities in `test_utils.rs`
+- **Performance testing**: Large dataset testing and timing measurements
 
 ### Code Style
 - Follow Rust 2024 edition conventions
