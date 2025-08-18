@@ -352,5 +352,24 @@ mod integration_tests {
         
         // Test unknown error
         assert_eq!(categorize_error("Something went wrong"), "UNKNOWN_ERROR");
+
+    // Case insensitivity checks
+    assert_eq!(categorize_error("file DOES NOT exist"), "PATH_NOT_FOUND");
+    assert_eq!(categorize_error("PATH NOT FOUND"), "PATH_NOT_FOUND");
+    assert_eq!(categorize_error("IS A DIRECTORY"), "INVALID_PATH");
+    assert_eq!(categorize_error("Invalid Path"), "INVALID_PATH");
+    assert_eq!(categorize_error("DATABASE"), "DATABASE_ERROR");
+    assert_eq!(categorize_error("sqlite"), "DATABASE_ERROR");
+    assert_eq!(categorize_error("PERMISSION"), "PERMISSION_DENIED");
+    assert_eq!(categorize_error("ACCESS DENIED"), "PERMISSION_DENIED");
+    assert_eq!(categorize_error("SCAN"), "SCAN_ERROR");
+    assert_eq!(categorize_error("Scanner"), "SCAN_ERROR");
+    assert_eq!(categorize_error("AuDiO"), "AUDIO_ERROR");
+    assert_eq!(categorize_error("FORMAT"), "AUDIO_ERROR");
+    assert_eq!(categorize_error("LIBRARY"), "LIBRARY_ERROR");
+    assert_eq!(categorize_error("SERIALIZ"), "SERIALIZATION_ERROR");
+    assert_eq!(categorize_error("JSON"), "SERIALIZATION_ERROR");
+    assert_eq!(categorize_error("CONFIG"), "CONFIGURATION_ERROR");
+    assert_eq!(categorize_error("NETWORK"), "NETWORK_ERROR");
     }
 }

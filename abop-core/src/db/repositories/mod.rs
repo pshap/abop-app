@@ -58,7 +58,15 @@ pub trait DynRepository: Repository {
         params: &[&(dyn rusqlite::ToSql + Sync)],
     ) -> DbResult<usize> {
         let query = query.to_string();
+        let param_count = params.len();
         let owned_params = convert_params_efficiently(params)?;
+
+        // Emit a debug log for visibility into dynamic query execution
+        debug!(
+            %query,
+            param_count,
+            "Executing dynamic SQL query"
+        );
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
@@ -66,7 +74,12 @@ pub trait DynRepository: Repository {
                 .iter()
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
-            stmt.execute(rusqlite::params_from_iter(param_refs))
+            let result = stmt.execute(rusqlite::params_from_iter(param_refs));
+            match &result {
+                Ok(rows) => debug!(%query, rows_affected = *rows, "Dynamic SQL query executed successfully"),
+                Err(e) => error!(%query, error = %e, "Dynamic SQL query execution failed"),
+            }
+            result
         })
     }
 }
@@ -216,7 +229,6 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {}
 ///
 /// **Usage**: Called internally by `execute_query_dyn` to handle
 /// parameter conversion in a consistent manner across all repository implementations.
-/// parameter conversion in a consistent manner across all repository implementations.
 fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::ValueRef::Null => Box::new(None::<String>),
@@ -234,7 +246,6 @@ fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite:
 /// This complements `convert_value_ref_to_owned` by handling already-owned values.
 ///
 /// **Usage**: Called internally by `execute_query_dyn` when
-/// parameter conversion yields owned values rather than borrowed references.
 /// parameter conversion yields owned values rather than borrowed references.
 fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
