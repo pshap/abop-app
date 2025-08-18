@@ -6,4 +6,4 @@
 pub mod sort;
 
 // Re-export commonly used constants
-pub use sort::{VALID_SORT_COLUMNS, DEFAULT_SORT_COLUMN};
+pub use sort::{DEFAULT_SORT_COLUMN, VALID_SORT_COLUMNS};

@@ -30,18 +30,18 @@ pub use crate::styling::material::components::selection::validation::*;
 // ============================================================================
 
 /// Convenient re-exports for component traits and types
-/// 
+///
 /// This prelude provides easy access to all commonly used types from the selection
 /// component system. Import this to get everything you need in most use cases.
-/// 
+///
 /// # Examples
 /// ```rust,no_run
 /// use abop_gui::styling::material::components::selection::common::prelude::*;
-/// 
+///
 /// let props = ComponentProps::new()
 ///     .with_label("Toggle me")
 ///     .size(ComponentSize::Large);
-/// 
+///
 /// let checkbox = CheckboxState::Unchecked.toggle();
 /// assert_eq!(checkbox, CheckboxState::Checked);
 /// ```
@@ -75,7 +75,7 @@ pub mod prelude {
 #[cfg(test)]
 mod tests {
     use super::prelude::*;
-    
+
     #[test]
     fn test_prelude_imports() {
         // Test that all expected types are available through prelude
@@ -86,7 +86,7 @@ mod tests {
         let _config = ValidationConfig::default();
         let _animation = AnimationConfig::default();
     }
-    
+
     #[test]
     fn test_constants_access() {
         // Test that constants are properly accessible
@@ -105,19 +105,19 @@ mod tests {
             constants::sizes::MEDIUM_SIZE_PX
         );
     }
-    
-    #[test] 
+
+    #[test]
     fn test_modular_refactoring_maintains_api() {
         // Test that the refactored module structure maintains the same public API
         let props = ComponentProps::new().with_label("Test");
         let checkbox = CheckboxState::Unchecked;
         let switch = SwitchState::Off;
         let chip = ChipState::Unselected;
-        
+
         // Validation functions should still work
         assert!(validate_checkbox_state(checkbox, &props).is_ok());
         assert!(validate_switch_state(switch, &props).is_ok());
-        
+
         // State methods should still work
         assert_eq!(checkbox.toggle(), CheckboxState::Checked);
         assert_eq!(switch.toggle(), SwitchState::On);

@@ -47,13 +47,10 @@ fn output_json_error(error: &anyhow::Error) {
     } else {
         None
     };
-    
-    let output = crate::output::CliOutput::error(
-        error_chain[0].clone(),
-        "CliError".to_string(),
-        context,
-    );
-    
+
+    let output =
+        crate::output::CliOutput::error(error_chain[0].clone(), "CliError".to_string(), context);
+
     if let Ok(json) = output.to_json() {
         println!("{json}");
     } else {

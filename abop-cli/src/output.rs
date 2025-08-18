@@ -196,8 +196,14 @@ impl From<&abop_core::models::Audiobook> for AudiobookInfo {
     fn from(book: &abop_core::models::Audiobook) -> Self {
         Self {
             id: book.id.clone(),
-            title: book.title.clone().unwrap_or_else(|| "Unknown Title".to_string()),
-            author: book.author.clone().unwrap_or_else(|| "Unknown Author".to_string()),
+            title: book
+                .title
+                .clone()
+                .unwrap_or_else(|| "Unknown Title".to_string()),
+            author: book
+                .author
+                .clone()
+                .unwrap_or_else(|| "Unknown Author".to_string()),
             narrator: book.narrator.clone(),
             path: book.path.clone(),
             duration_seconds: book.duration_seconds,
@@ -324,7 +330,10 @@ mod tests {
         );
 
         // Add metrics
-        if let CliOutput::Success { data: OutputData::Scan(ref mut scan_output) } = output {
+        if let CliOutput::Success {
+            data: OutputData::Scan(ref mut scan_output),
+        } = output
+        {
             scan_output.metrics = Some(ScanMetrics {
                 files_scanned: 100,
                 duration_ms: 5000,

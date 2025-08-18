@@ -8,17 +8,16 @@ use iced::{Element, Length};
 
 use crate::components::buttons;
 use crate::components::buttons::builder::ButtonBuilder;
-use crate::styling::material::components::selection::builder::CommonSelectionBuilder;
 use crate::components::buttons::variants::ButtonVariant;
 use crate::messages::Message;
 use crate::state::AppState;
 use crate::styling::container::dialog::DialogContainerStyles;
+use crate::styling::material::components::selection::builder::CommonSelectionBuilder;
 
 // Import Material Design 3 selection components
+use crate::styling::material::components::feedback::dialog::DialogSize;
 use crate::styling::material::components::selection::Switch;
 use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
-use crate::styling::material::components::feedback::dialog::DialogSize;
-
 
 /// Creates the enhanced settings view with Material Design 3 selection components
 #[must_use]
@@ -46,7 +45,8 @@ pub fn settings_view(state: &AppState) -> Element<'_, Message> {
         // Auto-save Library Setting
         row![
             column![
-                text("Auto-save Library").size(state.ui.material_tokens.typography().label_large.size),
+                text("Auto-save Library")
+                    .size(state.ui.material_tokens.typography().label_large.size),
                 text("Automatically save library changes")
                     .size(state.ui.material_tokens.typography().body_small.size)
             ]
@@ -121,7 +121,7 @@ where
             // Log validation error for debugging
             #[cfg(debug_assertions)]
             log::warn!("Switch validation failed: {_err}. Using fallback.");
-            
+
             // Fallback to basic switch - this should always succeed
             Switch::builder(switch_state).build_unchecked()
         });

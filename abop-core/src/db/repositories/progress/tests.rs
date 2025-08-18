@@ -4,9 +4,9 @@ mod progress_tests {
     use crate::db::repositories::{AudiobookRepository, LibraryRepository};
     use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
     use crate::models::Progress;
+    use crate::test_utils::TestDataFactory;
     use chrono::Utc;
     use rusqlite::Connection;
-    use crate::test_utils::TestDataFactory;
     use std::path::PathBuf;
     use std::sync::Arc;
     use tempfile::NamedTempFile;

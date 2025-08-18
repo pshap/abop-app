@@ -25,33 +25,19 @@ pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
     audiobook
 }
 
-/// Creates a test audiobook with customizable metadata.
+/// Centralized factory for creating test data objects used across GUI tests
 ///
-/// # Arguments
-/// * `id` - The ID to assign to the audiobook
-/// * `title` - The title to assign to the audiobook
-/// * `author` - The author to assign to the audiobook
-/// * `duration` - Duration in seconds
+/// This factory provides simplified audiobook creation for GUI component testing.
+/// Unlike the core TestDataFactory, this version:
+/// - Uses concrete strings for `title` and `author` (no Option types)
+/// - Automatically generates paths based on title for consistency
+/// - Uses a fixed "test-library-id" for simplified UI testing
+/// - Focuses on GUI component testing scenarios
 ///
-/// # Returns
-/// A configured `Audiobook` instance with the specified metadata
-pub fn create_custom_test_audiobook(
-    id: &str,
-    title: &str,
-    author: &str,
-    duration: Option<u64>,
-) -> Audiobook {
-    let path = PathBuf::from(format!("/test/path/{title}.mp3"));
-    let mut audiobook = Audiobook::new("test-library-id", &path);
-    audiobook.id = id.to_string();
-    audiobook.title = Some(title.to_string());
-    audiobook.author = Some(author.to_string());
-    audiobook.duration_seconds = duration;
-    audiobook.size_bytes = Some(1024000);
-    audiobook
-}
-
-/// Centralized factory for creating test data objects used across tests
+/// Use this factory when:
+/// - Testing UI components that display audiobook information
+/// - Creating test data for view rendering and interaction tests
+/// - Building consistent test datasets for GUI component validation
 pub struct TestDataFactory;
 
 impl TestDataFactory {

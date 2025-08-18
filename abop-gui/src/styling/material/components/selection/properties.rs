@@ -186,8 +186,10 @@ impl ComponentProps {
             self.metadata.insert(key_string, value.into());
         } else {
             // Log unknown keys in all builds for better debugging
-            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys.");
-            // Allow unknown keys for extensibility 
+            log::debug!(
+                "Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys."
+            );
+            // Allow unknown keys for extensibility
             self.metadata.insert(key_string, value.into());
         }
         self
@@ -206,8 +208,10 @@ impl ComponentProps {
             self.metadata.insert(key_string, value.into());
         } else {
             // Log unknown keys in all builds for better debugging
-            log::debug!("Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys.");
-            // Allow unknown keys for extensibility 
+            log::debug!(
+                "Unknown metadata key '{key_string}'. Consider using predefined constants from constants::metadata_keys."
+            );
+            // Allow unknown keys for extensibility
             self.metadata.insert(key_string, value.into());
         }
     }

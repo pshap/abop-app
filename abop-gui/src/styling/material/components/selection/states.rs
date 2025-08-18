@@ -87,7 +87,11 @@ impl MultiLevelState for CheckboxState {
     }
 
     fn all_states() -> &'static [Self] {
-        &[CheckboxState::Unchecked, CheckboxState::Checked, CheckboxState::Indeterminate]
+        &[
+            CheckboxState::Unchecked,
+            CheckboxState::Checked,
+            CheckboxState::Indeterminate,
+        ]
     }
 
     fn next_state(self) -> Self {
@@ -242,7 +246,7 @@ impl InteractiveState for ChipState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_checkbox_state_transitions() {
         assert_eq!(CheckboxState::Unchecked.toggle(), CheckboxState::Checked);
@@ -352,13 +356,13 @@ mod tests {
     #[test]
     fn test_trait_delegation_consistency() {
         use super::super::state_traits::ComponentState;
-        
+
         // Test that trait methods delegate to inherent methods correctly
         let checkbox = CheckboxState::Unchecked;
         let inherent_toggle = checkbox.toggle();
         let trait_toggle = ComponentState::toggle(checkbox);
         assert_eq!(inherent_toggle, trait_toggle);
-        
+
         let switch = SwitchState::Off;
         let inherent_toggle = switch.toggle();
         let trait_toggle = ComponentState::toggle(switch);

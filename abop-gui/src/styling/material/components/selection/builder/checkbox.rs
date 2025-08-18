@@ -8,9 +8,9 @@
 
 use super::super::common::prelude::*;
 use super::super::common::{validate_checkbox_state, validate_label, validate_props};
+use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
 use super::patterns::*;
 use super::validation::*;
-use super::common_builder::{CommonBuilderState, CommonSelectionBuilder};
 use crate::impl_common_selection_builder;
 
 /// Default constants for checkbox configuration
@@ -144,27 +144,27 @@ impl CheckboxBuilder {
     }
 
     /// Validate the checkbox configuration
-    /// 
+    ///
     /// This method performs comprehensive validation of the checkbox builder state,
     /// including state consistency, label validation, and common property validation.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns `SelectionError` if:
     /// - The checkbox state is incompatible with the current properties
     /// - The label exceeds maximum length or violates validation rules
     /// - Common validation rules fail (disabled state conflicts, etc.)
     pub fn validate(&self) -> Result<(), SelectionError> {
-        validate_checkbox_state(self.state, &self.common.props)
-            .map_err(|e| SelectionError::InvalidState { 
-                details: format!("Checkbox validation failed: {e}") 
-            })?;
-        
-        self.validate_common()
-            .map_err(|e| SelectionError::ValidationError(
-                format!("Common validation failed: {e}")
-            ))?;
-        
+        validate_checkbox_state(self.state, &self.common.props).map_err(|e| {
+            SelectionError::InvalidState {
+                details: format!("Checkbox validation failed: {e}"),
+            }
+        })?;
+
+        self.validate_common().map_err(|e| {
+            SelectionError::ValidationError(format!("Common validation failed: {e}"))
+        })?;
+
         Ok(())
     }
 }
@@ -183,9 +183,7 @@ impl ComponentBuilder<CheckboxState> for CheckboxBuilder {
     }
 
     fn validate(&self) -> Result<(), Self::Error> {
-        validate_with_context(self, "CheckboxBuilder", || {
-            CheckboxBuilder::validate(self)
-        })
+        validate_with_context(self, "CheckboxBuilder", || CheckboxBuilder::validate(self))
     }
 }
 
@@ -271,10 +269,10 @@ mod tests {
     fn test_checkbox_clone_with_state() {
         let original = CheckboxBuilder::unchecked().label("Test");
         let cloned = original.clone_with_state(CheckboxState::Checked);
-        
+
         let original_checkbox = original.build_unchecked();
         let cloned_checkbox = cloned.build_unchecked();
-        
+
         assert_eq!(original_checkbox.state, CheckboxState::Unchecked);
         assert_eq!(cloned_checkbox.state, CheckboxState::Checked);
         assert_eq!(original_checkbox.props.label, cloned_checkbox.props.label);
@@ -285,7 +283,7 @@ mod tests {
         let checkbox = CheckboxBuilder::unchecked()
             .animations_enabled(false)
             .build_unchecked();
-            
+
         assert!(!checkbox.animation_config.enabled);
     }
 

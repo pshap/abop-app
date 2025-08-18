@@ -3,9 +3,9 @@
 //! This module defines the core traits that selection components implement,
 //! providing unified interfaces for state management, validation, and animation.
 
+use super::animation::AnimationConfig;
 use super::properties::ComponentProps;
 use super::validation::SelectionError;
-use super::animation::AnimationConfig;
 
 // ============================================================================
 // Core Selection Component Traits (Simplified and Focused)
@@ -65,10 +65,10 @@ pub trait AnimatedComponent {
 // ============================================================================
 
 /// Check if the system has reduced motion enabled
-/// 
+///
 /// This function checks environment variables and provides a simple cross-platform
 /// reduced motion detection. In production, this could be enhanced with OS-specific APIs.
-/// 
+///
 /// # Environment Variables
 /// - `ABOP_REDUCE_MOTION`: Application-specific setting ("1" or "true")
 /// - `PREFER_REDUCED_MOTION`: General accessibility setting ("1" or "true")
@@ -80,6 +80,6 @@ pub fn system_has_reduced_motion() -> bool {
             .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
             .unwrap_or(false)
     }
-    
+
     env_var_is_enabled("ABOP_REDUCE_MOTION") || env_var_is_enabled("PREFER_REDUCED_MOTION")
 }

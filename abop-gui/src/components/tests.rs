@@ -32,7 +32,7 @@ mod about_tests {
 mod audio_controls_tests {
     use super::super::audio_controls::AudioControls;
     use crate::styling::material::MaterialTokens;
-    use crate::test_utils::{create_test_audiobook, TestDataFactory};
+    use crate::test_utils::{TestDataFactory, create_test_audiobook};
     use abop_core::PlayerState;
     use std::collections::HashSet;
     // create_test_audiobook and TestDataFactory are provided by crate::test_utils
@@ -85,7 +85,7 @@ mod audio_controls_tests {
         }
 
         // Test with empty audiobooks list
-    let empty_audiobooks = Vec::new();
+        let empty_audiobooks = Vec::new();
         let _element = AudioControls::view(
             &test_cases[0].0, // Use the empty selection set
             &empty_audiobooks,
@@ -111,8 +111,20 @@ mod audio_controls_tests {
         ];
 
         let audiobooks = vec![
-            TestDataFactory::custom_audiobook("1", "Book One", "Author A", Some(3600), Some(1024000)),
-            TestDataFactory::custom_audiobook("2", "Book Two", "Author B", Some(7200), Some(2048000)),
+            TestDataFactory::custom_audiobook(
+                "1",
+                "Book One",
+                "Author A",
+                Some(3600),
+                Some(1024000),
+            ),
+            TestDataFactory::custom_audiobook(
+                "2",
+                "Book Two",
+                "Author B",
+                Some(7200),
+                Some(2048000),
+            ),
             TestDataFactory::custom_audiobook("3", "Book Three", "Author C", None, None), // Incomplete metadata
         ];
 
@@ -140,7 +152,7 @@ mod audio_controls_tests {
         let tokens = MaterialTokens::default();
 
         // Test with empty audiobooks and empty selection
-    let empty_audiobooks = Vec::new();
+        let empty_audiobooks = Vec::new();
         let empty_selection = HashSet::new();
 
         // Test with empty state
@@ -155,11 +167,16 @@ mod audio_controls_tests {
         let long_title = "Audiobook with a very long title that should be properly handled in the UI without breaking the layout or causing any rendering issues";
         let long_author =
             "Author with a very long name that should also be properly handled in the UI";
-        let long_metadata_audiobook =
-            TestDataFactory::custom_audiobook("1", long_title, long_author, Some(999999), Some(9999999999));
+        let long_metadata_audiobook = TestDataFactory::custom_audiobook(
+            "1",
+            long_title,
+            long_author,
+            Some(999999),
+            Some(9999999999),
+        );
 
         // Test with special characters in metadata
-    let special_chars_audiobook = TestDataFactory::custom_audiobook(
+        let special_chars_audiobook = TestDataFactory::custom_audiobook(
             "2",
             "Book with special chars: !@#$%^&*()_+{}|:<>?",
             "Author with emoji 😊 and unicode 测试",
@@ -168,10 +185,10 @@ mod audio_controls_tests {
         );
 
         // Test with missing metadata
-    let missing_metadata_audiobook = TestDataFactory::custom_audiobook("3", "", "", None, None);
+        let missing_metadata_audiobook = TestDataFactory::custom_audiobook("3", "", "", None, None);
 
         // Test with extremely large numbers
-    let large_numbers_audiobook = TestDataFactory::custom_audiobook(
+        let large_numbers_audiobook = TestDataFactory::custom_audiobook(
             "4",
             "Book with large numbers",
             "Author",

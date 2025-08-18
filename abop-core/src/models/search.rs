@@ -224,8 +224,8 @@ impl SearchQuery {
 mod tests {
     use super::*;
     use crate::test_constants::audiobook::*;
-    use std::path::Path;
     use crate::test_utils::TestDataFactory;
+    use std::path::Path;
 
     fn create_test_audiobook() -> Audiobook {
         TestDataFactory::custom_audiobook(

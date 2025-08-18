@@ -1,12 +1,12 @@
 //! Tests for audiobook repository operations
 
 use super::*;
+use crate::test_utils::TestDataFactory;
 use crate::{
     db::{EnhancedConnection, migrations::run_migrations, repositories::AudiobookRepository},
     models::Audiobook,
 };
 use rusqlite::{Connection, params};
-use crate::test_utils::TestDataFactory;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
 

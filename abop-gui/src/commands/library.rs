@@ -4,7 +4,7 @@ use iced::Task;
 
 use crate::library::{open_directory_dialog, scan_library};
 use crate::messages::{Command as GuiCommand, Message};
-use crate::state::{DirectoryInfo, AppState};
+use crate::state::{AppState, DirectoryInfo};
 use std::path::PathBuf;
 use std::time::SystemTime;
 

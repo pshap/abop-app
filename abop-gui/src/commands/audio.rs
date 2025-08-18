@@ -15,7 +15,9 @@ pub fn handle_audio_command(state: &mut AppState, command: GuiCommand) -> Option
             selected_ids,
             audiobooks,
         } => {
-            state.player.start_processing(Some("Converting selected audiobooks to mono...".to_string()));
+            state.player.start_processing(Some(
+                "Converting selected audiobooks to mono...".to_string(),
+            ));
             state.progress_cache.clear_processing_cache();
             log::info!(
                 "Executing ConvertToMono command for {} audiobooks",

@@ -178,18 +178,18 @@ impl CoreScanner {
 
         let mut audiobook = Audiobook::new(library_id, path);
 
-    // Extract title - prefer metadata, fall back to filename
-    audiobook.title = Some(
-        metadata
-            .as_ref()
-            .and_then(|m| m.title.clone())
-            .unwrap_or_else(|| {
-                path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or(crate::models::audiobook::fallbacks::UNKNOWN_TITLE)
-                    .to_string()
-            }),
-    );
+        // Extract title - prefer metadata, fall back to filename
+        audiobook.title = Some(
+            metadata
+                .as_ref()
+                .and_then(|m| m.title.clone())
+                .unwrap_or_else(|| {
+                    path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or(crate::models::audiobook::fallbacks::UNKNOWN_TITLE)
+                        .to_string()
+                }),
+        );
 
         // Set other metadata fields if available
         if let Some(ref meta) = metadata {

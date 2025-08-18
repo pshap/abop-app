@@ -5,6 +5,17 @@ use chrono::Utc;
 use std::path::{Path, PathBuf};
 
 /// Centralized factory for creating test data objects used across core tests
+///
+/// This factory provides low-level audiobook creation with flexible parameter handling.
+/// Unlike the GUI TestDataFactory, this version:
+/// - Accepts `Option<&Path>` for explicit path control and fallback handling
+/// - Takes `library_id` as a separate parameter for database testing scenarios
+/// - Focuses on core business logic testing (repository, database, audio processing)
+///
+/// Use this factory when:
+/// - Testing database operations and repositories
+/// - Testing audio processing with specific file paths
+/// - Creating audiobooks with precise control over all optional fields
 pub struct TestDataFactory;
 
 impl TestDataFactory {

@@ -178,7 +178,6 @@ impl SwitchDimensions {
     }
 }
 
-
 // ============================================================================
 // Convenience Functions
 // ============================================================================
@@ -342,7 +341,7 @@ mod tests {
 
         assert!(small_dims.track_width < medium_dims.track_width);
         assert!(medium_dims.track_width < large_dims.track_width);
-        
+
         assert!(small_dims.thumb_diameter < medium_dims.thumb_diameter);
         assert!(medium_dims.thumb_diameter < large_dims.thumb_diameter);
     }

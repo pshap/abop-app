@@ -92,7 +92,8 @@ fn test_config_default_values() {
 fn test_different_theme_configurations() {
     let themes = [ThemeConfig::System, ThemeConfig::Light, ThemeConfig::Dark];
 
-    for theme in &themes {        let config = Config {
+    for theme in &themes {
+        let config = Config {
             window: WindowConfig::default(),
             theme: theme.clone(),
             data_dir: PathBuf::from("/tmp/test"),

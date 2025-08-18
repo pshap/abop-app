@@ -4,7 +4,7 @@
 //! library creation/lookup, scanner configuration, and result reporting.
 
 use crate::{
-    error::{validate_library_path, CliResult, CliResultExt},
+    error::{CliResult, CliResultExt, validate_library_path},
     utils::show_scan_results,
 };
 use abop_core::{
@@ -105,14 +105,14 @@ fn find_or_create_library(
         }
         None => {
             info!("Creating new library for path: {}", library_path.display());
-            
+
             // Generate a meaningful library name from the path
             let library_name = library_path
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("Unknown Library")
                 .to_string();
-            
+
             let library_id = db
                 .add_library_with_path(&library_name, library_path.clone())
                 .context("Failed to create library record")?;
@@ -206,7 +206,7 @@ fn output_json_results(
 
     // Convert to output format
     let audiobook_infos: Vec<AudiobookInfo> = audiobooks.iter().map(AudiobookInfo::from).collect();
-    
+
     // Create library info with actual count
     let library_info = LibraryInfo {
         id: library.id.clone(),
@@ -234,19 +234,21 @@ fn output_json_results(
         audiobook_infos[..sample_size].to_vec()
     };
 
-    let mut output = CliOutput::scan_success(
-        audiobooks.len(),
-        vec![library_info],
-        sample_audiobooks,
-    );
+    let mut output =
+        CliOutput::scan_success(audiobooks.len(), vec![library_info], sample_audiobooks);
 
     // Add metrics to the output
-    if let CliOutput::Success { data: crate::output::OutputData::Scan(ref mut scan_output) } = output {
+    if let CliOutput::Success {
+        data: crate::output::OutputData::Scan(ref mut scan_output),
+    } = output
+    {
         scan_output.metrics = Some(metrics);
     }
 
     // Serialize and print
-    let json = output.to_json().with_context(|| "serializing scan results to JSON")?;
+    let json = output
+        .to_json()
+        .with_context(|| "serializing scan results to JSON")?;
     println!("{json}");
 
     Ok(())
@@ -263,24 +265,21 @@ mod tests {
         let configs = vec![
             "default",
             "large",
-            "small", 
+            "small",
             "conservative",
             "unknown_preset",
         ];
 
         for preset in configs {
             let result = build_scanner_config(preset, None, None);
-            assert!(
-                result.is_ok(),
-                "Config preset '{preset}' should not fail"
-            );
+            assert!(result.is_ok(), "Config preset '{preset}' should not fail");
         }
     }
 
     #[test]
     fn test_build_scanner_config_with_overrides() {
         let config = build_scanner_config("default", Some(16), Some(8)).unwrap();
-        
+
         assert_eq!(config.max_concurrent_tasks, 16);
         assert_eq!(config.max_concurrent_db_operations, 8);
     }
@@ -290,7 +289,7 @@ mod tests {
         // Test successful validation
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().to_path_buf();
-        
+
         let result = validate_library_path(&path);
         assert!(result.is_ok());
 
@@ -304,17 +303,17 @@ mod tests {
     #[test]
     fn test_initialize_database_modes() {
         use tempfile::NamedTempFile;
-        
+
         // Test with custom database path
         let temp_file = NamedTempFile::new().unwrap();
         let custom_path = temp_file.path().to_path_buf();
-        
+
         // Note: This test just verifies the function doesn't panic
         // Full database initialization requires more complex setup
         let result = initialize_database(Some(custom_path));
         // We expect this might fail in test environment, but shouldn't panic
         assert!(result.is_ok() || result.is_err());
-        
+
         // Test with centralized database
         let result = initialize_database(None);
         // We expect this might fail in test environment, but shouldn't panic

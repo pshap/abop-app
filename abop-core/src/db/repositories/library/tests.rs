@@ -50,10 +50,10 @@ mod library_tests {
     fn setup_test_db() -> Arc<EnhancedConnection> {
         let temp_file = create_temp_db_file();
         let db_path = temp_file.path();
-        
+
         let enhanced_conn = create_enhanced_connection(db_path);
         initialize_schema(db_path);
-        
+
         enhanced_conn
     }
 
@@ -538,8 +538,14 @@ mod library_tests {
             ("Bulk Library 5", "/bulk/path/5"),
         ];
 
-        let created_count = repo.create_many(&BULK_TEST_LIBRARIES).expect("Failed to create libraries in batch");
-        assert_eq!(created_count, BULK_TEST_LIBRARIES.len(), "Not all libraries were created in batch");
+        let created_count = repo
+            .create_many(&BULK_TEST_LIBRARIES)
+            .expect("Failed to create libraries in batch");
+        assert_eq!(
+            created_count,
+            BULK_TEST_LIBRARIES.len(),
+            "Not all libraries were created in batch"
+        );
 
         // Create remaining libraries using individual operations for simplicity
         // Design rationale: While batch operations are more efficient, using individual
@@ -550,7 +556,8 @@ mod library_tests {
         for i in 0..remaining_count {
             let name = format!("Individual Library {i}");
             let path = std::path::PathBuf::from(format!("/individual/path/{i}"));
-            repo.create(&name, path).expect("Failed to create individual library");
+            repo.create(&name, path)
+                .expect("Failed to create individual library");
         }
 
         // Verify all libraries were created
@@ -588,15 +595,15 @@ mod library_tests {
     }
 
     /// Test transaction behavior in bulk operations
-    /// 
+    ///
     /// This test verifies database transaction isolation and rollback behavior
     /// in bulk operations that contain both valid and invalid entries.
-    /// 
+    ///
     /// **Test Scenarios:**
     /// 1. Creates valid individual libraries (separate transactions)
     /// 2. Attempts bulk creation with duplicate paths (should fail atomically)
     /// 3. Verifies no partial commits occurred (transaction rollback)
-    /// 
+    ///
     /// **Expected Behavior:**
     /// - Individual valid libraries should be created successfully
     /// - Bulk operation with constraint violations should fail entirely
@@ -643,7 +650,7 @@ mod library_tests {
     }
 
     /// Test bulk operations functionality with a moderate number of records
-    /// 
+    ///
     /// This is a functional test that verifies bulk operations work correctly,
     /// not a performance benchmark. For actual performance benchmarking,
     /// see the benches/ directory with criterion-based benchmarks.

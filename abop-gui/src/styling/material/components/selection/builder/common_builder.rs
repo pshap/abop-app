@@ -41,17 +41,17 @@ impl CommonBuilderState {
 // ============================================================================
 
 /// Trait providing common builder methods for all selection components
-/// 
+///
 /// This trait provides a consistent API for building Material Design 3 selection
 /// components (checkboxes, switches, radios) while eliminating code duplication.
 /// All builders that implement this trait gain access to common functionality
 /// like label setting, size configuration, animation controls, and validation.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// use abop_gui::styling::material::components::selection::*;
-/// 
+///
 /// // All selection builders support the same common methods
 /// let checkbox = CheckboxBuilder::unchecked()
 ///     .label("Enable notifications")
@@ -59,7 +59,7 @@ impl CommonBuilderState {
 ///     .animations_enabled(true)
 ///     .build()
 ///     .expect("Valid checkbox");
-/// 
+///
 /// let switch = SwitchBuilder::off()
 ///     .label("Dark mode")
 ///     .size(ComponentSize::Medium)
@@ -70,14 +70,14 @@ impl CommonBuilderState {
 pub trait CommonSelectionBuilder {
     /// Get mutable access to the common builder state
     fn common_state_mut(&mut self) -> &mut CommonBuilderState;
-    
+
     /// Get immutable access to the common builder state
     fn common_state(&self) -> &CommonBuilderState;
 
     /// Set the component label
     #[must_use]
-    fn label<T: Into<String>>(mut self, label: T) -> Self 
-    where 
+    fn label<T: Into<String>>(mut self, label: T) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().props.label = Some(label.into());
@@ -86,8 +86,8 @@ pub trait CommonSelectionBuilder {
 
     /// Set the disabled state
     #[must_use]
-    fn disabled(mut self, disabled: bool) -> Self 
-    where 
+    fn disabled(mut self, disabled: bool) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().props.disabled = disabled;
@@ -96,8 +96,8 @@ pub trait CommonSelectionBuilder {
 
     /// Set the component size
     #[must_use]
-    fn size(mut self, size: ComponentSize) -> Self 
-    where 
+    fn size(mut self, size: ComponentSize) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().props.size = size;
@@ -106,8 +106,8 @@ pub trait CommonSelectionBuilder {
 
     /// Add metadata key-value pair
     #[must_use]
-    fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self 
-    where 
+    fn with_metadata<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self
+    where
         Self: Sized,
     {
         // Use efficient mutable insert instead of cloning entire props
@@ -117,8 +117,8 @@ pub trait CommonSelectionBuilder {
 
     /// Set error state
     #[must_use]
-    fn error(mut self, error: bool) -> Self 
-    where 
+    fn error(mut self, error: bool) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().error_state = error;
@@ -127,8 +127,8 @@ pub trait CommonSelectionBuilder {
 
     /// Set validation configuration
     #[must_use]
-    fn validation_config(mut self, config: ValidationConfig) -> Self 
-    where 
+    fn validation_config(mut self, config: ValidationConfig) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().validation_config = config;
@@ -137,8 +137,8 @@ pub trait CommonSelectionBuilder {
 
     /// Set animation configuration
     #[must_use]
-    fn animation_config(mut self, config: AnimationConfig) -> Self 
-    where 
+    fn animation_config(mut self, config: AnimationConfig) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().animation_config = config;
@@ -147,8 +147,8 @@ pub trait CommonSelectionBuilder {
 
     /// Enable/disable animations
     #[must_use]
-    fn animations_enabled(mut self, enabled: bool) -> Self 
-    where 
+    fn animations_enabled(mut self, enabled: bool) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().animation_config.enabled = enabled;
@@ -157,18 +157,20 @@ pub trait CommonSelectionBuilder {
 
     /// Configure system reduced motion respect
     #[must_use]
-    fn respect_reduced_motion(mut self, respect: bool) -> Self 
-    where 
+    fn respect_reduced_motion(mut self, respect: bool) -> Self
+    where
         Self: Sized,
     {
-        self.common_state_mut().animation_config.respect_reduced_motion = respect;
+        self.common_state_mut()
+            .animation_config
+            .respect_reduced_motion = respect;
         self
     }
 
     /// Set easing curve for animations
     #[must_use]
-    fn easing(mut self, easing: EasingCurve) -> Self 
-    where 
+    fn easing(mut self, easing: EasingCurve) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().animation_config.easing = easing;
@@ -177,8 +179,8 @@ pub trait CommonSelectionBuilder {
 
     /// Configure animation duration
     #[must_use]
-    fn animation_duration(mut self, duration: std::time::Duration) -> Self 
-    where 
+    fn animation_duration(mut self, duration: std::time::Duration) -> Self
+    where
         Self: Sized,
     {
         self.common_state_mut().animation_config.duration = duration;
@@ -187,8 +189,8 @@ pub trait CommonSelectionBuilder {
 
     /// Apply system preferences for animations
     #[must_use]
-    fn with_system_preferences(mut self) -> Self 
-    where 
+    fn with_system_preferences(mut self) -> Self
+    where
         Self: Sized,
     {
         if system_has_reduced_motion() {
@@ -211,15 +213,17 @@ pub trait CommonSelectionBuilder {
 
     /// Validate the common properties
     fn validate_common(&self) -> Result<(), SelectionError> {
-        validate_props(&self.common_state().props, &self.common_state().validation_config)
+        validate_props(
+            &self.common_state().props,
+            &self.common_state().validation_config,
+        )
     }
 
     /// Check if the component should animate
     #[must_use]
     fn should_animate(&self) -> bool {
         let config = &self.common_state().animation_config;
-        config.enabled && 
-        (!config.respect_reduced_motion || !system_has_reduced_motion())
+        config.enabled && (!config.respect_reduced_motion || !system_has_reduced_motion())
     }
 }
 
@@ -235,7 +239,7 @@ macro_rules! impl_common_selection_builder {
             fn common_state_mut(&mut self) -> &mut CommonBuilderState {
                 &mut self.$common_field
             }
-            
+
             fn common_state(&self) -> &CommonBuilderState {
                 &self.$common_field
             }
@@ -250,7 +254,7 @@ macro_rules! impl_common_selection_builder {
             fn common_state_mut(&mut self) -> &mut CommonBuilderState {
                 &mut self.$common_field
             }
-            
+
             fn common_state(&self) -> &CommonBuilderState {
                 &self.$common_field
             }
@@ -305,7 +309,12 @@ mod tests {
             .respect_reduced_motion(false);
 
         assert!(!builder.common_state().animation_config.enabled);
-        assert!(!builder.common_state().animation_config.respect_reduced_motion);
+        assert!(
+            !builder
+                .common_state()
+                .animation_config
+                .respect_reduced_motion
+        );
     }
 
     #[test]

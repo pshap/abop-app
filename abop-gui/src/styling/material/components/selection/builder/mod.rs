@@ -24,8 +24,8 @@
 
 // Re-export all public types and traits for a clean API
 pub use checkbox::CheckboxBuilder;
-pub use common_builder::CommonSelectionBuilder;
 pub use chip::ChipBuilder;
+pub use common_builder::CommonSelectionBuilder;
 pub use components::{Checkbox, Chip, Radio, Switch};
 pub use factory::{
     assist_chip,

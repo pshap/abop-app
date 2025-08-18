@@ -53,8 +53,8 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_audiobooks() {
-    let mut state = AppState::default();
-    state.library.audiobooks = vec![
+        let mut state = AppState::default();
+        state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];
@@ -65,8 +65,8 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_selected_audiobooks() {
-    let mut state = AppState::default();
-    state.library.audiobooks = vec![
+        let mut state = AppState::default();
+        state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];
