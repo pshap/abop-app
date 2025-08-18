@@ -601,6 +601,10 @@ impl Database {
     ///
     /// This method performs a single optimized query to retrieve all audiobooks
     /// rather than making separate queries for each library (avoiding N+1 problem).
+    /// 
+    /// # Errors
+    /// Returns an error if the database connection fails or if the query execution fails.
+    /// In case of failure, consider using individual library queries as a fallback.
     #[instrument(skip(self))]
     pub fn get_all_audiobooks(&self) -> Result<Vec<Audiobook>> {
         Ok(self.operations
@@ -608,7 +612,7 @@ impl Database {
                 use crate::db::mappers::{RowMappers, SqlQueries};
                 
                 let mut stmt = conn
-                    .prepare(&SqlQueries::audiobook_select(Some("1=1 ORDER BY title")))
+                    .prepare(&SqlQueries::audiobook_select_with_order(None, Some("title")))
                     .map_err(|e| DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}")))?;
 
                 let rows = stmt

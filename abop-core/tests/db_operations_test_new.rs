@@ -9,6 +9,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::NamedTempFile;
 
+/// Default test path for audiobook files in integration tests
+const TEST_AUDIOBOOK_FALLBACK_PATH: &str = "/test/path/audiobook.mp3";
+
 /// Test data factory for integration tests
 struct TestDataFactory;
 
@@ -29,7 +32,7 @@ impl TestDataFactory {
             library_id: library_id.to_string(),
             path: path
                 .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("/test/path/audiobook.mp3")),
+                .unwrap_or_else(|| PathBuf::from(TEST_AUDIOBOOK_FALLBACK_PATH)),
             title: title.map(|s| s.to_string()),
             author: author.map(|s| s.to_string()),
             narrator: None,

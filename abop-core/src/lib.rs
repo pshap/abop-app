@@ -19,7 +19,11 @@ pub mod message;
 pub mod models;
 pub mod scanner;
 pub mod services;
-#[cfg(test)]
+/// Test utilities module
+/// 
+/// This module is available when running tests or when the `test-utils` feature is enabled.
+/// The `test-utils` feature allows external crates to access these utilities for integration testing.
+#[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils;
 pub mod utils;
 pub mod validation;

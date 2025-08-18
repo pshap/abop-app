@@ -226,7 +226,12 @@ fn output_json_results(
         },
     };
 
-    // Create output with a sample of audiobooks
+    // Create output with a limited sample of audiobooks for performance and usability
+    // Rationale: 
+    // - Limits JSON output size for faster network transmission and parsing
+    // - Provides enough examples for users to verify scan results without overwhelming them
+    // - Prevents memory issues with very large libraries (10K+ audiobooks)
+    // - Maintains consistent output format regardless of library size
     let sample_size = crate::constants::DEFAULT_SAMPLE_SIZE;
     let sample_audiobooks = if audiobook_infos.len() <= sample_size {
         audiobook_infos.clone()

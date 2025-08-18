@@ -190,6 +190,7 @@ impl CliOutput {
 impl LibraryInfo {
     /// Create a LibraryInfo with actual audiobook count
     #[must_use]
+    #[allow(dead_code)]
     pub fn with_count(library: &abop_core::models::Library, audiobook_count: usize) -> Self {
         Self {
             id: library.id.clone(),

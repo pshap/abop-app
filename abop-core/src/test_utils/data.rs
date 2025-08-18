@@ -4,6 +4,9 @@ use crate::models::Audiobook;
 use chrono::Utc;
 use std::path::{Path, PathBuf};
 
+/// Default test path for audiobook files (core tests)
+const TEST_AUDIOBOOK_FALLBACK_PATH: &str = "/test/path/audiobook.mp3";
+
 /// Centralized factory for creating test data objects used across core tests
 ///
 /// This factory provides low-level audiobook creation with flexible parameter handling.
@@ -35,7 +38,7 @@ impl TestDataFactory {
             library_id: library_id.to_string(),
             path: path
                 .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("/test/path/audiobook.mp3")),
+                .unwrap_or_else(|| PathBuf::from(TEST_AUDIOBOOK_FALLBACK_PATH)),
             title: title.map(|s| s.to_string()),
             author: author.map(|s| s.to_string()),
             narrator: None,

@@ -252,6 +252,25 @@ impl SqlQueries {
         }
     }
 
+    /// Generate a standard audiobook SELECT query with optional WHERE and ORDER BY clauses
+    #[must_use]
+    pub fn audiobook_select_with_order(
+        where_clause: Option<&str>, 
+        order_by: Option<&str>
+    ) -> String {
+        let mut query = format!("SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS);
+        
+        if let Some(clause) = where_clause {
+            query.push_str(&format!(" WHERE {clause}"));
+        }
+        
+        if let Some(order) = order_by {
+            query.push_str(&format!(" ORDER BY {order}"));
+        }
+        
+        query
+    }
+
     /// Generate a standard library SELECT query with optional WHERE clause
     #[must_use]
     pub fn library_select(where_clause: Option<&str>) -> String {

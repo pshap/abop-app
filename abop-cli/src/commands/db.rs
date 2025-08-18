@@ -158,10 +158,43 @@ fn clean(database_path: PathBuf, json_output: bool) -> CliResult<()> {
 fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
     use crate::output::{AudiobookInfo, CliOutput};
 
-    // Get all audiobooks using optimized single query to avoid N+1 problem
-    let all_audiobooks = db
-        .get_all_audiobooks()
-        .with_database_context("retrieving all audiobooks for list")?;
+    // Get all audiobooks using optimized single query with fallback to per-library queries
+    let all_audiobooks = match db.get_all_audiobooks() {
+        Ok(audiobooks) => {
+            // Validate that the query returned sensible results
+            log::debug!("Retrieved {} audiobooks via optimized query", audiobooks.len());
+            
+            // Additional validation: ensure no audiobooks have empty IDs (database integrity check)
+            let invalid_count = audiobooks.iter()
+                .filter(|book| book.id.trim().is_empty())
+                .count();
+                
+            if invalid_count > 0 {
+                log::warn!("Found {} audiobooks with invalid IDs", invalid_count);
+            }
+            
+            audiobooks
+        }
+        Err(e) => {
+            log::warn!("Optimized query failed, falling back to per-library queries: {}", e);
+            
+            // Fallback: Use the original N+1 approach if the optimized query fails
+            let libraries = db
+                .get_libraries()
+                .with_database_context("retrieving libraries for fallback list")?;
+
+            let mut fallback_audiobooks = Vec::new();
+            for library in &libraries {
+                let library_audiobooks = db
+                    .get_audiobooks_in_library(&library.id)
+                    .with_database_context("retrieving audiobooks for fallback list")?;
+                fallback_audiobooks.extend(library_audiobooks);
+            }
+            
+            log::debug!("Retrieved {} audiobooks via fallback method", fallback_audiobooks.len());
+            fallback_audiobooks
+        }
+    };
 
     // Convert to output format
     let audiobook_infos: Vec<AudiobookInfo> =

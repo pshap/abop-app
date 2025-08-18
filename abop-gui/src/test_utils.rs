@@ -6,6 +6,12 @@
 use abop_core::models::audiobook::Audiobook;
 use std::path::{Path, PathBuf};
 
+/// Default test path prefix for audiobook files
+const TEST_AUDIOBOOK_PATH_PREFIX: &str = "/test/path";
+
+/// Default test library ID used across GUI tests
+const TEST_LIBRARY_ID: &str = "test-library-id";
+
 /// Creates a test audiobook with default values and the specified ID and title.
 ///
 /// # Arguments
@@ -15,8 +21,8 @@ use std::path::{Path, PathBuf};
 /// # Returns
 /// A fully configured `Audiobook` instance suitable for testing
 pub fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-    let path = PathBuf::from(format!("/test/path/{title}.mp3"));
-    let mut audiobook = Audiobook::new("test-library-id", &path);
+    let path = PathBuf::from(format!("{TEST_AUDIOBOOK_PATH_PREFIX}/{title}.mp3"));
+    let mut audiobook = Audiobook::new(TEST_LIBRARY_ID, &path);
     audiobook.id = id.to_string();
     audiobook.title = Some(title.to_string());
     audiobook.author = Some("Test Author".to_string());
@@ -49,8 +55,8 @@ impl TestDataFactory {
         duration_seconds: Option<u64>,
         size_bytes: Option<u64>,
     ) -> Audiobook {
-        let path = PathBuf::from(format!("/test/path/{title}.mp3"));
-        let mut audiobook = Audiobook::new("test-library-id", &path);
+        let path = PathBuf::from(format!("{TEST_AUDIOBOOK_PATH_PREFIX}/{title}.mp3"));
+        let mut audiobook = Audiobook::new(TEST_LIBRARY_ID, &path);
         audiobook.id = id.to_string();
         audiobook.title = Some(title.to_string());
         audiobook.author = Some(author.to_string());
@@ -66,7 +72,7 @@ impl TestDataFactory {
         author: &str,
         path: P,
     ) -> Audiobook {
-        let mut audiobook = Audiobook::new("test-library-id", path);
+        let mut audiobook = Audiobook::new(TEST_LIBRARY_ID, path);
         audiobook.id = id.to_string();
         audiobook.title = Some(title.to_string());
         audiobook.author = Some(author.to_string());

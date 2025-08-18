@@ -19,18 +19,32 @@ use log::{info, warn};
 /// # Returns
 /// The total number of audiobooks, or an error if the query fails
 pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
-    // Get all libraries first
     let libraries = db
         .get_libraries()
         .with_database_context("fetching libraries")?;
+    
+    get_audiobook_count_with_libraries(db, &libraries)
+}
 
+/// Get the total count of audiobooks across provided libraries (optimized version)
+///
+/// # Arguments
+/// * `db` - Database connection
+/// * `libraries` - Pre-fetched library list to avoid redundant queries
+///
+/// # Returns
+/// The total number of audiobooks, or an error if the query fails
+pub fn get_audiobook_count_with_libraries(
+    db: &Database, 
+    libraries: &[abop_core::models::Library]
+) -> CliResult<usize> {
     if libraries.is_empty() {
         return Ok(0);
     }
 
     // Sum across all libraries for total count
     let mut total_count = 0;
-    for library in &libraries {
+    for library in libraries {
         let count = db
             .count_audiobooks_in_library(library.id.as_str())
             .with_database_context("counting audiobooks")?;
@@ -48,7 +62,12 @@ pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
 /// # Errors
 /// Returns an error if database queries fail
 pub fn show_scan_results(db: &Database) -> CliResult<()> {
-    let count = get_audiobook_count(db)?;
+    // Fetch libraries once and reuse for both operations
+    let libraries = db
+        .get_libraries()
+        .with_database_context("fetching libraries")?;
+    
+    let count = get_audiobook_count_with_libraries(db, &libraries)?;
 
     if count == 0 {
         warn!("No audiobooks found in the library");
@@ -57,8 +76,8 @@ pub fn show_scan_results(db: &Database) -> CliResult<()> {
 
     info!("📚 Total audiobooks found: {count}");
 
-    // Show sample audiobooks
-    show_sample_audiobooks(db)?;
+    // Show sample audiobooks using cached libraries
+    show_sample_audiobooks_with_libraries(db, &libraries)?;
 
     Ok(())
 }
@@ -107,19 +126,27 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
 }
 
 /// Show sample audiobooks from the database
+#[allow(dead_code)]
 fn show_sample_audiobooks(db: &Database) -> CliResult<()> {
-    // Get libraries to show audiobook examples
     let libraries = db
         .get_libraries()
         .with_database_context("fetching libraries for samples")?;
+    
+    show_sample_audiobooks_with_libraries(db, &libraries)
+}
 
+/// Show sample audiobooks from the database using pre-fetched libraries
+fn show_sample_audiobooks_with_libraries(
+    db: &Database,
+    libraries: &[abop_core::models::Library]
+) -> CliResult<()> {
     if libraries.is_empty() {
         return Ok(());
     }
 
     let library_id = libraries
         .first()
-        .unwrap() // Safe: we checked !libraries.is_empty() above
+        .expect("Expected at least one library after non-empty check in show_sample_audiobooks")
         .id
         .as_str();
 
