@@ -164,16 +164,20 @@ fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
             // Validate that the query returned sensible results
             log::debug!("Retrieved {} audiobooks via optimized query", audiobooks.len());
             
-            // Additional validation: ensure no audiobooks have empty IDs (database integrity check)
-            let invalid_count = audiobooks.iter()
-                .filter(|book| book.id.trim().is_empty())
-                .count();
+            // Additional validation: filter out audiobooks with invalid IDs (database integrity check)
+            let original_count = audiobooks.len();
+            let valid_audiobooks: Vec<_> = audiobooks
+                .into_iter()
+                .filter(|book| !book.id.trim().is_empty())
+                .collect();
                 
+            let invalid_count = original_count - valid_audiobooks.len();
             if invalid_count > 0 {
-                log::warn!("Found {} audiobooks with invalid IDs", invalid_count);
+                log::error!("Database integrity issue: Found and filtered {} audiobooks with invalid IDs", invalid_count);
+                log::info!("Continuing with {} valid audiobooks", valid_audiobooks.len());
             }
             
-            audiobooks
+            valid_audiobooks
         }
         Err(e) => {
             log::warn!("Optimized query failed, falling back to per-library queries: {}", e);

@@ -617,8 +617,16 @@ impl Database {
 
                 let rows = stmt
                     .query_map([], |row| {
-                        RowMappers::audiobook_from_row(row).map_err(|_e| {
-                            rusqlite::Error::InvalidColumnType(0, "audiobook".to_string(), rusqlite::types::Type::Text)
+                        RowMappers::audiobook_from_row(row).map_err(|e| {
+                            log::error!("Failed to map audiobook row: {}", e);
+                            rusqlite::Error::FromSqlConversionFailure(
+                                0, 
+                                rusqlite::types::Type::Text, 
+                                Box::new(std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData, 
+                                    format!("Audiobook row mapping failed: {e}")
+                                ))
+                            )
                         })
                     })
                     .map_err(|e| DatabaseError::execution_failed(&format!("Failed to execute query: {e}")))?;

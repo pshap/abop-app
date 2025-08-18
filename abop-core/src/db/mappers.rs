@@ -258,14 +258,20 @@ impl SqlQueries {
         where_clause: Option<&str>, 
         order_by: Option<&str>
     ) -> String {
-        let mut query = format!("SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS);
+        use std::fmt::Write;
+        
+        let mut query = String::with_capacity(128); // Pre-allocate reasonable capacity
+        write!(query, "SELECT {} FROM audiobooks", Self::AUDIOBOOK_COLUMNS)
+            .expect("String write should not fail");
         
         if let Some(clause) = where_clause {
-            query.push_str(&format!(" WHERE {clause}"));
+            write!(query, " WHERE {clause}")
+                .expect("String write should not fail");
         }
         
         if let Some(order) = order_by {
-            query.push_str(&format!(" ORDER BY {order}"));
+            write!(query, " ORDER BY {order}")
+                .expect("String write should not fail");
         }
         
         query

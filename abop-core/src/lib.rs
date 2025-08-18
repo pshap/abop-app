@@ -21,9 +21,14 @@ pub mod scanner;
 pub mod services;
 /// Test utilities module
 /// 
-/// This module is available when running tests or when the `test-utils` feature is enabled.
-/// The `test-utils` feature allows external crates to access these utilities for integration testing.
+/// **Warning**: This module contains test-only utilities and should not be used in production.
+/// It is available when running tests or when the `test-utils` feature is explicitly enabled
+/// for integration testing by external test crates only.
+/// 
+/// The `test-utils` feature should never be enabled in production builds as it exposes
+/// internal test data structures and helper functions that bypass normal validation.
 #[cfg(any(test, feature = "test-utils"))]
+#[cfg_attr(docsrs, doc(cfg(any(test, feature = "test-utils"))))]
 pub mod test_utils;
 pub mod utils;
 pub mod validation;
