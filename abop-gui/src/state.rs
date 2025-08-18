@@ -38,3 +38,27 @@ mod state_components;
 
 pub use AppStateContainer as AppState;
 
+/// Backward compatibility alias for the old monolithic state structure.
+///
+/// This alias provides compatibility for existing code during the migration from
+/// the monolithic `UiState` to the new domain-separated `AppState` architecture.
+///
+/// # Migration Path
+///
+/// Replace `UiState` usage with `AppState` and update field access patterns:
+/// ```ignore
+/// // Old monolithic access
+/// let theme = state.theme_mode;
+/// let books = state.audiobooks;
+///
+/// // New domain-separated access  
+/// let theme = state.ui.theme_mode;
+/// let books = state.library.audiobooks;
+/// ```
+///
+/// This alias will be removed in version 0.2.0.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use AppState instead. This alias will be removed in v0.2.0. See migration documentation for field access changes."
+)]
+pub use AppStateContainer as UiState;

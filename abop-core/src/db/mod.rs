@@ -595,6 +595,52 @@ impl Database {
         repo.count_by_library(library_id)
     }
 
+    /// Gets all audiobooks across all libraries
+    ///
+    /// This method performs a single optimized query to retrieve all audiobooks
+    /// rather than making separate queries for each library (avoiding N+1 problem).
+    /// 
+    /// # Errors
+    /// Returns an error if the database connection fails or if the query execution fails.
+    /// In case of failure, consider using individual library queries as a fallback.
+    #[instrument(skip(self))]
+    pub fn get_all_audiobooks(&self) -> Result<Vec<Audiobook>> {
+        Ok(self.operations
+            .execute_query(|conn| {
+                use crate::db::mappers::{RowMappers, SqlQueries};
+                
+                let mut stmt = conn
+                    .prepare(&SqlQueries::audiobook_select_with_order(None, Some("title")))
+                    .map_err(|e| DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}")))?;
+
+                let rows = stmt
+                    .query_map([], |row| {
+                        RowMappers::audiobook_from_row(row).map_err(|e| {
+                            log::error!("Failed to map audiobook row: {}", e);
+                            rusqlite::Error::FromSqlConversionFailure(
+                                0, 
+                                rusqlite::types::Type::Text, 
+                                Box::new(std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData, 
+                                    format!("Audiobook row mapping failed: {e}")
+                                ))
+                            )
+                        })
+                    })
+                    .map_err(|e| DatabaseError::execution_failed(&format!("Failed to execute query: {e}")))?;
+
+                let mut audiobooks = Vec::new();
+                for row_result in rows {
+                    let audiobook = row_result.map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to map row: {e}"))
+                    })?;
+                    audiobooks.push(audiobook);
+                }
+
+                Ok(audiobooks)
+            })?)
+    }
+
     /// Gets a library repository for more complex operations
     #[must_use]
     pub fn libraries(&self) -> LibraryRepository {

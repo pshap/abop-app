@@ -252,6 +252,40 @@ impl SqlQueries {
         }
     }
 
+    /// Generate a standard audiobook SELECT query with optional WHERE and ORDER BY clauses
+    #[must_use]
+    pub fn audiobook_select_with_order(
+        where_clause: Option<&str>, 
+        order_by: Option<&str>
+    ) -> String {
+        // Use capacity calculation based on estimated query length for efficiency
+        const BASE_QUERY_LEN: usize = 50; // "SELECT ... FROM audiobooks"
+        const CLAUSE_OVERHEAD: usize = 20; // " WHERE " + " ORDER BY " overhead
+        let estimated_capacity = BASE_QUERY_LEN + 
+            where_clause.map_or(0, |c| c.len()) +
+            order_by.map_or(0, |o| o.len()) +
+            CLAUSE_OVERHEAD;
+        
+        let mut query = String::with_capacity(estimated_capacity.max(128));
+        
+        // Use push_str for String operations which cannot fail
+        query.push_str("SELECT ");
+        query.push_str(Self::AUDIOBOOK_COLUMNS);
+        query.push_str(" FROM audiobooks");
+        
+        if let Some(clause) = where_clause {
+            query.push_str(" WHERE ");
+            query.push_str(clause);
+        }
+        
+        if let Some(order) = order_by {
+            query.push_str(" ORDER BY ");
+            query.push_str(order);
+        }
+        
+        query
+    }
+
     /// Generate a standard library SELECT query with optional WHERE clause
     #[must_use]
     pub fn library_select(where_clause: Option<&str>) -> String {

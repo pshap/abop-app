@@ -3,7 +3,8 @@ mod progress_tests {
     use super::super::ProgressRepository;
     use crate::db::repositories::{AudiobookRepository, LibraryRepository};
     use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
-    use crate::models::{Audiobook, Progress};
+    use crate::models::Progress;
+    use crate::test_utils::TestDataFactory;
     use chrono::Utc;
     use rusqlite::Connection;
     use std::path::PathBuf;
@@ -27,24 +28,7 @@ mod progress_tests {
         enhanced_conn
     }
 
-    /// Create a test audiobook
-    fn create_test_audiobook(id: &str, library_id: &str, path: &str, title: &str) -> Audiobook {
-        Audiobook {
-            id: id.to_string(),
-            library_id: library_id.to_string(),
-            path: PathBuf::from(path),
-            title: Some(title.to_string()),
-            author: Some("Test Author".to_string()),
-            narrator: None,
-            description: None,
-            duration_seconds: Some(3600),
-            size_bytes: Some(1024 * 1024),
-            cover_art: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            selected: false,
-        }
-    }
+    // Centralized audiobook creation via TestDataFactory
 
     /// Create a test progress repository with necessary dependencies
     fn create_test_repo_with_deps(audiobook_ids: &[&str]) -> (ProgressRepository, Vec<String>) {
@@ -64,11 +48,12 @@ mod progress_tests {
 
         // Create test audiobooks for each ID
         for (i, &audiobook_id) in audiobook_ids.iter().enumerate() {
-            let audiobook = create_test_audiobook(
+            let audiobook = TestDataFactory::audiobook_with_path(
                 audiobook_id,
-                &_library.id, // Use the actual library ID from creation
-                &format!("/test/audiobook-{}.mp3", i + 1),
+                &_library.id,
+                PathBuf::from(format!("/test/audiobook-{}.mp3", i + 1)).as_path(),
                 &format!("Test Audiobook {}", i + 1),
+                "Test Author",
             );
             audiobook_repo
                 .upsert(&audiobook)

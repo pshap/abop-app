@@ -11,6 +11,7 @@ repository.workspace = true
 default = []
 bench = ["simd"]  # Enable benchmarking features
 simd = []  # Enable SIMD optimizations where available
+test-utils = []  # Enable test utilities for external use
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "doc_cfg"]

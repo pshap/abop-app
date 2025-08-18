@@ -42,6 +42,7 @@ mod integration_tests {
             "default".to_string(),
             None,
             None,
+            false,
         );
 
         assert!(result.is_err());
@@ -56,7 +57,7 @@ mod integration_tests {
         let file_path = temp_dir.path().join("not_a_directory.txt");
         std::fs::write(&file_path, "test content").unwrap();
 
-        let result = scan::run(file_path, None, "default".to_string(), None, None);
+        let result = scan::run(file_path, None, "default".to_string(), None, None, false);
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -119,19 +120,19 @@ mod integration_tests {
         let (_temp_dir, db_path, _db) = setup_test_db();
 
         // Test init operation
-        let result = db::run(db_path.clone(), DbOperations::Init);
+        let result = db::run(db_path.clone(), DbOperations::Init, false);
         assert!(result.is_ok(), "DB init should succeed");
 
         // Test stats operation on the initialized database
-        let result = db::run(db_path.clone(), DbOperations::Stats);
+        let result = db::run(db_path.clone(), DbOperations::Stats, false);
         assert!(result.is_ok(), "DB stats should succeed");
 
         // Test list operation
-        let result = db::run(db_path.clone(), DbOperations::List);
+        let result = db::run(db_path.clone(), DbOperations::List, false);
         assert!(result.is_ok(), "DB list should succeed");
 
         // Test clean operation
-        let result = db::run(db_path, DbOperations::Clean);
+        let result = db::run(db_path, DbOperations::Clean, false);
         assert!(result.is_ok(), "DB clean should succeed");
     }
 
@@ -141,16 +142,16 @@ mod integration_tests {
         let nonexistent_path = PathBuf::from("/nonexistent/database.db");
 
         // Stats, List, and Clean operations should fail gracefully on non-existent files
-        let result = db::run(nonexistent_path.clone(), DbOperations::Stats);
+        let result = db::run(nonexistent_path.clone(), DbOperations::Stats, false);
         assert!(
             result.is_err(),
             "Stats should fail on non-existent database"
         );
 
-        let result = db::run(nonexistent_path.clone(), DbOperations::List);
+        let result = db::run(nonexistent_path.clone(), DbOperations::List, false);
         assert!(result.is_err(), "List should fail on non-existent database");
 
-        let result = db::run(nonexistent_path, DbOperations::Clean);
+        let result = db::run(nonexistent_path, DbOperations::Clean, false);
         assert!(
             result.is_err(),
             "Clean should fail on non-existent database"
@@ -201,6 +202,7 @@ mod integration_tests {
         let args = Args {
             verbose: true,
             debug: false,
+            json: false,
             command: Commands::Scan {
                 library: PathBuf::from("/test"),
                 database: None,
@@ -325,5 +327,49 @@ mod integration_tests {
 
         // Directory should fail for database path
         assert!(validate_existing_database_path(&valid_dir).is_err());
+    }
+    #[test]
+    fn test_categorize_error() {
+        use crate::categorize_error;
+        
+        // Test path errors
+        assert_eq!(categorize_error("File does not exist"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("Path not found"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("Library path is a directory"), "INVALID_PATH");
+        
+        // Test database errors  
+        assert_eq!(categorize_error("Database connection failed"), "DATABASE_ERROR");
+        assert_eq!(categorize_error("SQLite error occurred"), "DATABASE_ERROR");
+        
+        // Test other error types
+        assert_eq!(categorize_error("Permission denied"), "PERMISSION_DENIED");
+        assert_eq!(categorize_error("Scanner failed to process"), "SCAN_ERROR");
+        assert_eq!(categorize_error("Audio format not supported"), "AUDIO_ERROR");
+        assert_eq!(categorize_error("Library validation failed"), "LIBRARY_ERROR");
+        assert_eq!(categorize_error("JSON serialization error"), "SERIALIZATION_ERROR");
+        assert_eq!(categorize_error("Configuration is invalid"), "CONFIGURATION_ERROR");
+        assert_eq!(categorize_error("Network connection timeout"), "NETWORK_ERROR");
+        
+        // Test unknown error
+        assert_eq!(categorize_error("Something went wrong"), "UNKNOWN_ERROR");
+
+    // Case insensitivity checks
+    assert_eq!(categorize_error("file DOES NOT exist"), "PATH_NOT_FOUND");
+    assert_eq!(categorize_error("PATH NOT FOUND"), "PATH_NOT_FOUND");
+    assert_eq!(categorize_error("IS A DIRECTORY"), "INVALID_PATH");
+    assert_eq!(categorize_error("Invalid Path"), "INVALID_PATH");
+    assert_eq!(categorize_error("DATABASE"), "DATABASE_ERROR");
+    assert_eq!(categorize_error("sqlite"), "DATABASE_ERROR");
+    assert_eq!(categorize_error("PERMISSION"), "PERMISSION_DENIED");
+    assert_eq!(categorize_error("ACCESS DENIED"), "PERMISSION_DENIED");
+    assert_eq!(categorize_error("SCAN"), "SCAN_ERROR");
+    assert_eq!(categorize_error("Scanner"), "SCAN_ERROR");
+    assert_eq!(categorize_error("AuDiO"), "AUDIO_ERROR");
+    assert_eq!(categorize_error("FORMAT"), "AUDIO_ERROR");
+    assert_eq!(categorize_error("LIBRARY"), "LIBRARY_ERROR");
+    assert_eq!(categorize_error("SERIALIZ"), "SERIALIZATION_ERROR");
+    assert_eq!(categorize_error("JSON"), "SERIALIZATION_ERROR");
+    assert_eq!(categorize_error("CONFIG"), "CONFIGURATION_ERROR");
+    assert_eq!(categorize_error("NETWORK"), "NETWORK_ERROR");
     }
 }

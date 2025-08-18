@@ -20,25 +20,15 @@ use tracing::{debug, error, warn};
 /// Type alias for typed row processing callback to reduce complexity
 ///
 /// This callback provides type safety while allowing dynamic query construction.
-/// Unlike `RowCallback`, this returns a concrete type `T` known at compile time.
+/// Returns a concrete type `T` known at compile time for better type safety.
 type TypedRowCallback<T> = Box<dyn FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send>;
-
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
     fn connect(&self) -> &Arc<EnhancedConnection>;
-
-    /// Get a dyn-compatible reference to this repository
-    fn as_dyn(&self) -> &dyn DynRepository
-    where
-        Self: Sized,
-    {
-        self
-    }
 }
 
-/// Repository operations with generic methods
-/// This trait is not object-safe due to generic methods
+/// Repository operations with generic methods (not object-safe)
 pub trait Repository: RepositoryBase {
     /// Execute a query with proper error handling
     fn execute_query<F, R>(&self, f: F) -> DbResult<R>
@@ -60,16 +50,23 @@ pub trait Repository: RepositoryBase {
 }
 
 /// Object-safe repository trait for dynamic dispatch
-pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
-    /// Execute a query with proper error handling (dynamic version)
+pub trait DynRepository: Repository {
+    /// Execute a query with dynamic parameters
     fn execute_query_dyn(
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
     ) -> DbResult<usize> {
-        // Use efficient parameter conversion with early error handling
         let query = query.to_string();
+        let param_count = params.len();
         let owned_params = convert_params_efficiently(params)?;
+
+        // Emit a debug log for visibility into dynamic query execution
+        debug!(
+            %query,
+            param_count,
+            "Executing dynamic SQL query"
+        );
 
         self.execute_query(move |conn| {
             let mut stmt = conn.prepare(&query)?;
@@ -77,24 +74,31 @@ pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
                 .iter()
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
-            stmt.execute(rusqlite::params_from_iter(param_refs))
+            let start = std::time::Instant::now();
+            let result = stmt.execute(rusqlite::params_from_iter(param_refs));
+            let duration = start.elapsed();
+            match &result {
+                Ok(rows) => debug!(
+                    %query,
+                    rows_affected = *rows,
+                    duration_ms = duration.as_millis(),
+                    "Dynamic SQL query executed successfully"
+                ),
+                Err(e) => error!(
+                    %query,
+                    error = %e,
+                    duration_ms = duration.as_millis(),
+                    "Dynamic SQL query execution failed"
+                ),
+            }
+            result
         })
     }
 }
 
-/// Type-safe repository trait for dynamic queries
-///
-/// This trait provides type-safe alternatives to the unsafe methods in `DynRepository`.
-/// Unlike `DynRepository`, this trait is not object-safe due to generic methods,
-/// but provides compile-time type safety for dynamic query construction.
-pub trait SafeDynRepository: RepositoryBase {
+/// Type-safe repository helpers for dynamic queries
+pub trait SafeDynRepository: Repository {
     /// Execute a query that returns a single row with type safety
-    ///
-    /// **Type Safety**: This method provides a type-safe alternative to `query_row_dyn`
-    /// by using generics to ensure compile-time type checking while still allowing
-    /// dynamic query construction.
-    ///    /// **Preferred Usage**: Use this method instead of `query_row_dyn` for new code
-    /// that requires dynamic queries with type safety.
     fn query_row_safe<T: Send + 'static>(
         &self,
         query: &str,
@@ -102,65 +106,7 @@ pub trait SafeDynRepository: RepositoryBase {
         callback: TypedRowCallback<T>,
     ) -> DbResult<T> {
         let query = query.to_string();
-        let owned_params = convert_params_efficiently(params)?;
-
-        // Use Cell for single-use callback ownership transfer (same pattern as query_row_dyn)
-        use std::cell::Cell;
-        let callback_option = Cell::new(Some(callback));
-
-        self.execute_query(move |conn| {
-            let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
-                .iter()
-                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
-                .collect();
-
-            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
-                let callback = callback_option.take().ok_or_else(|| {
-                    rusqlite::Error::SqliteFailure(
-                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
-                        Some("Callback consumed - query_row_safe single-use only".to_string()),
-                    )
-                })?;
-                callback(row)
-            })
-        })
-    }
-
-    /// Execute a query dyn with migration to safe alternative
-    ///
-    /// This method provides a migration path from the unsafe `query_row_dyn` to the safe
-    /// `query_row_safe` method. It accepts a generic return type and provides compile-time
-    /// type safety while maintaining the dynamic query capability.
-    ///
-    /// # Type Safety
-    ///
-    /// Unlike `query_row_dyn`, this method:
-    /// - Provides compile-time type checking
-    /// - Eliminates runtime type casting errors
-    /// - Prevents type confusion vulnerabilities
-    /// - Maintains performance with zero-cost abstractions
-    ///
-    /// # Migration Example
-    ///
-    /// ```ignore
-    /// // Old unsafe pattern:
-    /// let result = repo.query_row_dyn(sql, params, |row| {
-    ///     Ok(Box::new(MyStruct::from(row)) as Box<dyn Any + Send>)
-    /// })?;
-    /// let my_struct = *result.downcast::<MyStruct>().unwrap(); // UNSAFE!
-    ///    /// // New safe pattern:
-    /// let my_struct: MyStruct = repo.query_row_safe_migration(sql, params, |row| {
-    ///     MyStruct::from(row)
-    /// })?; // SAFE!
-    /// ```
-    fn query_row_safe_migration<T: Send + 'static>(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: impl FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send + 'static,
-    ) -> DbResult<T> {
-        let query = query.to_string();
+        let param_count = params.len();
         let owned_params = convert_params_efficiently(params)?;
 
         // Use Cell for single-use callback ownership transfer
@@ -174,18 +120,65 @@ pub trait SafeDynRepository: RepositoryBase {
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
 
-            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+            let start = std::time::Instant::now();
+            let result = stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+                let callback = callback_option.take().ok_or_else(|| {
+                    rusqlite::Error::SqliteFailure(
+                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
+                        Some("Callback consumed - query_row_safe single-use only".to_string()),
+                    )
+                })?;
+                callback(row)
+            });
+            let duration = start.elapsed();
+            match &result {
+                Ok(_) => debug!(%query, param_count, duration_ms = duration.as_millis(), "Dynamic SQL single-row query executed successfully"),
+                Err(e) => error!(%query, param_count, error = %e, duration_ms = duration.as_millis(), "Dynamic SQL single-row query failed"),
+            }
+            result
+        })
+    }
+
+    /// Execute a dynamic query with a simple closure callback
+    fn query_row_safe_simple<T: Send + 'static>(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+        callback: impl FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send + 'static,
+    ) -> DbResult<T> {
+        let query = query.to_string();
+        let param_count = params.len();
+        let owned_params = convert_params_efficiently(params)?;
+
+        // Use Cell for single-use callback ownership transfer
+        use std::cell::Cell;
+        let callback_option = Cell::new(Some(callback));
+
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
+                .iter()
+                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
+                .collect();
+
+            let start = std::time::Instant::now();
+            let result = stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
                 let callback = callback_option.take().ok_or_else(|| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
                         Some(
-                            "Callback consumed - query_row_safe_migration single-use only"
-                                .to_string(),
+                            "Callback consumed - query_row_safe_simple single-use only".to_string(),
                         ),
                     )
                 })?;
                 callback(row)
-            })
+            });
+            let duration = start.elapsed();
+            match &result {
+                Ok(_) => debug!(%query, param_count, duration_ms = duration.as_millis(), "Dynamic SQL single-row query executed successfully"),
+                Err(e) => error!(%query, param_count, error = %e, duration_ms = duration.as_millis(), "Dynamic SQL single-row query failed"),
+            }
+            result
         })
     }
 }
@@ -252,27 +245,8 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
     }
 }
 
-// Implement DynRepository for all repository types
-impl<T: RepositoryBase + ?Sized> DynRepository for T {
-    fn execute_query_dyn(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-    ) -> DbResult<usize> {
-        // Use efficient parameter conversion with early error handling
-        let query = query.to_string();
-        let owned_params = convert_params_efficiently(params)?;
-
-        self.execute_query(move |conn| {
-            let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
-                .iter()
-                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
-                .collect();
-            stmt.execute(rusqlite::params_from_iter(param_refs))
-        })
-    }
-}
+// Implement DynRepository for all repository types (uses default method bodies)
+impl<T: RepositoryBase + ?Sized> DynRepository for T {}
 
 /// Helper function to convert a ValueRef to an owned ToSql value
 ///
@@ -310,7 +284,6 @@ fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql 
         rusqlite::types::Value::Blob(b) => Box::new(b),
     }
 }
-
 /// Convert SQL parameters to owned values for dynamic database operations
 ///
 /// This function provides efficient parameter conversion with proper error handling
@@ -319,7 +292,6 @@ fn convert_params_efficiently(
     params: &[&(dyn rusqlite::ToSql + Sync)],
 ) -> Result<Vec<Box<dyn rusqlite::ToSql + Send>>, DatabaseError> {
     let mut result = Vec::with_capacity(params.len());
-
     for param in params {
         // Convert parameter to SQL output
         let output = param.to_sql().map_err(|e| {
