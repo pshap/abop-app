@@ -153,6 +153,7 @@ impl Drop for App {
 }
 
 // Theme is defined in `crate::theme`; avoid duplicating here.
+// Removed duplicate Theme enum - use crate::theme::ThemeMode instead.
 
 impl App {
     /// Initialize the application with default settings
@@ -225,8 +226,8 @@ impl App {
 
     /// Get the theme for the application
     pub fn theme(&self) -> IcedTheme {
-    // Resolve theme from UI state's ThemeMode
-    self.state.ui.theme_mode.theme()
+        // Resolve theme from UI state's ThemeMode
+        self.state.ui.theme_mode.theme()
     }
 
     /// Create subscriptions for the application
