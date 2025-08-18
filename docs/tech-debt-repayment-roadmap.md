@@ -32,29 +32,29 @@ Scope: abop-gui crate and light workspace hygiene touching `abop-core` when vers
 
 Deliverables
 - Dependencies
-  - Pin wildcard versions and move common pins to `[workspace.dependencies]`.
-  - Remove unused deps from `abop-gui` after a quick references check.
+  - Pin wildcard versions and move common pins to `[workspace.dependencies]`. [Done]
+  - Remove unused deps from `abop-gui` after a quick references check. [Done]
 - Logging
-  - Standardize on `tracing` with `tracing-subscriber` and `RUST_LOG`; add `tracing-log` to capture `log` macros during migration.
-  - Document common `RUST_LOG` presets in README.
+  - Standardize on `tracing` with `tracing-subscriber` and `RUST_LOG`; add `tracing-log` to capture `log` macros during migration. [Done]
+  - Document common `RUST_LOG` presets in README. [Pending]
 - build.rs / assets
-  - Remove or disable the broken `build.rs`. If kept, add minimal `cargo:rerun-if-changed` only for used assets.
+  - Remove or disable the broken `build.rs`. If kept, add minimal `cargo:rerun-if-changed` only for used assets. [Done]
 - Theme wiring
-  - Make `App::theme()` return the selected `theme::ThemeMode` theme and ensure `main.rs` uses it.
+  - Make `App::theme()` return the selected `theme::ThemeMode` theme and ensure `main.rs` uses it. [Done]
 - CI/tooling
-  - Add GitHub Actions: fmt + clippy + nextest.
-  - Add crate-level lints in `abop-gui/lib.rs`: `#![deny(unsafe_code)]` and a conservative clippy config.
+  - Add GitHub Actions: fmt + clippy + nextest. [Pending]
+  - Add crate-level lints in `abop-gui/lib.rs`: `#![deny(unsafe_code)]` and a conservative clippy config. [Done (unsafe_code); clippy config Pending]
 
 Acceptance checks
-- Clean checkout builds and `cargo nextest run --all` passes.
-- `RUST_LOG` controls log verbosity consistently.
-- UI visibly switches between light/dark/system as expected.
+- Clean checkout builds and `cargo nextest run --all` passes. [PASS]
+- `RUST_LOG` controls log verbosity consistently. [PASS]
+- UI visibly switches between light/dark/system as expected. [PASS]
 
 PR slices
-- PR#1 deps: pin + prune.
-- PR#2 logging: tracing init + README note.
-- PR#3 theme wiring minimal.
-- PR#4 remove/disable build.rs.
+- PR#1 deps: pin + prune. [Complete on branch `tech-debt-repayment`]
+- PR#2 logging: tracing init + README note. [Complete (docs pending)]
+- PR#3 theme wiring minimal. [Complete]
+- PR#4 remove/disable build.rs. [Complete]
 
 Risks
 - Version pin conflicts; resolve by aligning within workspace or feature flags.
@@ -65,22 +65,23 @@ Risks
 
 Deliverables
 - Remove duplicates/dead code
-  - Remove or wire `update.rs` (confirm unused by search); remove duplicate `Theme` in `app.rs` and use `theme::ThemeMode` everywhere.
-  - Consolidate redundant message variants.
+  - Remove or wire `update.rs` (confirm unused by search); [Pending]
+  - Remove duplicate `Theme` in `app.rs` and use `theme::ThemeMode` everywhere. [Done]
+  - Consolidate redundant message variants (e.g., `Stop`, `StopPlayback`, `PlaybackStopped`). [Done]
 - Router improvements
-  - Cap history (e.g., 64), dedupe consecutive identical routes, add `replace(route)`.
+  - Cap history (e.g., 64), dedupe consecutive identical routes, add `replace(route)`. [Done]
 - Tests
-  - Router unit tests for push/pop/replace, cap, dedupe.
-  - Theming test verifying `System/Light/Dark` mapping.
+  - Router unit tests for push/pop/replace, cap, dedupe. [Done]
+  - Theming test verifying `System/Light/Dark` mapping. [Pending]
 
 Acceptance checks
-- No references to removed types; unit tests green.
-- Router tests cover cap and dedupe behavior.
+- No references to removed types; unit tests green. [PASS]
+- Router tests cover cap and dedupe behavior. [PASS]
 
 PR slices
-- PR#5 remove duplicate theme + propagate.
-- PR#6 message variant consolidation.
-- PR#7 router improvements + tests.
+- PR#5 remove duplicate theme + propagate. [Complete on branch]
+- PR#6 message variant consolidation. [Complete on branch]
+- PR#7 router improvements + tests. [Complete on branch]
 
 Risks
 - Message consolidation may require small pattern-match updates across screens.

@@ -74,7 +74,7 @@ impl AudioControls {
                         ButtonBuilder::new(material_tokens)
                             .variant(ButtonVariant::Outlined)
                             .label("Stop Preview")
-                            .on_press(Message::StopPlayback)
+                            .on_press(Message::Stop)
                             .build()
                             .unwrap(),
                     );

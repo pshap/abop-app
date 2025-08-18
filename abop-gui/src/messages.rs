@@ -68,15 +68,13 @@ pub enum Message {
     // ===== Playback Control =====
     /// Start playback of selected audiobooks
     StartPlayback,
-    /// Stop the current playback
-    StopPlayback,
     /// Toggle between play and pause
     PlayPause,
     /// Play the previous track
     Previous,
     /// Play the next track
     Next,
-    /// Stop all playback
+    /// Stop playback
     Stop,
     /// Process the selected audiobooks
     ProcessSelected,
@@ -86,8 +84,6 @@ pub enum Message {
     AudioProcessingComplete(Result<String, String>),
     /// Result of starting playback
     PlaybackStarted(Result<String, String>),
-    /// Notification that playback has stopped
-    PlaybackStopped,
     /// Result of saving application state
     StateSaveComplete(Result<String, String>),
     /// Progress update for state saving (0.0 to 1.0)
