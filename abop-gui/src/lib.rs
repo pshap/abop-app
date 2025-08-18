@@ -27,8 +27,7 @@ pub mod handlers;
 /// Application state management
 pub mod state;
 
-/// Update logic and state transitions
-pub mod update;
+// Update logic is handled within `app` and `handlers`; legacy `update` module removed.
 
 // View modules
 pub mod views;

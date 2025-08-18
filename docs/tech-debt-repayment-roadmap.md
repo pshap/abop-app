@@ -36,13 +36,13 @@ Deliverables
   - Remove unused deps from `abop-gui` after a quick references check. [Done]
 - Logging
   - Standardize on `tracing` with `tracing-subscriber` and `RUST_LOG`; add `tracing-log` to capture `log` macros during migration. [Done]
-  - Document common `RUST_LOG` presets in README. [Pending]
+  - Document common `RUST_LOG` presets in README. [Done]
 - build.rs / assets
   - Remove or disable the broken `build.rs`. If kept, add minimal `cargo:rerun-if-changed` only for used assets. [Done]
 - Theme wiring
   - Make `App::theme()` return the selected `theme::ThemeMode` theme and ensure `main.rs` uses it. [Done]
 - CI/tooling
-  - Add GitHub Actions: fmt + clippy + nextest. [Pending]
+  - Add GitHub Actions: fmt + clippy + nextest. [Done]
   - Add crate-level lints in `abop-gui/lib.rs`: `#![deny(unsafe_code)]` and a conservative clippy config. [Done (unsafe_code); clippy config Pending]
 
 Acceptance checks
@@ -65,14 +65,14 @@ Risks
 
 Deliverables
 - Remove duplicates/dead code
-  - Remove or wire `update.rs` (confirm unused by search); [Pending]
+  - Remove or wire `update.rs` (confirm unused by search); [Done]
   - Remove duplicate `Theme` in `app.rs` and use `theme::ThemeMode` everywhere. [Done]
   - Consolidate redundant message variants (e.g., `Stop`, `StopPlayback`, `PlaybackStopped`). [Done]
 - Router improvements
   - Cap history (e.g., 64), dedupe consecutive identical routes, add `replace(route)`. [Done]
 - Tests
   - Router unit tests for push/pop/replace, cap, dedupe. [Done]
-  - Theming test verifying `System/Light/Dark` mapping. [Pending]
+  - Theming test verifying `System/Light/Dark` mapping. [Done]
 
 Acceptance checks
 - No references to removed types; unit tests green. [PASS]
