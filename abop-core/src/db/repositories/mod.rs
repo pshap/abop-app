@@ -14,40 +14,13 @@ pub use progress::ProgressRepository;
 use super::connection::EnhancedConnection;
 use super::error::{DatabaseError, DbResult};
 use rusqlite::Connection;
-use std::any::Any;
 use std::sync::Arc;
 
-/// Type alias for row processing callback to reduce complexity
-///
-/// # DEPRECATED
-/// 
-/// **This type will be removed in version 0.2.0**
-/// 
-/// This type alias uses unsafe type erasure and creates security vulnerabilities.
-/// All code using this type should migrate to the safe alternatives:
-/// - Use `TypedRowCallback<T>` for type-safe callbacks
-/// - Use specific repository methods with concrete return types
-/// - Use the `Repository` pattern with strongly-typed methods
-/// 
-/// # Safety
-///
-/// The callback returns `Box<dyn Any + Send>` which requires careful type casting
-/// by the caller. This is an unsafe pattern that should be avoided.
-///
-/// # Migration Path
-/// 
-/// Replace usage with `TypedRowCallback<T>` or direct repository methods.
-#[deprecated(
-    since = "0.1.0",
-    note = "Use TypedRowCallback<T> or typed repository methods instead. Will be removed in 0.2.0"
-)]
-type RowCallback =
-    Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 
 /// Type alias for typed row processing callback to reduce complexity
 ///
 /// This callback provides type safety while allowing dynamic query construction.
-/// Unlike `RowCallback`, this returns a concrete type `T` known at compile time.
+/// Returns a concrete type `T` known at compile time for better type safety.
 type TypedRowCallback<T> = Box<dyn FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send>;
 
 /// Base repository trait with non-generic methods
@@ -55,13 +28,6 @@ pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
     fn connect(&self) -> &Arc<EnhancedConnection>;
 
-    /// Get a dyn-compatible reference to this repository
-    fn as_dyn(&self) -> &dyn DynRepository
-    where
-        Self: Sized,
-    {
-        self
-    }
 }
 
 /// Repository operations with generic methods
@@ -86,120 +52,21 @@ pub trait Repository: RepositoryBase {
         R: Send + 'static;
 }
 
-/// Object-safe repository trait for dynamic dispatch
-pub trait DynRepository: RepositoryBase + Send + Sync + 'static {
-    /// Execute a query with proper error handling (dynamic version)
-    fn execute_query_dyn(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-    ) -> DbResult<usize> {
-        // Use efficient parameter conversion with early error handling
-        let query = query.to_string();
-        let owned_params = convert_params_efficiently(params)?;
-
-        self.execute_query(move |conn| {
-            let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
-                .iter()
-                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
-                .collect();
-            stmt.execute(rusqlite::params_from_iter(param_refs))
-        })
-    }
-    /// Execute a query that returns a single row (dynamic version)
-    ///
-    /// **⚠️ DEPRECATED**: This method uses unsafe type erasure and should be avoided.
-    /// Use the `SafeDynRepository` trait and its `query_row_safe` method instead for type safety.
-    ///
-    /// # ⚠️ CRITICAL SECURITY WARNING ⚠️
-    ///
-    /// This method performs type erasure and returns `Box<dyn Any + Send>`, creating significant security risks:
-    ///
-    /// ## Security Vulnerabilities:
-    /// - **Runtime panics**: Mismatched types during downcasting cause immediate program crashes
-    /// - **Type confusion attacks**: Malicious code could exploit type mismatches for memory corruption
-    /// - **Memory safety violations**: Incorrect downcasting can lead to undefined behavior
-    /// - **No compile-time safety**: Type errors only surface at runtime in production
-    ///
-    /// ## Attack Vectors:
-    /// - Malicious SQL injection could return unexpected data types
-    /// - Race conditions in concurrent access could cause type confusion
-    /// - External dependencies changing return types could break type assumptions
-    ///
-    /// ## Recommended Migration:
-    /// ```ignore
-    /// // Instead of this unsafe pattern:
-    /// let result = repo.query_row_dyn(sql, params, callback)?;
-    /// let value: MyType = *result.downcast::<MyType>().unwrap(); // UNSAFE!
-    ///
-    /// // Use this type-safe approach:
-    /// let value: MyType = repo.query_row_safe(sql, params, |row| {
-    ///     Ok(MyType::from(row))
-    /// })?; // SAFE!
-    /// ```
-    ///    /// **Use `SafeDynRepository::query_row_safe` instead for type safety.**
-    ///
-    /// # Safety Requirements
-    ///
-    /// - Query must return exactly one row (enforced by rusqlite)
-    /// - Callback can only be called once per method invocation
-    /// - Caller must ensure correct type casting to prevent security issues
-    /// - **CRITICAL**: Never use this method with untrusted input or in security-sensitive contexts
-    #[deprecated(
-        since = "0.1.0",
-        note = "Use SafeDynRepository::query_row_safe for type safety"
-    )]
-    fn query_row_dyn(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: RowCallback,
-    ) -> DbResult<Box<dyn Any + Send>> {
-        // Provide a default implementation that discourages usage
-        // and logs security warnings when this unsafe method is called
-        log::error!(
-            "SECURITY WARNING: Deprecated unsafe method query_row_dyn called! \
-             This method uses type erasure and creates security vulnerabilities. \
-             Query: '{query}', Caller should migrate to SafeDynRepository::query_row_safe"
-        );
-
-        // Implement the unsafe functionality but with additional safety checks
-        self.query_row_dyn_unsafe_impl(query, params, callback)
-    }
-
-    /// Internal unsafe implementation - DO NOT CALL DIRECTLY
-    ///
-    /// This method exists only to maintain backward compatibility for existing code
-    /// that hasn't been migrated yet. It will be removed in a future version.
-    ///
-    /// # Safety
-    ///
-    /// This method is inherently unsafe due to type erasure. Only use through
-    /// the deprecated `query_row_dyn` method, which provides additional logging
-    /// and safety warnings.
-    #[doc(hidden)]
-    fn query_row_dyn_unsafe_impl(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: RowCallback,
-    ) -> DbResult<Box<dyn Any + Send>>;
-}
 
 /// Type-safe repository trait for dynamic queries
 ///
-/// This trait provides type-safe alternatives to the unsafe methods in `DynRepository`.
-/// Unlike `DynRepository`, this trait is not object-safe due to generic methods,
-/// but provides compile-time type safety for dynamic query construction.
+/// This trait provides type-safe methods for dynamic query construction with
+/// compile-time type guarantees. Unlike traditional dynamic query approaches
+/// that use type erasure, this trait is not object-safe due to generic methods,
+/// but provides complete compile-time type safety for dynamic database operations.
 pub trait SafeDynRepository: RepositoryBase {
     /// Execute a query that returns a single row with type safety
     ///
-    /// **Type Safety**: This method provides a type-safe alternative to `query_row_dyn`
-    /// by using generics to ensure compile-time type checking while still allowing
-    /// dynamic query construction.
-    ///    /// **Preferred Usage**: Use this method instead of `query_row_dyn` for new code
-    /// that requires dynamic queries with type safety.
+    /// **Type Safety**: This method uses generics to ensure compile-time type checking
+    /// while allowing dynamic query construction, eliminating runtime type casting errors.
+    ///
+    /// **Usage**: Use this method when you need to construct queries dynamically
+    /// but want compile-time type guarantees for the results.
     fn query_row_safe<T: Send + 'static>(
         &self,
         query: &str,
@@ -209,7 +76,7 @@ pub trait SafeDynRepository: RepositoryBase {
         let query = query.to_string();
         let owned_params = convert_params_efficiently(params)?;
 
-        // Use Cell for single-use callback ownership transfer (same pattern as query_row_dyn)
+        // Use Cell for single-use callback ownership transfer
         use std::cell::Cell;
         let callback_option = Cell::new(Some(callback));
 
@@ -232,34 +99,29 @@ pub trait SafeDynRepository: RepositoryBase {
         })
     }
 
-    /// Execute a query dyn with migration to safe alternative
+    /// Execute a dynamic query with type safety and ergonomic callback interface
     ///
-    /// This method provides a migration path from the unsafe `query_row_dyn` to the safe
-    /// `query_row_safe` method. It accepts a generic return type and provides compile-time
+    /// This method provides a simplified interface for dynamic queries while maintaining
+    /// complete type safety. It accepts a direct closure callback and provides compile-time
     /// type safety while maintaining the dynamic query capability.
     ///
     /// # Type Safety
     ///
-    /// Unlike `query_row_dyn`, this method:
-    /// - Provides compile-time type checking
-    /// - Eliminates runtime type casting errors
-    /// - Prevents type confusion vulnerabilities
-    /// - Maintains performance with zero-cost abstractions
+    /// This method provides:
+    /// - Complete compile-time type checking
+    /// - No runtime type casting or boxing
+    /// - Zero type confusion vulnerabilities
+    /// - Zero-cost abstractions with full optimization
     ///
-    /// # Migration Example
+    /// # Usage Example
     ///
     /// ```ignore
-    /// // Old unsafe pattern:
-    /// let result = repo.query_row_dyn(sql, params, |row| {
-    ///     Ok(Box::new(MyStruct::from(row)) as Box<dyn Any + Send>)
+    /// // Type-safe dynamic query:
+    /// let my_struct: MyStruct = repo.query_row_safe_simple(sql, params, |row| {
+    ///     Ok(MyStruct::from_row(row)?)
     /// })?;
-    /// let my_struct = *result.downcast::<MyStruct>().unwrap(); // UNSAFE!
-    ///    /// // New safe pattern:
-    /// let my_struct: MyStruct = repo.query_row_safe_migration(sql, params, |row| {
-    ///     MyStruct::from(row)
-    /// })?; // SAFE!
     /// ```
-    fn query_row_safe_migration<T: Send + 'static>(
+    fn query_row_safe_simple<T: Send + 'static>(
         &self,
         query: &str,
         params: &[&(dyn rusqlite::ToSql + Sync)],
@@ -284,7 +146,7 @@ pub trait SafeDynRepository: RepositoryBase {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
                         Some(
-                            "Callback consumed - query_row_safe_migration single-use only"
+                            "Callback consumed - query_row_safe_simple single-use only"
                                 .to_string(),
                         ),
                     )
@@ -357,60 +219,6 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
     }
 }
 
-// Implement DynRepository for all repository types
-impl<T: RepositoryBase + ?Sized> DynRepository for T {
-    fn execute_query_dyn(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-    ) -> DbResult<usize> {
-        // Use efficient parameter conversion with early error handling
-        let query = query.to_string();
-        let owned_params = convert_params_efficiently(params)?;
-
-        self.execute_query(move |conn| {
-            let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
-                .iter()
-                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
-                .collect();
-            stmt.execute(rusqlite::params_from_iter(param_refs))
-        })
-    }
-    fn query_row_dyn_unsafe_impl(
-        &self,
-        query: &str,
-        params: &[&(dyn rusqlite::ToSql + Sync)],
-        callback: RowCallback,
-    ) -> DbResult<Box<dyn Any + Send>> {
-        // Use the same efficient parameter conversion as execute_query_dyn
-        let query = query.to_string();
-        let owned_params = convert_params_efficiently(params)?;
-
-        // Use Cell for single-use callback ownership transfer
-        use std::cell::Cell;
-        let callback_option = Cell::new(Some(callback));
-
-        self.execute_query(move |conn| {
-            let mut stmt = conn.prepare(&query)?;
-            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
-                .iter()
-                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
-                .collect();
-
-            // Execute query expecting exactly one row
-            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
-                let callback = callback_option.take().ok_or_else(|| {
-                    rusqlite::Error::SqliteFailure(
-                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
-                        Some("Callback consumed - query_row_dyn single-use only".to_string()),
-                    )
-                })?;
-                callback(row)
-            })
-        })
-    }
-}
 
 /// Helper function to convert a ValueRef to an owned ToSql value
 ///
@@ -419,8 +227,8 @@ impl<T: RepositoryBase + ?Sized> DynRepository for T {
 /// This is essential for the dynamic repository pattern where parameters need to be
 /// converted from various types into a uniform trait object representation.
 ///
-/// **Usage**: Called internally by `execute_query_dyn` and `query_row_dyn` to handle
-/// parameter conversion in a consistent manner across all repository implementations.
+/// **Usage**: Called internally by dynamic query methods to handle parameter conversion
+/// in a consistent manner across all repository implementations.
 fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::ValueRef::Null => Box::new(None::<String>),
@@ -437,8 +245,8 @@ fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite:
 /// that can be safely used in dynamic database operations across thread boundaries.
 /// This complements `convert_value_ref_to_owned` by handling already-owned values.
 ///
-/// **Usage**: Called internally by `execute_query_dyn` and `query_row_dyn` when
-/// parameter conversion yields owned values rather than borrowed references.
+/// **Usage**: Called internally by dynamic query methods when parameter conversion
+/// yields owned values rather than borrowed references.
 fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::Value::Null => Box::new(None::<String>),
