@@ -27,18 +27,26 @@ pub enum InitError {
 }
 
 fn init_logging() -> Result<(), InitError> {
-    // Respect RUST_LOG while providing sane defaults
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        let mut f = EnvFilter::default();
-        // Defaults if RUST_LOG is not provided
-        f = f.add_directive("abop_gui=info".parse().expect("static filter"));
-        f = f.add_directive("abop_core=info".parse().expect("static filter"));
-        f = f.add_directive("iced=warn".parse().expect("static filter"));
-        f
-    });
+    // Respect RUST_LOG while providing sane defaults; preserve parse error context in fallback
+    let filter = match EnvFilter::try_from_default_env() {
+        Ok(f) => f,
+        Err(e) => {
+            // Logging may not be initialized yet; use stderr to preserve context
+            eprintln!("RUST_LOG parse error: {e}. Falling back to defaults: abop_gui=info, abop_core=info, iced=warn");
+            let mut f = EnvFilter::default();
+            // Defaults if RUST_LOG is not provided
+            f = f.add_directive("abop_gui=info".parse().expect("static filter"));
+            f = f.add_directive("abop_core=info".parse().expect("static filter"));
+            f = f.add_directive("iced=warn".parse().expect("static filter"));
+            f
+        }
+    };
 
-    // Bridge log::log! records into tracing during migration (init first)
-    let _ = tracing_log::LogTracer::init();
+    // Initialize log->tracing bridge; ok if already set (e.g., in tests)
+    if let Err(e) = tracing_log::LogTracer::init() {
+        // Use stderr to avoid depending on logger setup order
+        eprintln!("LogTracer initialization skipped: {e}");
+    }
 
     tracing_subscriber::fmt()
         .with_env_filter(filter)

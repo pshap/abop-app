@@ -1,6 +1,7 @@
 //! Application router for view navigation
 
 use iced::Task;
+use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 
 use crate::messages::Message;
@@ -25,26 +26,39 @@ impl Default for Route {
 }
 
 /// Manages application navigation state
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Router {
     current_route: Route,
-    history: Vec<Route>,
+    history: VecDeque<Route>,
 }
 
 impl Router {
     /// Maximum number of routes to keep in history
+    ///
+    /// Chosen to provide ample back-navigation without unbounded growth.
+    /// Adjust if UX research indicates different navigation depth needs.
     const MAX_HISTORY: usize = 64;
     /// Creates a new router with the default route
     pub fn new() -> Self {
         Self {
             current_route: Route::default(),
-            history: vec![Route::default()],
+            history: {
+                let mut h = VecDeque::with_capacity(Self::MAX_HISTORY);
+                h.push_back(Route::default());
+                h
+            },
         }
     }
 
     /// Returns the current route
     pub fn current_route(&self) -> Route {
         self.current_route
+    }
+
+    fn cap_history(&mut self) {
+        while self.history.len() > Self::MAX_HISTORY {
+            self.history.pop_front();
+        }
     }
 
     /// Navigates to the specified route
@@ -58,17 +72,13 @@ impl Router {
     /// * `route` - The target route to navigate to
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
         // De-duplicate consecutive routes
-        if self.history.last().copied() == Some(route) {
+    if self.history.back().copied() == Some(route) {
             self.current_route = route;
             return Task::none();
         }
 
-        self.history.push(route);
-        // Cap history length by trimming the oldest entry
-        if self.history.len() > Self::MAX_HISTORY {
-            let overflow = self.history.len() - Self::MAX_HISTORY;
-            self.history.drain(0..overflow);
-        }
+    self.history.push_back(route);
+    self.cap_history();
         self.current_route = route;
         Task::none()
     }
@@ -84,9 +94,9 @@ impl Router {
     /// A no-op Task since navigation only updates internal state synchronously
     pub fn navigate_back(&mut self) -> Task<Message> {
         if self.history.len() > 1 {
-            self.history.pop();
-            // Safe: we verified history.len() > 1, so after pop() it's still not empty
-            self.current_route = *self.history.last().unwrap();
+            self.history.pop_back();
+            // Safe: we verified history.len() > 1, so after pop_back() it's still not empty
+            self.current_route = *self.history.back().unwrap();
         }
         Task::none()
     }
@@ -95,10 +105,10 @@ impl Router {
     ///
     /// Useful when you want to redirect or correct navigation without growing history.
     pub fn replace(&mut self, route: Route) -> Task<Message> {
-        if let Some(last) = self.history.last_mut() {
+        if let Some(last) = self.history.back_mut() {
             *last = route;
         } else {
-            self.history.push(route);
+            self.history.push_back(route);
         }
         self.current_route = route;
         Task::none()
@@ -107,7 +117,7 @@ impl Router {
     /// Returns the current history length (for diagnostics and tests)
     #[cfg(test)]
     pub(crate) fn history_len(&self) -> usize {
-        self.history.len()
+    self.history.len()
     }
 }
 
