@@ -15,7 +15,7 @@ pub fn default_validation_config() -> ValidationConfig {
 #[must_use]
 pub fn default_animation_config() -> AnimationConfig {
     AnimationConfig {
-        duration: std::time::Duration::from_millis(200),
+        duration: crate::styling::design_tokens::animation::STANDARD_DURATION,
         enabled: true,
         respect_reduced_motion: true,
         easing: EasingCurve::Standard,

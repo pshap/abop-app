@@ -125,7 +125,6 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
     Ok(())
 }
 
-
 /// Show sample audiobooks from the database using pre-fetched libraries
 fn show_sample_audiobooks_with_libraries(
     db: &Database,
@@ -285,7 +284,6 @@ mod tests {
             abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR
         );
     }
-
     #[test] 
     fn test_get_sampled_items() {
         // Test with empty collection
@@ -311,4 +309,5 @@ mod tests {
         let over_sampled = get_sampled_items(&small, Some(10));
         assert_eq!(over_sampled, vec![1, 2, 3]);
     }
+    
 }

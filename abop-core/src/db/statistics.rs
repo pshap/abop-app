@@ -6,6 +6,7 @@
 use std::sync::{Arc, PoisonError, RwLock};
 use std::time::{Duration, Instant};
 use thiserror::Error;
+use tracing::{debug, warn};
 
 /// Errors that can occur during statistics collection
 #[derive(Error, Debug)]
@@ -163,19 +164,26 @@ impl StatisticsCollector {
     fn update_average_duration(stats: &mut ConnectionStats, duration: Duration) {
         let duration_ms_u128 = duration.as_millis();
 
-        // Convert to f64 with explicit handling of precision loss
+        // Convert to f64 with safe casting and explicit handling of precision loss
         // Cap at u32::MAX (≈49.7 days) to avoid excessive precision loss
         let duration_ms = if duration_ms_u128 > u128::from(u32::MAX) {
-            log::debug!(
+            debug!(
                 "Capping large duration {}ms to {}ms to avoid precision loss",
                 duration_ms_u128,
                 u32::MAX
             );
             f64::from(u32::MAX)
         } else {
-            #[allow(clippy::cast_precision_loss)] // Intentional and documented
-            let ms = duration_ms_u128 as f64;
-            ms
+            // Use safe conversion to avoid direct casting
+            // Since we've checked the value is <= u32::MAX, we can safely convert through u32
+            let duration_ms_u32 = u32::try_from(duration_ms_u128).unwrap_or_else(|_| {
+                warn!(
+                    "Duration {} doesn't fit in u32, using max",
+                    duration_ms_u128
+                );
+                u32::MAX
+            });
+            f64::from(duration_ms_u32)
         };
 
         if stats.successful_operations + stats.failed_operations == 1 {

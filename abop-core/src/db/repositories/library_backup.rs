@@ -227,11 +227,6 @@ impl Repository for LibraryRepository {
     fn connect(&self) -> &Arc<EnhancedConnection> {
         &self.enhanced_connection
     }
-    
-    #[deprecated(note = "use connect() instead - get_connection() will be removed in v2.0.0 as part of API cleanup to standardize connection access patterns")]
-    fn get_connection(&self) -> &Arc<EnhancedConnection> {
-        self.connect()
-    }
 }
 
 impl EnhancedRepository for LibraryRepository {}

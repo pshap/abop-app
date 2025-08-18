@@ -52,7 +52,6 @@ dependencies = [
  "hashbrown 0.15.5",
  "hound",
  "humantime-serde",
- "iced",
  "libloading 0.8.8",
  "log",
  "lru 0.14.0",

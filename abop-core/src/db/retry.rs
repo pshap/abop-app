@@ -6,6 +6,7 @@
 use crate::db::error::{DatabaseError, DbResult};
 use std::thread;
 use std::time::Duration;
+use tracing::{debug, warn};
 
 /// Configuration for retry behavior
 #[derive(Debug, Clone)]
@@ -120,11 +121,9 @@ impl RetryExecutor {
             // Apply delay for retry attempts (not on first attempt)
             if attempt > 0 {
                 let delay = self.policy.calculate_delay(attempt);
-                log::debug!(
+                debug!(
                     "Retry attempt {} of {}, waiting {:?}",
-                    attempt,
-                    self.policy.max_retry_attempts,
-                    delay
+                    attempt, self.policy.max_retry_attempts, delay
                 );
                 thread::sleep(delay);
             }
@@ -135,7 +134,7 @@ impl RetryExecutor {
                     // Check if we should retry based on error type
                     if Self::is_retryable_error(&error) && attempt < self.policy.max_retry_attempts
                     {
-                        log::warn!(
+                        warn!(
                             "Operation failed with retryable error (attempt {}/{}): {}",
                             attempt + 1,
                             self.policy.max_retry_attempts + 1,

@@ -347,7 +347,7 @@ impl AnimationBuilder {
     /// Build the animation
     #[must_use]
     pub fn build(self) -> Animation {
-        let duration = self.duration.unwrap_or(Duration::from_millis(300));
+        let duration = self.duration.unwrap_or(crate::styling::design_tokens::animation::SLOW_DURATION);
         let easing = self
             .easing
             .unwrap_or_else(|| MotionTokens::easing(EasingType::Standard));

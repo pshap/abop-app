@@ -29,6 +29,9 @@
 use super::pipeline::AudioProcessingPipeline;
 use crate::audio::{AudioBuffer, SampleFormat};
 use crate::error::Result;
+use crate::utils::casting::domain::audio::{
+    safe_i8_to_f32_sample, safe_i16_to_f32_sample, safe_i24_to_f32_sample, safe_i32_to_f32_sample,
+};
 use std::path::{Path, PathBuf};
 
 /// Options for file processing, such as output format and naming pattern.
@@ -166,7 +169,7 @@ impl AudioFileProcessor {
                     let sample = sample.map_err(|e| {
                         crate::error::AppError::Audio(format!("Error reading sample: {e}"))
                     })?;
-                    data.push(sample as f32 / 128.0);
+                    data.push(safe_i8_to_f32_sample(sample));
                 }
             }
             (HoundSampleFormat::Int, 16) => {
@@ -175,7 +178,7 @@ impl AudioFileProcessor {
                     let sample = sample.map_err(|e| {
                         crate::error::AppError::Audio(format!("Error reading sample: {e}"))
                     })?;
-                    data.push(sample as f32 / 32768.0);
+                    data.push(safe_i16_to_f32_sample(sample));
                 }
             }
             (HoundSampleFormat::Int, 24) => {
@@ -184,7 +187,7 @@ impl AudioFileProcessor {
                     let sample = sample.map_err(|e| {
                         crate::error::AppError::Audio(format!("Error reading sample: {e}"))
                     })?;
-                    data.push((sample as f32) / (1u32 << 23) as f32);
+                    data.push(safe_i24_to_f32_sample(sample));
                 }
             }
             (HoundSampleFormat::Int, 32) => {
@@ -193,7 +196,7 @@ impl AudioFileProcessor {
                     let sample = sample.map_err(|e| {
                         crate::error::AppError::Audio(format!("Error reading sample: {e}"))
                     })?;
-                    data.push((sample as f32) / (1u32 << 31) as f32);
+                    data.push(safe_i32_to_f32_sample(sample));
                 }
             }
             (HoundSampleFormat::Float, 32) => {

@@ -110,7 +110,6 @@ fn stats(database_path: PathBuf, json_output: bool) -> CliResult<()> {
         info!("Total audiobooks: {audiobook_count}");
         info!("Total libraries: {library_count}");
     }
-
     Ok(())
 }
 
@@ -273,7 +272,6 @@ fn process_and_output_audiobooks(all_audiobooks: Vec<abop_core::models::Audioboo
         .with_context(|| "serializing list results to JSON")?;
     log::debug!("JSON serialization completed, output size: {} bytes", json.len());
     println!("{json}");
-
     Ok(())
 }
 

@@ -328,7 +328,6 @@ mod integration_tests {
         // Directory should fail for database path
         assert!(validate_existing_database_path(&valid_dir).is_err());
     }
-
     #[test]
     fn test_categorize_error() {
         use crate::categorize_error;

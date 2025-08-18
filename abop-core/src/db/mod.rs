@@ -11,7 +11,6 @@ pub mod helpers;
 pub mod mappers;
 mod migrations;
 pub mod operations;
-mod queries;
 pub mod repositories;
 pub mod retry;
 pub mod statistics;
@@ -114,8 +113,7 @@ impl Database {
         .map_err(|e| AppError::Database(DatabaseError::from(e)))?;
 
         // Run migrations on the actual database connection
-        migrations::run_migrations(&mut conn)
-            .map_err(|e| AppError::Database(DatabaseError::from(e)))?;
+        migrations::run_migrations(&mut conn).map_err(AppError::Database)?;
 
         debug!(
             "Database initialized successfully with {} max connections",

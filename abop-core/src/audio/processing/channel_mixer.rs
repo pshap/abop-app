@@ -92,36 +92,7 @@ impl ChannelMixer {
             ));
         }
 
-        // TODO: Implement SIMD optimization for stereo-to-mono conversion
-        // - Process 8 stereo pairs (16 samples) at a time using f32x8 vectors
-        // - Load left and right channel vectors separately
-        // - Apply mixing algorithm using SIMD operations:
-        //   * Average: (left_vec + right_vec) * 0.5
-        //   * Weighted: left_vec * left_weight + right_vec * right_weight
-        // - Store result as single mono vector
-        // - Handle remainder samples with scalar code
-        // - Significant performance gain for large stereo buffers
-        // - Should maintain exact compatibility with current scalar implementation
-
-        let mut new_data = Vec::with_capacity(buffer.data.len() / 2);
-
-        for chunk in buffer.data.chunks(2) {
-            if chunk.len() == 2 {
-                let mono_sample = match self.config.mix_algorithm {
-                    super::config::MixingAlgorithm::Average => (chunk[0] + chunk[1]) * 0.5,
-                    super::config::MixingAlgorithm::LeftOnly => chunk[0],
-                    super::config::MixingAlgorithm::RightOnly => chunk[1],
-                    super::config::MixingAlgorithm::WeightedSum {
-                        left_weight,
-                        right_weight,
-                    } => chunk[0].mul_add(left_weight, chunk[1] * right_weight),
-                };
-                new_data.push(mono_sample);
-            } else {
-                // Handle odd number of samples (shouldn't happen with stereo)
-                new_data.push(chunk[0]);
-            }
-        }
+        let new_data = self.stereo_to_mono_simd(&buffer.data);
 
         buffer.data = new_data;
         buffer.channels = 1;
@@ -155,6 +126,106 @@ impl ChannelMixer {
         buffer.data = new_data;
         buffer.channels = 1;
         Ok(())
+    }
+
+    /// SIMD-optimized stereo-to-mono conversion
+    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    fn stereo_to_mono_simd(&self, stereo_data: &[f32]) -> Vec<f32> {
+        use std::simd::prelude::*;
+        
+        let mut new_data = Vec::with_capacity(stereo_data.len() / 2);
+        
+        const SIMD_LANES: usize = 8;
+        let stereo_pairs_per_chunk = SIMD_LANES / 2; // 4 stereo pairs per chunk
+        let samples_per_chunk = stereo_pairs_per_chunk * 2; // 8 samples per chunk
+        
+        let simd_chunks = stereo_data.len() / samples_per_chunk;
+        let remainder_start = simd_chunks * samples_per_chunk;
+        
+        // SIMD processing for bulk stereo pairs
+        for chunk_idx in 0..simd_chunks {
+            let start = chunk_idx * samples_per_chunk;
+            let chunk_data = &stereo_data[start..start + samples_per_chunk];
+            
+            // Separate left and right channel samples
+            let mut left_samples = [0.0f32; 4];
+            let mut right_samples = [0.0f32; 4];
+            
+            for i in 0..stereo_pairs_per_chunk {
+                left_samples[i] = chunk_data[i * 2];
+                right_samples[i] = chunk_data[i * 2 + 1];
+            }
+            
+            // Convert to SIMD vectors (using f32x4 for 4 stereo pairs)
+            let left_vec = f32x4::from_array(left_samples);
+            let right_vec = f32x4::from_array(right_samples);
+            
+            // Apply mixing algorithm using SIMD
+            let mono_vec = match self.config.mix_algorithm {
+                super::config::MixingAlgorithm::Average => {
+                    (left_vec + right_vec) * f32x4::splat(0.5)
+                }
+                super::config::MixingAlgorithm::LeftOnly => left_vec,
+                super::config::MixingAlgorithm::RightOnly => right_vec,
+                super::config::MixingAlgorithm::WeightedSum {
+                    left_weight,
+                    right_weight,
+                } => {
+                    left_vec * f32x4::splat(left_weight) + right_vec * f32x4::splat(right_weight)
+                }
+            };
+            
+            // Store results
+            let mono_results = mono_vec.to_array();
+            new_data.extend_from_slice(&mono_results);
+        }
+        
+        // Handle remainder samples with scalar processing
+        for chunk in stereo_data[remainder_start..].chunks(2) {
+            if chunk.len() == 2 {
+                let mono_sample = match self.config.mix_algorithm {
+                    super::config::MixingAlgorithm::Average => (chunk[0] + chunk[1]) * 0.5,
+                    super::config::MixingAlgorithm::LeftOnly => chunk[0],
+                    super::config::MixingAlgorithm::RightOnly => chunk[1],
+                    super::config::MixingAlgorithm::WeightedSum {
+                        left_weight,
+                        right_weight,
+                    } => chunk[0].mul_add(left_weight, chunk[1] * right_weight),
+                };
+                new_data.push(mono_sample);
+            } else {
+                // Handle odd number of samples (shouldn't happen with stereo)
+                new_data.push(chunk[0]);
+            }
+        }
+        
+        new_data
+    }
+
+    /// Fallback stereo-to-mono conversion for non-SIMD targets
+    #[cfg(not(all(feature = "simd", target_arch = "x86_64")))]
+    fn stereo_to_mono_simd(&self, stereo_data: &[f32]) -> Vec<f32> {
+        let mut new_data = Vec::with_capacity(stereo_data.len() / 2);
+
+        for chunk in stereo_data.chunks(2) {
+            if chunk.len() == 2 {
+                let mono_sample = match self.config.mix_algorithm {
+                    super::config::MixingAlgorithm::Average => (chunk[0] + chunk[1]) * 0.5,
+                    super::config::MixingAlgorithm::LeftOnly => chunk[0],
+                    super::config::MixingAlgorithm::RightOnly => chunk[1],
+                    super::config::MixingAlgorithm::WeightedSum {
+                        left_weight,
+                        right_weight,
+                    } => chunk[0].mul_add(left_weight, chunk[1] * right_weight),
+                };
+                new_data.push(mono_sample);
+            } else {
+                // Handle odd number of samples (shouldn't happen with stereo)
+                new_data.push(chunk[0]);
+            }
+        }
+        
+        new_data
     }
 }
 

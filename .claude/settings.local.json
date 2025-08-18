@@ -10,8 +10,10 @@
       "Bash(git branch:*)",
       "Bash(grep:*)",
       "Bash(wc:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(rustup:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

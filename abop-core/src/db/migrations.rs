@@ -4,8 +4,9 @@
 //! with rollback capability and better error handling.
 
 use crate::db::error::{DatabaseError, DbResult};
-use rusqlite::{Connection, Result as SqliteResult};
+use rusqlite::Connection;
 use std::collections::HashMap;
+use tracing::{debug, error, info};
 
 /// Represents a database migration
 #[derive(Debug, Clone)]
@@ -80,9 +81,9 @@ impl MigrationManager {
     /// - The current migration version cannot be determined
     /// - Database query fails
     pub fn pending_migrations(&self, conn: &Connection) -> DbResult<Vec<&Migration>> {
-        log::debug!("Getting current database version");
+        debug!("Getting current database version");
         let current_version = self.current_version(conn)?;
-        log::debug!("Current database version: {current_version}");
+        debug!("Current database version: {current_version}");
 
         let mut pending: Vec<&Migration> = self
             .migrations
@@ -91,16 +92,15 @@ impl MigrationManager {
             .collect();
         pending.sort_by_key(|m| m.version);
 
-        log::debug!(
+        debug!(
             "Found {} pending migrations after version {}",
             pending.len(),
             current_version
         );
         for migration in &pending {
-            log::debug!(
+            debug!(
                 "  - Migration {}: {}",
-                migration.version,
-                migration.description
+                migration.version, migration.description
             );
         }
 
@@ -116,34 +116,34 @@ impl MigrationManager {
     /// - Any migration fails to apply
     /// - Database transaction fails
     pub fn migrate_up(&self, conn: &mut Connection) -> DbResult<Vec<MigrationResult>> {
-        log::debug!("Starting migrate_up - setting up migrations table");
+        debug!("Starting migrate_up - setting up migrations table");
         Self::setup_migrations_table(conn)?;
-        log::debug!("Migrations table setup complete");
+        debug!("Migrations table setup complete");
 
-        log::debug!("Getting pending migrations");
+        debug!("Getting pending migrations");
         let pending = self.pending_migrations(conn)?;
-        log::debug!("Found {} pending migrations", pending.len());
+        debug!("Found {} pending migrations", pending.len());
 
         if pending.is_empty() {
-            log::debug!("No pending migrations, returning empty results");
+            debug!("No pending migrations, returning empty results");
             return Ok(vec![]);
         }
 
         let mut results = Vec::new();
 
         for (i, migration) in pending.iter().enumerate() {
-            log::debug!(
+            debug!(
                 "Applying migration {}/{}: version {}",
                 i + 1,
                 pending.len(),
                 migration.version
             );
             let result = Self::apply_migration(conn, migration)?;
-            log::debug!("Migration {} applied successfully", migration.version);
+            debug!("Migration {} applied successfully", migration.version);
             results.push(result);
         }
 
-        log::debug!("All {} migrations applied successfully", results.len());
+        debug!("All {} migrations applied successfully", results.len());
         Ok(results)
     }
 
@@ -151,16 +151,15 @@ impl MigrationManager {
     fn apply_migration(conn: &mut Connection, migration: &Migration) -> DbResult<MigrationResult> {
         let tx = conn.transaction().map_err(DatabaseError::from)?;
 
-        log::info!(
+        info!(
             "Applying migration {} - {}",
-            migration.version,
-            migration.description
+            migration.version, migration.description
         );
-        log::debug!("Migration SQL: {}", migration.up_sql);
+        debug!("Migration SQL: {}", migration.up_sql);
 
         // Execute the migration SQL
         if let Err(e) = tx.execute_batch(migration.up_sql) {
-            log::error!("Failed to apply migration {}: {}", migration.version, e);
+            error!("Failed to apply migration {}: {}", migration.version, e);
             return Err(DatabaseError::MigrationFailed {
                 version: migration.version,
                 message: format!("Failed to apply: {e}"),
@@ -183,7 +182,7 @@ impl MigrationManager {
 
     /// Setup the migrations table
     fn setup_migrations_table(conn: &Connection) -> DbResult<()> {
-        log::debug!("Creating migrations table if it doesn't exist");
+        debug!("Creating migrations table if it doesn't exist");
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS migrations (
                 version INTEGER PRIMARY KEY,
@@ -193,7 +192,7 @@ impl MigrationManager {
             )",
         )
         .map_err(DatabaseError::from)?;
-        log::debug!("Migrations table created successfully");
+        debug!("Migrations table created successfully");
 
         Ok(())
     }
@@ -215,36 +214,26 @@ fn get_migrations() -> Vec<Migration> {
 }
 
 /// Simplified migration runner that uses the enhanced migration manager
-pub fn run_migrations(conn: &mut Connection) -> SqliteResult<()> {
-    log::debug!("Starting run_migrations function");
+pub fn run_migrations(conn: &mut Connection) -> DbResult<()> {
+    debug!("Starting run_migrations function");
     let manager = MigrationManager::new();
-    log::debug!("MigrationManager created successfully");
+    debug!("MigrationManager created successfully");
 
-    log::debug!("About to call manager.migrate_up()");
-    match manager.migrate_up(conn) {
-        Ok(results) => {
-            log::debug!(
-                "migrate_up completed successfully with {} results",
-                results.len()
-            );
-            for result in results {
-                log::info!(
-                    "Applied migration {} - {}",
-                    result.version,
-                    result.description
-                );
-            }
-            log::debug!("All migration results processed successfully");
-            Ok(())
-        }
-        Err(e) => {
-            log::error!("Migration failed: {e}");
-            Err(rusqlite::Error::SqliteFailure(
-                rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_ABORT),
-                Some(format!("Migration failed: {e}")),
-            ))
-        }
+    debug!("About to call manager.migrate_up()");
+    let results = manager.migrate_up(conn)?;
+
+    debug!(
+        "migrate_up completed successfully with {} results",
+        results.len()
+    );
+    for result in results {
+        info!(
+            "Applied migration {} - {}",
+            result.version, result.description
+        );
     }
+    debug!("All migration results processed successfully");
+    Ok(())
 }
 
 #[cfg(test)]

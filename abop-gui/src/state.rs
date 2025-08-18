@@ -5,7 +5,7 @@
 //! ## State Architecture
 //!
 //! - **`AppState`**: Main application state container with domain separation
-//! - **`UiState`**: Pure UI concerns (theme, dialogs, rendering flags)
+//! - **`UiState`**: Pure UI concerns (theme, dialogs, rendering flags) - now part of AppState
 //! - **`LibraryState`**: Library management (audiobooks, directories, scanning)
 //! - **`PlayerState`**: Audio playback state
 //! - **`TaskState`**: Background task management

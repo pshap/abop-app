@@ -15,23 +15,20 @@ use super::connection::EnhancedConnection;
 use super::error::{DatabaseError, DbResult};
 use rusqlite::Connection;
 use std::sync::Arc;
-
+use tracing::{debug, error, warn};
 
 /// Type alias for typed row processing callback to reduce complexity
 ///
 /// This callback provides type safety while allowing dynamic query construction.
 /// Returns a concrete type `T` known at compile time for better type safety.
 type TypedRowCallback<T> = Box<dyn FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send>;
-
 /// Base repository trait with non-generic methods
 pub trait RepositoryBase: Send + Sync + 'static {
     /// Get the enhanced connection
     fn connect(&self) -> &Arc<EnhancedConnection>;
-
 }
 
-/// Repository operations with generic methods
-/// This trait is not object-safe due to generic methods
+/// Repository operations with generic methods (not object-safe)
 pub trait Repository: RepositoryBase {
     /// Execute a query with proper error handling
     fn execute_query<F, R>(&self, f: F) -> DbResult<R>
@@ -52,21 +49,31 @@ pub trait Repository: RepositoryBase {
         R: Send + 'static;
 }
 
+/// Object-safe repository trait for dynamic dispatch
+pub trait DynRepository: Repository {
+    /// Execute a query with dynamic parameters
+    fn execute_query_dyn(
+        &self,
+        query: &str,
+        params: &[&(dyn rusqlite::ToSql + Sync)],
+    ) -> DbResult<usize> {
+        let query = query.to_string();
+        let owned_params = convert_params_efficiently(params)?;
 
-/// Type-safe repository trait for dynamic queries
-///
-/// This trait provides type-safe methods for dynamic query construction with
-/// compile-time type guarantees. Unlike traditional dynamic query approaches
-/// that use type erasure, this trait is not object-safe due to generic methods,
-/// but provides complete compile-time type safety for dynamic database operations.
-pub trait SafeDynRepository: RepositoryBase {
+        self.execute_query(move |conn| {
+            let mut stmt = conn.prepare(&query)?;
+            let param_refs: Vec<&dyn rusqlite::ToSql> = owned_params
+                .iter()
+                .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
+                .collect();
+            stmt.execute(rusqlite::params_from_iter(param_refs))
+        })
+    }
+}
+
+/// Type-safe repository helpers for dynamic queries
+pub trait SafeDynRepository: Repository {
     /// Execute a query that returns a single row with type safety
-    ///
-    /// **Type Safety**: This method uses generics to ensure compile-time type checking
-    /// while allowing dynamic query construction, eliminating runtime type casting errors.
-    ///
-    /// **Usage**: Use this method when you need to construct queries dynamically
-    /// but want compile-time type guarantees for the results.
     fn query_row_safe<T: Send + 'static>(
         &self,
         query: &str,
@@ -99,28 +106,7 @@ pub trait SafeDynRepository: RepositoryBase {
         })
     }
 
-    /// Execute a dynamic query with type safety and ergonomic callback interface
-    ///
-    /// This method provides a simplified interface for dynamic queries while maintaining
-    /// complete type safety. It accepts a direct closure callback and provides compile-time
-    /// type safety while maintaining the dynamic query capability.
-    ///
-    /// # Type Safety
-    ///
-    /// This method provides:
-    /// - Complete compile-time type checking
-    /// - No runtime type casting or boxing
-    /// - Zero type confusion vulnerabilities
-    /// - Zero-cost abstractions with full optimization
-    ///
-    /// # Usage Example
-    ///
-    /// ```ignore
-    /// // Type-safe dynamic query:
-    /// let my_struct: MyStruct = repo.query_row_safe_simple(sql, params, |row| {
-    ///     Ok(MyStruct::from_row(row)?)
-    /// })?;
-    /// ```
+    /// Execute a dynamic query with a simple closure callback
     fn query_row_safe_simple<T: Send + 'static>(
         &self,
         query: &str,
@@ -146,8 +132,7 @@ pub trait SafeDynRepository: RepositoryBase {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
                         Some(
-                            "Callback consumed - query_row_safe_simple single-use only"
-                                .to_string(),
+                            "Callback consumed - query_row_safe_simple single-use only".to_string(),
                         ),
                     )
                 })?;
@@ -196,7 +181,7 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                 Err(e) => {
                     // Attempt rollback with improved logging for transaction context
                     if let Err(rollback_err) = tx.rollback() {
-                        log::error!(
+                        error!(
                             "Repository transaction rollback failed during error recovery. \
                              Transaction state: failed, Rollback state: failed, \
                              Context: standard_repository_transaction, Operation: rollback_on_error, \
@@ -205,7 +190,7 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
                         // Still return the original error as primary concern
                         Err(e)
                     } else {
-                        log::debug!(
+                        debug!(
                             "Repository transaction rolled back successfully. \
                              Transaction state: rolled_back, Rollback state: success, \
                              Context: standard_repository_transaction, Operation: rollback_on_error, \
@@ -219,6 +204,8 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
     }
 }
 
+// Implement DynRepository for all repository types (uses default method bodies)
+impl<T: RepositoryBase + ?Sized> DynRepository for T {}
 
 /// Helper function to convert a ValueRef to an owned ToSql value
 ///
@@ -227,8 +214,9 @@ impl<T: RepositoryBase + ?Sized> Repository for T {
 /// This is essential for the dynamic repository pattern where parameters need to be
 /// converted from various types into a uniform trait object representation.
 ///
-/// **Usage**: Called internally by dynamic query methods to handle parameter conversion
-/// in a consistent manner across all repository implementations.
+/// **Usage**: Called internally by `execute_query_dyn` to handle
+/// parameter conversion in a consistent manner across all repository implementations.
+/// parameter conversion in a consistent manner across all repository implementations.
 fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::ValueRef::Null => Box::new(None::<String>),
@@ -245,8 +233,9 @@ fn convert_value_ref_to_owned(v: rusqlite::types::ValueRef) -> Box<dyn rusqlite:
 /// that can be safely used in dynamic database operations across thread boundaries.
 /// This complements `convert_value_ref_to_owned` by handling already-owned values.
 ///
-/// **Usage**: Called internally by dynamic query methods when parameter conversion
-/// yields owned values rather than borrowed references.
+/// **Usage**: Called internally by `execute_query_dyn` when
+/// parameter conversion yields owned values rather than borrowed references.
+/// parameter conversion yields owned values rather than borrowed references.
 fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql + Send> {
     match v {
         rusqlite::types::Value::Null => Box::new(None::<String>),
@@ -256,97 +245,44 @@ fn convert_value_to_owned(v: rusqlite::types::Value) -> Box<dyn rusqlite::ToSql 
         rusqlite::types::Value::Blob(b) => Box::new(b),
     }
 }
-
-/// Efficient parameter conversion function to eliminate duplication between dynamic methods
+/// Convert SQL parameters to owned values for dynamic database operations
 ///
-/// **Purpose**: Converts an array of SQL parameters to owned values suitable for dynamic
-/// database operations. This centralizes parameter conversion logic and provides efficient
-/// error handling with early bailout on conversion failures.
-///
-/// **Performance**: Pre-allocates result vector and uses direct conversion for efficiency,
-/// avoiding iterator overhead and providing fast-fail behavior on invalid parameters.
-///
-/// **Architecture**: This function is decomposed into smaller helper functions for better
-/// maintainability and readability. Each helper function handles a specific aspect of the
-/// conversion process with detailed documentation.
+/// This function provides efficient parameter conversion with proper error handling
+/// and early bailout on conversion failures.
 fn convert_params_efficiently(
     params: &[&(dyn rusqlite::ToSql + Sync)],
 ) -> Result<Vec<Box<dyn rusqlite::ToSql + Send>>, DatabaseError> {
-    // Pre-allocate vector with exact capacity to avoid reallocations
     let mut result = Vec::with_capacity(params.len());
+    for param in params {
+        // Convert parameter to SQL output
+        let output = param.to_sql().map_err(|e| {
+            DatabaseError::parameter_conversion_failed(&format!(
+                "Failed to convert SQL parameter: {e}"
+            ))
+        })?;
 
-    for p in params {
-        let converted_param = convert_single_param(p)?;
-        result.push(converted_param);
+        // Convert to owned value based on output type
+        let owned_value = match output {
+            rusqlite::types::ToSqlOutput::Borrowed(value_ref) => {
+                convert_value_ref_to_owned(value_ref)
+            }
+            rusqlite::types::ToSqlOutput::Owned(value) => convert_value_to_owned(value),
+            // Handle unexpected variants with proper error reporting
+            _ => {
+                error!(
+                    "Unexpected ToSqlOutput variant encountered during parameter conversion. \
+                     This may indicate a SQLite version compatibility issue."
+                );
+                return Err(DatabaseError::parameter_conversion_failed(
+                    "Encountered unexpected SQLite ToSqlOutput variant",
+                ));
+            }
+        };
+
+        result.push(owned_value);
     }
 
     Ok(result)
-}
-
-/// Converts a single SQL parameter to an owned value
-///
-/// **Purpose**: Handles the conversion of individual SQL parameters, providing clear
-/// error messages and consistent behavior across all parameter types.
-///
-/// **Error Handling**: Returns early on conversion failures with contextual error information
-/// to help with debugging parameter-related issues. No longer performs silent failure
-/// conversions that could mask underlying problems.
-///
-/// **Safety**: Ensures all returned values implement both `ToSql` and `Send` traits
-/// for safe use in concurrent database operations.
-fn convert_single_param(
-    param: &(dyn rusqlite::ToSql + Sync),
-) -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
-    match param.to_sql() {
-        Ok(output) => convert_sql_output_to_owned(output),
-        Err(e) => Err(DatabaseError::parameter_conversion_failed(&format!(
-            "Failed to convert SQL parameter: {e}"
-        ))),
-    }
-}
-
-/// Converts SQLite ToSqlOutput to owned boxed values
-///
-/// **Purpose**: Handles the conversion of SQLite's output types to owned values that can
-/// be safely moved across thread boundaries. This function centralizes the logic for
-/// handling both borrowed and owned SQL values.
-///
-/// **Design**: Uses pattern matching to handle all possible SQLite output types,
-/// ensuring comprehensive coverage and preventing runtime panics from unhandled cases.
-///
-/// **Performance**: Directly converts values without intermediate allocations where possible,
-/// and provides fallback handling for unexpected or future SQLite output types.
-///
-/// **Error Handling**: Unlike silent failure patterns, this function properly logs
-/// unexpected variants and provides detailed diagnostic information for debugging.
-fn convert_sql_output_to_owned(
-    output: rusqlite::types::ToSqlOutput<'_>,
-) -> Result<Box<dyn rusqlite::ToSql + Send>, DatabaseError> {
-    match output {
-        rusqlite::types::ToSqlOutput::Borrowed(value_ref) => {
-            Ok(convert_value_ref_to_owned(value_ref))
-        }
-        rusqlite::types::ToSqlOutput::Owned(value) => Ok(convert_value_to_owned(value)),
-        // Handle any other potential variants with comprehensive error reporting
-        _ => {
-            // Log detailed diagnostic information for debugging and monitoring
-            log::error!(
-                "Database parameter conversion failed: Encountered unexpected ToSqlOutput variant. \
-                 Context: convert_sql_output_to_owned, Variant: {:?}, \
-                 Action: Failing conversion instead of silent NULL conversion. \
-                 This may indicate a SQLite version compatibility issue or corrupted parameter data.",
-                std::mem::discriminant(&output)
-            );
-
-            // Instead of silently converting to NULL (which masks errors),
-            // return a proper error that can be handled by the caller
-            Err(DatabaseError::parameter_conversion_failed(
-                "Encountered unexpected SQLite ToSqlOutput variant. \
-                 This may indicate a version compatibility issue or data corruption. \
-                 Check logs for detailed diagnostic information.",
-            ))
-        }
-    }
 }
 /// Enhanced repository trait for repositories that can leverage enhanced connection features
 pub trait EnhancedRepository: Repository {
@@ -426,7 +362,7 @@ impl RepositoryManager {
                 Err(e) => {
                     // Attempt to rollback, but preserve the original error if rollback fails
                     if let Err(rollback_err) = tx.rollback() {
-                        log::error!(
+                        error!(
                             "Database transaction rollback failed during error recovery. \
                              Transaction state: failed, Rollback state: failed, \
                              Context: enhanced_repository_transaction, Operation: rollback_on_error, \
@@ -437,7 +373,7 @@ impl RepositoryManager {
                             "Transaction failed: {e}. Rollback also failed: {rollback_err}", 
                         )))
                     } else {
-                        log::warn!(
+                        warn!(
                             "Database transaction rolled back successfully after error. \
                              Transaction state: rolled_back, Rollback state: success, \
                              Context: enhanced_repository_transaction, Operation: rollback_on_error, \

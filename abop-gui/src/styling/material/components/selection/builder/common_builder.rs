@@ -277,7 +277,7 @@ mod tests {
         fn new() -> Self {
             Self {
                 common: CommonBuilderState::new(AnimationConfig {
-                    duration: Duration::from_millis(200),
+                    duration: crate::styling::design_tokens::animation::STANDARD_DURATION,
                     enabled: true,
                     respect_reduced_motion: true,
                     easing: EasingCurve::Standard,

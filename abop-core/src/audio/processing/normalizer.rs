@@ -100,15 +100,7 @@ impl AudioNormalizer {
 
     /// Applies peak normalization to the buffer
     fn normalize_peak(&self, buffer: &mut AudioBuffer<f32>) {
-        // TODO: Implement SIMD optimization for peak finding
-        // - Process 8 samples at a time using f32x8 vectors
-        // - Use SIMD abs() and max() operations to find peak efficiently
-        // - Horizontal max reduction across vector lanes
-        // - Should provide 4-8x speedup for large buffers
-        // - Handle remainder samples with scalar code
-        // - Maintain exact compatibility with current peak detection
-
-        let max_sample = buffer.data.iter().fold(0.0f32, |max, &s| max.max(s.abs()));
+        let max_sample = self.find_peak_simd(&buffer.data);
         if max_sample > 0.0 && max_sample < 1.0 {
             // Convert target dB to linear scale with headroom
             let target_linear = 10.0f32.powf(self.config.target_loudness / 20.0);
@@ -139,7 +131,7 @@ impl AudioNormalizer {
 
     /// Applies RMS normalization to the buffer
     fn normalize_rms(&self, buffer: &mut AudioBuffer<f32>) {
-        let rms = Self::calculate_rms(&buffer.data);
+        let rms = Self::calculate_rms_simd(&buffer.data);
         if rms > 0.0 {
             // Convert target dB to linear scale with headroom
             let target_linear = 10.0f32.powf(self.config.target_loudness / 20.0);
@@ -152,17 +144,173 @@ impl AudioNormalizer {
                 rms
             );
 
-            // Apply gain with limiter to prevent clipping
-            for sample in &mut buffer.data {
-                let amplified = *sample * gain;
-                *sample = amplified.clamp(-1.0, 1.0);
-            }
+            // Apply gain with SIMD-optimized limiter to prevent clipping
+            Self::apply_gain_with_limiting_simd(&mut buffer.data, gain);
         }
     }
 
     /// Applies LUFS normalization to the buffer (simplified implementation)
     fn normalize_lufs(&self, buffer: &mut AudioBuffer<f32>) {
         self.normalize_rms(buffer);
+    }
+
+    /// SIMD-optimized peak finding for audio data
+    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    fn find_peak_simd(&self, data: &[f32]) -> f32 {
+        use std::simd::prelude::*;
+        
+        if data.is_empty() {
+            return 0.0;
+        }
+
+        const SIMD_LANES: usize = 8;
+        let chunks = data.len() / SIMD_LANES;
+        let remainder_start = chunks * SIMD_LANES;
+        
+        // SIMD processing for bulk data
+        let mut max_vec = f32x8::splat(0.0);
+        
+        for chunk_idx in 0..chunks {
+            let start = chunk_idx * SIMD_LANES;
+            let chunk_data = &data[start..start + SIMD_LANES];
+            
+            // Load 8 samples into SIMD vector
+            let sample_vec = f32x8::from_slice(chunk_data);
+            
+            // Take absolute value and find max
+            let abs_vec = sample_vec.abs();
+            max_vec = max_vec.simd_max(abs_vec);
+        }
+        
+        // Horizontal reduction to find maximum across lanes
+        let max_array = max_vec.to_array();
+        let mut simd_max = max_array[0];
+        for &val in &max_array[1..] {
+            simd_max = simd_max.max(val);
+        }
+        
+        // Handle remainder samples with scalar processing
+        let scalar_max = data[remainder_start..]
+            .iter()
+            .fold(0.0f32, |max, &s| max.max(s.abs()));
+        
+        simd_max.max(scalar_max)
+    }
+
+    /// Fallback peak finding for non-SIMD targets
+    #[cfg(not(all(feature = "simd", target_arch = "x86_64")))]
+    fn find_peak_simd(&self, data: &[f32]) -> f32 {
+        data.iter().fold(0.0f32, |max, &s| max.max(s.abs()))
+    }
+
+    /// SIMD-optimized RMS calculation for audio data
+    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    fn calculate_rms_simd(data: &[f32]) -> f32 {
+        use std::simd::prelude::*;
+        
+        if data.is_empty() {
+            return 0.0;
+        }
+
+        const SIMD_LANES: usize = 8;
+        let chunks = data.len() / SIMD_LANES;
+        let remainder_start = chunks * SIMD_LANES;
+        
+        // SIMD processing for bulk squares calculation
+        let mut sum_vec = f32x8::splat(0.0);
+        
+        for chunk_idx in 0..chunks {
+            let start = chunk_idx * SIMD_LANES;
+            let chunk_data = &data[start..start + SIMD_LANES];
+            
+            // Load 8 samples into SIMD vector
+            let sample_vec = f32x8::from_slice(chunk_data);
+            
+            // Square the samples: sample_vec * sample_vec
+            let squared_vec = sample_vec * sample_vec;
+            sum_vec += squared_vec;
+        }
+        
+        // Horizontal sum reduction across lanes
+        let sum_array = sum_vec.to_array();
+        let mut simd_sum = 0.0f32;
+        for &val in &sum_array {
+            simd_sum += val;
+        }
+        
+        // Handle remainder samples with scalar processing
+        let scalar_sum: f32 = data[remainder_start..]
+            .iter()
+            .map(|&s| s * s)
+            .sum();
+        
+        let total_sum = simd_sum + scalar_sum;
+        
+        // Calculate RMS with safe conversion
+        #[allow(clippy::cast_precision_loss)]
+        let data_len_f32 = if data.len() <= (1_usize << 24) {
+            data.len() as f32
+        } else {
+            // For very large arrays, we accept potential precision loss
+            data.len() as f32
+        };
+        
+        (total_sum / data_len_f32).sqrt()
+    }
+
+    /// Fallback RMS calculation for non-SIMD targets
+    #[cfg(not(all(feature = "simd", target_arch = "x86_64")))]
+    fn calculate_rms_simd(data: &[f32]) -> f32 {
+        Self::calculate_rms(data)
+    }
+
+    /// SIMD-optimized gain application with limiting
+    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    fn apply_gain_with_limiting_simd(data: &mut [f32], gain: f32) {
+        use std::simd::prelude::*;
+        
+        if data.is_empty() {
+            return;
+        }
+
+        const SIMD_LANES: usize = 8;
+        let chunks = data.len() / SIMD_LANES;
+        let remainder_start = chunks * SIMD_LANES;
+        
+        let gain_vec = f32x8::splat(gain);
+        let min_vec = f32x8::splat(-1.0);
+        let max_vec = f32x8::splat(1.0);
+        
+        // SIMD processing for bulk gain application
+        for chunk_idx in 0..chunks {
+            let start = chunk_idx * SIMD_LANES;
+            let chunk_data = &mut data[start..start + SIMD_LANES];
+            
+            // Load 8 samples into SIMD vector
+            let sample_vec = f32x8::from_slice(chunk_data);
+            
+            // Apply gain and clamp to [-1.0, 1.0]
+            let amplified_vec = sample_vec * gain_vec;
+            let limited_vec = amplified_vec.simd_clamp(min_vec, max_vec);
+            
+            // Store results back
+            limited_vec.copy_to_slice(chunk_data);
+        }
+        
+        // Handle remainder samples with scalar processing
+        for sample in &mut data[remainder_start..] {
+            let amplified = *sample * gain;
+            *sample = amplified.clamp(-1.0, 1.0);
+        }
+    }
+
+    /// Fallback gain application for non-SIMD targets
+    #[cfg(not(all(feature = "simd", target_arch = "x86_64")))]
+    fn apply_gain_with_limiting_simd(data: &mut [f32], gain: f32) {
+        for sample in data {
+            let amplified = *sample * gain;
+            *sample = amplified.clamp(-1.0, 1.0);
+        }
     }
 
     /// Calculates the RMS (Root Mean Square) value of the audio data
@@ -198,7 +346,7 @@ impl AudioNormalizer {
     /// Calculates the peak level in dB
     #[must_use]
     pub fn calculate_peak_db(&self, buffer: &AudioBuffer<f32>) -> f32 {
-        let max_sample = buffer.data.iter().fold(0.0f32, |max, &s| max.max(s.abs()));
+        let max_sample = self.find_peak_simd(&buffer.data);
 
         if max_sample > 0.0 {
             20.0 * max_sample.log10()

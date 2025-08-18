@@ -4,6 +4,7 @@
 //! compatibility while offering enhanced validation and organization.
 
 use crate::error::{AppError, Result};
+#[cfg(windows)]
 use crate::platform::env_utils;
 use log::warn;
 use serde::{Deserialize, Serialize};
@@ -99,14 +100,26 @@ impl Config {
     fn config_path() -> Result<PathBuf> {
         // First try to get the config path from environment variable
         if let Ok(custom_config) = std::env::var("ABOP_CONFIG") {
-            match env_utils::expand_path_env_vars(PathBuf::from(custom_config).as_path()) {
-                Ok(expanded_path) => {
-                    if expanded_path.exists() {
-                        return Ok(expanded_path);
+            #[cfg(windows)]
+            {
+                match env_utils::expand_path_env_vars(PathBuf::from(custom_config).as_path()) {
+                    Ok(expanded_path) => {
+                        if expanded_path.exists() {
+                            return Ok(expanded_path);
+                        }
+                        warn!("Configured config file does not exist: {expanded_path:?}");
                     }
-                    warn!("Configured config file does not exist: {expanded_path:?}");
+                    Err(e) => warn!("Failed to expand config path from ABOP_CONFIG: {e}"),
                 }
-                Err(e) => warn!("Failed to expand config path from ABOP_CONFIG: {e}"),
+            }
+
+            #[cfg(not(windows))]
+            {
+                let config_path = PathBuf::from(custom_config);
+                if config_path.exists() {
+                    return Ok(config_path);
+                }
+                warn!("Configured config file does not exist: {config_path:?}");
             }
         }
 
