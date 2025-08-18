@@ -4,7 +4,7 @@
 //! across component tests.
 
 use abop_core::models::audiobook::Audiobook;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Creates a test audiobook with default values and the specified ID and title.
 ///
@@ -49,4 +49,41 @@ pub fn create_custom_test_audiobook(
     audiobook.duration_seconds = duration;
     audiobook.size_bytes = Some(1024000);
     audiobook
+}
+
+/// Centralized factory for creating test data objects used across tests
+pub struct TestDataFactory;
+
+impl TestDataFactory {
+    /// Create an Audiobook with customizable metadata, including duration and size
+    pub fn custom_audiobook(
+        id: &str,
+        title: &str,
+        author: &str,
+        duration_seconds: Option<u64>,
+        size_bytes: Option<u64>,
+    ) -> Audiobook {
+        let path = PathBuf::from(format!("/test/path/{title}.mp3"));
+        let mut audiobook = Audiobook::new("test-library-id", &path);
+        audiobook.id = id.to_string();
+        audiobook.title = Some(title.to_string());
+        audiobook.author = Some(author.to_string());
+        audiobook.duration_seconds = duration_seconds;
+        audiobook.size_bytes = size_bytes;
+        audiobook
+    }
+
+    /// Create an Audiobook using an explicit path along with id/title/author
+    pub fn audiobook_with_path<P: AsRef<Path>>(
+        id: &str,
+        title: &str,
+        author: &str,
+        path: P,
+    ) -> Audiobook {
+        let mut audiobook = Audiobook::new("test-library-id", path);
+        audiobook.id = id.to_string();
+        audiobook.title = Some(title.to_string());
+        audiobook.author = Some(author.to_string());
+        audiobook
+    }
 }

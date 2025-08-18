@@ -7,6 +7,7 @@ mod ui_state_tests {
     use crate::messages::Message;
     use crate::state::AppState;
     use crate::theme::ThemeMode;
+    use crate::test_utils::TestDataFactory;
     use std::path::PathBuf;
 
     // Test constants to reduce duplication and improve clarity
@@ -30,20 +31,7 @@ mod ui_state_tests {
 
     use test_constants::*;
 
-    /// Helper function to create a test audiobook with the given parameters
-    fn create_test_audiobook(
-        id: &str,
-        title: &str,
-        author: &str,
-        path: &str,
-    ) -> abop_core::models::audiobook::Audiobook {
-        use abop_core::models::audiobook::Audiobook;
-        let mut book = Audiobook::new(TEST_LIBRARY_ID, PathBuf::from(path));
-        book.id = id.to_string();
-        book.title = Some(title.to_string());
-        book.author = Some(author.to_string());
-        book
-    }
+    // create_test_audiobook is provided by crate::test_utils; for explicit path scenarios, use TestDataFactory::audiobook_with_path
 
     #[test]
     fn test_handle_show_settings() {
@@ -218,9 +206,9 @@ mod ui_state_tests {
         let mut state = AppState::default();
 
         // Create test audiobooks with different attributes for comprehensive sorting
-        let book1 = create_test_audiobook("1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH);
-        let book2 = create_test_audiobook("2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH);
-        let book3 = create_test_audiobook("3", TEST_TITLE_3, TEST_AUTHOR_C, TEST_BOOK3_PATH);
+    let book1 = TestDataFactory::audiobook_with_path("1", TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH);
+    let book2 = TestDataFactory::audiobook_with_path("2", TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH);
+    let book3 = TestDataFactory::audiobook_with_path("3", TEST_TITLE_3, TEST_AUTHOR_C, TEST_BOOK3_PATH);
 
         // Set initial state with unsorted books
         state.library.audiobooks = vec![book1.clone(), book2.clone(), book3.clone()];
@@ -311,8 +299,8 @@ mod ui_state_tests {
         
         // Verify that an invalid sort doesn't crash the sort operation
         // This tests that the sort utility handles unknown columns gracefully
-        state.library.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_1, TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
-        state.library.audiobooks.push(create_test_audiobook(TEST_AUDIOBOOK_ID_2, TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
+    state.library.audiobooks.push(TestDataFactory::audiobook_with_path(TEST_AUDIOBOOK_ID_1, TEST_TITLE_1, TEST_AUTHOR_A, TEST_BOOK1_PATH));
+    state.library.audiobooks.push(TestDataFactory::audiobook_with_path(TEST_AUDIOBOOK_ID_2, TEST_TITLE_2, TEST_AUTHOR_B, TEST_BOOK2_PATH));
         let original_len = state.library.audiobooks.len();
         
         // Test that sort operation completes successfully

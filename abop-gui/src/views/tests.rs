@@ -40,19 +40,7 @@ mod about_tests {
 mod library_tests {
     use super::super::library::library_view;
     use crate::state::AppState;
-    use abop_core::models::audiobook::Audiobook;
-    use std::path::PathBuf;
-
-    fn create_test_audiobook(id: &str, title: &str) -> Audiobook {
-        let path = PathBuf::from(format!("/test/path/{title}.mp3"));
-        let mut audiobook = Audiobook::new("test-library-id", &path);
-        audiobook.id = id.to_string();
-        audiobook.title = Some(title.to_string());
-        audiobook.author = Some("Test Author".to_string());
-        audiobook.duration_seconds = Some(3600);
-        audiobook.size_bytes = Some(1024000);
-        audiobook
-    }
+    use crate::test_utils::create_test_audiobook;
 
     #[test]
     fn test_library_view_empty_state() {
@@ -65,10 +53,8 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_audiobooks() {
-        let mut state = AppState::default();
-
-        // Add some test audiobooks
-        state.library.audiobooks = vec![
+    let mut state = AppState::default();
+    state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];
@@ -79,10 +65,8 @@ mod library_tests {
 
     #[test]
     fn test_library_view_with_selected_audiobooks() {
-        let mut state = AppState::default();
-
-        // Add audiobooks and select some
-        state.library.audiobooks = vec![
+    let mut state = AppState::default();
+    state.library.audiobooks = vec![
             create_test_audiobook("1", "Book One"),
             create_test_audiobook("2", "Book Two"),
         ];

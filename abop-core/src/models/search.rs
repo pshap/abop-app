@@ -224,26 +224,19 @@ impl SearchQuery {
 mod tests {
     use super::*;
     use crate::test_constants::audiobook::*;
-    use chrono::Utc;
     use std::path::Path;
+    use crate::test_utils::TestDataFactory;
 
     fn create_test_audiobook() -> Audiobook {
-        let now = Utc::now();
-        Audiobook {
-            id: "test-book".to_string(),
-            library_id: "test-library".to_string(),
-            path: Path::new("/test/book.mp3").to_path_buf(),
-            title: Some(TEST_TITLE.to_string()),
-            author: Some(TEST_AUTHOR.to_string()),
-            narrator: Some(TEST_NARRATOR.to_string()),
-            description: None,
-            duration_seconds: Some(3600),
-            size_bytes: None,
-            cover_art: None,
-            created_at: now,
-            updated_at: now,
-            selected: false,
-        }
+        TestDataFactory::custom_audiobook(
+            "test-book",
+            "test-library",
+            Some(TEST_TITLE),
+            Some(TEST_AUTHOR),
+            Some(Path::new("/test/book.mp3")),
+            Some(3600),
+            None,
+        )
     }
 
     #[test]

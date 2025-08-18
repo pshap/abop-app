@@ -4,6 +4,8 @@
 //! components of the application.
 
 pub mod audio;
+pub mod data;
 
 // Re-export commonly used test utilities
 pub use audio::*;
+pub use data::TestDataFactory;

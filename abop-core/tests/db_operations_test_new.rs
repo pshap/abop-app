@@ -7,6 +7,7 @@ use chrono::Utc;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::NamedTempFile;
+use abop_core::test_utils::TestDataFactory;
 
 /// Set up a test database with all migrations applied
 fn setup_test_db() -> Arc<EnhancedConnection> {
@@ -177,23 +178,15 @@ fn create_test_audiobook(
     title: &str,
     path: &str,
 ) -> String {
-    use abop_core::models::Audiobook;
-
-    let audiobook = Audiobook {
-        id: id.to_string(),
-        library_id: library_id.to_string(),
-        path: PathBuf::from(path),
-        title: Some(title.to_string()),
-        author: Some("Test Author".to_string()),
-        narrator: None,
-        description: None,
-        duration_seconds: Some(3600),  // 1 hour
-        size_bytes: Some(1024 * 1024), // 1 MB
-        cover_art: None,
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
-        selected: false,
-    };
+    let audiobook = TestDataFactory::custom_audiobook(
+        id,
+        library_id,
+        Some(title),
+        Some("Test Author"),
+        Some(Path::new(path)),
+        Some(3600),
+        Some(1024 * 1024),
+    );
 
     repo.upsert(&audiobook)
         .expect("Failed to create test audiobook");

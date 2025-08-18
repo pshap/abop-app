@@ -5,8 +5,8 @@ use crate::{
     db::{EnhancedConnection, migrations::run_migrations, repositories::AudiobookRepository},
     models::Audiobook,
 };
-use chrono::Utc;
 use rusqlite::{Connection, params};
+use crate::test_utils::TestDataFactory;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
 
@@ -45,21 +45,15 @@ fn create_test_db() -> AudiobookRepository {
 }
 
 fn create_test_audiobook(library_id: &str, path: &str) -> Audiobook {
-    let now = Utc::now();
-
-    Audiobook {
-        id: uuid::Uuid::new_v4().to_string(),
-        library_id: library_id.to_string(),
-        path: PathBuf::from(path),
-        title: Some("Test Audiobook".to_string()),
-        author: Some("Test Author".to_string()),
-        narrator: Some("Test Narrator".to_string()),
-        duration_seconds: Some(3600),
-        size_bytes: Some(1024 * 1024 * 100),
-        created_at: now,
-        updated_at: now,
-        ..Default::default()
-    }
+    TestDataFactory::custom_audiobook(
+        &uuid::Uuid::new_v4().to_string(),
+        library_id,
+        Some("Test Audiobook"),
+        Some("Test Author"),
+        Some(PathBuf::from(path).as_path()),
+        Some(3600),
+        Some(1024 * 1024 * 100),
+    )
 }
 
 #[test]
