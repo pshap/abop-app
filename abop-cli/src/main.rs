@@ -49,8 +49,11 @@ fn output_json_error(error: &anyhow::Error) {
         None
     };
 
+    // Generate structured error code based on error content
+    let error_code = categorize_error(&error_chain[0]);
+    
     let output =
-        crate::output::CliOutput::error(error_chain[0].clone(), "CliError".to_string(), context);
+        crate::output::CliOutput::error(error_chain[0].clone(), error_code, context);
 
     match output.to_json() {
         Ok(json) => {
@@ -63,3 +66,26 @@ fn output_json_error(error: &anyhow::Error) {
         }
     }
 }
+
+/// Categorize error messages into structured error codes for JSON output
+/// 
+/// This function analyzes error messages and assigns appropriate error codes
+/// to enable programmatic error handling by consumers of the JSON output.
+fn categorize_error(error_message: &str) -> String {
+    let error_lower = error_message.to_lowercase();
+    
+    match error_lower {
+        msg if msg.contains("does not exist") || msg.contains("not found") => "PATH_NOT_FOUND".to_string(),
+        msg if msg.contains("is a directory") || msg.contains("invalid path") => "INVALID_PATH".to_string(),
+        msg if msg.contains("database") || msg.contains("sqlite") => "DATABASE_ERROR".to_string(),
+        msg if msg.contains("permission") || msg.contains("access denied") => "PERMISSION_DENIED".to_string(),
+        msg if msg.contains("scan") || msg.contains("scanner") => "SCAN_ERROR".to_string(),
+        msg if msg.contains("audio") || msg.contains("format") => "AUDIO_ERROR".to_string(),
+        msg if msg.contains("library") => "LIBRARY_ERROR".to_string(),
+        msg if msg.contains("serializ") || msg.contains("json") => "SERIALIZATION_ERROR".to_string(),
+        msg if msg.contains("config") => "CONFIGURATION_ERROR".to_string(),
+        msg if msg.contains("network") || msg.contains("connection") => "NETWORK_ERROR".to_string(),
+        _ => "UNKNOWN_ERROR".to_string(),
+    }
+}
+

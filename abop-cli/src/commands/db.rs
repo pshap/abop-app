@@ -156,12 +156,26 @@ fn clean(database_path: PathBuf, json_output: bool) -> CliResult<()> {
 
 /// Output audiobook list in JSON format
 fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
-    use crate::output::{AudiobookInfo, CliOutput};
 
-    // Get all audiobooks using optimized single query with fallback to per-library queries
-    let all_audiobooks = match db.get_all_audiobooks() {
+    // Check for large library count and use pagination if needed to prevent memory issues
+    let libraries = db
+        .get_libraries()
+        .with_database_context("retrieving libraries for count check")?;
+    
+    let total_audiobook_estimate = libraries.iter()
+        .map(|lib| db.count_audiobooks_in_library(&lib.id).unwrap_or(0))
+        .sum::<usize>();
+    
+    // Use pagination for libraries with more than 10,000 audiobooks to prevent memory issues
+    const LARGE_LIBRARY_THRESHOLD: usize = 10_000;
+    let all_audiobooks = if total_audiobook_estimate > LARGE_LIBRARY_THRESHOLD {
+        log::info!("Large library detected ({} audiobooks), using paginated approach", total_audiobook_estimate);
+        get_audiobooks_paginated(db, &libraries)?
+    } else {
+        // Use optimized single query for smaller libraries with fallback
+        match db.get_all_audiobooks() {
         Ok(audiobooks) => {
-            // Validate that the query returned sensible results
+            // Log successful retrieval with count for debugging
             log::debug!("Retrieved {} audiobooks via optimized query", audiobooks.len());
             
             // Additional validation: filter out audiobooks with invalid IDs (database integrity check)
@@ -174,7 +188,7 @@ fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
             let invalid_count = original_count - valid_audiobooks.len();
             if invalid_count > 0 {
                 log::error!("Database integrity issue: Found and filtered {} audiobooks with invalid IDs", invalid_count);
-                log::info!("Continuing with {} valid audiobooks", valid_audiobooks.len());
+                log::error!("Continuing with {} valid audiobooks (data may be incomplete)", valid_audiobooks.len());
             }
             
             valid_audiobooks
@@ -198,8 +212,56 @@ fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
             log::debug!("Retrieved {} audiobooks via fallback method", fallback_audiobooks.len());
             fallback_audiobooks
         }
+    }
     };
 
+    process_and_output_audiobooks(all_audiobooks)
+}
+
+/// Get audiobooks using paginated approach for large libraries
+fn get_audiobooks_paginated(
+    db: &Database, 
+    libraries: &[abop_core::models::Library]
+) -> CliResult<Vec<abop_core::models::Audiobook>> {
+    const PAGE_SIZE: usize = 1000;
+    let mut all_audiobooks = Vec::new();
+    
+    for library in libraries {
+        let mut offset = 0;
+        let total_count = db
+            .count_audiobooks_in_library(&library.id)
+            .with_database_context("counting audiobooks for pagination")?;
+            
+        log::debug!("Processing library '{}' with {} audiobooks", library.name, total_count);
+        
+        while offset < total_count {
+            let batch = db
+                .get_audiobooks_in_library_paginated(&library.id, Some(PAGE_SIZE), offset)
+                .with_database_context("retrieving paginated audiobooks")?;
+                
+            if batch.is_empty() {
+                break; // Prevent infinite loop if no more results
+            }
+            
+            all_audiobooks.extend(batch);
+            offset += PAGE_SIZE;
+            
+            // Log progress for very large libraries
+            if total_count > 5000 {
+                log::debug!("Processed {}/{} audiobooks for library '{}'", 
+                    std::cmp::min(offset, total_count), total_count, library.name);
+            }
+        }
+    }
+    
+    log::info!("Retrieved {} total audiobooks using paginated approach", all_audiobooks.len());
+    Ok(all_audiobooks)
+}
+
+/// Process audiobooks and output as JSON
+fn process_and_output_audiobooks(all_audiobooks: Vec<abop_core::models::Audiobook>) -> CliResult<()> {
+    use crate::output::{AudiobookInfo, CliOutput};
+    
     // Convert to output format
     let audiobook_infos: Vec<AudiobookInfo> =
         all_audiobooks.iter().map(AudiobookInfo::from).collect();

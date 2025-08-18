@@ -71,6 +71,7 @@ pub struct LibraryInfo {
     pub id: String,
     pub name: String,
     pub path: PathBuf,
+    /// Number of audiobooks in the library. May be 0 if count is not available or not computed.
     pub audiobook_count: usize,
 }
 
@@ -214,21 +215,16 @@ impl LibraryInfo {
 }
 
 impl From<&abop_core::models::Library> for LibraryInfo {
-    /// Convert a Library to LibraryInfo with placeholder audiobook count
+    /// Convert a Library to LibraryInfo with audiobook_count set to 0
     /// 
-    /// **Important:** This implementation sets `audiobook_count` to 0 as a placeholder.
-    /// This is intentional for cases where the count will be populated separately
-    /// or where the count is not needed.
+    /// **Important:** This implementation sets `audiobook_count` to 0 because the
+    /// Library model does not contain audiobook count information - it must be 
+    /// computed separately via database queries.
     /// 
-    /// **Recommended:** Use `LibraryInfo::with_count()` when you need the actual
-    /// audiobook count to avoid confusion.
+    /// **Usage:** Use `LibraryInfo::with_count()` when you have the actual count,
+    /// or `LibraryInfo::without_count()` to be explicit about the lack of count.
     fn from(lib: &abop_core::models::Library) -> Self {
-        Self {
-            id: lib.id.clone(),
-            name: lib.name.clone(),
-            path: lib.path.clone(),
-            audiobook_count: 0, // Placeholder - use with_count() for actual count
-        }
+        LibraryInfo::without_count(lib)
     }
 }
 

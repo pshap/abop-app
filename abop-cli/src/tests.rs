@@ -328,4 +328,30 @@ mod integration_tests {
         // Directory should fail for database path
         assert!(validate_existing_database_path(&valid_dir).is_err());
     }
+
+    #[test]
+    fn test_categorize_error() {
+        use crate::categorize_error;
+        
+        // Test path errors
+        assert_eq!(categorize_error("File does not exist"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("Path not found"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("Library path is a directory"), "INVALID_PATH");
+        
+        // Test database errors  
+        assert_eq!(categorize_error("Database connection failed"), "DATABASE_ERROR");
+        assert_eq!(categorize_error("SQLite error occurred"), "DATABASE_ERROR");
+        
+        // Test other error types
+        assert_eq!(categorize_error("Permission denied"), "PERMISSION_DENIED");
+        assert_eq!(categorize_error("Scanner failed to process"), "SCAN_ERROR");
+        assert_eq!(categorize_error("Audio format not supported"), "AUDIO_ERROR");
+        assert_eq!(categorize_error("Library validation failed"), "LIBRARY_ERROR");
+        assert_eq!(categorize_error("JSON serialization error"), "SERIALIZATION_ERROR");
+        assert_eq!(categorize_error("Configuration is invalid"), "CONFIGURATION_ERROR");
+        assert_eq!(categorize_error("Network connection timeout"), "NETWORK_ERROR");
+        
+        // Test unknown error
+        assert_eq!(categorize_error("Something went wrong"), "UNKNOWN_ERROR");
+    }
 }

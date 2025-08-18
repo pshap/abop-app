@@ -203,6 +203,32 @@ fn show_paginated_audiobooks(
     Ok(())
 }
 
+/// Get a sampled subset of items for performance and usability
+///
+/// This function implements consistent sampling logic across CLI operations.
+/// 
+/// # Arguments
+/// * `items` - The collection to sample from
+/// * `max_sample_size` - Maximum number of items to return (uses DEFAULT_SAMPLE_SIZE if None)
+///
+/// # Returns
+/// A vector containing either all items (if count <= max_sample_size) or the first max_sample_size items
+///
+/// # Rationale
+/// - Limits output size for faster processing and transmission
+/// - Provides enough examples without overwhelming users
+/// - Prevents memory issues with very large collections
+/// - Maintains consistent behavior across different CLI commands
+pub fn get_sampled_items<T: Clone>(items: &[T], max_sample_size: Option<usize>) -> Vec<T> {
+    let sample_size = max_sample_size.unwrap_or(crate::constants::DEFAULT_SAMPLE_SIZE);
+    
+    if items.len() <= sample_size {
+        items.to_vec()
+    } else {
+        items[..sample_size].to_vec()
+    }
+}
+
 /// Get pagination size from environment or use default
 fn get_pagination_size() -> usize {
     std::env::var("ABOP_PAGE_SIZE")
@@ -258,5 +284,31 @@ mod tests {
             UNKNOWN_AUTHOR,
             abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR
         );
+    }
+
+    #[test] 
+    fn test_get_sampled_items() {
+        // Test with empty collection
+        let empty: Vec<i32> = vec![];
+        assert_eq!(get_sampled_items(&empty, None), Vec::<i32>::new());
+        
+        // Test with collection smaller than default sample size
+        let small = vec![1, 2, 3];
+        assert_eq!(get_sampled_items(&small, None), vec![1, 2, 3]);
+        
+        // Test with collection larger than default sample size 
+        let large: Vec<i32> = (1..=20).collect();
+        let sampled = get_sampled_items(&large, Some(5));
+        assert_eq!(sampled.len(), 5);
+        assert_eq!(sampled, vec![1, 2, 3, 4, 5]);
+        
+        // Test with custom sample size
+        let custom_sampled = get_sampled_items(&large, Some(3));
+        assert_eq!(custom_sampled.len(), 3);
+        assert_eq!(custom_sampled, vec![1, 2, 3]);
+        
+        // Test with sample size larger than collection
+        let over_sampled = get_sampled_items(&small, Some(10));
+        assert_eq!(over_sampled, vec![1, 2, 3]);
     }
 }
