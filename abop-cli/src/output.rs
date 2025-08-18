@@ -175,19 +175,42 @@ impl CliOutput {
         }
     }
 
-    /// Serialize to JSON string
+    /// Serialize to JSON string (compact format for performance)
     pub fn to_json(&self) -> serde_json::Result<String> {
+        serde_json::to_string(self)
+    }
+
+    /// Serialize to pretty-formatted JSON string (for human-readable output)
+    #[allow(dead_code)]
+    pub fn to_json_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(self)
     }
 }
 
+impl LibraryInfo {
+    /// Create a LibraryInfo with actual audiobook count
+    #[must_use]
+    pub fn with_count(library: &abop_core::models::Library, audiobook_count: usize) -> Self {
+        Self {
+            id: library.id.clone(),
+            name: library.name.clone(),
+            path: library.path.clone(),
+            audiobook_count,
+        }
+    }
+}
+
 impl From<&abop_core::models::Library> for LibraryInfo {
+    /// Convert a Library to LibraryInfo with zero audiobook count
+    /// 
+    /// **Warning:** This sets audiobook_count to 0. Use `LibraryInfo::with_count()`
+    /// when you need the actual audiobook count for the library.
     fn from(lib: &abop_core::models::Library) -> Self {
         Self {
             id: lib.id.clone(),
             name: lib.name.clone(),
             path: lib.path.clone(),
-            audiobook_count: 0, // Will be filled separately
+            audiobook_count: 0, // Use LibraryInfo::with_count() for actual count
         }
     }
 }

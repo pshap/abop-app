@@ -44,10 +44,12 @@ fn init(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     debug!("Database::open() completed successfully");
 
     if json_output {
+        log::debug!("Serializing database init results to JSON output");
         let output = crate::output::CliOutput::database_init_success(database_path);
         let json = output
             .to_json()
             .with_context(|| "serializing init results to JSON")?;
+        log::debug!("JSON serialization completed, output size: {} bytes", json.len());
         println!("{json}");
     } else {
         info!("✓ Database initialized successfully");
@@ -96,11 +98,13 @@ fn stats(database_path: PathBuf, json_output: bool) -> CliResult<()> {
     let library_count = libraries.len();
 
     if json_output {
+        log::debug!("Serializing database stats results to JSON output");
         let output =
             crate::output::CliOutput::database_stats_success(audiobook_count, library_count);
         let json = output
             .to_json()
             .with_context(|| "serializing stats results to JSON")?;
+        log::debug!("JSON serialization completed, output size: {} bytes", json.len());
         println!("{json}");
     } else {
         info!("Total audiobooks: {audiobook_count}");
@@ -154,29 +158,21 @@ fn clean(database_path: PathBuf, json_output: bool) -> CliResult<()> {
 fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
     use crate::output::{AudiobookInfo, CliOutput};
 
-    // Get all audiobooks from all libraries
-    let libraries = db
-        .get_libraries()
-        .with_database_context("retrieving libraries for list")?;
-
-    let mut all_audiobooks = Vec::new();
-
-    for library in &libraries {
-        let library_audiobooks = db
-            .get_audiobooks_in_library(&library.id)
-            .with_database_context("retrieving audiobooks for list")?;
-
-        all_audiobooks.extend(library_audiobooks);
-    }
+    // Get all audiobooks using optimized single query to avoid N+1 problem
+    let all_audiobooks = db
+        .get_all_audiobooks()
+        .with_database_context("retrieving all audiobooks for list")?;
 
     // Convert to output format
     let audiobook_infos: Vec<AudiobookInfo> =
         all_audiobooks.iter().map(AudiobookInfo::from).collect();
 
+    log::debug!("Serializing database list results to JSON output");
     let output = CliOutput::database_list_success(audiobook_infos);
     let json = output
         .to_json()
         .with_context(|| "serializing list results to JSON")?;
+    log::debug!("JSON serialization completed, output size: {} bytes", json.len());
     println!("{json}");
 
     Ok(())

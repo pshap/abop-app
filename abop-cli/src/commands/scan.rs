@@ -226,8 +226,8 @@ fn output_json_results(
         },
     };
 
-    // Create output with a sample of audiobooks (first 10)
-    let sample_size = 10;
+    // Create output with a sample of audiobooks
+    let sample_size = crate::constants::DEFAULT_SAMPLE_SIZE;
     let sample_audiobooks = if audiobook_infos.len() <= sample_size {
         audiobook_infos.clone()
     } else {
@@ -238,17 +238,28 @@ fn output_json_results(
         CliOutput::scan_success(audiobooks.len(), vec![library_info], sample_audiobooks);
 
     // Add metrics to the output
-    if let CliOutput::Success {
-        data: crate::output::OutputData::Scan(ref mut scan_output),
-    } = output
-    {
-        scan_output.metrics = Some(metrics);
+    match &mut output {
+        CliOutput::Success {
+            data: crate::output::OutputData::Scan(scan_output),
+        } => {
+            scan_output.metrics = Some(metrics);
+        }
+        CliOutput::Success {
+            data: crate::output::OutputData::Database(_),
+        } => {
+            log::warn!("Attempted to add scan metrics to database output - this shouldn't happen");
+        }
+        CliOutput::Error { .. } => {
+            log::warn!("Attempted to add scan metrics to error output - this shouldn't happen");
+        }
     }
 
     // Serialize and print
+    log::debug!("Serializing scan results to JSON output");
     let json = output
         .to_json()
         .with_context(|| "serializing scan results to JSON")?;
+    log::debug!("JSON serialization completed, output size: {} bytes", json.len());
     println!("{json}");
 
     Ok(())

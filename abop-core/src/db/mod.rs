@@ -597,6 +597,40 @@ impl Database {
         repo.count_by_library(library_id)
     }
 
+    /// Gets all audiobooks across all libraries
+    ///
+    /// This method performs a single optimized query to retrieve all audiobooks
+    /// rather than making separate queries for each library (avoiding N+1 problem).
+    #[instrument(skip(self))]
+    pub fn get_all_audiobooks(&self) -> Result<Vec<Audiobook>> {
+        Ok(self.operations
+            .execute_query(|conn| {
+                use crate::db::mappers::{RowMappers, SqlQueries};
+                
+                let mut stmt = conn
+                    .prepare(&SqlQueries::audiobook_select(Some("1=1 ORDER BY title")))
+                    .map_err(|e| DatabaseError::execution_failed(&format!("Failed to prepare statement: {e}")))?;
+
+                let rows = stmt
+                    .query_map([], |row| {
+                        RowMappers::audiobook_from_row(row).map_err(|_e| {
+                            rusqlite::Error::InvalidColumnType(0, "audiobook".to_string(), rusqlite::types::Type::Text)
+                        })
+                    })
+                    .map_err(|e| DatabaseError::execution_failed(&format!("Failed to execute query: {e}")))?;
+
+                let mut audiobooks = Vec::new();
+                for row_result in rows {
+                    let audiobook = row_result.map_err(|e| {
+                        DatabaseError::execution_failed(&format!("Failed to map row: {e}"))
+                    })?;
+                    audiobooks.push(audiobook);
+                }
+
+                Ok(audiobooks)
+            })?)
+    }
+
     /// Gets a library repository for more complex operations
     #[must_use]
     pub fn libraries(&self) -> LibraryRepository {

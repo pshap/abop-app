@@ -5,6 +5,7 @@
 
 mod cli;
 mod commands;
+mod constants;
 mod error;
 mod output;
 mod utils;
@@ -25,10 +26,10 @@ fn main() -> CliResult<()> {
                 Err(e) => {
                     if json_output {
                         output_json_error(&e);
+                        std::process::exit(1);
                     } else {
-                        return Err(e);
+                        Err(e)
                     }
-                    std::process::exit(1);
                 }
             }
         }
@@ -51,9 +52,14 @@ fn output_json_error(error: &anyhow::Error) {
     let output =
         crate::output::CliOutput::error(error_chain[0].clone(), "CliError".to_string(), context);
 
-    if let Ok(json) = output.to_json() {
-        println!("{json}");
-    } else {
-        eprintln!("Error: {error}");
+    match output.to_json() {
+        Ok(json) => {
+            log::debug!("Serialized error output to JSON, size: {} bytes", json.len());
+            println!("{json}");
+        }
+        Err(serialization_error) => {
+            log::error!("Failed to serialize error output to JSON: {}", serialization_error);
+            eprintln!("Error: {error}");
+        }
     }
 }
