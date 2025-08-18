@@ -155,66 +155,122 @@ fn clean(database_path: PathBuf, json_output: bool) -> CliResult<()> {
 
 /// Output audiobook list in JSON format
 fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
+    // 1) Gather libraries
+    let libraries = get_libraries_for_listing(db)?;
 
-    // Check for large library count and use pagination if needed to prevent memory issues
-    let libraries = db
-        .get_libraries()
-        .with_database_context("retrieving libraries for count check")?;
-    
-    let total_audiobook_estimate = libraries.iter()
-        .map(|lib| db.count_audiobooks_in_library(&lib.id).unwrap_or(0))
-        .sum::<usize>();
-    
-    // Use pagination for libraries with more than 10,000 audiobooks to prevent memory issues
-    const LARGE_LIBRARY_THRESHOLD: usize = 10_000;
-    let all_audiobooks = if total_audiobook_estimate > LARGE_LIBRARY_THRESHOLD {
-        log::info!("Large library detected ({} audiobooks), using paginated approach", total_audiobook_estimate);
-        get_audiobooks_paginated(db, &libraries)?
+    // 2) Fetch audiobooks using appropriate strategy
+    let audiobooks = fetch_audiobooks_with_size_strategy(db, &libraries)?;
+
+    // 3) Serialize and print
+    process_and_output_audiobooks(audiobooks)
+}
+
+/// Threshold for deciding when to paginate to avoid high memory usage
+const LARGE_LIBRARY_THRESHOLD: usize = 10_000;
+
+/// Retrieve libraries needed for list operations
+fn get_libraries_for_listing(
+    db: &Database,
+) -> CliResult<Vec<abop_core::models::Library>> {
+    db.get_libraries()
+        .with_database_context("retrieving libraries for list operation")
+}
+
+/// Decide which fetching strategy to use based on estimated size
+fn fetch_audiobooks_with_size_strategy(
+    db: &Database,
+    libraries: &[abop_core::models::Library],
+) -> CliResult<Vec<abop_core::models::Audiobook>> {
+    let total_estimate = estimate_total_audiobooks(db, libraries)?;
+
+    if needs_pagination(total_estimate) {
+        log::info!(
+            "Large library detected ({} audiobooks), using paginated approach",
+            total_estimate
+        );
+        get_audiobooks_paginated(db, libraries)
     } else {
-        // Use optimized single query for smaller libraries with fallback
-        match db.get_all_audiobooks() {
+        get_audiobooks_standard(db, libraries)
+    }
+}
+
+/// Estimate total audiobook count across libraries
+fn estimate_total_audiobooks(
+    db: &Database,
+    libraries: &[abop_core::models::Library],
+) -> CliResult<usize> {
+    let mut total = 0usize;
+    for lib in libraries {
+        let count = db
+            .count_audiobooks_in_library(&lib.id)
+            .with_database_context("counting audiobooks for estimate")?;
+        total += count;
+    }
+    Ok(total)
+}
+
+#[inline]
+fn needs_pagination(total_estimate: usize) -> bool {
+    total_estimate > LARGE_LIBRARY_THRESHOLD
+}
+
+/// Fetch audiobooks using the optimized path with robust fallback and validation
+fn get_audiobooks_standard(
+    db: &Database,
+    libraries: &[abop_core::models::Library],
+) -> CliResult<Vec<abop_core::models::Audiobook>> {
+    // Use optimized single query for smaller libraries with fallback
+    match db.get_all_audiobooks() {
         Ok(audiobooks) => {
             // Log successful retrieval with count for debugging
-            log::debug!("Retrieved {} audiobooks via optimized query", audiobooks.len());
-            
+            log::debug!(
+                "Retrieved {} audiobooks via optimized query",
+                audiobooks.len()
+            );
+
             // Additional validation: filter out audiobooks with invalid IDs (database integrity check)
             let original_count = audiobooks.len();
             let valid_audiobooks: Vec<_> = audiobooks
                 .into_iter()
                 .filter(|book| !book.id.trim().is_empty())
                 .collect();
-                
+
             let invalid_count = original_count - valid_audiobooks.len();
             if invalid_count > 0 {
-                log::error!("Database integrity issue: Found and filtered {} audiobooks with invalid IDs", invalid_count);
-                log::error!("Continuing with {} valid audiobooks (data may be incomplete)", valid_audiobooks.len());
+                log::error!(
+                    "Database integrity issue: Found and filtered {} audiobooks with invalid IDs",
+                    invalid_count
+                );
+                log::error!(
+                    "Continuing with {} valid audiobooks (data may be incomplete)",
+                    valid_audiobooks.len()
+                );
             }
-            
-            valid_audiobooks
+
+            Ok(valid_audiobooks)
         }
         Err(e) => {
-            log::warn!("Optimized query failed, falling back to per-library queries: {}", e);
-            
-            // Fallback: Use the original N+1 approach if the optimized query fails
-            let libraries = db
-                .get_libraries()
-                .with_database_context("retrieving libraries for fallback list")?;
+            log::warn!(
+                "Optimized query failed, falling back to per-library queries: {}",
+                e
+            );
 
+            // Fallback: Use the original N+1 approach if the optimized query fails
             let mut fallback_audiobooks = Vec::new();
-            for library in &libraries {
+            for library in libraries {
                 let library_audiobooks = db
                     .get_audiobooks_in_library(&library.id)
                     .with_database_context("retrieving audiobooks for fallback list")?;
                 fallback_audiobooks.extend(library_audiobooks);
             }
-            
-            log::debug!("Retrieved {} audiobooks via fallback method", fallback_audiobooks.len());
-            fallback_audiobooks
+
+            log::debug!(
+                "Retrieved {} audiobooks via fallback method",
+                fallback_audiobooks.len()
+            );
+            Ok(fallback_audiobooks)
         }
     }
-    };
-
-    process_and_output_audiobooks(all_audiobooks)
 }
 
 /// Get audiobooks using paginated approach for large libraries
