@@ -70,7 +70,32 @@ ABOP balances modern Rust best practices with Iced GUI framework capabilities an
 - **[Tracing](https://tracing.rs/)**: Structured logging and performance monitoring
 - **Comprehensive Testing**: Unit and integration tests across all components
 
-## 📁 Project Architecture
+## � Logging
+
+ABOP uses the `tracing` ecosystem with `RUST_LOG` for runtime control of log levels. On Windows PowerShell, set it like this:
+
+- Minimal noise (default fallback): `abop_gui=info,abop_core=info,iced=warn`
+- Debug everything in workspace: `abop_gui=debug,abop_core=debug,iced=info`
+- Silence third‑party crates: `abop_gui=debug,abop_core=debug,iced=warn,sqlx=warn,rusqlite=warn`
+
+PowerShell examples:
+
+```pwsh
+# Run GUI with verbose logs
+$env:RUST_LOG = "abop_gui=debug,abop_core=info,iced=warn"; cargo run -p abop-gui
+
+# Run all tests with full debug
+$env:RUST_LOG = "abop_gui=debug,abop_core=debug,iced=warn"; cargo nextest run --all --no-capture
+
+# Clear for subsequent shells
+Remove-Item Env:\RUST_LOG
+```
+
+Notes:
+- If `RUST_LOG` is invalid, the GUI prints the parse error to stderr and falls back to safe defaults.
+- Legacy `log::*` calls are captured via the `tracing-log` bridge during migration.
+
+## �📁 Project Architecture
 
 ```
 abop/
