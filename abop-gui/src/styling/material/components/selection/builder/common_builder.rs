@@ -265,7 +265,6 @@ macro_rules! impl_common_selection_builder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     // Test struct to verify the trait works
     #[derive(Debug, Clone)]

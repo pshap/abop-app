@@ -74,10 +74,22 @@ pub trait DynRepository: Repository {
                 .iter()
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
+            let start = std::time::Instant::now();
             let result = stmt.execute(rusqlite::params_from_iter(param_refs));
+            let duration = start.elapsed();
             match &result {
-                Ok(rows) => debug!(%query, rows_affected = *rows, "Dynamic SQL query executed successfully"),
-                Err(e) => error!(%query, error = %e, "Dynamic SQL query execution failed"),
+                Ok(rows) => debug!(
+                    %query,
+                    rows_affected = *rows,
+                    duration_ms = duration.as_millis(),
+                    "Dynamic SQL query executed successfully"
+                ),
+                Err(e) => error!(
+                    %query,
+                    error = %e,
+                    duration_ms = duration.as_millis(),
+                    "Dynamic SQL query execution failed"
+                ),
             }
             result
         })
@@ -94,6 +106,7 @@ pub trait SafeDynRepository: Repository {
         callback: TypedRowCallback<T>,
     ) -> DbResult<T> {
         let query = query.to_string();
+        let param_count = params.len();
         let owned_params = convert_params_efficiently(params)?;
 
         // Use Cell for single-use callback ownership transfer
@@ -107,7 +120,8 @@ pub trait SafeDynRepository: Repository {
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
 
-            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+            let start = std::time::Instant::now();
+            let result = stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
                 let callback = callback_option.take().ok_or_else(|| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
@@ -115,7 +129,13 @@ pub trait SafeDynRepository: Repository {
                     )
                 })?;
                 callback(row)
-            })
+            });
+            let duration = start.elapsed();
+            match &result {
+                Ok(_) => debug!(%query, param_count, duration_ms = duration.as_millis(), "Dynamic SQL single-row query executed successfully"),
+                Err(e) => error!(%query, param_count, error = %e, duration_ms = duration.as_millis(), "Dynamic SQL single-row query failed"),
+            }
+            result
         })
     }
 
@@ -127,6 +147,7 @@ pub trait SafeDynRepository: Repository {
         callback: impl FnOnce(&rusqlite::Row) -> Result<T, rusqlite::Error> + Send + 'static,
     ) -> DbResult<T> {
         let query = query.to_string();
+        let param_count = params.len();
         let owned_params = convert_params_efficiently(params)?;
 
         // Use Cell for single-use callback ownership transfer
@@ -140,7 +161,8 @@ pub trait SafeDynRepository: Repository {
                 .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
                 .collect();
 
-            stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
+            let start = std::time::Instant::now();
+            let result = stmt.query_row(rusqlite::params_from_iter(param_refs), |row| {
                 let callback = callback_option.take().ok_or_else(|| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE),
@@ -150,7 +172,13 @@ pub trait SafeDynRepository: Repository {
                     )
                 })?;
                 callback(row)
-            })
+            });
+            let duration = start.elapsed();
+            match &result {
+                Ok(_) => debug!(%query, param_count, duration_ms = duration.as_millis(), "Dynamic SQL single-row query executed successfully"),
+                Err(e) => error!(%query, param_count, error = %e, duration_ms = duration.as_millis(), "Dynamic SQL single-row query failed"),
+            }
+            result
         })
     }
 }

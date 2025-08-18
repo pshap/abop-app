@@ -495,15 +495,14 @@ mod tests {
     // ============================================================================
     
     mod error_conversion_tests {
-        use super::*;
 
         #[test]
         fn test_impl_error_conversions_macro() {
             // Test error type for conversions
+            #[allow(dead_code)]
             #[derive(Debug, PartialEq)]
             enum TestError {
                 Custom(String),
-                Io(String),
             }
             
             // Test the impl_error_conversions! macro
@@ -524,6 +523,7 @@ mod tests {
         #[test]
         fn test_impl_string_conversions_macro() {
             // Create a test error type
+            #[allow(dead_code)]
             #[derive(Debug, PartialEq)]
             enum StringTestError {
                 Io(String),
@@ -572,12 +572,8 @@ mod tests {
             
             let source_error = SourceError::Network("connection failed".to_string());
             let wrapped: WrapperError = source_error.into();
-            match wrapped {
-                WrapperError::Source(SourceError::Network(msg)) => {
-                    assert_eq!(msg, "connection failed");
-                }
-                _ => panic!("Unexpected error type"),
-            }
+            let WrapperError::Source(SourceError::Network(msg)) = wrapped;
+            assert_eq!(msg, "connection failed");
         }
 
         #[test]
@@ -594,7 +590,6 @@ mod tests {
             enum ConditionalTestError {
                 Network(String),
                 Parse(String),
-                Other(String),
             }
             
             impl_conditional_conversions! {
@@ -643,13 +638,9 @@ mod tests {
             
             let source_error = SourceError::Network("connection timeout".to_string());
             let converted: ContextualTestError = source_error.into();
-            match converted {
-                ContextualTestError::Network(msg) => {
-                    assert!(msg.contains("Network operation failed"));
-                    assert!(msg.contains("connection timeout"));
-                }
-                _ => panic!("Unexpected error type"),
-            }
+            let ContextualTestError::Network(msg) = converted;
+            assert!(msg.contains("Network operation failed"));
+            assert!(msg.contains("connection timeout"));
         }
 
         #[test]
@@ -689,6 +680,7 @@ mod tests {
             // This test demonstrates how the macros reduce boilerplate code
             // by implementing multiple conversions at once
             
+            #[allow(dead_code)]
             #[derive(Debug, PartialEq)]
             enum MultiConversionError {
                 Io(String),
