@@ -125,15 +125,6 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
     Ok(())
 }
 
-/// Show sample audiobooks from the database
-#[allow(dead_code)]
-fn show_sample_audiobooks(db: &Database) -> CliResult<()> {
-    let libraries = db
-        .get_libraries()
-        .with_database_context("fetching libraries for samples")?;
-    
-    show_sample_audiobooks_with_libraries(db, &libraries)
-}
 
 /// Show sample audiobooks from the database using pre-fetched libraries
 fn show_sample_audiobooks_with_libraries(

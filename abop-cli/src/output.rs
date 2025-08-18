@@ -199,19 +199,35 @@ impl LibraryInfo {
             audiobook_count,
         }
     }
+
+    /// Create a LibraryInfo without audiobook count (for cases where count is irrelevant)
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn without_count(library: &abop_core::models::Library) -> Self {
+        Self {
+            id: library.id.clone(),
+            name: library.name.clone(),
+            path: library.path.clone(),
+            audiobook_count: 0, // Explicitly no count
+        }
+    }
 }
 
 impl From<&abop_core::models::Library> for LibraryInfo {
-    /// Convert a Library to LibraryInfo with zero audiobook count
+    /// Convert a Library to LibraryInfo with placeholder audiobook count
     /// 
-    /// **Warning:** This sets audiobook_count to 0. Use `LibraryInfo::with_count()`
-    /// when you need the actual audiobook count for the library.
+    /// **Important:** This implementation sets `audiobook_count` to 0 as a placeholder.
+    /// This is intentional for cases where the count will be populated separately
+    /// or where the count is not needed.
+    /// 
+    /// **Recommended:** Use `LibraryInfo::with_count()` when you need the actual
+    /// audiobook count to avoid confusion.
     fn from(lib: &abop_core::models::Library) -> Self {
         Self {
             id: lib.id.clone(),
             name: lib.name.clone(),
             path: lib.path.clone(),
-            audiobook_count: 0, // Use LibraryInfo::with_count() for actual count
+            audiobook_count: 0, // Placeholder - use with_count() for actual count
         }
     }
 }

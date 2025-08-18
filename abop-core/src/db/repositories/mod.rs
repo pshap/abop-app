@@ -19,18 +19,28 @@ use std::sync::Arc;
 
 /// Type alias for row processing callback to reduce complexity
 ///
+/// # DEPRECATED
+/// 
+/// **This type will be removed in version 0.2.0**
+/// 
+/// This type alias uses unsafe type erasure and creates security vulnerabilities.
+/// All code using this type should migrate to the safe alternatives:
+/// - Use `TypedRowCallback<T>` for type-safe callbacks
+/// - Use specific repository methods with concrete return types
+/// - Use the `Repository` pattern with strongly-typed methods
+/// 
 /// # Safety
 ///
 /// The callback returns `Box<dyn Any + Send>` which requires careful type casting
-/// by the caller. This is an unsafe pattern that should be avoided in favor of
-/// typed alternatives when possible. Consider using specific repository methods
-/// with concrete return types instead of this dynamic callback approach.
+/// by the caller. This is an unsafe pattern that should be avoided.
 ///
-/// # Usage
-///
-/// This callback is intended for single-use scenarios where the exact return type
-/// cannot be determined at compile time. The caller must know the expected type
-/// and perform safe downcasting of the returned `Box<dyn Any + Send>`.
+/// # Migration Path
+/// 
+/// Replace usage with `TypedRowCallback<T>` or direct repository methods.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use TypedRowCallback<T> or typed repository methods instead. Will be removed in 0.2.0"
+)]
 type RowCallback =
     Box<dyn FnOnce(&rusqlite::Row<'_>) -> rusqlite::Result<Box<dyn Any + Send>> + Send>;
 

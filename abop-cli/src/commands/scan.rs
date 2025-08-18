@@ -25,6 +25,13 @@ use std::time::Instant;
 /// * `max_concurrent_tasks` - Optional override for concurrent file tasks
 /// * `max_concurrent_db_operations` - Optional override for concurrent DB operations
 /// * `json_output` - Whether to output results in JSON format
+///   When enabled, outputs a structured JSON object with:
+///   - `success`: Boolean indicating operation success
+///   - `data`: Scan results containing:
+///     - `library`: Library metadata (id, name, path, audiobook_count)
+///     - `audiobooks`: Array of discovered audiobooks (limited sample)
+///     - `metrics`: Performance metrics (files_processed, processing_time, etc.)
+///   See [`crate::output::CliOutput`] for complete structure details.
 ///
 /// # Errors
 /// Returns an error if:
