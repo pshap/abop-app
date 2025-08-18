@@ -57,5 +57,5 @@ directories = { version = "6.0.0", default-features = false }
 # Note: iced dependency removed - moved to abop-gui layer for proper separation
 
 [dev-dependencies]
-criterion = { version = "*", features = ["html_reports"] }
-approx = "*"  # For floating-point comparisons in tests
+criterion = { version = "0.7.0", features = ["html_reports"] }
+approx = "0.5.1"  # For floating-point comparisons in tests

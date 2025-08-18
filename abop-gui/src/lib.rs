@@ -2,6 +2,7 @@
 //!
 //! This crate provides the graphical user interface for the ABOP application.
 
+#![deny(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_crate_level_docs)]
 

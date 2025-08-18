@@ -23,6 +23,7 @@ serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
 tracing-subscriber.workspace = true
+tracing-log.workspace = true
 walkdir.workspace = true
 chrono.workspace = true
 uuid.workspace = true
@@ -41,13 +42,13 @@ iced = { workspace = true, features = [
 rusqlite.workspace = true
 symphonia.workspace = true
 rodio.workspace = true
-num-complex.workspace = true
 hound.workspace = true
 rayon.workspace = true
-bytemuck.workspace = true
 
 # Direct dependencies (not in workspace)
-material-color-utilities-rs = "*"
+# Pin to the resolved version from Cargo.lock for reproducibility
+material-color-utilities-rs = "0.2.1"
 
 [dev-dependencies]
-approx = "*"  # For floating-point comparisons in tests
+# Pin to the resolved version from Cargo.lock for reproducibility
+approx = "0.5.1"  # For floating-point comparisons in tests
