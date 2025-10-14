@@ -390,8 +390,7 @@ impl LibraryState {
     pub fn perform_search(&mut self) {
         if self.search_query.trim().is_empty() {
             // No search query, show all audiobooks
-            self.filtered_audiobooks.clear();
-            self.filtered_audiobooks.extend(self.audiobooks.iter().cloned());
+            self.filtered_audiobooks.clone_from(&self.audiobooks);
             self.search_active = false;
         } else {
             // Perform search
@@ -410,8 +409,7 @@ impl LibraryState {
     /// Clear the search query and show all audiobooks
     pub fn clear_search(&mut self) {
     self.search_query.clear();
-    self.filtered_audiobooks.clear();
-    self.filtered_audiobooks.extend(self.audiobooks.iter().cloned());
+    self.filtered_audiobooks.clone_from(&self.audiobooks);
     self.search_active = false;
     self.mark_for_redraw();
     }
