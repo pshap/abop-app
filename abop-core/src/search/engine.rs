@@ -250,7 +250,12 @@ impl SearchEngine {
             parts.push(narrator);
         }
 
-        parts.into_iter().collect::<Vec<_>>().join(" ")
+        // Join requires &str; convert &String -> &str before joining
+        parts
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>()
+            .join(" ")
     }
 
     /// Get the number of indexed audiobooks

@@ -69,10 +69,7 @@ impl CoverArt {
 
         let content = if self.is_placeholder {
             // For placeholder, show a simple icon or text
-            container(
-                text("🎵")
-                    .size(self.size as f32 * 0.6),
-            )
+            container(text("🎵").size(self.size as f32 * 0.6))
             .width(Length::Fixed(self.size as f32))
             .height(Length::Fixed(self.size as f32))
             .style(|_theme| {

@@ -35,6 +35,8 @@ mod audio_controls_tests {
     use crate::test_utils::{TestDataFactory, create_test_audiobook};
     use abop_core::PlayerState;
     use std::collections::HashSet;
+    use std::sync::Arc;
+    use crate::utils::image_cache::ImageCache;
     // create_test_audiobook and TestDataFactory are provided by crate::test_utils
     #[test]
     fn test_audio_controls_view() {
@@ -711,6 +713,8 @@ mod table_tests {
     use crate::styling::material::MaterialTokens;
     use crate::test_utils::create_test_audiobook;
     use std::collections::HashSet;
+    use std::sync::Arc;
+    use crate::utils::image_cache::ImageCache;
     #[test]
     fn test_audiobook_table_empty() {
         let tokens = MaterialTokens::default();
@@ -718,7 +722,8 @@ mod table_tests {
         let selected = HashSet::new();
         let table_state = TableState::default();
 
-        let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
+    let cache = Arc::new(ImageCache::new());
+    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache);
         let _ = element; // Just verify it compiles and runs
     }
 
@@ -732,7 +737,8 @@ mod table_tests {
         let selected = HashSet::new();
         let table_state = TableState::default();
 
-        let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
+    let cache = Arc::new(ImageCache::new());
+    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache);
         let _ = element; // Just verify it compiles and runs
     }
 
@@ -747,7 +753,8 @@ mod table_tests {
         selected.insert("1".to_string());
         let table_state = TableState::default();
 
-        let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens);
+    let cache = Arc::new(ImageCache::new());
+    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache);
         let _ = element; // Just verify it compiles and runs
     }
 }

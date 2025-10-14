@@ -10,10 +10,10 @@ use std::time::{Duration, SystemTime};
 use tokio::sync::Mutex;
 
 use crate::utils::{image_cache::ImageCache, platform};
-use abop_core::models::{AppState, Audiobook};
+use abop_core::models::{AppState, Audiobook, SearchQuery};
 use abop_core::scanner::progress::ScanProgress;
 use abop_core::scanner::{LibraryScanner, ScannerState};
-use abop_core::search::{SearchEngine, SearchQuery, SearchResult};
+use abop_core::search::SearchEngine;
 
 /// Directory information with scan metadata
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -369,9 +369,10 @@ impl std::fmt::Debug for LibraryState {
             .field("needs_redraw", &self.needs_redraw())
             .finish()
     }
+}
 
-    // ===== Search Methods =====
-
+// ===== Search Methods =====
+impl LibraryState {
     /// Update the search query and perform search
     pub fn update_search_query(&mut self, query: String) {
         self.search_query = query;
@@ -388,7 +389,7 @@ impl std::fmt::Debug for LibraryState {
             // Perform search
             let search_query = SearchQuery::new(&self.search_query);
             let search_results = self.search_engine.search(&search_query, &self.audiobooks);
-            
+
             // Extract audiobooks from search results
             self.filtered_audiobooks = search_results
                 .into_iter()
@@ -396,8 +397,8 @@ impl std::fmt::Debug for LibraryState {
                 .collect();
             self.search_active = true;
         }
-        
-        self.mark_needs_redraw();
+
+        self.mark_for_redraw();
     }
 
     /// Clear the search query and show all audiobooks
@@ -405,7 +406,7 @@ impl std::fmt::Debug for LibraryState {
         self.search_query.clear();
         self.filtered_audiobooks = self.audiobooks.clone();
         self.search_active = false;
-        self.mark_needs_redraw();
+        self.mark_for_redraw();
     }
 
     /// Get the currently filtered audiobooks (for display)
@@ -431,12 +432,12 @@ impl std::fmt::Debug for LibraryState {
     pub fn update_search_index(&mut self) {
         // Clear existing index
         self.search_engine.clear();
-        
+
         // Rebuild index with current audiobooks
         for audiobook in &self.audiobooks {
             self.search_engine.add_audiobook(audiobook);
         }
-        
+
         // Re-perform search if active
         if self.search_active {
             self.perform_search();

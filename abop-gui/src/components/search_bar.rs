@@ -3,9 +3,8 @@
 //! This module provides a search bar component with real-time filtering
 //! and Material Design 3 styling.
 
-use iced::widget::{container, row, text, text_input};
+use iced::widget::{button, container, row, text, column};
 use iced::{Element, Length, Padding};
-use std::sync::Arc;
 
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
@@ -75,26 +74,26 @@ impl SearchBar {
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, Message> {
         let search_field = MaterialSearchField::new()
             .full_width()
-            .view(&self.query, |query| Message::SearchQuery(query));
+            .view(&self.query, |query| Message::SearchQuery(query), tokens);
 
         let search_container = container(search_field)
             .width(Length::Fill)
             .padding(Padding::from([8.0, 16.0]));
 
         // Add search icon and clear button if needed
-        let mut search_row = row![search_container];
+    let mut search_row = row![search_container];
 
         if self.has_query() {
             // Add clear button
-            let clear_button = text("✕")
+            let clear_label = text("✕")
                 .size(16.0)
                 .color(tokens.colors.on_surface_variant);
-            
-            let clear_container = container(clear_button)
+
+            let clear_button = button(clear_label)
                 .padding(Padding::from([8.0, 8.0]))
                 .on_press(Message::SearchQuery(String::new()));
 
-            search_row = search_row.push(clear_container);
+            search_row = search_row.push(clear_button);
         }
 
         container(search_row)
@@ -307,3 +306,4 @@ mod tests {
         assert_eq!(advanced_search.duration_filters(), (Some(3600), Some(7200)));
     }
 }
+
