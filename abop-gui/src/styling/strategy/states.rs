@@ -9,9 +9,10 @@ use super::traits::ComponentState;
 ///
 /// This enum extends the generic ComponentState with button-specific
 /// state information while maintaining compatibility.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ButtonState {
     /// Default button state
+    #[default]
     Default,
     /// Mouse is hovering over the button
     Hovered,
@@ -23,12 +24,6 @@ pub enum ButtonState {
     Disabled,
     /// Button is processing an action
     Loading,
-}
-
-impl Default for ButtonState {
-    fn default() -> Self {
-        Self::Default
-    }
 }
 
 impl From<ButtonState> for ComponentState {
@@ -71,9 +66,10 @@ impl ButtonState {
 pub type ComponentInteractionState = ComponentState;
 
 /// Form control interaction states for precise styling control
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum InteractionState {
     /// Default state - no interaction
+    #[default]
     Default,
     /// Mouse is hovering over the component
     Hovered,
@@ -81,12 +77,6 @@ pub enum InteractionState {
     Pressed,
     /// Component has keyboard focus
     Focused,
-}
-
-impl Default for InteractionState {
-    fn default() -> Self {
-        Self::Default
-    }
 }
 
 /// Checkbox-specific state management

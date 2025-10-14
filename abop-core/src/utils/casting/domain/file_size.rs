@@ -1,22 +1,17 @@
 //! File size formatting utilities
 
 /// Precision modes for file size formatting
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FileSizePrecision {
     /// Exact precision (no decimal places)
     Exact,
     /// Standard precision (2 decimal places)
+    #[default]
     Standard,
     /// High precision (3 decimal places)
     High,
     /// Custom number of decimal places
     Custom(usize),
-}
-
-impl Default for FileSizePrecision {
-    fn default() -> Self {
-        Self::Standard
-    }
 }
 
 impl FileSizePrecision {

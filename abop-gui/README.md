@@ -59,7 +59,6 @@ abop-gui/
 │   ├── theme.rs             # Professional sunset theme with dark/light modes
 │   ├── design_tokens.rs     # Centralized design system (spacing, typography, radius, elevation)
 │   ├── messages.rs          # Application message types
-│   ├── update.rs            # Message handling and updates
 │   ├── utils.rs             # Utility functions
 │   │
 │   ├── components/          # Reusable UI components (spacing consolidated)
@@ -183,3 +182,20 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 1. **Use Material Design Tokens**: Always use `crate::styling::material::*` tokens instead of hardcoded values
 2. **Follow Material Design 3**: Adhere to Material Design 3 specifications for components and layouts
 3. **Theme Support**: Use the theme system for consistent styling across the application
+
+## 📝 Logging
+
+This crate uses `tracing` with `RUST_LOG` to control log verbosity.
+
+Common presets:
+- Default‑like: `abop_gui=info,abop_core=info,iced=warn`
+- Verbose GUI: `abop_gui=debug,abop_core=info,iced=warn`
+- Everything debug (noisy): `abop_gui=debug,abop_core=debug,iced=info`
+
+PowerShell examples:
+
+```pwsh
+$env:RUST_LOG = "abop_gui=debug,abop_core=info,iced=warn"; cargo run -p abop-gui
+$env:RUST_LOG = "abop_gui=debug,abop_core=debug,iced=warn"; cargo nextest run --all --no-capture
+Remove-Item Env:\RUST_LOG
+```

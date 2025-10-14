@@ -331,45 +331,66 @@ mod integration_tests {
     #[test]
     fn test_categorize_error() {
         use crate::categorize_error;
-        
+
         // Test path errors
         assert_eq!(categorize_error("File does not exist"), "PATH_NOT_FOUND");
         assert_eq!(categorize_error("Path not found"), "PATH_NOT_FOUND");
-        assert_eq!(categorize_error("Library path is a directory"), "INVALID_PATH");
-        
-        // Test database errors  
-        assert_eq!(categorize_error("Database connection failed"), "DATABASE_ERROR");
+        assert_eq!(
+            categorize_error("Library path is a directory"),
+            "INVALID_PATH"
+        );
+
+        // Test database errors
+        assert_eq!(
+            categorize_error("Database connection failed"),
+            "DATABASE_ERROR"
+        );
         assert_eq!(categorize_error("SQLite error occurred"), "DATABASE_ERROR");
-        
+
         // Test other error types
         assert_eq!(categorize_error("Permission denied"), "PERMISSION_DENIED");
         assert_eq!(categorize_error("Scanner failed to process"), "SCAN_ERROR");
-        assert_eq!(categorize_error("Audio format not supported"), "AUDIO_ERROR");
-        assert_eq!(categorize_error("Library validation failed"), "LIBRARY_ERROR");
-        assert_eq!(categorize_error("JSON serialization error"), "SERIALIZATION_ERROR");
-        assert_eq!(categorize_error("Configuration is invalid"), "CONFIGURATION_ERROR");
-        assert_eq!(categorize_error("Network connection timeout"), "NETWORK_ERROR");
-        
+        assert_eq!(
+            categorize_error("Audio format not supported"),
+            "AUDIO_ERROR"
+        );
+        assert_eq!(
+            categorize_error("Library validation failed"),
+            "LIBRARY_ERROR"
+        );
+        assert_eq!(
+            categorize_error("JSON serialization error"),
+            "SERIALIZATION_ERROR"
+        );
+        assert_eq!(
+            categorize_error("Configuration is invalid"),
+            "CONFIGURATION_ERROR"
+        );
+        assert_eq!(
+            categorize_error("Network connection timeout"),
+            "NETWORK_ERROR"
+        );
+
         // Test unknown error
         assert_eq!(categorize_error("Something went wrong"), "UNKNOWN_ERROR");
 
-    // Case insensitivity checks
-    assert_eq!(categorize_error("file DOES NOT exist"), "PATH_NOT_FOUND");
-    assert_eq!(categorize_error("PATH NOT FOUND"), "PATH_NOT_FOUND");
-    assert_eq!(categorize_error("IS A DIRECTORY"), "INVALID_PATH");
-    assert_eq!(categorize_error("Invalid Path"), "INVALID_PATH");
-    assert_eq!(categorize_error("DATABASE"), "DATABASE_ERROR");
-    assert_eq!(categorize_error("sqlite"), "DATABASE_ERROR");
-    assert_eq!(categorize_error("PERMISSION"), "PERMISSION_DENIED");
-    assert_eq!(categorize_error("ACCESS DENIED"), "PERMISSION_DENIED");
-    assert_eq!(categorize_error("SCAN"), "SCAN_ERROR");
-    assert_eq!(categorize_error("Scanner"), "SCAN_ERROR");
-    assert_eq!(categorize_error("AuDiO"), "AUDIO_ERROR");
-    assert_eq!(categorize_error("FORMAT"), "AUDIO_ERROR");
-    assert_eq!(categorize_error("LIBRARY"), "LIBRARY_ERROR");
-    assert_eq!(categorize_error("SERIALIZ"), "SERIALIZATION_ERROR");
-    assert_eq!(categorize_error("JSON"), "SERIALIZATION_ERROR");
-    assert_eq!(categorize_error("CONFIG"), "CONFIGURATION_ERROR");
-    assert_eq!(categorize_error("NETWORK"), "NETWORK_ERROR");
+        // Case insensitivity checks
+        assert_eq!(categorize_error("file DOES NOT exist"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("PATH NOT FOUND"), "PATH_NOT_FOUND");
+        assert_eq!(categorize_error("IS A DIRECTORY"), "INVALID_PATH");
+        assert_eq!(categorize_error("Invalid Path"), "INVALID_PATH");
+        assert_eq!(categorize_error("DATABASE"), "DATABASE_ERROR");
+        assert_eq!(categorize_error("sqlite"), "DATABASE_ERROR");
+        assert_eq!(categorize_error("PERMISSION"), "PERMISSION_DENIED");
+        assert_eq!(categorize_error("ACCESS DENIED"), "PERMISSION_DENIED");
+        assert_eq!(categorize_error("SCAN"), "SCAN_ERROR");
+        assert_eq!(categorize_error("Scanner"), "SCAN_ERROR");
+        assert_eq!(categorize_error("AuDiO"), "AUDIO_ERROR");
+        assert_eq!(categorize_error("FORMAT"), "AUDIO_ERROR");
+        assert_eq!(categorize_error("LIBRARY"), "LIBRARY_ERROR");
+        assert_eq!(categorize_error("SERIALIZ"), "SERIALIZATION_ERROR");
+        assert_eq!(categorize_error("JSON"), "SERIALIZATION_ERROR");
+        assert_eq!(categorize_error("CONFIG"), "CONFIGURATION_ERROR");
+        assert_eq!(categorize_error("NETWORK"), "NETWORK_ERROR");
     }
 }

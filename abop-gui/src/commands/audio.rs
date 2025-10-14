@@ -45,8 +45,8 @@ pub fn handle_audio_command(state: &mut AppState, command: GuiCommand) -> Option
         GuiCommand::StopAudio => {
             log::info!("Executing StopAudio command");
             stop_audio();
-            // Return a task that will trigger the PlaybackStopped message
-            Some(Task::perform(async {}, |()| Message::PlaybackStopped))
+            // Return a task that will trigger a Stop message to unify stop handling
+            Some(Task::perform(async {}, |()| Message::Stop))
         }
         _ => None, // Not an audio command
     }

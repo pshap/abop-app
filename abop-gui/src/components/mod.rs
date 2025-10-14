@@ -19,12 +19,16 @@ pub mod audio_toolbar;
 /// - progress: Progress indicators and status components
 /// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
+/// Cover art display component for audiobooks
+pub mod cover_art;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;
 /// Icon utilities and Font Awesome integration
 pub mod icons;
 /// Unified main toolbar combining navigation and actions
 pub mod main_toolbar;
+/// Search bar component for filtering audiobooks
+pub mod search_bar;
 /// Status display and information presentation widgets
 pub mod status;
 /// Table core functionality - main table component
