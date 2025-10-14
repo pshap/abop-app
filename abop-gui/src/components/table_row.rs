@@ -3,12 +3,15 @@
 use iced::widget::{button, checkbox, container, row, text};
 use iced::{Background, Color, Element, Length, Padding};
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use abop_core::models::Audiobook;
 
+use crate::components::cover_art::CoverArt;
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
+use crate::utils::image_cache::ImageCache;
 
 /// Component for creating table rows with Material Design styling
 pub struct TableRow;
@@ -22,13 +25,14 @@ impl TableRow {
         selected_items: &HashSet<String>,
         tokens: &'a MaterialTokens,
         config: &data::DataTableConfig,
+        image_cache: &'a Arc<ImageCache>,
     ) -> Vec<Element<'a, Message>> {
         log::debug!("Creating {} rows for audiobooks", audiobooks.len());
         let result: Vec<Element<'a, Message>> = audiobooks
             .iter()
             .enumerate()
             .map(|(index, audiobook)| {
-                Self::create_single_row(audiobook, columns, selected_items, tokens, config, index)
+                Self::create_single_row(audiobook, columns, selected_items, tokens, config, image_cache, index)
             })
             .collect();
         log::debug!("Finished creating rows, total: {}", result.len());
@@ -41,6 +45,7 @@ impl TableRow {
         selected_items: &HashSet<String>,
         tokens: &'a MaterialTokens,
         config: &data::DataTableConfig,
+        image_cache: &'a Arc<ImageCache>,
         row_index: usize,
     ) -> Element<'a, Message> {
         let is_selected = selected_items.contains(&audiobook.id);
@@ -92,7 +97,7 @@ impl TableRow {
             .iter()
             .map(|column| {
                 log::debug!("Creating cell for column: {}", column.id);
-                Self::create_cell(audiobook, column, tokens)
+                Self::create_cell(audiobook, column, tokens, image_cache)
             })
             .collect();
         log::debug!("Created {} cells for row {}", data_cells.len(), row_index);
@@ -140,7 +145,36 @@ impl TableRow {
         audiobook: &'a Audiobook,
         column: &data::TableColumn,
         tokens: &'a MaterialTokens,
+        image_cache: &'a Arc<ImageCache>,
     ) -> Element<'a, Message> {
+        // Handle cover art column specially
+        if column.id == "cover_art" {
+            let cover_art = CoverArt::from_data(
+                audiobook.cover_art.as_deref(),
+                48, // 48x48 thumbnail for table
+                image_cache,
+                &audiobook.id,
+            ).with_title(
+                audiobook.title.as_deref().unwrap_or("Unknown Title")
+            );
+            
+            let width = match column.width {
+                data::ColumnWidth::Fixed(w) => Length::Fixed(w),
+                data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
+                data::ColumnWidth::Auto => Length::Fixed(64.0), // Default width for cover art
+                data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+                data::ColumnWidth::Shrink => Length::Fixed(64.0),
+            };
+
+            return container(cover_art.view(tokens))
+                .width(width)
+                .height(Length::Fixed(48.0))
+                .padding(Padding::from([4, 8]))
+                .align_x(iced::Alignment::Center)
+                .align_y(iced::alignment::Vertical::Center)
+                .into();
+        }
+
         let cell_text = match column.id.as_str() {
             "title" => audiobook
                 .title

@@ -4,6 +4,7 @@ use iced::widget::container::Style as ContainerStyle;
 use iced::widget::{column, container, scrollable, text};
 use iced::{Element, Length};
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use abop_core::models::Audiobook;
 
@@ -11,6 +12,7 @@ use crate::messages::Message;
 use crate::state::TableState;
 use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
+use crate::utils::image_cache::ImageCache;
 
 use super::table_header::TableHeader;
 use super::table_row::TableRow;
@@ -42,6 +44,10 @@ impl AudiobookTable {
     #[must_use]
     pub fn define_columns() -> Vec<data::TableColumn> {
         vec![
+            data::TableColumn::new("cover_art", "")
+                .width(data::ColumnWidth::Fixed(64.0))
+                .align(data::TextAlignment::Center)
+                .sortable(false),
             data::TableColumn::new("title", "Title")
                 .width(data::ColumnWidth::FillPortion(6))
                 .align(data::TextAlignment::Start)
@@ -67,6 +73,7 @@ impl AudiobookTable {
         selected: &'a HashSet<String>,
         table_state: &'a TableState,
         material_tokens: &'a MaterialTokens,
+        image_cache: &'a Arc<ImageCache>,
     ) -> Element<'a, Message> {
         log::debug!(
             "AudiobookTable::view called with {} audiobooks",
@@ -114,7 +121,7 @@ impl AudiobookTable {
             log::debug!("CREATING ROWS: {} audiobooks", audiobooks.len());
             // Create rows for all audiobooks at once
             let rows =
-                TableRow::create_rows(audiobooks, &columns, selected, material_tokens, &config);
+                TableRow::create_rows(audiobooks, &columns, selected, material_tokens, &config, image_cache);
             log::debug!("ROWS CREATED: {} rows", rows.len());
 
             // Add all rows at once instead of one by one to improve performance

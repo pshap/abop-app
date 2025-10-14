@@ -49,6 +49,10 @@ rayon.workspace = true
 # Pin to the resolved version from Cargo.lock for reproducibility
 material-color-utilities-rs = "0.2.1"
 
+# Phase 1 dependencies
+image.workspace = true
+fuzzy-matcher.workspace = true
+
 [dev-dependencies]
 # Pin to the resolved version from Cargo.lock for reproducibility
 approx = "0.5.1"  # For floating-point comparisons in tests

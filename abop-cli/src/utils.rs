@@ -22,7 +22,7 @@ pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
     let libraries = db
         .get_libraries()
         .with_database_context("fetching libraries")?;
-    
+
     get_audiobook_count_with_libraries(db, &libraries)
 }
 
@@ -35,8 +35,8 @@ pub fn get_audiobook_count(db: &Database) -> CliResult<usize> {
 /// # Returns
 /// The total number of audiobooks, or an error if the query fails
 pub fn get_audiobook_count_with_libraries(
-    db: &Database, 
-    libraries: &[abop_core::models::Library]
+    db: &Database,
+    libraries: &[abop_core::models::Library],
 ) -> CliResult<usize> {
     if libraries.is_empty() {
         return Ok(0);
@@ -66,7 +66,7 @@ pub fn show_scan_results(db: &Database) -> CliResult<()> {
     let libraries = db
         .get_libraries()
         .with_database_context("fetching libraries")?;
-    
+
     let count = get_audiobook_count_with_libraries(db, &libraries)?;
 
     if count == 0 {
@@ -128,7 +128,7 @@ pub fn show_audiobook_list(db: &Database) -> CliResult<()> {
 /// Show sample audiobooks from the database using pre-fetched libraries
 fn show_sample_audiobooks_with_libraries(
     db: &Database,
-    libraries: &[abop_core::models::Library]
+    libraries: &[abop_core::models::Library],
 ) -> CliResult<()> {
     if libraries.is_empty() {
         return Ok(());
@@ -205,7 +205,7 @@ fn show_paginated_audiobooks(
 /// Get a sampled subset of items for performance and usability
 ///
 /// This function implements consistent sampling logic across CLI operations.
-/// 
+///
 /// # Arguments
 /// * `items` - The collection to sample from
 /// * `max_sample_size` - Maximum number of items to return (uses DEFAULT_SAMPLE_SIZE if None)
@@ -220,7 +220,7 @@ fn show_paginated_audiobooks(
 /// - Maintains consistent behavior across different CLI commands
 pub fn get_sampled_items<T: Clone>(items: &[T], max_sample_size: Option<usize>) -> Vec<T> {
     let sample_size = max_sample_size.unwrap_or(crate::constants::DEFAULT_SAMPLE_SIZE);
-    
+
     if items.len() <= sample_size {
         items.to_vec()
     } else {
@@ -284,30 +284,29 @@ mod tests {
             abop_core::models::audiobook::fallbacks::UNKNOWN_AUTHOR
         );
     }
-    #[test] 
+    #[test]
     fn test_get_sampled_items() {
         // Test with empty collection
         let empty: Vec<i32> = vec![];
         assert_eq!(get_sampled_items(&empty, None), Vec::<i32>::new());
-        
+
         // Test with collection smaller than default sample size
         let small = vec![1, 2, 3];
         assert_eq!(get_sampled_items(&small, None), vec![1, 2, 3]);
-        
-        // Test with collection larger than default sample size 
+
+        // Test with collection larger than default sample size
         let large: Vec<i32> = (1..=20).collect();
         let sampled = get_sampled_items(&large, Some(5));
         assert_eq!(sampled.len(), 5);
         assert_eq!(sampled, vec![1, 2, 3, 4, 5]);
-        
+
         // Test with custom sample size
         let custom_sampled = get_sampled_items(&large, Some(3));
         assert_eq!(custom_sampled.len(), 3);
         assert_eq!(custom_sampled, vec![1, 2, 3]);
-        
+
         // Test with sample size larger than collection
         let over_sampled = get_sampled_items(&small, Some(10));
         assert_eq!(over_sampled, vec![1, 2, 3]);
     }
-    
 }

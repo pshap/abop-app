@@ -73,4 +73,3 @@ pub trait Bypassable {
         self.set_bypassed(!current);
     }
 }
-

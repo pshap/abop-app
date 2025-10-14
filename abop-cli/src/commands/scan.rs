@@ -5,7 +5,7 @@
 
 use crate::{
     error::{CliResult, CliResultExt, validate_library_path},
-    utils::{show_scan_results, get_sampled_items},
+    utils::{get_sampled_items, show_scan_results},
 };
 use abop_core::{
     db::Database,
@@ -31,6 +31,7 @@ use std::time::Instant;
 ///     - `library`: Library metadata (id, name, path, audiobook_count)
 ///     - `audiobooks`: Array of discovered audiobooks (limited sample)
 ///     - `metrics`: Performance metrics (files_processed, processing_time, etc.)
+///
 ///   See [`crate::output::CliOutput`] for complete structure details.
 ///
 /// # Errors
@@ -261,7 +262,10 @@ fn output_json_results(
     let json = output
         .to_json()
         .with_context(|| "serializing scan results to JSON")?;
-    log::debug!("JSON serialization completed, output size: {} bytes", json.len());
+    log::debug!(
+        "JSON serialization completed, output size: {} bytes",
+        json.len()
+    );
     println!("{json}");
 
     Ok(())

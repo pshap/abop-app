@@ -65,6 +65,10 @@ pub enum Message {
     /// Sort audiobooks by the specified column
     SortBy(String),
 
+    // ===== Search =====
+    /// Search query for filtering audiobooks
+    SearchQuery(String),
+
     // ===== Playback Control =====
     /// Start playback of selected audiobooks
     StartPlayback,

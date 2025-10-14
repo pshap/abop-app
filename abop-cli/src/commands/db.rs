@@ -49,7 +49,10 @@ fn init(database_path: PathBuf, json_output: bool) -> CliResult<()> {
         let json = output
             .to_json()
             .with_context(|| "serializing init results to JSON")?;
-        log::debug!("JSON serialization completed, output size: {} bytes", json.len());
+        log::debug!(
+            "JSON serialization completed, output size: {} bytes",
+            json.len()
+        );
         println!("{json}");
     } else {
         info!("✓ Database initialized successfully");
@@ -104,7 +107,10 @@ fn stats(database_path: PathBuf, json_output: bool) -> CliResult<()> {
         let json = output
             .to_json()
             .with_context(|| "serializing stats results to JSON")?;
-        log::debug!("JSON serialization completed, output size: {} bytes", json.len());
+        log::debug!(
+            "JSON serialization completed, output size: {} bytes",
+            json.len()
+        );
         println!("{json}");
     } else {
         info!("Total audiobooks: {audiobook_count}");
@@ -169,9 +175,7 @@ fn output_audiobook_list_json(db: &Database) -> CliResult<()> {
 const LARGE_LIBRARY_THRESHOLD: usize = 10_000;
 
 /// Retrieve libraries needed for list operations
-fn get_libraries_for_listing(
-    db: &Database,
-) -> CliResult<Vec<abop_core::models::Library>> {
+fn get_libraries_for_listing(db: &Database) -> CliResult<Vec<abop_core::models::Library>> {
     db.get_libraries()
         .with_database_context("retrieving libraries for list operation")
 }
@@ -275,48 +279,61 @@ fn get_audiobooks_standard(
 
 /// Get audiobooks using paginated approach for large libraries
 fn get_audiobooks_paginated(
-    db: &Database, 
-    libraries: &[abop_core::models::Library]
+    db: &Database,
+    libraries: &[abop_core::models::Library],
 ) -> CliResult<Vec<abop_core::models::Audiobook>> {
     const PAGE_SIZE: usize = 1000;
     let mut all_audiobooks = Vec::new();
-    
+
     for library in libraries {
         let mut offset = 0;
         let total_count = db
             .count_audiobooks_in_library(&library.id)
             .with_database_context("counting audiobooks for pagination")?;
-            
-        log::debug!("Processing library '{}' with {} audiobooks", library.name, total_count);
-        
+
+        log::debug!(
+            "Processing library '{}' with {} audiobooks",
+            library.name,
+            total_count
+        );
+
         while offset < total_count {
             let batch = db
                 .get_audiobooks_in_library_paginated(&library.id, Some(PAGE_SIZE), offset)
                 .with_database_context("retrieving paginated audiobooks")?;
-                
+
             if batch.is_empty() {
                 break; // Prevent infinite loop if no more results
             }
-            
+
             all_audiobooks.extend(batch);
             offset += PAGE_SIZE;
-            
+
             // Log progress for very large libraries
             if total_count > 5000 {
-                log::debug!("Processed {}/{} audiobooks for library '{}'", 
-                    std::cmp::min(offset, total_count), total_count, library.name);
+                log::debug!(
+                    "Processed {}/{} audiobooks for library '{}'",
+                    std::cmp::min(offset, total_count),
+                    total_count,
+                    library.name
+                );
             }
         }
     }
-    
-    log::info!("Retrieved {} total audiobooks using paginated approach", all_audiobooks.len());
+
+    log::info!(
+        "Retrieved {} total audiobooks using paginated approach",
+        all_audiobooks.len()
+    );
     Ok(all_audiobooks)
 }
 
 /// Process audiobooks and output as JSON
-fn process_and_output_audiobooks(all_audiobooks: Vec<abop_core::models::Audiobook>) -> CliResult<()> {
+fn process_and_output_audiobooks(
+    all_audiobooks: Vec<abop_core::models::Audiobook>,
+) -> CliResult<()> {
     use crate::output::{AudiobookInfo, CliOutput};
-    
+
     // Convert to output format
     let audiobook_infos: Vec<AudiobookInfo> =
         all_audiobooks.iter().map(AudiobookInfo::from).collect();
@@ -326,7 +343,10 @@ fn process_and_output_audiobooks(all_audiobooks: Vec<abop_core::models::Audioboo
     let json = output
         .to_json()
         .with_context(|| "serializing list results to JSON")?;
-    log::debug!("JSON serialization completed, output size: {} bytes", json.len());
+    log::debug!(
+        "JSON serialization completed, output size: {} bytes",
+        json.len()
+    );
     println!("{json}");
     Ok(())
 }

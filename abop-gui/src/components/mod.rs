@@ -9,6 +9,8 @@ pub mod buttons;
 
 /// About dialog and application information display components
 pub mod about;
+/// Cover art display component for audiobooks
+pub mod cover_art;
 /// Audio playback controls and manipulation widgets
 pub mod audio_controls;
 /// Audio toolbar component for playback controls
@@ -25,6 +27,8 @@ pub mod icon_support;
 pub mod icons;
 /// Unified main toolbar combining navigation and actions
 pub mod main_toolbar;
+/// Search bar component for filtering audiobooks
+pub mod search_bar;
 /// Status display and information presentation widgets
 pub mod status;
 /// Table core functionality - main table component

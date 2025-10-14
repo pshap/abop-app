@@ -254,26 +254,6 @@ impl ThemeMode {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn theme_modes_map_to_iced_theme() {
-        // Ensure all primary modes produce an IcedTheme without panic
-        let _ = ThemeMode::Dark.theme();
-        let _ = ThemeMode::Light.theme();
-        let _ = ThemeMode::System.theme();
-    }
-
-    #[test]
-    fn is_dark_reflects_mode_intent() {
-        assert!(ThemeMode::Dark.is_dark());
-        assert!(!ThemeMode::Light.is_dark());
-        // System currently resolves to dark by default
-        assert!(ThemeMode::System.is_dark());
-    }
-}
 /// Calculate the perceived luminance of a color using the standard formula
 ///
 /// This uses the ITU-R BT.709 standard for calculating perceived brightness
@@ -358,4 +338,25 @@ fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
         danger: colors.error.base,
     };
     IcedTheme::custom("Material".to_string(), palette)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn theme_modes_map_to_iced_theme() {
+        // Ensure all primary modes produce an IcedTheme without panic
+        let _ = ThemeMode::Dark.theme();
+        let _ = ThemeMode::Light.theme();
+        let _ = ThemeMode::System.theme();
+    }
+
+    #[test]
+    fn is_dark_reflects_mode_intent() {
+        assert!(ThemeMode::Dark.is_dark());
+        assert!(!ThemeMode::Light.is_dark());
+        // System currently resolves to dark by default
+        assert!(ThemeMode::System.is_dark());
+    }
 }

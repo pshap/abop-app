@@ -4,6 +4,7 @@ use iced::Length;
 use iced::widget::{column, container};
 
 use crate::components::audio_toolbar::AudioToolbar;
+use crate::components::search_bar::SearchBar;
 use crate::components::status::{EnhancedStatusDisplayParams, StatusDisplay};
 use crate::components::table_core::AudiobookTable;
 use crate::messages::Message;
@@ -20,10 +21,11 @@ pub fn library_view(state: &AppState) -> iced::Element<'_, Message> {
     );
 
     let status_display = create_status_display(state);
+    let search_bar = create_search_bar(state);
     let table_content = create_audiobook_table(state);
     let footer = create_footer(state);
 
-    let content_items = build_content_layout(state, status_display, table_content, footer);
+    let content_items = build_content_layout(state, status_display, search_bar, table_content, footer);
 
     assemble_final_container(state, content_items)
 }
@@ -49,6 +51,12 @@ fn create_status_display(state: &AppState) -> iced::Element<'_, Message> {
     )
 }
 
+/// Creates the search bar component
+fn create_search_bar(state: &AppState) -> iced::Element<'_, Message> {
+    let search_bar = SearchBar::with_placeholder("Search audiobooks by title, author, or narrator...");
+    search_bar.view(&state.ui.material_tokens)
+}
+
 /// Creates the audiobook table with styling
 fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
     log::debug!(
@@ -57,11 +65,13 @@ fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
         state.library.selected_audiobooks.len()
     );
 
+    let display_audiobooks = state.library.get_display_audiobooks();
     let table_content = AudiobookTable::view(
-        &state.library.audiobooks,
+        display_audiobooks,
         &state.library.selected_audiobooks,
         &state.library.table_state,
         &state.ui.material_tokens,
+        &state.library.image_cache,
     );
 
     log::debug!(
@@ -99,12 +109,18 @@ fn create_footer(state: &AppState) -> iced::Element<'_, Message> {
 fn build_content_layout<'a>(
     state: &'a AppState,
     status_display: iced::Element<'a, Message>,
+    search_bar: iced::Element<'a, Message>,
     table_content: iced::Element<'a, Message>,
     footer: iced::Element<'a, Message>,
 ) -> Vec<iced::Element<'a, Message>> {
     let mut content_items = vec![
         // Status display with fixed height
         container(status_display)
+            .width(Length::Fill)
+            .height(Length::Shrink)
+            .into(),
+        // Search bar
+        container(search_bar)
             .width(Length::Fill)
             .height(Length::Shrink)
             .into(),

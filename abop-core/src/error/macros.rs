@@ -144,7 +144,7 @@ macro_rules! timeout_error {
 ///
 /// ```rust
 /// use abop_core::impl_error_conversions;
-/// 
+///
 /// // Generate conversions from std::io::Error and String to MyError
 /// impl_error_conversions! {
 ///     MyError => {
@@ -178,7 +178,7 @@ macro_rules! impl_error_conversions {
 ///
 /// ```rust
 /// use abop_core::impl_bidirectional_conversions;
-/// 
+///
 /// impl_bidirectional_conversions! {
 ///     DatabaseError, AppError => {
 ///         DatabaseError => AppError: |e| AppError::Database(e),
@@ -200,7 +200,7 @@ macro_rules! impl_bidirectional_conversions {
                 $conversion_a
             }
         }
-        
+
         impl From<$type_b> for $type_a {
             fn from($param_b: $type_b) -> Self {
                 $conversion_b
@@ -218,7 +218,7 @@ macro_rules! impl_bidirectional_conversions {
 ///
 /// ```rust
 /// use abop_core::impl_string_conversions;
-/// 
+///
 /// impl_string_conversions! {
 ///     AppError => {
 ///         std::io::Error => Io,
@@ -251,7 +251,7 @@ macro_rules! impl_string_conversions {
 ///
 /// ```rust
 /// use abop_core::impl_wrapped_conversions;
-/// 
+///
 /// impl_wrapped_conversions! {
 ///     DomainError => {
 ///         AudioError => Audio,
@@ -284,7 +284,7 @@ macro_rules! impl_wrapped_conversions {
 ///
 /// ```rust
 /// use abop_core::impl_conditional_conversions;
-/// 
+///
 /// impl_conditional_conversions! {
 ///     AppError, DatabaseError => {
 ///         DatabaseError::Sqlite(e) => AppError::Database(DatabaseError::Sqlite(e)),
@@ -319,7 +319,7 @@ macro_rules! impl_conditional_conversions {
 ///
 /// ```rust
 /// use abop_core::impl_contextual_conversions;
-/// 
+///
 /// impl_contextual_conversions! {
 ///     ProcessingError => {
 ///         std::io::Error => FileIo: "File operation failed",
@@ -493,7 +493,7 @@ mod tests {
     // ============================================================================
     // Tests for Error Conversion Unification Macros
     // ============================================================================
-    
+
     mod error_conversion_tests {
 
         #[test]
@@ -504,7 +504,7 @@ mod tests {
             enum TestError {
                 Custom(String),
             }
-            
+
             // Test the impl_error_conversions! macro
             impl_error_conversions! {
                 TestError => {
@@ -512,10 +512,10 @@ mod tests {
                     &str => |s| TestError::Custom(s.to_string()),
                 }
             }
-            
+
             let from_string: TestError = "test message".to_string().into();
             assert_eq!(from_string, TestError::Custom("test message".to_string()));
-            
+
             let from_str: TestError = "test str".into();
             assert_eq!(from_str, TestError::Custom("test str".to_string()));
         }
@@ -529,7 +529,7 @@ mod tests {
                 Io(String),
                 Parse(String),
             }
-            
+
             // Test the impl_string_conversions! macro
             impl_string_conversions! {
                 StringTestError => {
@@ -537,14 +537,14 @@ mod tests {
                     std::num::ParseIntError => Parse,
                 }
             }
-            
+
             let io_error = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
             let converted: StringTestError = io_error.into();
             match converted {
                 StringTestError::Io(msg) => assert!(msg.contains("file not found")),
                 _ => panic!("Unexpected error type"),
             }
-            
+
             let parse_err = "not_a_number".parse::<i32>().unwrap_err();
             let converted: StringTestError = parse_err.into();
             assert!(matches!(converted, StringTestError::Parse(_)));
@@ -557,19 +557,19 @@ mod tests {
             enum SourceError {
                 Network(String),
             }
-            
-            // Wrapper error type  
+
+            // Wrapper error type
             #[derive(Debug, PartialEq)]
             enum WrapperError {
                 Source(SourceError),
             }
-            
+
             impl_wrapped_conversions! {
                 WrapperError => {
                     SourceError => Source,
                 }
             }
-            
+
             let source_error = SourceError::Network("connection failed".to_string());
             let wrapped: WrapperError = source_error.into();
             let WrapperError::Source(SourceError::Network(msg)) = wrapped;
@@ -584,28 +584,34 @@ mod tests {
                 Network(String),
                 Parse(String),
             }
-            
+
             // Target error type
             #[derive(Debug, PartialEq)]
             enum ConditionalTestError {
                 Network(String),
                 Parse(String),
             }
-            
+
             impl_conditional_conversions! {
                 ConditionalTestError, SourceError => {
                     SourceError::Network(msg) => ConditionalTestError::Network(msg),
                     SourceError::Parse(msg) => ConditionalTestError::Parse(msg),
                 }
             }
-            
+
             let network_error = SourceError::Network("timeout".to_string());
             let converted: ConditionalTestError = network_error.into();
-            assert_eq!(converted, ConditionalTestError::Network("timeout".to_string()));
-            
+            assert_eq!(
+                converted,
+                ConditionalTestError::Network("timeout".to_string())
+            );
+
             let parse_error = SourceError::Parse("invalid format".to_string());
             let converted: ConditionalTestError = parse_error.into();
-            assert_eq!(converted, ConditionalTestError::Parse("invalid format".to_string()));
+            assert_eq!(
+                converted,
+                ConditionalTestError::Parse("invalid format".to_string())
+            );
         }
 
         #[test]
@@ -615,7 +621,7 @@ mod tests {
             enum SourceError {
                 Network(String),
             }
-            
+
             impl std::fmt::Display for SourceError {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     match self {
@@ -623,19 +629,19 @@ mod tests {
                     }
                 }
             }
-            
+
             // Target error type
             #[derive(Debug, PartialEq)]
             enum ContextualTestError {
                 Network(String),
             }
-            
+
             impl_contextual_conversions! {
                 ContextualTestError => {
                     SourceError => Network: "Network operation failed",
                 }
             }
-            
+
             let source_error = SourceError::Network("connection timeout".to_string());
             let converted: ContextualTestError = source_error.into();
             let ContextualTestError::Network(msg) = converted;
@@ -650,12 +656,12 @@ mod tests {
             enum ErrorA {
                 Message(String),
             }
-            
+
             #[derive(Debug, PartialEq, Clone)]
             enum ErrorB {
                 Content(String),
             }
-            
+
             impl_bidirectional_conversions! {
                 ErrorA, ErrorB => {
                     ErrorA => ErrorB: |e| match e {
@@ -666,11 +672,11 @@ mod tests {
                     }
                 }
             }
-            
+
             let error_a = ErrorA::Message("test".to_string());
             let converted_to_b: ErrorB = error_a.clone().into();
             assert_eq!(converted_to_b, ErrorB::Content("test".to_string()));
-            
+
             let converted_back_to_a: ErrorA = converted_to_b.into();
             assert_eq!(converted_back_to_a, error_a);
         }
@@ -679,7 +685,7 @@ mod tests {
         fn test_macro_reduces_boilerplate() {
             // This test demonstrates how the macros reduce boilerplate code
             // by implementing multiple conversions at once
-            
+
             #[allow(dead_code)]
             #[derive(Debug, PartialEq)]
             enum MultiConversionError {
@@ -687,7 +693,7 @@ mod tests {
                 Parse(String),
                 Custom(String),
             }
-            
+
             // Single macro call replaces multiple separate impl blocks
             impl_string_conversions! {
                 MultiConversionError => {
@@ -695,26 +701,26 @@ mod tests {
                     std::num::ParseIntError => Parse,
                 }
             }
-            
+
             impl_error_conversions! {
                 MultiConversionError => {
                     String => |s| MultiConversionError::Custom(s),
                     &str => |s| MultiConversionError::Custom(s.to_string()),
                 }
             }
-            
+
             // Test all conversions work correctly
             let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file missing");
             let converted: MultiConversionError = io_err.into();
             assert!(matches!(converted, MultiConversionError::Io(_)));
-            
+
             let parse_err = "not_a_number".parse::<i32>().unwrap_err();
             let converted: MultiConversionError = parse_err.into();
             assert!(matches!(converted, MultiConversionError::Parse(_)));
-            
+
             let string_err: MultiConversionError = "test".to_string().into();
             assert_eq!(string_err, MultiConversionError::Custom("test".to_string()));
-            
+
             let str_err: MultiConversionError = "test".into();
             assert_eq!(str_err, MultiConversionError::Custom("test".to_string()));
         }

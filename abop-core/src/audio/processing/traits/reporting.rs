@@ -86,4 +86,3 @@ pub trait ProcessorInfo {
         vec!["f32".to_string()]
     }
 }
-

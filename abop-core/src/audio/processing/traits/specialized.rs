@@ -62,4 +62,3 @@ pub trait FileWriter {
         vec!["wav".to_string()]
     }
 }
-

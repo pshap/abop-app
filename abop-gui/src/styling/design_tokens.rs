@@ -112,12 +112,22 @@ mod tests {
 
     #[test]
     fn test_animation_duration_consistency() {
-        assert_eq!(animation::STANDARD_DURATION, Duration::from_millis(animation::STANDARD_DURATION_MS));
-        assert_eq!(animation::SLOW_DURATION, Duration::from_millis(animation::SLOW_DURATION_MS));
-        assert_eq!(animation::FAST_DURATION, Duration::from_millis(animation::FAST_DURATION_MS));
+        assert_eq!(
+            animation::STANDARD_DURATION,
+            Duration::from_millis(animation::STANDARD_DURATION_MS)
+        );
+        assert_eq!(
+            animation::SLOW_DURATION,
+            Duration::from_millis(animation::SLOW_DURATION_MS)
+        );
+        assert_eq!(
+            animation::FAST_DURATION,
+            Duration::from_millis(animation::FAST_DURATION_MS)
+        );
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_validation_limits_are_reasonable() {
         assert!(validation::MAX_LABEL_LENGTH > validation::MAX_COMPACT_LABEL_LENGTH);
         assert!(validation::MAX_MULTILINE_INPUT > validation::MAX_LABEL_LENGTH);
@@ -125,6 +135,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_spacing_progression() {
         assert!(spacing::XS < spacing::SM);
         assert!(spacing::SM < spacing::MD);
@@ -133,11 +144,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_touch_target_accessibility() {
         assert!(spacing::MIN_TOUCH_TARGET_SIZE >= 44.0); // WCAG minimum
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_typography_accessibility() {
         assert!(typography::MIN_FONT_SIZE >= 12.0); // Accessibility minimum
         assert!(typography::LINE_HEIGHT_RATIO >= 1.2); // Readability minimum

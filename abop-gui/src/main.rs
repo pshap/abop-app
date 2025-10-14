@@ -32,7 +32,9 @@ fn init_logging() -> Result<(), InitError> {
         Ok(f) => f,
         Err(e) => {
             // Logging may not be initialized yet; use stderr to preserve context
-            eprintln!("RUST_LOG parse error: {e}. Falling back to defaults: abop_gui=info, abop_core=info, iced=warn");
+            eprintln!(
+                "RUST_LOG parse error: {e}. Falling back to defaults: abop_gui=info, abop_core=info, iced=warn"
+            );
             let mut f = EnvFilter::default();
             // Defaults if RUST_LOG is not provided
             f = f.add_directive("abop_gui=info".parse().expect("static filter"));

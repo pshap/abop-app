@@ -216,11 +216,11 @@ impl LibraryInfo {
 
 impl From<&abop_core::models::Library> for LibraryInfo {
     /// Convert a Library to LibraryInfo with audiobook_count set to 0
-    /// 
+    ///
     /// **Important:** This implementation sets `audiobook_count` to 0 because the
-    /// Library model does not contain audiobook count information - it must be 
+    /// Library model does not contain audiobook count information - it must be
     /// computed separately via database queries.
-    /// 
+    ///
     /// **Usage:** Use `LibraryInfo::with_count()` when you have the actual count,
     /// or `LibraryInfo::without_count()` to be explicit about the lack of count.
     fn from(lib: &abop_core::models::Library) -> Self {

@@ -113,7 +113,7 @@ impl Audiobook {
     pub fn formatted_size(&self) -> String {
         self.size_bytes.map_or_else(
             || fallbacks::UNKNOWN.to_string(),
-            |b| crate::utils::casting::format_file_size_exact(b),
+            crate::utils::casting::format_file_size_exact,
         )
     }
 }

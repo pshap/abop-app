@@ -1,8 +1,8 @@
 //! Application router for view navigation
 
 use iced::Task;
-use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 use crate::messages::Message;
 
@@ -72,13 +72,13 @@ impl Router {
     /// * `route` - The target route to navigate to
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
         // De-duplicate consecutive routes
-    if self.history.back().copied() == Some(route) {
+        if self.history.back().copied() == Some(route) {
             self.current_route = route;
             return Task::none();
         }
 
-    self.history.push_back(route);
-    self.cap_history();
+        self.history.push_back(route);
+        self.cap_history();
         self.current_route = route;
         Task::none()
     }
@@ -117,7 +117,13 @@ impl Router {
     /// Returns the current history length (for diagnostics and tests)
     #[cfg(test)]
     pub(crate) fn history_len(&self) -> usize {
-    self.history.len()
+        self.history.len()
+    }
+}
+
+impl Default for Router {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -135,7 +141,7 @@ mod tests {
     #[test]
     fn navigate_to_pushes_and_updates_current() {
         let mut r = Router::new();
-    let _ = r.navigate_to(Route::Settings);
+        let _ = r.navigate_to(Route::Settings);
         assert_eq!(r.current_route(), Route::Settings);
         assert_eq!(r.history_len(), 2);
     }
@@ -143,8 +149,8 @@ mod tests {
     #[test]
     fn navigate_to_dedupes_consecutive_routes() {
         let mut r = Router::new();
-    let _ = r.navigate_to(Route::Settings);
-    let _ = r.navigate_to(Route::Settings);
+        let _ = r.navigate_to(Route::Settings);
+        let _ = r.navigate_to(Route::Settings);
         assert_eq!(r.current_route(), Route::Settings);
         assert_eq!(r.history_len(), 2, "should not push duplicate route");
     }
@@ -152,9 +158,9 @@ mod tests {
     #[test]
     fn navigate_back_moves_to_previous_when_available() {
         let mut r = Router::new();
-    let _ = r.navigate_to(Route::Settings);
-    let _ = r.navigate_to(Route::About);
-    let _ = r.navigate_back();
+        let _ = r.navigate_to(Route::Settings);
+        let _ = r.navigate_to(Route::About);
+        let _ = r.navigate_back();
         assert_eq!(r.current_route(), Route::Settings);
         assert_eq!(r.history_len(), 2);
     }
@@ -162,7 +168,7 @@ mod tests {
     #[test]
     fn navigate_back_noop_on_root() {
         let mut r = Router::new();
-    let _ = r.navigate_back();
+        let _ = r.navigate_back();
         assert_eq!(r.current_route(), Route::Library);
         assert_eq!(r.history_len(), 1);
     }
@@ -170,9 +176,9 @@ mod tests {
     #[test]
     fn replace_updates_current_without_growing_history() {
         let mut r = Router::new();
-    let _ = r.navigate_to(Route::Settings);
+        let _ = r.navigate_to(Route::Settings);
         let before = r.history_len();
-    let _ = r.replace(Route::About);
+        let _ = r.replace(Route::About);
         assert_eq!(r.current_route(), Route::About);
         assert_eq!(r.history_len(), before);
     }
