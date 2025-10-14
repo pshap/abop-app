@@ -7,7 +7,10 @@
 //! - Consistent path normalization
 
 use std::io;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
+
+#[cfg(windows)]
+use std::path::Component;
 
 #[cfg(windows)]
 use abop_core::platform::windows::path_utils as win_path_utils;
@@ -15,6 +18,7 @@ use abop_core::platform::windows::path_utils as win_path_utils;
 /// Typical number of components in a file system path for pre-allocation optimization.
 /// Based on analysis of common file system structures, most paths have 3-8 components.
 /// This helps avoid multiple reallocations during path normalization.
+#[cfg(windows)]
 const TYPICAL_PATH_COMPONENT_COUNT: usize = 8;
 
 /// Normalizes a path for comparison, handling platform-specific cases

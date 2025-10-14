@@ -123,7 +123,7 @@ abop/
 ### Prerequisites
 - **Rust 2024+**: Install from [rustup.rs](https://rustup.rs/)
 - **System Dependencies**:
-  - **Linux**: `pkg-config`, `gtk3-dev`, `libssl-dev`  
+  - **Linux**: `pkg-config`, `libasound2-dev` (ALSA), `libgtk-3-dev`, `libssl-dev`  
   - **macOS**: Xcode command line tools
   - **Windows**: Windows 10/11 (Visual Studio Build Tools recommended)
 
