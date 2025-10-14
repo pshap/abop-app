@@ -13,7 +13,9 @@ use super::constants;
 // ============================================================================
 
 /// Size variants for consistent sizing across all selection components
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 pub enum ComponentSize {
     /// Small size (16px) - for dense layouts and compact spaces
     Small,

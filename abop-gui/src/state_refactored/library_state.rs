@@ -399,7 +399,8 @@ impl LibraryState {
 
             // Extract audiobooks from search results
             self.filtered_audiobooks.clear();
-            self.filtered_audiobooks.extend(search_results.into_iter().map(|result| result.audiobook));
+            self.filtered_audiobooks
+                .extend(search_results.into_iter().map(|result| result.audiobook));
             self.search_active = true;
         }
 
@@ -408,10 +409,10 @@ impl LibraryState {
 
     /// Clear the search query and show all audiobooks
     pub fn clear_search(&mut self) {
-    self.search_query.clear();
-    self.filtered_audiobooks.clone_from(&self.audiobooks);
-    self.search_active = false;
-    self.mark_for_redraw();
+        self.search_query.clear();
+        self.filtered_audiobooks.clone_from(&self.audiobooks);
+        self.search_active = false;
+        self.mark_for_redraw();
     }
 
     /// Get the audiobooks to display in the UI, based on search state.

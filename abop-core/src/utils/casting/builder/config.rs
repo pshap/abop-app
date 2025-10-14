@@ -40,7 +40,6 @@ pub enum PrecisionMode {
     /// where performance is important and exact precision is not critical.
     Adaptive,
 }
-
 impl PartialEq for PrecisionMode {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -53,7 +52,6 @@ impl PartialEq for PrecisionMode {
         }
     }
 }
-
 impl Eq for PrecisionMode {}
 
 /// Overflow handling behavior for numeric conversions
@@ -144,4 +142,3 @@ pub enum ValidationLevel {
     #[default]
     Full,
 }
-

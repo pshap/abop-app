@@ -481,10 +481,7 @@ impl MaterialSearchField {
         on_change: impl Fn(String) -> Message + 'a,
         tokens: &MaterialTokens,
     ) -> TextInput<'a, Message> {
-        let placeholder = self
-            .placeholder
-            .as_deref()
-            .unwrap_or("Search...");
+        let placeholder = self.placeholder.as_deref().unwrap_or("Search...");
         self.base.view(value, placeholder, on_change, tokens)
     }
 }
