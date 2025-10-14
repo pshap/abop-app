@@ -108,6 +108,7 @@ pub mod typography {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::assertions_on_constants)]
     use super::*;
 
     #[test]
@@ -127,15 +128,15 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::assertions_on_constants)]
     fn test_validation_limits_are_reasonable() {
+        // These assertions are on constants, but they document invariants for maintainers.
+        // If clippy warns, consider allowing only for this function.
         assert!(validation::MAX_LABEL_LENGTH > validation::MAX_COMPACT_LABEL_LENGTH);
         assert!(validation::MAX_MULTILINE_INPUT > validation::MAX_LABEL_LENGTH);
         assert!(validation::MAX_TEXT_LINES > 0);
     }
 
     #[test]
-    #[allow(clippy::assertions_on_constants)]
     fn test_spacing_progression() {
         assert!(spacing::XS < spacing::SM);
         assert!(spacing::SM < spacing::MD);
@@ -144,13 +145,11 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::assertions_on_constants)]
     fn test_touch_target_accessibility() {
         assert!(spacing::MIN_TOUCH_TARGET_SIZE >= 44.0); // WCAG minimum
     }
 
     #[test]
-    #[allow(clippy::assertions_on_constants)]
     fn test_typography_accessibility() {
         assert!(typography::MIN_FONT_SIZE >= 12.0); // Accessibility minimum
         assert!(typography::LINE_HEIGHT_RATIO >= 1.2); // Readability minimum

@@ -363,7 +363,7 @@ mod tests {
         engine.add_audiobook(&audiobook);
 
         let query = SearchQuery::new("gatsby");
-    let results = engine.search(&query, std::slice::from_ref(&audiobook));
+        let results = engine.search(&query, &[audiobook]);
 
         assert!(!results.is_empty());
         assert_eq!(results[0].audiobook.id, "1");
@@ -376,7 +376,7 @@ mod tests {
         engine.add_audiobook(&audiobook);
 
         let query = SearchQuery::new("test").by_author("Test Author");
-    let results = engine.search(&query, std::slice::from_ref(&audiobook));
+        let results = engine.search(&query, &[audiobook]);
 
         assert!(!results.is_empty());
     }

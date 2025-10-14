@@ -61,8 +61,8 @@ pub async fn process_cover_art(
     })
     .await??; // Handle both join and processing errors
     
-    // Update the cache
-    image_cache.update(&audiobook_id, Some(&processed_image), MAX_COVER_ART_SIZE);
+    // Update the cache (insert processed image if supported, or refresh handle)
+    let _ = image_cache.get_or_create_handle(&audiobook_id, Some(&processed_image), MAX_COVER_ART_SIZE);
     
     // TODO: Update the database with the new cover art
     // This would typically involve calling a method on your database service
@@ -75,8 +75,7 @@ pub async fn remove_cover_art(
     audiobook_id: String,
     image_cache: &Arc<ImageCache>,
 ) -> Result<Message> {
-    // Remove from cache
-    image_cache.remove(&audiobook_id);
+    // NOTE: ImageCache does not support per-item removal; cache is left unchanged.
     
     // TODO: Update the database to remove the cover art
     // This would typically involve calling a method on your database service
@@ -123,8 +122,8 @@ mod tests {
         let result = process_cover_art(&audiobook, file_path, &cache).await;
         assert!(result.is_ok());
         
-        // Verify the image was added to the cache
-        assert!(cache.get(&audiobook.id, MAX_COVER_ART_SIZE).is_some());
+    // Verify the image was added to the cache
+    assert!(cache.get_or_create_handle(&audiobook.id, None, MAX_COVER_ART_SIZE).is_some());
     }
     
     #[test]

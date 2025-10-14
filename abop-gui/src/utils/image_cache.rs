@@ -83,10 +83,10 @@ impl ImageCache {
 
         // Create new handle from image data
         if let Some(data) = image_data
-            && let Some(handle) = self.create_handle_from_data(data, size)
+            && let Some((handle, dyn_img)) = self.create_handle_from_data(data, size)
         {
-            // Cache the decoded image for future use
-            self.cache_image(key, handle.clone());
+            // Cache the decoded thumbnail for future use
+            self.cache_image(key, dyn_img);
             return handle;
         }
 
@@ -112,8 +112,8 @@ impl ImageCache {
         Some(self.create_handle_from_image(&entry.image, size))
     }
 
-    /// Create an image handle from raw data
-    fn create_handle_from_data(&self, data: &[u8], size: u32) -> Option<Handle> {
+    /// Create an image handle from raw data, returning the handle and the thumbnail image
+    fn create_handle_from_data(&self, data: &[u8], size: u32) -> Option<(Handle, DynamicImage)> {
         // Try to decode the image
         let img = image::load_from_memory(data).ok()?;
 
@@ -129,7 +129,8 @@ impl ImageCache {
         let (width, height) = rgba.dimensions();
 
         // Create handle from raw RGBA data
-        Some(Handle::from_rgba(width, height, rgba.into_raw()))
+        let handle = Handle::from_rgba(width, height, rgba.into_raw());
+        Some((handle, thumbnail))
     }
 
     /// Create an image handle from a DynamicImage
@@ -156,18 +157,13 @@ impl ImageCache {
         self.create_handle_from_image(&placeholder, size)
     }
 
-    /// Cache an image handle
-    fn cache_image(&self, _key: &str, _handle: Handle) {
+    /// Cache a decoded image under a key with basic LRU eviction
+    fn cache_image(&self, key: &str, image: DynamicImage) {
         if let Ok(mut cache) = self.cache.lock() {
-            // Check if we need to evict entries
             if cache.len() >= self.max_size {
                 self.evict_oldest(&mut cache);
             }
-
-            // For now, we can't easily convert Handle back to DynamicImage
-            // So we'll skip caching the handle itself and just track the key
-            // In a real implementation, you'd want to store the DynamicImage
-            // and recreate the Handle when needed
+            cache.insert(key.to_string(), CacheEntry::new(image));
         }
     }
 

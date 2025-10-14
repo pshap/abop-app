@@ -44,9 +44,8 @@ impl CoverArt {
 
     /// Create a placeholder cover art component
     pub fn placeholder(size: u32) -> Self {
-        let cache = Arc::new(ImageCache::new());
-        let handle = cache.create_placeholder_handle(size);
-
+        // Use a static placeholder handle to avoid repeated cache creation
+        let handle = ImageCache::default().create_placeholder_handle(size);
         Self {
             handle,
             size,
@@ -63,35 +62,29 @@ impl CoverArt {
 
     /// Create the view for this cover art component
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
-        let image_widget = image(self.handle.clone())
-            .width(Length::Fixed(self.size as f32))
-            .height(Length::Fixed(self.size as f32));
-
+        const ICON_SCALE: f32 = 0.6;
+        const OUTER_PADDING: f32 = 4.0;
         let content = if self.is_placeholder {
             // For placeholder, show a simple icon or text
-            container(text("🎵").size(self.size as f32 * 0.6))
-                .width(Length::Fixed(self.size as f32))
-                .height(Length::Fixed(self.size as f32))
-                .style(|_theme| {
-                    crate::styling::material::MaterialSurface::new()
-                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                        .style(tokens)
-                })
+            styled_square_container(
+                text("🎵").size(self.size as f32 * ICON_SCALE),
+                self.size,
+                tokens,
+            )
         } else {
             // For actual cover art, show the image
-            container(image_widget)
-                .width(Length::Fixed(self.size as f32))
-                .height(Length::Fixed(self.size as f32))
-                .style(|_theme| {
-                    crate::styling::material::MaterialSurface::new()
-                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                        .style(tokens)
-                })
+            styled_square_container(
+                image(self.handle.clone())
+                    .width(Length::Fixed(self.size as f32))
+                    .height(Length::Fixed(self.size as f32)),
+                self.size,
+                tokens,
+            )
         };
 
         // Add padding and rounded corners
         container(content)
-            .padding(Padding::from(4.0))
+            .padding(Padding::from(OUTER_PADDING))
             .style(|_theme| {
                 crate::styling::material::MaterialSurface::new()
                     .variant(crate::styling::material::SurfaceVariant::SurfaceContainerLow)
@@ -99,7 +92,26 @@ impl CoverArt {
             })
             .into()
     }
+}
 
+/// Helper to create a styled square container for cover art or placeholder
+fn styled_square_container<'a, C: Into<Element<'a, crate::messages::Message>>>(
+    content: C,
+    size: u32,
+    tokens: &'a MaterialTokens,
+) -> Element<'a, crate::messages::Message> {
+    container(content)
+        .width(Length::Fixed(size as f32))
+        .height(Length::Fixed(size as f32))
+        .style(|_theme| {
+            crate::styling::material::MaterialSurface::new()
+                .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
+                .style(tokens)
+        })
+        .into()
+}
+
+impl CoverArt {
     /// Get the size of this cover art component
     pub fn size(&self) -> u32 {
         self.size

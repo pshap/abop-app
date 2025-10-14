@@ -373,7 +373,14 @@ impl std::fmt::Debug for LibraryState {
 
 // ===== Search Methods =====
 impl LibraryState {
-    /// Update the search query and perform search
+    /// Update the search query and perform search.
+    ///
+    /// This method sets the current search query string and immediately
+    /// triggers a search over the loaded audiobooks. The filtered results
+    /// are stored in `filtered_audiobooks`, and the `search_active` flag is updated.
+    ///
+    /// # Arguments
+    /// * `query` - The new search string to use for filtering audiobooks.
     pub fn update_search_query(&mut self, query: String) {
         self.search_query = query;
         self.perform_search();
@@ -383,7 +390,8 @@ impl LibraryState {
     pub fn perform_search(&mut self) {
         if self.search_query.trim().is_empty() {
             // No search query, show all audiobooks
-            self.filtered_audiobooks = self.audiobooks.clone();
+            self.filtered_audiobooks.clear();
+            self.filtered_audiobooks.extend(self.audiobooks.iter().cloned());
             self.search_active = false;
         } else {
             // Perform search
@@ -391,10 +399,8 @@ impl LibraryState {
             let search_results = self.search_engine.search(&search_query, &self.audiobooks);
 
             // Extract audiobooks from search results
-            self.filtered_audiobooks = search_results
-                .into_iter()
-                .map(|result| result.audiobook)
-                .collect();
+            self.filtered_audiobooks.clear();
+            self.filtered_audiobooks.extend(search_results.into_iter().map(|result| result.audiobook));
             self.search_active = true;
         }
 
@@ -403,13 +409,18 @@ impl LibraryState {
 
     /// Clear the search query and show all audiobooks
     pub fn clear_search(&mut self) {
-        self.search_query.clear();
-        self.filtered_audiobooks = self.audiobooks.clone();
-        self.search_active = false;
-        self.mark_for_redraw();
+    self.search_query.clear();
+    self.filtered_audiobooks.clear();
+    self.filtered_audiobooks.extend(self.audiobooks.iter().cloned());
+    self.search_active = false;
+    self.mark_for_redraw();
     }
 
-    /// Get the currently filtered audiobooks (for display)
+    /// Get the audiobooks to display in the UI, based on search state.
+    ///
+    /// Returns a slice of audiobooks: if a search is active, returns the filtered
+    /// results; otherwise, returns the full list. This is the canonical getter for
+    /// UI components to access the current display set.
     pub fn get_display_audiobooks(&self) -> &[Audiobook] {
         if self.search_active {
             &self.filtered_audiobooks
