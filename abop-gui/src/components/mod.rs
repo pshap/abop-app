@@ -39,4 +39,5 @@ pub mod table_header;
 pub mod table_row;
 
 #[cfg(test)]
+#[path = "tests/mod.rs"]
 mod tests;
