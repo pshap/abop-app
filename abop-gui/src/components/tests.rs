@@ -33,10 +33,8 @@ mod audio_controls_tests {
     use super::super::audio_controls::AudioControls;
     use crate::styling::material::MaterialTokens;
     use crate::test_utils::{TestDataFactory, create_test_audiobook};
-    use crate::utils::image_cache::ImageCache;
     use abop_core::PlayerState;
     use std::collections::HashSet;
-    use std::sync::Arc;
     // create_test_audiobook and TestDataFactory are provided by crate::test_utils
     #[test]
     fn test_audio_controls_view() {

@@ -17,7 +17,7 @@ pub struct SearchBar {
     query: String,
     /// Whether the search bar is focused
     focused: bool,
-    /// Placeholder text
+    /// Placeholder text (used for MaterialSearchField input)
     placeholder: String,
 }
 
@@ -72,11 +72,10 @@ impl SearchBar {
 
     /// Create the view for the search bar
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, Message> {
-        let search_field = MaterialSearchField::new().full_width().view(
-            &self.query,
-            |query| Message::SearchQuery(query),
-            tokens,
-        );
+    let field = MaterialSearchField::new().full_width();
+        // If the MaterialSearchField supports setting placeholder, propagate it
+    let field = field.placeholder(self.placeholder.clone());
+    let search_field = field.view(&self.query, Message::SearchQuery, tokens);
 
         let search_container = container(search_field)
             .width(Length::Fill)

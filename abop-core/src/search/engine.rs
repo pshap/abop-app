@@ -157,41 +157,39 @@ impl SearchEngine {
     /// Check if an audiobook matches the search filters
     fn matches_filters(&self, query: &SearchQuery, searchable_text: &SearchableText) -> bool {
         // Library filter
-        if let Some(ref library_id) = query.library_id {
-            if searchable_text.library_id != *library_id {
-                return false;
-            }
+        if let Some(ref library_id) = query.library_id
+            && searchable_text.library_id != *library_id
+        {
+            return false;
         }
 
         // Author filter
-        if let Some(ref author) = query.author {
-            if !self.matches_text(&searchable_text.author, author) {
-                return false;
-            }
+        if let Some(ref author) = query.author
+            && !self.matches_text(&searchable_text.author, author)
+        {
+            return false;
         }
 
         // Narrator filter
-        if let Some(ref narrator) = query.narrator {
-            if !self.matches_text(&searchable_text.narrator, narrator) {
-                return false;
-            }
+        if let Some(ref narrator) = query.narrator
+            && !self.matches_text(&searchable_text.narrator, narrator)
+        {
+            return false;
         }
 
         // Duration filters
-        if let Some(min_duration) = query.min_duration {
-            if let Some(duration) = searchable_text.duration_seconds {
-                if duration < min_duration {
-                    return false;
-                }
-            }
+        if let Some(min_duration) = query.min_duration
+            && let Some(duration) = searchable_text.duration_seconds
+            && duration < min_duration
+        {
+            return false;
         }
 
-        if let Some(max_duration) = query.max_duration {
-            if let Some(duration) = searchable_text.duration_seconds {
-                if duration > max_duration {
-                    return false;
-                }
-            }
+        if let Some(max_duration) = query.max_duration
+            && let Some(duration) = searchable_text.duration_seconds
+            && duration > max_duration
+        {
+            return false;
         }
 
         // Completion filter
@@ -365,7 +363,7 @@ mod tests {
         engine.add_audiobook(&audiobook);
 
         let query = SearchQuery::new("gatsby");
-        let results = engine.search(&query, &[audiobook.clone()]);
+    let results = engine.search(&query, std::slice::from_ref(&audiobook));
 
         assert!(!results.is_empty());
         assert_eq!(results[0].audiobook.id, "1");
@@ -378,7 +376,7 @@ mod tests {
         engine.add_audiobook(&audiobook);
 
         let query = SearchQuery::new("test").by_author("Test Author");
-        let results = engine.search(&query, &[audiobook.clone()]);
+    let results = engine.search(&query, std::slice::from_ref(&audiobook));
 
         assert!(!results.is_empty());
     }

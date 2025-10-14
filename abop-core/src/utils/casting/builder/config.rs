@@ -124,7 +124,7 @@ pub enum RoundingMode {
 /// - `None`: Best for performance-critical real-time processing
 /// - `Basic`: Good for most general-purpose calculations
 /// - `Full`: Best for financial calculations and database operations
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ValidationLevel {
     /// No validation (fastest)
     ///
@@ -141,11 +141,7 @@ pub enum ValidationLevel {
     /// Performs all possible validation checks including precision,
     /// range, and domain-specific validations. This is the safest option
     /// but may impact performance.
+    #[default]
     Full,
 }
 
-impl Default for ValidationLevel {
-    fn default() -> Self {
-        Self::Full
-    }
-}

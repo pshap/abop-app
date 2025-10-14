@@ -18,30 +18,26 @@ pub enum ButtonVariant {
 }
 
 /// The size of a button
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ButtonSize {
     /// Small size, typically 24-32px height
     Small,
 
     /// Medium size, typically 36-40px height (default)
+    #[default]
     Medium,
 
     /// Large size, typically 48-52px height
     Large,
 }
 
-impl Default for ButtonSize {
-    fn default() -> Self {
-        Self::Medium
-    }
-}
-
 /// The position of an icon relative to the label
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum IconPosition {
     /// Icon appears before the label
+    #[default]
     Leading,
 
     /// Icon appears after the label
@@ -49,12 +45,6 @@ pub enum IconPosition {
 
     /// Only the icon is shown (icon-only button)
     Only,
-}
-
-impl Default for IconPosition {
-    fn default() -> Self {
-        Self::Leading
-    }
 }
 
 /// Icon size for different button sizes

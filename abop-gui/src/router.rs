@@ -7,9 +7,10 @@ use std::collections::VecDeque;
 use crate::messages::Message;
 
 /// Represents the different views in the application
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Route {
     /// Library view - shows the audiobook library
+    #[default]
     Library,
     /// Player view - shows the current playback
     Player,
@@ -19,11 +20,8 @@ pub enum Route {
     About,
 }
 
-impl Default for Route {
-    fn default() -> Self {
-        Self::Library
-    }
-}
+// Default derived on enum
+// Default derived above
 
 /// Manages application navigation state
 #[derive(Debug)]

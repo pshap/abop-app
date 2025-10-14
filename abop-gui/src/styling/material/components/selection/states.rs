@@ -12,20 +12,15 @@ use super::state_traits::{ComponentState, InteractiveState, MultiLevelState};
 // ============================================================================
 
 /// Checkbox state enum for type-safe state management
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum CheckboxState {
     /// Checkbox is unchecked
+    #[default]
     Unchecked,
     /// Checkbox is checked
     Checked,
     /// Checkbox is in indeterminate state (partially checked)
     Indeterminate,
-}
-
-impl Default for CheckboxState {
-    fn default() -> Self {
-        Self::Unchecked
-    }
 }
 
 impl CheckboxState {
@@ -104,18 +99,13 @@ impl MultiLevelState for CheckboxState {
 }
 
 /// Switch state enum for on/off toggles
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum SwitchState {
     /// Switch is off/disabled
+    #[default]
     Off,
     /// Switch is on/enabled
     On,
-}
-
-impl Default for SwitchState {
-    fn default() -> Self {
-        Self::Off
-    }
 }
 
 impl SwitchState {
@@ -167,20 +157,15 @@ impl ComponentState for SwitchState {
 }
 
 /// Chip state enum for selection state with animation support
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum ChipState {
     /// Chip is unselected
+    #[default]
     Unselected,
     /// Chip is selected
     Selected,
     /// Chip is being pressed (for animation support)
     Pressed,
-}
-
-impl Default for ChipState {
-    fn default() -> Self {
-        Self::Unselected
-    }
 }
 
 impl ChipState {

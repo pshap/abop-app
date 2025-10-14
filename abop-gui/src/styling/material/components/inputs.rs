@@ -432,6 +432,7 @@ impl MaterialTextField {
 #[derive(Debug, Clone)]
 pub struct MaterialSearchField {
     base: MaterialTextField,
+    placeholder: Option<String>,
 }
 
 impl Default for MaterialSearchField {
@@ -440,6 +441,7 @@ impl Default for MaterialSearchField {
             base: MaterialTextField::filled()
                 .with_prefix_icon()
                 .with_suffix_icon(),
+            placeholder: Some("Search...".to_string()),
         }
     }
 }
@@ -449,6 +451,13 @@ impl MaterialSearchField {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Set a custom placeholder text for the search field
+    #[must_use]
+    pub fn placeholder(mut self, text: impl Into<String>) -> Self {
+        self.placeholder = Some(text.into());
+        self
     }
 
     /// Set the search field size
@@ -472,6 +481,10 @@ impl MaterialSearchField {
         on_change: impl Fn(String) -> Message + 'a,
         tokens: &MaterialTokens,
     ) -> TextInput<'a, Message> {
-        self.base.view(value, "Search...", on_change, tokens)
+        let placeholder = self
+            .placeholder
+            .as_deref()
+            .unwrap_or("Search...");
+        self.base.view(value, placeholder, on_change, tokens)
     }
 }

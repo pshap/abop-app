@@ -18,9 +18,10 @@ const DEFAULT_MATERIAL_SEED_COLOR: Color = Color::from_rgb(0.5, 0.2, 0.8);
 // ================================================================================================
 
 /// Theme modes available in the application
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
     /// Professional dark sunset theme with warm oranges and cool blues
+    #[default]
     Dark,
     /// Professional light theme matching the dark sunset palette
     Light,
@@ -32,12 +33,6 @@ pub enum ThemeMode {
     MaterialLight,
     /// Dynamic Material theme based on seed color
     MaterialDynamic,
-}
-
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::Dark
-    }
 }
 
 impl ThemeMode {

@@ -13,20 +13,15 @@ use super::constants;
 // ============================================================================
 
 /// Size variants for consistent sizing across all selection components
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
 pub enum ComponentSize {
     /// Small size (16px) - for dense layouts and compact spaces
     Small,
     /// Medium size (20px) - default size for most use cases
+    #[default]
     Medium,
     /// Large size (24px) - for accessibility and prominent placement
     Large,
-}
-
-impl Default for ComponentSize {
-    fn default() -> Self {
-        Self::Medium
-    }
 }
 
 impl ComponentSize {
@@ -86,22 +81,17 @@ impl ComponentSize {
 // ============================================================================
 
 /// Material Design 3 chip variants for different use cases
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum ChipVariant {
     /// Action chips for common tasks and quick actions
     Assist,
     /// Filter chips for filtering content and making selections  
+    #[default]
     Filter,
     /// Input chips for user-generated content and tags
     Input,
     /// Suggestion chips for suggested actions or completions
     Suggestion,
-}
-
-impl Default for ChipVariant {
-    fn default() -> Self {
-        Self::Filter
-    }
 }
 
 // ============================================================================

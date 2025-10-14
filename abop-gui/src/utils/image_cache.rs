@@ -24,6 +24,7 @@ struct CacheEntry {
 }
 
 impl CacheEntry {
+    #[allow(dead_code)]
     /// Create a new cache entry
     fn new(image: DynamicImage) -> Self {
         let now = Instant::now();
@@ -81,12 +82,12 @@ impl ImageCache {
         }
 
         // Create new handle from image data
-        if let Some(data) = image_data {
-            if let Some(handle) = self.create_handle_from_data(data, size) {
-                // Cache the decoded image for future use
-                self.cache_image(key, handle.clone());
-                return handle;
-            }
+        if let Some(data) = image_data
+            && let Some(handle) = self.create_handle_from_data(data, size)
+        {
+            // Cache the decoded image for future use
+            self.cache_image(key, handle.clone());
+            return handle;
         }
 
         // Return placeholder if no image data or creation failed
@@ -254,6 +255,5 @@ mod tests {
         let cache = ImageCache::new();
         let _handle = cache.create_placeholder_handle(64);
         // We can't introspect the handle easily; creation should succeed without panic
-        assert!(true);
     }
 }
