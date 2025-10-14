@@ -3,7 +3,7 @@
 //! This module provides a search bar component with real-time filtering
 //! and Material Design 3 styling.
 
-use iced::widget::{button, container, row, text, column};
+use iced::widget::{button, column, container, row, text};
 use iced::{Element, Length, Padding};
 
 use crate::messages::Message;
@@ -72,22 +72,22 @@ impl SearchBar {
 
     /// Create the view for the search bar
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, Message> {
-        let search_field = MaterialSearchField::new()
-            .full_width()
-            .view(&self.query, |query| Message::SearchQuery(query), tokens);
+        let search_field = MaterialSearchField::new().full_width().view(
+            &self.query,
+            |query| Message::SearchQuery(query),
+            tokens,
+        );
 
         let search_container = container(search_field)
             .width(Length::Fill)
             .padding(Padding::from([8.0, 16.0]));
 
         // Add search icon and clear button if needed
-    let mut search_row = row![search_container];
+        let mut search_row = row![search_container];
 
         if self.has_query() {
             // Add clear button
-            let clear_label = text("✕")
-                .size(16.0)
-                .color(tokens.colors.on_surface_variant);
+            let clear_label = text("✕").size(16.0).color(tokens.colors.on_surface_variant);
 
             let clear_button = button(clear_label)
                 .padding(Padding::from([8.0, 8.0]))
@@ -273,7 +273,7 @@ mod tests {
     fn test_search_bar_with_query() {
         let mut search_bar = SearchBar::new();
         search_bar.update_query("test query".to_string());
-        
+
         assert_eq!(search_bar.query(), "test query");
         assert!(search_bar.has_query());
     }
@@ -283,7 +283,7 @@ mod tests {
         let mut search_bar = SearchBar::new();
         search_bar.update_query("test query".to_string());
         search_bar.clear();
-        
+
         assert!(search_bar.query().is_empty());
         assert!(!search_bar.has_query());
     }
@@ -300,10 +300,9 @@ mod tests {
         let mut advanced_search = AdvancedSearchBar::new();
         advanced_search.update_author_filter("Test Author".to_string());
         advanced_search.update_duration_filters(Some(3600), Some(7200));
-        
+
         assert!(advanced_search.has_filters());
         assert_eq!(advanced_search.author_filter(), "Test Author");
         assert_eq!(advanced_search.duration_filters(), (Some(3600), Some(7200)));
     }
 }
-

@@ -126,7 +126,11 @@ impl SearchEngine {
         }
 
         // Sort by score (highest first)
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         // Limit results
         results.truncate(self.config.max_results);
@@ -214,20 +218,32 @@ impl SearchEngine {
         let mut best_score: f64 = 0.0;
 
         // Search in combined text (highest weight)
-        if let Some(score) = self.matcher.fuzzy_match(&searchable_text.combined, &query_lower) {
+        if let Some(score) = self
+            .matcher
+            .fuzzy_match(&searchable_text.combined, &query_lower)
+        {
             best_score = best_score.max(score as f64 / 100.0);
         }
 
         // Search in individual fields with different weights
-        if let Some(score) = self.matcher.fuzzy_match(&searchable_text.title, &query_lower) {
+        if let Some(score) = self
+            .matcher
+            .fuzzy_match(&searchable_text.title, &query_lower)
+        {
             best_score = best_score.max(score as f64 / 100.0 * 0.9); // Slightly lower weight
         }
 
-        if let Some(score) = self.matcher.fuzzy_match(&searchable_text.author, &query_lower) {
+        if let Some(score) = self
+            .matcher
+            .fuzzy_match(&searchable_text.author, &query_lower)
+        {
             best_score = best_score.max(score as f64 / 100.0 * 0.8);
         }
 
-        if let Some(score) = self.matcher.fuzzy_match(&searchable_text.narrator, &query_lower) {
+        if let Some(score) = self
+            .matcher
+            .fuzzy_match(&searchable_text.narrator, &query_lower)
+        {
             best_score = best_score.max(score as f64 / 100.0 * 0.7);
         }
 
@@ -337,7 +353,7 @@ mod tests {
     fn test_add_audiobook() {
         let mut engine = SearchEngine::new();
         let audiobook = create_test_audiobook("1", "Test Book", "Test Author");
-        
+
         engine.add_audiobook(&audiobook);
         assert_eq!(engine.index_size(), 1);
     }
@@ -371,7 +387,7 @@ mod tests {
     fn test_remove_audiobook() {
         let mut engine = SearchEngine::new();
         let audiobook = create_test_audiobook("1", "Test Book", "Test Author");
-        
+
         engine.add_audiobook(&audiobook);
         assert_eq!(engine.index_size(), 1);
 

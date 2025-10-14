@@ -120,8 +120,14 @@ impl AudiobookTable {
         } else {
             log::debug!("CREATING ROWS: {} audiobooks", audiobooks.len());
             // Create rows for all audiobooks at once
-            let rows =
-                TableRow::create_rows(audiobooks, &columns, selected, material_tokens, &config, image_cache);
+            let rows = TableRow::create_rows(
+                audiobooks,
+                &columns,
+                selected,
+                material_tokens,
+                &config,
+                image_cache,
+            );
             log::debug!("ROWS CREATED: {} rows", rows.len());
 
             // Add all rows at once instead of one by one to improve performance

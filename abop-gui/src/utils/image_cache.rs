@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use image::DynamicImage;
 use iced::widget::image::Handle;
+use image::DynamicImage;
 
 /// Cache entry for a cover art image
 #[derive(Debug, Clone)]
@@ -74,12 +74,7 @@ impl ImageCache {
     }
 
     /// Get a cached image handle, or create one from raw data
-    pub fn get_or_create_handle(
-        &self,
-        key: &str,
-        image_data: Option<&[u8]>,
-        size: u32,
-    ) -> Handle {
+    pub fn get_or_create_handle(&self, key: &str, image_data: Option<&[u8]>, size: u32) -> Handle {
         // Try to get from cache first
         if let Some(handle) = self.get_cached_handle(key, size) {
             return handle;
@@ -120,7 +115,7 @@ impl ImageCache {
     fn create_handle_from_data(&self, data: &[u8], size: u32) -> Option<Handle> {
         // Try to decode the image
         let img = image::load_from_memory(data).ok()?;
-        
+
         // Resize to thumbnail size
         let thumbnail = if img.width() != size || img.height() != size {
             img.thumbnail(size, size)
@@ -131,13 +126,9 @@ impl ImageCache {
         // Convert to RGBA8 format for Iced
         let rgba = thumbnail.to_rgba8();
         let (width, height) = rgba.dimensions();
-        
+
         // Create handle from raw RGBA data
-        Some(Handle::from_rgba(
-            width,
-            height,
-            rgba.into_raw(),
-        ))
+        Some(Handle::from_rgba(width, height, rgba.into_raw()))
     }
 
     /// Create an image handle from a DynamicImage
@@ -152,13 +143,9 @@ impl ImageCache {
         // Convert to RGBA8 format for Iced
         let rgba = thumbnail.to_rgba8();
         let (width, height) = rgba.dimensions();
-        
+
         // Create handle from raw RGBA data
-        Handle::from_rgba(
-            width,
-            height,
-            rgba.into_raw(),
-        )
+        Handle::from_rgba(width, height, rgba.into_raw())
     }
 
     /// Create a placeholder handle for missing cover art

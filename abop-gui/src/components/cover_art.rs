@@ -7,8 +7,8 @@ use iced::widget::{container, image, text};
 use iced::{Element, Length, Padding};
 use std::sync::Arc;
 
-use crate::utils::image_cache::{CacheStats, ImageCache};
 use crate::styling::material::MaterialTokens;
+use crate::utils::image_cache::{CacheStats, ImageCache};
 
 /// Cover art display component
 #[derive(Debug, Clone)]
@@ -70,13 +70,13 @@ impl CoverArt {
         let content = if self.is_placeholder {
             // For placeholder, show a simple icon or text
             container(text("🎵").size(self.size as f32 * 0.6))
-            .width(Length::Fixed(self.size as f32))
-            .height(Length::Fixed(self.size as f32))
-            .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
-                    .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                    .style(tokens)
-            })
+                .width(Length::Fixed(self.size as f32))
+                .height(Length::Fixed(self.size as f32))
+                .style(|_theme| {
+                    crate::styling::material::MaterialSurface::new()
+                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
+                        .style(tokens)
+                })
         } else {
             // For actual cover art, show the image
             container(image_widget)
@@ -154,18 +154,15 @@ impl CoverArtWithLoading {
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
         if self.loading {
             // Show loading indicator
-            container(
-                text("⏳")
-                    .size(self.loading_size as f32 * 0.6),
-            )
-            .width(Length::Fixed(self.loading_size as f32))
-            .height(Length::Fixed(self.loading_size as f32))
-            .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
-                    .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                    .style(tokens)
-            })
-            .into()
+            container(text("⏳").size(self.loading_size as f32 * 0.6))
+                .width(Length::Fixed(self.loading_size as f32))
+                .height(Length::Fixed(self.loading_size as f32))
+                .style(|_theme| {
+                    crate::styling::material::MaterialSurface::new()
+                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
+                        .style(tokens)
+                })
+                .into()
         } else {
             self.cover_art.view(tokens)
         }
@@ -217,7 +214,7 @@ mod tests {
     fn test_cover_art_creation() {
         let cache = Arc::new(ImageCache::new());
         let cover_art = CoverArt::from_data(None, 64, &cache, "test-id");
-        
+
         assert_eq!(cover_art.size(), 64);
         assert!(cover_art.is_placeholder());
     }
@@ -225,7 +222,7 @@ mod tests {
     #[test]
     fn test_cover_art_placeholder() {
         let cover_art = CoverArt::placeholder(128);
-        
+
         assert_eq!(cover_art.size(), 128);
         assert!(cover_art.is_placeholder());
         assert_eq!(cover_art.title(), Some("No cover art"));
@@ -234,9 +231,9 @@ mod tests {
     #[test]
     fn test_cover_art_with_title() {
         let cache = Arc::new(ImageCache::new());
-        let cover_art = CoverArt::from_data(None, 64, &cache, "test-id")
-            .with_title("Test Audiobook");
-        
+        let cover_art =
+            CoverArt::from_data(None, 64, &cache, "test-id").with_title("Test Audiobook");
+
         assert_eq!(cover_art.title(), Some("Test Audiobook"));
     }
 }

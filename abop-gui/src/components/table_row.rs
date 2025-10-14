@@ -32,7 +32,15 @@ impl TableRow {
             .iter()
             .enumerate()
             .map(|(index, audiobook)| {
-                Self::create_single_row(audiobook, columns, selected_items, tokens, config, image_cache, index)
+                Self::create_single_row(
+                    audiobook,
+                    columns,
+                    selected_items,
+                    tokens,
+                    config,
+                    image_cache,
+                    index,
+                )
             })
             .collect();
         log::debug!("Finished creating rows, total: {}", result.len());
@@ -154,10 +162,9 @@ impl TableRow {
                 48, // 48x48 thumbnail for table
                 image_cache,
                 &audiobook.id,
-            ).with_title(
-                audiobook.title.as_deref().unwrap_or("Unknown Title")
-            );
-            
+            )
+            .with_title(audiobook.title.as_deref().unwrap_or("Unknown Title"));
+
             let width = match column.width {
                 data::ColumnWidth::Fixed(w) => Length::Fixed(w),
                 data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),

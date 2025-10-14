@@ -25,7 +25,8 @@ pub fn library_view(state: &AppState) -> iced::Element<'_, Message> {
     let table_content = create_audiobook_table(state);
     let footer = create_footer(state);
 
-    let content_items = build_content_layout(state, status_display, search_bar, table_content, footer);
+    let content_items =
+        build_content_layout(state, status_display, search_bar, table_content, footer);
 
     assemble_final_container(state, content_items)
 }
@@ -53,7 +54,8 @@ fn create_status_display(state: &AppState) -> iced::Element<'_, Message> {
 
 /// Creates the search bar component
 fn create_search_bar(state: &AppState) -> iced::Element<'_, Message> {
-    let search_bar = SearchBar::with_placeholder("Search audiobooks by title, author, or narrator...");
+    let search_bar =
+        SearchBar::with_placeholder("Search audiobooks by title, author, or narrator...");
     search_bar.view(&state.ui.material_tokens)
 }
 

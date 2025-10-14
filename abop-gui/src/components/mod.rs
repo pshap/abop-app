@@ -9,8 +9,6 @@ pub mod buttons;
 
 /// About dialog and application information display components
 pub mod about;
-/// Cover art display component for audiobooks
-pub mod cover_art;
 /// Audio playback controls and manipulation widgets
 pub mod audio_controls;
 /// Audio toolbar component for playback controls
@@ -21,6 +19,8 @@ pub mod audio_toolbar;
 /// - progress: Progress indicators and status components
 /// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
+/// Cover art display component for audiobooks
+pub mod cover_art;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;
 /// Icon utilities and Font Awesome integration
