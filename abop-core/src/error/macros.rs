@@ -4,8 +4,8 @@
 //! error handling patterns in the ABOP application.
 
 mod constructors;
-mod flow;
 mod conversions;
+mod flow;
 
 #[cfg(test)]
 mod tests;

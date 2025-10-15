@@ -1,6 +1,9 @@
-// Flow/guard/logging macros for error handling
+//! Flow-control, guard, and logging macros for error handling.
+//!
+//! These helpers make early-returns and error annotation concise and uniform.
 
 #[macro_export]
+/// Early-return with an error. Equivalent to `return Err(err.into())`.
 macro_rules! bail {
     ($err:expr) => {
         return Err($err.into())
@@ -11,6 +14,11 @@ macro_rules! bail {
 }
 
 #[macro_export]
+/// Ensure a condition holds, otherwise early-return with an error.
+///
+/// Examples
+/// - `ensure!(x > 0, AppError::InvalidData("x must be > 0".into()))`
+/// - `ensure!(ok, "operation {} failed", name)`
 macro_rules! ensure {
     ($cond:expr, $err:expr) => {
         if !($cond) {
@@ -25,6 +33,7 @@ macro_rules! ensure {
 }
 
 #[macro_export]
+/// Map an error by attaching additional context to its message.
 macro_rules! with_context {
     ($result:expr, $context:expr) => {
         $result.map_err(|e| {
@@ -39,6 +48,7 @@ macro_rules! with_context {
 }
 
 #[macro_export]
+/// Log an error (with optional context) and yield it back unchanged.
 macro_rules! log_error {
     ($err:expr) => {{
         let error = $err;

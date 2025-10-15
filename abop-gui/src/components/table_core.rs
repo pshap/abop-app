@@ -45,9 +45,9 @@ impl AudiobookTable {
     /// Define columns for audiobook table
     #[must_use]
     pub fn define_columns() -> Vec<data::TableColumn> {
-    vec![
+        vec![
             data::TableColumn::new("cover_art", "")
-        .width(data::ColumnWidth::Fixed(Self::COVER_ART_COLUMN_WIDTH))
+                .width(data::ColumnWidth::Fixed(Self::COVER_ART_COLUMN_WIDTH))
                 .align(data::TextAlignment::Center)
                 .sortable(false),
             data::TableColumn::new("title", "Title")

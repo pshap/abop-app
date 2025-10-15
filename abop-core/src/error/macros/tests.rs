@@ -1,5 +1,6 @@
-use super::*;
 use crate::error::{AppError, ErrorChain, ErrorContext};
+// Bring exported macros into scope for tests (only those used at this level)
+use crate::{config_error, ensure, timeout_error};
 
 #[test]
 fn test_config_error_macro() {
@@ -83,7 +84,11 @@ fn test_timeout_error_macro() {
 // =============================================================================
 
 mod error_conversion_tests {
-    use super::*;
+    // Import conversion macros only here where they are used
+    use crate::{
+        impl_bidirectional_conversions, impl_conditional_conversions, impl_contextual_conversions,
+        impl_error_conversions, impl_string_conversions, impl_wrapped_conversions,
+    };
 
     #[test]
     fn test_impl_error_conversions_macro() {

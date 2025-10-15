@@ -1,6 +1,19 @@
-// Boilerplate-reduction macros for implementing error conversions
+//! Boilerplate-reduction macros for implementing error conversions.
+//!
+//! These macros help implement `From` conversions between error types in a
+//! concise and consistent way. They centralize common conversion patterns,
+//! improving readability and maintainability.
 
 #[macro_export]
+/// Implement multiple `From<Source>` conversions for a target error type.
+///
+/// Example:
+/// ```ignore
+/// impl_error_conversions!(AppError => {
+///     io::Error => |e| AppError::Io(e),
+///     String => |s| AppError::Other(s),
+/// });
+/// ```
 macro_rules! impl_error_conversions {
     ($target:ty => {
         $($source:ty => |$param:ident| $conversion:expr),+ $(,)?
@@ -16,6 +29,7 @@ macro_rules! impl_error_conversions {
 }
 
 #[macro_export]
+/// Implement bidirectional `From` conversions between two types.
 macro_rules! impl_bidirectional_conversions {
     ($type_a:ty, $type_b:ty => {
         $type_a_ident:ident => $type_b_ident:ident: |$param_a:ident| $conversion_a:expr,
@@ -36,6 +50,7 @@ macro_rules! impl_bidirectional_conversions {
 }
 
 #[macro_export]
+/// Implement `From<Source>` by formatting `Source` via `to_string()` into a target variant.
 macro_rules! impl_string_conversions {
     ($target:ty => {
         $($source:ty => $variant:ident),+ $(,)?
@@ -51,6 +66,7 @@ macro_rules! impl_string_conversions {
 }
 
 #[macro_export]
+/// Implement `From<Source>` by wrapping the `Source` into a target variant directly.
 macro_rules! impl_wrapped_conversions {
     ($target:ty => {
         $($source:ty => $variant:ident),+ $(,)?
@@ -66,6 +82,7 @@ macro_rules! impl_wrapped_conversions {
 }
 
 #[macro_export]
+/// Implement `From<Source>` with pattern-matching to choose different conversions.
 macro_rules! impl_conditional_conversions {
     ($target:ty, $source:ty => {
         $($pattern:pat => $conversion:expr),+ $(,)?
@@ -81,6 +98,7 @@ macro_rules! impl_conditional_conversions {
 }
 
 #[macro_export]
+/// Implement `From<Source>` adding static context to the error message.
 macro_rules! impl_contextual_conversions {
     ($target:ty => {
         $($source:ty => $variant:ident: $context:expr),+ $(,)?
