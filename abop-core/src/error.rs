@@ -6,9 +6,13 @@ use thiserror::Error;
 use toml;
 
 pub mod macros;
+pub mod context;
+pub mod chain;
 
 // Re-export commonly used macros and utilities
 pub use macros::*;
+pub use context::ErrorContext;
+pub use chain::ErrorChain;
 
 /// Central error type for the ABOP application
 ///
