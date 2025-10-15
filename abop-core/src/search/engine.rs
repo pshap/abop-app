@@ -250,26 +250,21 @@ impl SearchEngine {
 
     /// Create combined searchable text from an audiobook
     fn create_combined_text(&self, audiobook: &Audiobook) -> String {
-        let mut parts = Vec::new();
+        let mut parts: Vec<&str> = Vec::new();
 
         if let Some(ref title) = audiobook.title {
-            parts.push(title);
+            parts.push(title.as_str());
         }
 
         if let Some(ref author) = audiobook.author {
-            parts.push(author);
+            parts.push(author.as_str());
         }
 
         if let Some(ref narrator) = audiobook.narrator {
-            parts.push(narrator);
+            parts.push(narrator.as_str());
         }
 
-        // Join requires &str; convert &String -> &str before joining
-        parts
-            .iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<&str>>()
-            .join(" ")
+        parts.join(" ")
     }
 
     /// Get the number of indexed audiobooks

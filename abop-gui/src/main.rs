@@ -7,6 +7,7 @@ use abop_gui::assets;
 use log::info;
 use thiserror::Error;
 use tracing_subscriber::EnvFilter;
+const DEFAULT_LOG_DIRECTIVES: &str = "abop_gui=info, abop_core=info, iced=warn";
 
 // Import configuration from abop-core
 // NOTE: Direct dependency on concrete Config type is acceptable for the main entry point.
@@ -33,13 +34,14 @@ fn init_logging() -> Result<(), InitError> {
         Err(e) => {
             // Logging may not be initialized yet; use stderr to preserve context
             eprintln!(
-                "RUST_LOG parse error: {e}. Falling back to defaults: abop_gui=info, abop_core=info, iced=warn"
+                "RUST_LOG parse error: {e}. Falling back to defaults: {DEFAULT_LOG_DIRECTIVES}"
             );
             let mut f = EnvFilter::default();
             // Defaults if RUST_LOG is not provided
-            f = f.add_directive("abop_gui=info".parse().expect("static filter"));
-            f = f.add_directive("abop_core=info".parse().expect("static filter"));
-            f = f.add_directive("iced=warn".parse().expect("static filter"));
+            for directive in DEFAULT_LOG_DIRECTIVES.split(',') {
+                let directive = directive.trim();
+                f = f.add_directive(directive.parse().expect("static filter"));
+            }
             f
         }
     };

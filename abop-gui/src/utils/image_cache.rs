@@ -82,12 +82,12 @@ impl ImageCache {
         }
 
         // Create new handle from image data
-        if let Some(data) = image_data
-            && let Some((handle, dyn_img)) = self.create_handle_from_data(data, size)
-        {
-            // Cache the decoded thumbnail for future use
-            self.cache_image(key, dyn_img);
-            return handle;
+        if let Some(data) = image_data {
+            if let Some((handle, dyn_img)) = self.create_handle_from_data(data, size) {
+                // Cache the decoded thumbnail for future use
+                self.cache_image(key, dyn_img);
+                return handle;
+            }
         }
 
         // Return placeholder if no image data or creation failed

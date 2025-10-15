@@ -7,6 +7,8 @@ use abop_core::PlayerState;
 use abop_core::scanner::ScanProgress;
 use std::path::PathBuf;
 
+const LONG_TEST_PATH: &str = "/a/very/long/path/that/should/be/truncated/properly/this/is/a/very/long/path/that/should/be/truncated/properly/audio.mp3";
+
 #[test]
 fn test_status_display_enhanced() {
     let tokens = MaterialTokens::default();
@@ -121,9 +123,7 @@ fn test_status_display_invalid_processing_progress() {
 fn test_status_display_edge_cases() {
     let tokens = MaterialTokens::default();
     let test_audio_path = PathBuf::from("/test/audio with spaces/audio.mp3");
-    let long_path = PathBuf::from(
-        "/a/very/long/path/that/should/be/truncated/properly/this/is/a/very/long/path/that/should/be/truncated/properly/audio.mp3",
-    );
+    let long_path = PathBuf::from(LONG_TEST_PATH);
 
     // Test minimal params (all defaults)
     let params_minimal = create_base_params();
