@@ -1,7 +1,7 @@
-//! Focused test modules for UI components
+//! Aggregator for component tests split by area
 //!
-//! This directory splits the large monolithic test file into smaller, focused
-//! modules per component/feature to improve maintainability and clarity.
+//! Focused test modules for UI components. Each module contains tests for
+//! a specific component area.
 
 mod about;
 mod audio_controls;
