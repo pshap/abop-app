@@ -161,6 +161,43 @@ abop/
 - Benchmark tests using `criterion` for performance validation
 - **Performance testing**: Large dataset testing and timing measurements
 
+#### 🚧 **ONGOING: Technical Debt Reduction - Test Infrastructure Migration**
+
+**Phase 1: Foundation** ✅ COMPLETE
+- ✅ Centralized database test utilities (`abop-core/src/test_utils/db.rs`)
+- ✅ Centralized component test utilities (`abop-gui/src/test_utils/components.rs`)
+- ✅ Comprehensive documentation (`docs/TESTING_PATTERNS.md`)
+- ✅ Library repository migration: 700 → 422 lines (40% reduction, all tests passing)
+
+**Phase 2: Critical Test Refactoring** 🔄 IN PROGRESS
+- ✅ Library repository tests migrated and working
+- 🔲 **NEXT: Audiobook repository tests** (`abop-core/src/db/repositories/audiobook/tests.rs`)
+  - Current: 684 lines with massive duplication and broken infrastructure
+  - Status: Failing with "no such table: libraries" errors (no migrations)
+  - Action: Migrate to use `TestDatabase::new()` and centralized utilities
+- 🔲 **NEXT: Progress repository tests** (`abop-core/src/db/repositories/progress/tests.rs`)
+  - Current: 504 lines with duplication and broken infrastructure  
+  - Status: Failing with "no such table: libraries" errors (no migrations)
+  - Action: Migrate to use `TestDatabase::new()` and centralized utilities
+- 🔲 **NEXT: GUI component tests** (`abop-gui/src/components/tests.rs`)
+  - Current: 783 lines with extensive code duplication
+  - Status: Mostly working but using legacy helper functions
+  - Action: Migrate to use new component test utilities
+
+**Phase 3: Architecture & Safety** 🔲 PENDING
+- 🔲 Split database module (`abop-core/src/db/mod.rs` - 634 lines into focused modules)
+- 🔲 Replace critical `unwrap()` calls (200+ occurrences, focus on database/core operations)
+- 🔲 Complete Material Design 3 implementation (HCT color model, dynamic theming)
+
+**Expected Outcomes After Phase 2:**
+- **75%+ reduction** in test code duplication across all repository tests
+- **Consistent test infrastructure** across database and GUI components  
+- **Faster development velocity** for new features and tests
+- **Improved reliability** with proper database migrations in all tests
+- **Better onboarding** for new developers with standardized patterns
+
+**Critical Note:** The failing audiobook/progress tests demonstrate exactly why this migration is essential - they're using broken test infrastructure without proper database setup.
+
 ### Code Style
 - Follow Rust 2024 edition conventions
 - Use `rustfmt` for consistent formatting
