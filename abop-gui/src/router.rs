@@ -69,9 +69,8 @@ impl Router {
     /// # Arguments
     /// * `route` - The target route to navigate to
     pub fn navigate_to(&mut self, route: Route) -> Task<Message> {
-        // De-duplicate consecutive routes
+        // De-duplicate consecutive routes: no-op if route is same as last
         if self.history.back().copied() == Some(route) {
-            self.current_route = route;
             return Task::none();
         }
 

@@ -5,9 +5,14 @@ use hound;
 use thiserror::Error;
 use toml;
 
+pub mod chain;
+pub mod context;
 pub mod macros;
 
 // Re-export commonly used macros and utilities
+pub use chain::ErrorChain;
+pub use context::ErrorContext;
+#[allow(unused_imports)]
 pub use macros::*;
 
 /// Central error type for the ABOP application

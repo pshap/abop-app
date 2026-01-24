@@ -21,6 +21,8 @@ use super::table_row::TableRow;
 pub struct AudiobookTable;
 
 impl AudiobookTable {
+    /// Named constant for cover art column width
+    const COVER_ART_COLUMN_WIDTH: f32 = 64.0;
     /// Create default configuration for audiobook table
     #[must_use]
     pub fn default_config() -> data::DataTableConfig {
@@ -45,7 +47,7 @@ impl AudiobookTable {
     pub fn define_columns() -> Vec<data::TableColumn> {
         vec![
             data::TableColumn::new("cover_art", "")
-                .width(data::ColumnWidth::Fixed(64.0))
+                .width(data::ColumnWidth::Fixed(Self::COVER_ART_COLUMN_WIDTH))
                 .align(data::TextAlignment::Center)
                 .sortable(false),
             data::TableColumn::new("title", "Title")

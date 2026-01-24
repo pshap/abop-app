@@ -63,6 +63,20 @@ impl TestDataFactory {
         audiobook
     }
 
+    /// Create an Audiobook using an explicit path along with id/title/author
+    pub fn audiobook_with_path<P: AsRef<std::path::Path>>(
+        id: &str,
+        title: &str,
+        author: &str,
+        path: P,
+    ) -> Audiobook {
+        let mut audiobook = Audiobook::new("test-library-id", path);
+        audiobook.id = id.to_string();
+        audiobook.title = Some(title.to_string());
+        audiobook.author = Some(author.to_string());
+        audiobook
+    }
+
     /// Create a collection of test audiobooks for bulk testing
     ///
     /// # Arguments
