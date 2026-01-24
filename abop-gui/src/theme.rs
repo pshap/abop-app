@@ -18,9 +18,10 @@ const DEFAULT_MATERIAL_SEED_COLOR: Color = Color::from_rgb(0.5, 0.2, 0.8);
 // ================================================================================================
 
 /// Theme modes available in the application
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
     /// Professional dark sunset theme with warm oranges and cool blues
+    #[default]
     Dark,
     /// Professional light theme matching the dark sunset palette
     Light,
@@ -32,12 +33,6 @@ pub enum ThemeMode {
     MaterialLight,
     /// Dynamic Material theme based on seed color
     MaterialDynamic,
-}
-
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::Dark
-    }
 }
 
 impl ThemeMode {
@@ -84,7 +79,7 @@ impl ThemeMode {
     pub const fn is_dark(&self) -> bool {
         matches!(
             self,
-            Self::Dark | Self::MaterialDark | Self::MaterialDynamic
+            Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic
         )
     }
     /// Centralized helper to resolve System theme to appropriate palette values
@@ -338,4 +333,25 @@ fn material_theme_from_colors(colors: &MaterialColors) -> IcedTheme {
         danger: colors.error.base,
     };
     IcedTheme::custom("Material".to_string(), palette)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn theme_modes_map_to_iced_theme() {
+        // Ensure all primary modes produce an IcedTheme without panic
+        let _ = ThemeMode::Dark.theme();
+        let _ = ThemeMode::Light.theme();
+        let _ = ThemeMode::System.theme();
+    }
+
+    #[test]
+    fn is_dark_reflects_mode_intent() {
+        assert!(ThemeMode::Dark.is_dark());
+        assert!(!ThemeMode::Light.is_dark());
+        // System currently resolves to dark by default
+        assert!(ThemeMode::System.is_dark());
+    }
 }

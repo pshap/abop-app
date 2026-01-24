@@ -132,34 +132,34 @@ impl ChannelMixer {
     #[cfg(all(feature = "simd", target_arch = "x86_64"))]
     fn stereo_to_mono_simd(&self, stereo_data: &[f32]) -> Vec<f32> {
         use std::simd::prelude::*;
-        
+
         let mut new_data = Vec::with_capacity(stereo_data.len() / 2);
-        
+
         const SIMD_LANES: usize = 8;
         let stereo_pairs_per_chunk = SIMD_LANES / 2; // 4 stereo pairs per chunk
         let samples_per_chunk = stereo_pairs_per_chunk * 2; // 8 samples per chunk
-        
+
         let simd_chunks = stereo_data.len() / samples_per_chunk;
         let remainder_start = simd_chunks * samples_per_chunk;
-        
+
         // SIMD processing for bulk stereo pairs
         for chunk_idx in 0..simd_chunks {
             let start = chunk_idx * samples_per_chunk;
             let chunk_data = &stereo_data[start..start + samples_per_chunk];
-            
+
             // Separate left and right channel samples
             let mut left_samples = [0.0f32; 4];
             let mut right_samples = [0.0f32; 4];
-            
+
             for i in 0..stereo_pairs_per_chunk {
                 left_samples[i] = chunk_data[i * 2];
                 right_samples[i] = chunk_data[i * 2 + 1];
             }
-            
+
             // Convert to SIMD vectors (using f32x4 for 4 stereo pairs)
             let left_vec = f32x4::from_array(left_samples);
             let right_vec = f32x4::from_array(right_samples);
-            
+
             // Apply mixing algorithm using SIMD
             let mono_vec = match self.config.mix_algorithm {
                 super::config::MixingAlgorithm::Average => {
@@ -170,16 +170,14 @@ impl ChannelMixer {
                 super::config::MixingAlgorithm::WeightedSum {
                     left_weight,
                     right_weight,
-                } => {
-                    left_vec * f32x4::splat(left_weight) + right_vec * f32x4::splat(right_weight)
-                }
+                } => left_vec * f32x4::splat(left_weight) + right_vec * f32x4::splat(right_weight),
             };
-            
+
             // Store results
             let mono_results = mono_vec.to_array();
             new_data.extend_from_slice(&mono_results);
         }
-        
+
         // Handle remainder samples with scalar processing
         for chunk in stereo_data[remainder_start..].chunks(2) {
             if chunk.len() == 2 {
@@ -198,7 +196,7 @@ impl ChannelMixer {
                 new_data.push(chunk[0]);
             }
         }
-        
+
         new_data
     }
 
@@ -224,7 +222,7 @@ impl ChannelMixer {
                 new_data.push(chunk[0]);
             }
         }
-        
+
         new_data
     }
 }

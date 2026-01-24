@@ -152,18 +152,8 @@ impl Drop for App {
     }
 }
 
-/// Application theme options
-///
-/// Defines the available visual themes for the application's user interface.
-#[derive(Debug, Clone, Copy, Default)]
-pub enum Theme {
-    /// Light color scheme with dark text on light background
-    #[default]
-    Light,
-
-    /// Dark color scheme with light text on dark background
-    Dark,
-}
+// Theme is defined in `crate::theme`; avoid duplicating here.
+// Removed duplicate Theme enum - use crate::theme::ThemeMode instead.
 
 impl App {
     /// Initialize the application with default settings
@@ -236,7 +226,7 @@ impl App {
 
     /// Get the theme for the application
     pub fn theme(&self) -> IcedTheme {
-        // Use the theme mode from application state
+        // Resolve theme from UI state's ThemeMode
         self.state.ui.theme_mode.theme()
     }
 

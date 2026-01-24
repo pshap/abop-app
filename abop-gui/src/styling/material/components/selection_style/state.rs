@@ -213,20 +213,17 @@ impl fmt::Display for SelectionVariant {
 ///
 /// Provides consistent sizing across all selection components following
 /// Material Design 3 touch target and accessibility guidelines.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 pub enum SelectionSize {
     /// Small size (16px) - for dense layouts and compact spaces
     Small,
     /// Medium size (20px) - default size for most use cases
+    #[default]
     Medium,
     /// Large size (24px) - for accessibility and prominent placement
     Large,
-}
-
-impl Default for SelectionSize {
-    fn default() -> Self {
-        Self::Medium
-    }
 }
 
 impl SelectionSize {

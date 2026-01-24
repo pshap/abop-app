@@ -29,9 +29,10 @@ pub trait ComponentStyleStrategy {
 ///
 /// This enum captures all possible interaction states that affect
 /// component appearance and behavior.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ComponentState {
     /// Default state - no user interaction
+    #[default]
     Default,
     /// Hovered state - cursor is over the component
     Hovered,
@@ -43,12 +44,6 @@ pub enum ComponentState {
     Disabled,
     /// Loading state - component is processing an action
     Loading,
-}
-
-impl Default for ComponentState {
-    fn default() -> Self {
-        Self::Default
-    }
 }
 
 impl ComponentState {

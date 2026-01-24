@@ -83,4 +83,3 @@ pub trait Serializable {
     /// Get a unique identifier for this processor type
     fn type_id(&self) -> &'static str;
 }
-

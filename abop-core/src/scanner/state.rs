@@ -1,9 +1,10 @@
 //! Scanner state management
 
 /// Represents the current state of a scanner operation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ScannerState {
     /// Scanner is idle and ready to start
+    #[default]
     Idle,
     /// Scanner is currently scanning
     Scanning,
@@ -15,12 +16,6 @@ pub enum ScannerState {
     Error,
     /// Scanner was cancelled
     Cancelled,
-}
-
-impl Default for ScannerState {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 impl ScannerState {

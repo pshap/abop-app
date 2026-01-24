@@ -20,4 +20,3 @@ pub use core::{AudioProcessor, Bypassable, Configurable, ThreadSafe, Validatable
 pub use lifecycle::{ProcessorLifecycle, Serializable};
 pub use reporting::{LatencyReporting, ProcessorInfo, ProgressReporting, ResourceEstimation};
 pub use specialized::{FileWriter, StreamingProcessor};
-

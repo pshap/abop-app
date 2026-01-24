@@ -6,6 +6,7 @@
 use crate::state::AppState;
 use std::path::Path;
 
+pub mod image_cache;
 pub mod path_utils;
 pub mod platform;
 

@@ -20,6 +20,10 @@ pub struct Args {
     #[arg(short, long, global = true)]
     pub debug: bool,
 
+    /// Output results in JSON format for machine processing
+    #[arg(short, long, global = true)]
+    pub json: bool,
+
     /// Commands to execute
     #[command(subcommand)]
     pub command: Commands,
@@ -88,10 +92,8 @@ pub fn init_logging(args: &Args) {
         .init();
 }
 
-/// Main CLI dispatch function
-pub fn run() -> CliResult<()> {
-    let args = Args::parse();
-
+/// Main CLI dispatch function with provided arguments
+pub fn run_with_args(args: Args) -> CliResult<()> {
     init_logging(&args);
 
     log::info!("Starting ABOP CLI");
@@ -112,6 +114,7 @@ pub fn run() -> CliResult<()> {
                 config,
                 max_concurrent_tasks,
                 max_concurrent_db_operations,
+                args.json,
             )
         }
         Commands::Db {
@@ -119,7 +122,7 @@ pub fn run() -> CliResult<()> {
             operation,
         } => {
             log::debug!("Executing database command: {operation:?} on {database:?}");
-            crate::commands::db::run(database, operation)
+            crate::commands::db::run(database, operation, args.json)
         }
     }
 }

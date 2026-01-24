@@ -9,10 +9,11 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::Mutex;
 
-use crate::utils::platform;
-use abop_core::models::{AppState, Audiobook};
+use crate::utils::{image_cache::ImageCache, platform};
+use abop_core::models::{AppState, Audiobook, SearchQuery};
 use abop_core::scanner::progress::ScanProgress;
 use abop_core::scanner::{LibraryScanner, ScannerState};
+use abop_core::search::SearchEngine;
 
 /// Directory information with scan metadata
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +74,19 @@ pub struct LibraryState {
     /// Active library scanner instance if a scan is in progress
     scanner: Option<Arc<Mutex<LibraryScanner>>>,
 
+    /// Image cache for cover art thumbnails
+    pub image_cache: Arc<ImageCache>,
+
+    // Search state
+    /// Search engine for filtering audiobooks
+    pub search_engine: SearchEngine,
+    /// Current search query
+    pub search_query: String,
+    /// Filtered audiobooks based on search
+    pub filtered_audiobooks: Vec<Audiobook>,
+    /// Whether search is currently active
+    pub search_active: bool,
+
     /// Flag to indicate library state needs UI redraw
     needs_redraw: bool,
 }
@@ -108,6 +122,11 @@ impl LibraryState {
             scanner_state: ScannerState::Idle,
             scanner_progress: None,
             scanner: None,
+            image_cache: Arc::new(ImageCache::new()),
+            search_engine: SearchEngine::new(),
+            search_query: String::new(),
+            filtered_audiobooks: core_state.app_data.audiobooks.clone(),
+            search_active: false,
             needs_redraw: false,
         }
     }
@@ -173,6 +192,7 @@ impl LibraryState {
     pub fn set_audiobooks(&mut self, audiobooks: Vec<Audiobook>) {
         self.audiobooks = audiobooks;
         self.sync_directory_metadata();
+        self.update_search_index();
         self.mark_for_redraw();
     }
 
@@ -348,6 +368,90 @@ impl std::fmt::Debug for LibraryState {
             )
             .field("needs_redraw", &self.needs_redraw())
             .finish()
+    }
+}
+
+// ===== Search Methods =====
+impl LibraryState {
+    /// Update the search query and perform search.
+    ///
+    /// This method sets the current search query string and immediately
+    /// triggers a search over the loaded audiobooks. The filtered results
+    /// are stored in `filtered_audiobooks`, and the `search_active` flag is updated.
+    ///
+    /// # Arguments
+    /// * `query` - The new search string to use for filtering audiobooks.
+    pub fn update_search_query(&mut self, query: String) {
+        self.search_query = query;
+        self.perform_search();
+    }
+
+    /// Perform search on the current audiobooks
+    pub fn perform_search(&mut self) {
+        if self.search_query.trim().is_empty() {
+            // No search query, show all audiobooks
+            self.filtered_audiobooks.clone_from(&self.audiobooks);
+            self.search_active = false;
+        } else {
+            // Perform search
+            let search_query = SearchQuery::new(&self.search_query);
+            let search_results = self.search_engine.search(&search_query, &self.audiobooks);
+
+            // Extract audiobooks from search results
+            self.filtered_audiobooks.clear();
+            self.filtered_audiobooks
+                .extend(search_results.into_iter().map(|result| result.audiobook));
+            self.search_active = true;
+        }
+
+        self.mark_for_redraw();
+    }
+
+    /// Clear the search query and show all audiobooks
+    pub fn clear_search(&mut self) {
+        self.search_query.clear();
+        self.filtered_audiobooks.clone_from(&self.audiobooks);
+        self.search_active = false;
+        self.mark_for_redraw();
+    }
+
+    /// Get the audiobooks to display in the UI, based on search state.
+    ///
+    /// Returns a slice of audiobooks: if a search is active, returns the filtered
+    /// results; otherwise, returns the full list. This is the canonical getter for
+    /// UI components to access the current display set.
+    pub fn get_display_audiobooks(&self) -> &[Audiobook] {
+        if self.search_active {
+            &self.filtered_audiobooks
+        } else {
+            &self.audiobooks
+        }
+    }
+
+    /// Check if search is currently active
+    pub fn is_search_active(&self) -> bool {
+        self.search_active
+    }
+
+    /// Get the current search query
+    pub fn get_search_query(&self) -> &str {
+        &self.search_query
+    }
+
+    /// Update the search index when audiobooks are added/updated
+    pub fn update_search_index(&mut self) {
+        // Clear existing index
+        self.search_engine.clear();
+
+        // Rebuild index with current audiobooks
+        for audiobook in &self.audiobooks {
+            self.search_engine.add_audiobook(audiobook);
+        }
+
+        // Re-perform search if active
+        if self.search_active {
+            self.perform_search();
+        }
     }
 }
 

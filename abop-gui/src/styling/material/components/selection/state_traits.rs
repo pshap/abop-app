@@ -87,17 +87,12 @@ mod tests {
     use super::*;
 
     // Mock state for testing the traits
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     enum MockState {
+        #[default]
         Inactive,
         Active,
         Pressed,
-    }
-
-    impl Default for MockState {
-        fn default() -> Self {
-            Self::Inactive
-        }
     }
 
     impl ComponentState for MockState {

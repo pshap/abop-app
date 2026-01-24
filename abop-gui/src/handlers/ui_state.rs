@@ -34,6 +34,7 @@ pub fn handle_ui_message(state: &mut AppState, message: Message) -> Option<Task<
         Message::Next => handle_next(state),
         Message::ResetRedrawFlag => handle_reset_redraw_flag(state),
         Message::SortBy(column_id) => handle_sort_by(state, column_id),
+        Message::SearchQuery(query) => handle_search_query(state, query),
         _ => None, // Not a UI message
     }
 }
@@ -346,5 +347,11 @@ fn handle_toggle_audiobook_selection(
             .insert(audiobook_id.clone());
         log::info!("Selected audiobook: {audiobook_id}");
     }
+    Some(Task::none())
+}
+
+fn handle_search_query(state: &mut AppState, query: String) -> Option<Task<Message>> {
+    log::debug!("Handling search query: '{}'", query);
+    state.library.update_search_query(query);
     Some(Task::none())
 }

@@ -2,6 +2,7 @@
 //!
 //! This crate provides the graphical user interface for the ABOP application.
 
+#![deny(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_crate_level_docs)]
 
@@ -26,8 +27,7 @@ pub mod handlers;
 /// Application state management
 pub mod state;
 
-/// Update logic and state transitions
-pub mod update;
+// Update logic is handled within `app` and `handlers`; legacy `update` module removed.
 
 // View modules
 pub mod views;
