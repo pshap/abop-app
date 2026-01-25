@@ -1,94 +1,83 @@
-# Requirements: ABOP Frontend Feature Completion
+# Requirements: ABOP Codebase Improvements
 
-**Defined:** 2025-01-24
-**Core Value:** Implement and verify as many frontend features as reasonably possible with passing tests.
+**Defined:** 2026-01-25
+**Core Value:** Maintainable, well-documented, performant Rust codebase with excellent engineering practices.
 
 ## v1 Requirements
 
-### Test Infrastructure ✓
+### Code Quality
 
-- [x] **TEST-01**: All audiobook repository tests pass (13 tests)
-- [x] **TEST-02**: All progress repository tests pass (23 tests)
-- [x] **TEST-03**: All minor tests pass (permission test skipped with justification)
+- [ ] **QUAL-01**: Reduce code duplication (DRY violations < 5%)
+- [ ] **QUAL-02**: Fix all unwrap() calls with proper error handling
+- [ ] **QUAL-03**: Improve modularity (files < 300 lines avg)
+- [ ] **QUAL-04**: Follow consistent code style throughout codebase
 
-### Library Management
+### Technical Debt
 
-- [ ] **LIB-01**: Users can scan audiobook directories
-- [ ] **LIB-02**: Users can browse audiobook library with table display
-- [ ] **LIB-03**: Users can search/filter audiobooks by title, author, narrator
-- [ ] **LIB-04**: Users can select multiple audiobooks
-- [ ] **LIB-05**: Users can sort audiobooks by various columns
+- [ ] **DEBT-01**: Replace unsafe unwrap() with Result/Option handling
+- [ ] **DEBT-02**: Improve error messages and error context
+- [ ] **DEBT-03**: Remove deprecated code and unused imports
+- [ ] **DEBT-04**: Standardize error types and propagation
 
-### Audio Playback
+### Performance
 
-- [ ] **PLAY-01**: Users can play/pause audio
-- [ ] **PLAY-02**: Users can stop audio playback
-- [ ] **PLAY-03**: Users can navigate to next/previous tracks
-- [ ] **PLAY-04**: Users can view player state and current file
-- [ ] **PLAY-05**: Users can track progress during playback
+- [ ] **PERF-01**: Optimize hot paths reduce allocations by 20%
+- [ ] **PERF-02**: Run benchmarks before/after optimizations
+- [ ] **PERF-03**: Fix identified performance bottlenecks
+- [ ] **PERF-04**: Reduce binary size optimizations
 
-### Audio Processing
+### Documentation
 
-- [ ] **PROC-01**: Users can convert selected audiobooks to mono
-- [ ] **PROC-02**: Users can view processing progress
-- [ ] **PROC-03**: Users can view processing status messages
+- [ ] **DOCS-01**: Add documentation to all public APIs
+- [ ] **DOCS-02**: Update README with current features
+- [ ] **DOCS-03**: Document complex algorithms and data structures
+- [ ] **DOCS-04**: Add inline comments for non-obvious code
 
-### Settings
+### Tests
 
-- [ ] **SETT-01**: Users can toggle light/dark theme
-- [ ] **SETT-02**: Users can toggle auto-save library
-- [ ] **SETT-03**: Users can toggle scan subdirectories
-
-## v2 Requirements
-
-### Advanced Features
-
-- **ADV-01**: Advanced audio processing effects (beyond mono conversion)
-- **ADV-02**: Progress persistence to disk
-- **ADV-03**: Import/export functionality
-- **ADV-04**: Advanced metadata editing
-- **ADV-05**: Cover art editing
+- [ ] **TEST-01**: Remove unnecessary/redundant tests
+- [ ] **TEST-02**: Improve test coverage of critical paths
+- [ ] **TEST-03**: Ensure test names clearly describe what they test
+- [ ] **TEST-04**: Keep fast test suite (< 5s execution)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Advanced audio processing | Beyond mono conversion, defer to v2+ |
-| Progress persistence | Not needed for v1 verification |
-| Import/export | Not in current scope |
-| Advanced metadata editing | Not in current scope |
-| Cover art editing | Not in current scope |
+| New features | Focus on improving existing code |
+| Manual GUI verification | Not needed for code improvements |
+| Major architecture changes | Keep existing patterns, improve within |
+| Benchmark improvements | Use criterion, maintain current |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TEST-01 | Phase 1 | Complete ✓ |
-| TEST-02 | Phase 1 | Complete ✓ |
-| TEST-03 | Phase 1 | Complete ✓ |
-| LIB-01 | Phase 2 | Pending |
-| LIB-02 | Phase 2 | Pending |
-| LIB-03 | Phase 2 | Pending |
-| LIB-04 | Phase 2 | Pending |
-| LIB-05 | Phase 2 | Pending |
-| PLAY-01 | Phase 2 | Pending |
-| PLAY-02 | Phase 2 | Pending |
-| PLAY-03 | Phase 2 | Pending |
-| PLAY-04 | Phase 2 | Pending |
-| PLAY-05 | Phase 2 | Pending |
-| PROC-01 | Phase 2 | Pending |
-| PROC-02 | Phase 2 | Pending |
-| PROC-03 | Phase 2 | Pending |
-| SETT-01 | Phase 2 | Pending |
-| SETT-02 | Phase 2 | Pending |
-| SETT-03 | Phase 2 | Pending |
+| QUAL-01 | Phase 1 | Pending |
+| QUAL-02 | Phase 1 | Pending |
+| QUAL-03 | Phase 1 | Pending |
+| QUAL-04 | Phase 1 | Pending |
+| DEBT-01 | Phase 2 | Pending |
+| DEBT-02 | Phase 2 | Pending |
+| DEBT-03 | Phase 2 | Pending |
+| DEBT-04 | Phase 2 | Pending |
+| PERF-01 | Phase 3 | Pending |
+| PERF-02 | Phase 3 | Pending |
+| PERF-03 | Phase 3 | Pending |
+| PERF-04 | Phase 3 | Pending |
+| DOCS-01 | Phase 4 | Pending |
+| DOCS-02 | Phase 4 | Pending |
+| DOCS-03 | Phase 4 | Pending |
+| DOCS-04 | Phase 4 | Pending |
+| TEST-01 | Phase 5 | Pending |
+| TEST-02 | Phase 5 | Pending |
+| TEST-03 | Phase 5 | Pending |
+| TEST-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 18 total
-- Complete: 3/18 (17%)
-- Mapped to phases: 18
+- v1 requirements: 20 total
+- Mapped to phases: 20
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2025-01-24*
-*Last updated: 2025-01-24 after initialization*
+*Requirements defined: 2026-01-25*

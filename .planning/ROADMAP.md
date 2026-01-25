@@ -1,129 +1,160 @@
-# Roadmap: ABOP Frontend Feature Completion
+# Roadmap: ABOP Codebase Improvements
 
-**Created:** 2025-01-24
-**Phases:** 2
-
----
-
-## Progress: 1/2 phases complete
-
-| Phase | Status | Progress |
-|-------|--------|----------|
-| 1     | ✓ Complete | 100% |
-| 2     | ↷ Deferred | 0% (manual GUI verification deferred) |
+**Created:** 2026-01-25
+**Phases:** 5
 
 ---
 
-## Phase 1: Fix Test Infrastructure ✓
+## Progress: 0/5 phases complete
 
-**Completed:** 2026-01-25
-**Duration:** ~15 min (verified work from prior commit e37ccf3)
+| Phase | Status | Requirements |
+|-------|--------|--------------|
+| 1     | ○ Pending | QUAL-01 through QUAL-04 |
+| 2     | ○ Pending | DEBT-01 through DEBT-04 |
+| 3     | ○ Pending | PERF-01 through PERF-04 |
+| 4     | ○ Pending | DOCS-01 through DOCS-04 |
+| 5     | ○ Pending | TEST-01 through TEST-04 |
 
-**Goal:** Fix all 34 failing tests to enable feature verification ✓
+---
 
-**Requirements:** TEST-01, TEST-02, TEST-03 ✓
+## Phase 1: Code Quality Improvements
+
+**Goal:** Reduce duplication, improve modularity, ensure consistent style
+
+**Requirements:** QUAL-01, QUAL-02, QUAL-03, QUAL-04
 
 **Success criteria:**
-1. ✓ All audiobook repository tests pass (13/13) ✓
-2. ✓ All progress repository tests pass (23/23) ✓
-3. ✓ All minor tests pass (permission test skipped with justification) ✓
-4. ✓ Tests use proper `TestDatabase::new()` initialization ✓
-5. ✓ Database migrations run before test execution ✓
-
-**Plans:**
-- [x] 01-01-PLAN.md — Migrate audiobook repository tests ✓
-- [x] 01-02-PLAN.md — Migrate progress repository tests ✓
-- [x] 01-03-PLAN.md — Fix minor failing tests ✓
-
-**Summary:**
-- 894 tests passing (405 abop-core, 439 abop-gui)
-- 1 test skipped (permission denied - unreliable in CI)
-- All tests use centralized TestDatabase infrastructure
-- Database migrations confirmed running before test execution
+1. Code duplication reduced to < 5% of codebase
+2. All unwrap() calls replaced with proper error handling
+3. Average file size under 300 lines
+4. Cargo fmt and clippy pass with no warnings
 
 **Description:**
-Currently, 34 tests are failing due to broken test infrastructure. The tests don't initialize the database properly or run migrations. This phase migrates the tests to use centralized test utilities (`TestDatabase::new()`, `TestDataFactory`, `TestAssertions`) from `abop-core/src/test_utils/db.rs`.
+Focus on foundational code quality improvements: eliminate DRY violations, break down large files, ensure consistent coding patterns. This provides the foundation for all subsequent improvements.
 
-**Files to modify:**
-- `abop-core/src/db/repositories/audiobook/tests.rs` (684 lines)
-- `abop-core/src/db/repositories/progress/tests.rs` (504 lines)
-- `abop-core/src/scanner/file_discovery/tests.rs` (minor)
-- `abop-gui/src/utils/path_utils/tests.rs` (minor)
+**Key areas:**
+- Find and extract repeated code patterns
+- Split large modules (>300 lines) into smaller focused modules
+- Run `cargo clippy --fix` and address all warnings
+- Standardize patterns (error handling, imports, naming)
 
 ---
 
-## Phase 2: Verify End-to-End Features
+## Phase 2: Technical Debt Reduction
 
-**Completed:** 2026-01-25
-**Duration:** ~5 min (deferred manual verification)
-**Goal:** Verify all frontend features work end-to-end with passing tests ↷
+**Goal:** Safer code with better error handling and cleanup
 
-**Requirements:** LIB-01 through LIB-05, PLAY-01 through PLAY-05, PROC-01 through PROC-03, SETT-01 through SETT-03 ↷
+**Requirements:** DEBT-01, DEBT-02, DEBT-03, DEBT-04
 
-**Success criteria:** (all deferred)
-1. Library scanning displays audiobooks in GUI (deferred)
-2. Search/filter functionality works (deferred)
-3. Audio playback starts and plays correctly (deferred)
-4. Player state updates in real-time (deferred)
-5. Progress tracking works during playback (deferred)
-6. Audio processing (mono conversion) creates output files (deferred)
-7. Processing progress displays during conversion (deferred)
-8. All settings toggles work (theme, auto-save, scan subdirs) (deferred)
-
-**Plans:**
-- [x] 02-01-PLAN.md — Verify library management features (deferred)
-- [x] 02-02-PLAN.md — Verify audio playback features (deferred)
-- [x] 02-03-PLAN.md — Verify audio processing features (deferred)
-- [x] 02-04-PLAN.md — Verify settings features (deferred)
-
-**Status: DEFERRED** - All 16 manual verification checkpoints deferred
-- All plans contained pure `checkpoint:human-verify` tasks requiring GUI testing
-- User chose to defer manual verification rather than complete now or mark as passed untested
-- Backend implementation assumed functional based on Phase 1 test success (894 tests passing)
-- End-to-end functionality remains unverified
-
-**Deferred by:** N/A (user choice - no specific issue blocking)
+**Success criteria:**
+1. 0 instances of unsafe unwrap() outside test code
+2. All error messages provide actionable context
+3. No dead code or unused imports
+4. Consistent error types across modules
 
 **Description:**
-Phase 2 planned manual GUI verification of all 16 frontend features across 4 plans (16 checkpoints). Each plan contained only `checkpoint:human-verify` tasks requiring application interaction. User opted to defer verification rather than proceed with untested marking.
+Replace unsafe unwrap() calls with proper Result/Option handling. Improve error messages to actually help users understand and fix issues. Remove deprecated code and standardize error propagation patterns.
 
-**Future action needed:**
-- Run application: `cargo run -p abop-gui`
-- Execute all 16 verification checkpoints from the 4 PLAN files
-- Confirm must_haves exist through verification
+**Key areas:**
+- Use `clippy::unwrap_used` to find all unwrap() calls
+- Replace with proper Result propagation and user-friendly messages
+- Clean up unused code identified by compiler
+- Consolidate similar error types into unified types
+
+---
+
+## Phase 3: Performance Optimizations
+
+**Goal:** Improve performance and reduce resource usage
+
+**Requirements:** PERF-01, PERF-02, PERF-03, PERF-04
+
+**Success criteria:**
+1. Hot paths 20% faster (benchmark验证)
+2. Binary size reduced by measurable amount
+3. No performance regressions introduced
+4. Identified bottlenecks resolved
 
 **Description:**
-After all tests pass, verify each feature works end-to-end by manually testing the application workflows. This confirms the frontend promises are backed by working backend code.
+Profile the application to find hot paths and bottlenecks. Focus on realistic workloads: scanning large directories, processing audio files, rendering GUI. Use criterion benchmarks to measure improvements.
 
-**Workflows to test:**
-1. Scan a directory → audiobooks appear in database and GUI
-2. Search/filter audiobooks → results display correctly
-3. Select audiobook → click play → audio plays
-4. During playback → player state updates → progress tracks
-5. Select audiobooks → convert to mono → output files created
-6. Toggle settings → UI responds correctly
+**Key areas:**
+- Use flamegraph/perf to profile real usage
+- Optimize audio processing pipeline
+- Reduce allocations in hot paths
+- Benchmark before and after each optimization
+- Profile GUI rendering for improvements
+
+---
+
+## Phase 4: Documentation Improvements
+
+**Goal:** Comprehensive documentation for easy onboarding
+
+**Requirements:** DOCS-01, DOCS-02, DOCS-03, DOCS-04
+
+**Success criteria:**
+1. All public APIs documented with examples
+2. README accurately describes current features
+3. Complex algorithms have explanation comments
+4. New contributors understand codebase structure
+
+**Description:**
+Add comprehensive documentation to public APIs, update project documentation, and explain complex algorithms. Make the codebase approachable for new contributors.
+
+**Key areas:**
+- Run `cargo doc --open` and document undocumented items
+- Update README with current capabilities
+- Add comments explaining non-obvious logic
+- Document architecture patterns and module responsibilities
+
+---
+
+## Phase 5: Test Quality Improvements
+
+**Goal:** Test coverage that matters, fast and maintainable
+
+**Requirements:** TEST-01, TEST-02, TEST-03, TEST-04
+
+**Success criteria:**
+1. Unnecessary tests removed
+2. Critical paths well-tested
+3. Test names clearly describe what's tested
+4. Test suite runs in < 5s
+
+**Description:**
+Review the 894 passing tests to identify redundancies, test what matters, and ensure tests are fast and maintainable. Focus on preventing real bugs, not just increasing coverage metrics.
+
+**Key areas:**
+- Identify redundant or over-specific tests
+- Ensure core functionality (audio playback, file scanning) has good coverage
+- Rename vague tests to be descriptive
+- Slow tests move to integration test suite
+- Remove edge case tests that don't add value
 
 ---
 
 ## Traceability Summary
 
-**Total v1 requirements:** 18
-**Requirements mapped to phases:** 18 ✓
+**Total v1 requirements:** 20
+**Requirements mapped to phases:** 20 ✓
 **Unmapped:** 0
 
 | Phase | Requirements |
 |-------|--------------|
-| Phase 1 | TEST-01, TEST-02, TEST-03 (3 requirements) |
-| Phase 2 | LIB-01 through LIB-05, PLAY-01 through PLAY-05, PROC-01 through PROC-03, SETT-01 through SETT-03 (15 requirements) |
+| Phase 1 | QUAL-01, QUAL-02, QUAL-03, QUAL-04 |
+| Phase 2 | DEBT-01, DEBT-02, DEBT-03, DEBT-04 |
+| Phase 3 | PERF-01, PERF-02, PERF-03, PERF-04 |
+| Phase 4 | DOCS-01, DOCS-02, DOCS-03, DOCS-04 |
+| Phase 5 | TEST-01, TEST-02, TEST-03, TEST-04 |
 
 ---
 
 ## Notes
 
-- **Phase 1 is blocking:** Cannot verify features reliably while 34 tests fail
-- **Backend appears complete:** Library management, playback, processing, and settings code exists
-- **Focus:** Test infrastructure migration, not new feature development
-- **Risk:** Test migration requires careful refactoring to preserve test behavior
+- **Sequential execution needed**: Phases build on each other (e.g., fix unwrap() before performance work)
+- **Test-driven**: Keep tests passing throughout all improvements
+- **Incremental commits**: Commit after each improvement, revert if it breaks something
 
 ---
-*Roadmap created: 2025-01-24*
+*Roadmap created: 2026-01-25*
