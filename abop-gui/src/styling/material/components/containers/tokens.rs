@@ -8,7 +8,7 @@ use crate::styling::material::enhanced_tokens::types::EnhancedMaterialTokens;
 impl MaterialTokens for EnhancedMaterialTokens {
     /// Create a Material surface with the current tokens
     fn surface(&self) -> MaterialSurface {
-        MaterialSurface::new()
+        // MaterialSurface::new()
     }
 
     /// Create a Material divider with the current tokens

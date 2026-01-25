@@ -4,12 +4,12 @@ use iced::widget::{column, container, row, text};
 use iced::{Alignment, Element, Length};
 use std::collections::HashSet;
 
-use abop_core::PlayerState;
 use abop_core::models::Audiobook;
+use abop_core::PlayerState;
 
 use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;
-use crate::styling::material::{MaterialSurface, MaterialTokens, SurfaceVariant};
+// use crate::styling::material::{MaterialSurface, MaterialTokens, SurfaceVariant}; // Temporarily disabled
 
 /// Audio playback controls and manipulation component
 ///
@@ -106,7 +106,7 @@ impl AudioControls {
 
         // Add processing options panel
         content = content.push(
-            MaterialSurface::new()
+            // MaterialSurface::new()
                 .variant(SurfaceVariant::SurfaceContainer)
                 .padding(material_tokens.spacing().md)
                 .container(

@@ -98,7 +98,7 @@ impl SearchBar {
         container(search_row)
             .width(Length::Fill)
             .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
+                crate::styling::material::// MaterialSurface::new()
                     .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
                     .style(tokens)
             })
@@ -223,7 +223,7 @@ impl AdvancedSearchBar {
         container(search_content)
             .width(Length::Fill)
             .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
+                crate::styling::material::// MaterialSurface::new()
                     .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
                     .style(tokens)
             })

@@ -86,9 +86,9 @@ impl CoverArt {
         container(content)
             .padding(Padding::from(OUTER_PADDING))
             .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
-                    .variant(crate::styling::material::SurfaceVariant::SurfaceContainerLow)
-                    .style(tokens)
+                // MaterialSurface::new()
+                // .variant(SurfaceVariant::SurfaceContainerLow)
+                .style(tokens)
             })
             .into()
     }
@@ -104,8 +104,8 @@ fn styled_square_container<'a, C: Into<Element<'a, crate::messages::Message>>>(
         .width(Length::Fixed(size as f32))
         .height(Length::Fixed(size as f32))
         .style(|_theme| {
-            crate::styling::material::MaterialSurface::new()
-                .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
+            // MaterialSurface::new()
+                // .variant(SurfaceVariant::SurfaceContainer)
                 .style(tokens)
         })
         .into()
@@ -170,8 +170,8 @@ impl CoverArtWithLoading {
                 .width(Length::Fixed(self.loading_size as f32))
                 .height(Length::Fixed(self.loading_size as f32))
                 .style(|_theme| {
-                    crate::styling::material::MaterialSurface::new()
-                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
+                    // MaterialSurface::new()
+                        // .variant(SurfaceVariant::SurfaceContainer)
                         .style(tokens)
                 })
                 .into()

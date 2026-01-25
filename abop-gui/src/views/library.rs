@@ -1,7 +1,7 @@
 //! Library view module
 
-use iced::Length;
 use iced::widget::{column, container};
+use iced::Length;
 
 use crate::components::audio_toolbar::AudioToolbar;
 use crate::components::search_bar::SearchBar;
@@ -10,7 +10,7 @@ use crate::components::table_core::AudiobookTable;
 use crate::messages::Message;
 use crate::state::AppState;
 use crate::styling::container::LayoutContainerStyles;
-use crate::styling::material::{MaterialSurface, SurfaceVariant};
+// // use crate::styling::material::{MaterialSurface, SurfaceVariant}; // Temporarily disabled
 
 /// Creates the library management view with browsing, scanning, and audiobook list
 #[must_use]
@@ -89,8 +89,8 @@ fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
         .width(Length::Fill)
         .height(Length::Fill)
         .style(|_theme: &iced::Theme| {
-            MaterialSurface::new()
-                .variant(SurfaceVariant::SurfaceContainerLow)
+            // MaterialSurface::new()
+                // .variant(SurfaceVariant::SurfaceContainerLow)
                 .style(&state.ui.material_tokens)
         })
         .padding(iced::Padding {

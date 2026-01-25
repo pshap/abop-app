@@ -75,7 +75,7 @@ pub fn view<'a>(
         .width(Length::Fixed(400.0))
         .style(move |_theme| container::Style {
             background: Some(material_tokens.colors().surface_container_high.into()),
-            border: Border::radius(12.0),
+            border: iced::border::Radius::new(12.0),
             ..container::Style::default()
         })
         .into()
