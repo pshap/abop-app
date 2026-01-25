@@ -70,7 +70,10 @@ Currently, 34 tests are failing due to broken test infrastructure. The tests don
 8. All settings toggles work (theme, auto-save, scan subdirs)
 
 **Plans:**
-- [ ] TBD (created by /gsd-plan-phase 2)
+- [x] 02-01-PLAN.md — Verify library management features (LIB-01 through LIB-05)
+- [x] 02-02-PLAN.md — Verify audio playback features (PLAY-01 through PLAY-05)
+- [x] 02-03-PLAN.md — Verify audio processing features (PROC-01 through PROC-03)
+- [x] 02-04-PLAN.md — Verify settings features (SETT-01 through SETT-03)
 
 **Blocked by:** Phase 1
 
