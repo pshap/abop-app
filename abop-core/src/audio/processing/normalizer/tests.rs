@@ -1,6 +1,7 @@
 //! Test suite for the normalizer module
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::audio::processing::config::{NormalizationAlgorithm, NormalizerConfig};
     use crate::audio::processing::traits::core::{AudioProcessor, Validatable};

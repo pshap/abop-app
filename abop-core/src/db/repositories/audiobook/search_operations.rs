@@ -24,9 +24,7 @@ impl AudiobookRepository {
         self.execute_query(move |conn: &rusqlite::Connection| {
             let mut stmt =
                 conn.prepare(&format!("{} {}", SELECT_ALL_COLUMNS, where_clauses::BY_ID))?;
-            let audiobook = stmt
-                .query_row([&id], |row| map_row_to_audiobook(row))
-                .optional()?;
+            let audiobook = stmt.query_row([&id], map_row_to_audiobook).optional()?;
             Ok(audiobook)
         })
         .map_err(AppError::from)
@@ -49,7 +47,7 @@ impl AudiobookRepository {
                 where_clauses::BY_LIBRARY_ID
             ))?;
             let audiobooks = stmt
-                .query_map([&library_id], |row| map_row_to_audiobook(row))?
+                .query_map([&library_id], map_row_to_audiobook)?
                 .collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
             Ok(audiobooks)
         })
@@ -85,7 +83,7 @@ impl AudiobookRepository {
                 ))?;
                 let rows = stmt.query_map(
                     rusqlite::params![library_id, limit_value as i64, offset as i64],
-                    |row| map_row_to_audiobook(row),
+                    map_row_to_audiobook,
                 )?;
                 rows.collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?
             } else {
@@ -122,7 +120,7 @@ impl AudiobookRepository {
                 where_clauses::BY_AUTHOR_LIKE
             ))?;
             let audiobooks = stmt
-                .query_map([&format!("%{author}%")], |row| map_row_to_audiobook(row))?
+                .query_map([&format!("%{author}%")], map_row_to_audiobook)?
                 .collect::<std::result::Result<Vec<_>, _>>()?;
             Ok(audiobooks)
         })
@@ -144,9 +142,7 @@ impl AudiobookRepository {
                 SELECT_ALL_COLUMNS,
                 where_clauses::BY_PATH
             ))?;
-            let audiobook = stmt
-                .query_row([&path], |row| map_row_to_audiobook(row))
-                .optional()?;
+            let audiobook = stmt.query_row([&path], map_row_to_audiobook).optional()?;
             Ok(audiobook)
         })
         .map_err(AppError::from)
@@ -162,7 +158,7 @@ impl AudiobookRepository {
         self.execute_query(|conn: &rusqlite::Connection| {
             let mut stmt = conn.prepare(SELECT_ALL_COLUMNS)?;
             let audiobooks = stmt
-                .query_map([], |row| map_row_to_audiobook(row))?
+                .query_map([], map_row_to_audiobook)?
                 .collect::<std::result::Result<Vec<_>, rusqlite::Error>>()?;
             Ok(audiobooks)
         })

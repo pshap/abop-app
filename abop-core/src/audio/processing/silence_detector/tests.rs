@@ -242,7 +242,7 @@ fn test_silence_segment_validation() {
 
 #[test]
 fn test_silence_percentage_calculation() {
-    let mut buffer = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
+    let buffer = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
     let detector = SilenceDetector::default();
 
     let percentage = detector.calculate_silence_percentage(&buffer).unwrap();

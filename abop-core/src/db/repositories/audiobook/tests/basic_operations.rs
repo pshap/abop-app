@@ -10,5 +10,5 @@ fn test_audiobook_repository_creation() {
 
     // Verify repository was created successfully
     // Simple check that the repository can be instantiated
-    assert!(true, "Repository creation should succeed");
+    // Repository creation succeeds if we get here without panicking
 }

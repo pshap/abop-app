@@ -45,7 +45,7 @@ mod tests {
         assert_eq!(size, 44100 * 2 * 4); // 1 second, stereo, f32
 
         let size = estimate_f32_buffer_size(48000, 1, 0.5);
-        assert_eq!(size, 24000 * 1 * 4); // 0.5 second, mono, f32
+        assert_eq!(size, 24000 * 4); // 0.5 second, mono, f32
     }
 
     #[test]
@@ -54,7 +54,7 @@ mod tests {
         assert_eq!(size, 44100 * 2 * 2); // 1 second, stereo, i16
 
         let size = estimate_i16_buffer_size(48000, 1, 0.5);
-        assert_eq!(size, 24000 * 1 * 2); // 0.5 second, mono, i16
+        assert_eq!(size, 24000 * 2); // 0.5 second, mono, i16
     }
 
     #[test]

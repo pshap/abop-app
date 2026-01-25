@@ -1,6 +1,7 @@
 //! SQL query definitions for audiobook operations
 
 /// Audiobook table column names for consistent querying
+#[allow(missing_docs)]
 pub mod columns {
     pub const ID: &str = "id";
     pub const LIBRARY_ID: &str = "library_id";
@@ -61,10 +62,13 @@ pub const UPDATE_AUDIOBOOK: &str = "
 ";
 
 /// DELETE queries
+#[allow(missing_docs)]
 pub const DELETE_BY_ID: &str = "DELETE FROM audiobooks WHERE id = ?1";
+#[allow(missing_docs)]
 pub const DELETE_BY_LIBRARY_ID: &str = "DELETE FROM audiobooks WHERE library_id = ?1";
 
 /// WHERE clause conditions for common queries
+#[allow(missing_docs)]
 pub mod where_clauses {
     pub const BY_ID: &str = "WHERE id = ?1";
     pub const BY_LIBRARY_ID: &str = "WHERE library_id = ?1";
@@ -74,6 +78,7 @@ pub mod where_clauses {
 }
 
 /// ORDER BY clauses for consistent sorting
+#[allow(missing_docs)]
 pub mod order_by {
     pub const BY_TITLE_ASC: &str = "ORDER BY title ASC";
     pub const BY_TITLE_ASC_LIMIT_OFFSET: &str = "ORDER BY title ASC LIMIT ?2 OFFSET ?3";
@@ -81,5 +86,7 @@ pub mod order_by {
 }
 
 /// COUNT queries
+#[allow(missing_docs)]
 pub const COUNT_BY_LIBRARY_ID: &str = "SELECT COUNT(*) FROM audiobooks WHERE library_id = ?1";
+#[allow(missing_docs)]
 pub const EXISTS_BY_ID: &str = "SELECT EXISTS(SELECT 1 FROM audiobooks WHERE id = ?1)";

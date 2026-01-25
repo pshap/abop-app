@@ -1,6 +1,7 @@
 //! Test suite for the resampler module
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::audio::processing::config::ResamplerConfig;
     use crate::audio::processing::resampler::{LinearResampler, ResampleBufferFn};

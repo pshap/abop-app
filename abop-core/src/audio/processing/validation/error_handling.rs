@@ -58,6 +58,7 @@ impl From<ValidationError> for AppError {
 }
 
 /// Common validation error messages
+#[allow(missing_docs)]
 pub mod error_messages {
     pub const INVALID_SAMPLE_RATE: &str = "Sample rate is outside supported range (8000-192000 Hz)";
     pub const INVALID_BIT_DEPTH: &str = "Bit depth must be 16, 24, or 32 bits";
@@ -98,9 +99,7 @@ pub mod result_utils {
     /// Return first error from multiple validations, or Ok(())
     pub fn first_error_or_ok(results: Vec<ValidationResult<()>>) -> ValidationResult<()> {
         for result in results {
-            if let Err(error) = result {
-                return Err(error);
-            }
+            result?;
         }
         Ok(())
     }

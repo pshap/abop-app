@@ -11,7 +11,7 @@ pub fn validate_sample_rate(sample_rate: u32) -> AppResult<()> {
     const MIN_SAMPLE_RATE: u32 = 8000;
     const MAX_SAMPLE_RATE: u32 = 192000;
 
-    if sample_rate < MIN_SAMPLE_RATE || sample_rate > MAX_SAMPLE_RATE {
+    if !(MIN_SAMPLE_RATE..=MAX_SAMPLE_RATE).contains(&sample_rate) {
         return Err(AppError::Audio(format!(
             "Sample rate {} Hz is outside supported range ({}-{} Hz)",
             sample_rate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE
@@ -57,7 +57,7 @@ pub fn validate_channels(channels: u16) -> AppResult<()> {
     const MIN_CHANNELS: u16 = 1;
     const MAX_CHANNELS: u16 = 8;
 
-    if channels < MIN_CHANNELS || channels > MAX_CHANNELS {
+    if !(MIN_CHANNELS..=MAX_CHANNELS).contains(&channels) {
         return Err(AppError::Audio(format!(
             "Channel count {} is outside supported range ({}-{} channels)",
             channels, MIN_CHANNELS, MAX_CHANNELS

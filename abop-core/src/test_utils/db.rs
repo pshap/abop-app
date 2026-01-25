@@ -6,7 +6,7 @@
 use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
 use crate::models::{Audiobook, Library, Progress};
 use chrono::Utc;
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::{NamedTempFile, TempPath};
@@ -17,6 +17,12 @@ pub struct TestDatabase {
     pub connection: Arc<EnhancedConnection>,
     /// Temporary file path that will be cleaned up when dropped
     pub _temp_path: TempPath,
+}
+
+impl Default for TestDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TestDatabase {
