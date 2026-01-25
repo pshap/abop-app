@@ -5,10 +5,10 @@
 
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
+use abop_core::PlayerState;
 use abop_core::models::audiobook::Audiobook;
 use abop_core::models::library::Library;
 use abop_core::models::progress::Progress;
-use abop_core::PlayerState;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -91,7 +91,7 @@ impl TestDataFactory {
                     &format!("test-{i}"),
                     &format!("Test Book {}", i + 1),
                     &format!("Author {}", (i % 5) + 1), // Cycle through 5 authors
-                    Some(3600 + (i as u64 * 300)), // Vary duration
+                    Some(3600 + (i as u64 * 300)),      // Vary duration
                     Some(1024000 + (i as u64 * 50000)), // Vary size
                 )
             })
@@ -238,9 +238,18 @@ impl TestScenarios {
     pub fn selection_scenarios() -> Vec<(HashSet<String>, &'static str)> {
         vec![
             (HashSet::new(), "no selection"),
-            (TestStateFactory::selection_state(&["1"]), "single selection"),
-            (TestStateFactory::selection_state(&["1", "2"]), "multiple selection"),
-            (TestStateFactory::selection_state(&["1", "2", "3", "4", "5"]), "all selected"),
+            (
+                TestStateFactory::selection_state(&["1"]),
+                "single selection",
+            ),
+            (
+                TestStateFactory::selection_state(&["1", "2"]),
+                "multiple selection",
+            ),
+            (
+                TestStateFactory::selection_state(&["1", "2", "3", "4", "5"]),
+                "all selected",
+            ),
         ]
     }
 }
@@ -297,10 +306,7 @@ impl TestAssertions {
     /// # Arguments
     /// * `audiobooks` - The audiobooks to test with
     /// * `component_factory` - A function that creates the component given selection state
-    pub fn assert_selection_states_supported<F, T>(
-        audiobooks: Vec<Audiobook>,
-        component_factory: F,
-    )
+    pub fn assert_selection_states_supported<F, T>(audiobooks: Vec<Audiobook>, component_factory: F)
     where
         F: Fn(Vec<Audiobook>, HashSet<String>) -> T,
     {
@@ -341,11 +347,11 @@ impl PerformanceTestUtils {
         F: Fn(Vec<Audiobook>) -> T,
     {
         let sizes = [10, 100, 500, 1000, max_size];
-        
+
         for &size in &sizes {
             let audiobooks = TestScenarios::large_collection(size);
             let duration = Self::measure_creation_time(|| component_factory(audiobooks));
-            
+
             // Log performance for manual verification
             // In a real test, you might want to assert performance thresholds
             println!("Size {}: {:?}", size, duration);
@@ -368,11 +374,11 @@ mod tests {
     #[test]
     fn test_custom_audiobook_factory() {
         let audiobook = TestDataFactory::custom_audiobook(
-            "custom-1", 
-            "Custom Book", 
-            "Custom Author", 
-            Some(1800), 
-            Some(2000000)
+            "custom-1",
+            "Custom Book",
+            "Custom Author",
+            Some(1800),
+            Some(2000000),
         );
         assert_eq!(audiobook.id, "custom-1");
         assert_eq!(audiobook.author, Some("Custom Author".to_string()));
@@ -384,7 +390,7 @@ mod tests {
     fn test_audiobook_collection() {
         let collection = TestDataFactory::audiobook_collection(5);
         assert_eq!(collection.len(), 5);
-        
+
         // Check that each audiobook has unique data
         for (i, audiobook) in collection.iter().enumerate() {
             assert_eq!(audiobook.id, format!("test-{i}"));

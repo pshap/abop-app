@@ -6,7 +6,7 @@ use iced::{self, Element, Subscription, Task, keyboard, theme::Theme as IcedThem
 
 // Import ThemeMode from the appropriate module
 
-use log::{debug, error, info};
+use log::{error, info};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, UnboundedSender};
 
