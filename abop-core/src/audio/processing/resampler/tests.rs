@@ -2,10 +2,10 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::audio::SampleFormat;
     use crate::audio::processing::config::ResamplerConfig;
     use crate::audio::processing::resampler::{LinearResampler, ResampleBufferFn};
     use crate::audio::processing::traits::{AudioProcessor, LatencyReporting, Validatable};
+    use crate::audio::SampleFormat;
     use crate::test_utils::audio::{create_stereo_test_buffer, create_test_buffer};
     use crate::utils::casting::domain::audio::safe_duration_to_samples;
 
@@ -45,7 +45,7 @@ mod tests {
             &mut buffer,
             target_rate,
         )
-        .unwrap();
+        .expect("Scalar resampling should succeed for valid input");
         let _scalar_duration = scalar_start.elapsed();
 
         // Process with SIMD implementation
@@ -53,7 +53,7 @@ mod tests {
             &mut buffer_simd,
             target_rate,
         )
-        .unwrap();
+        .expect("SIMD resampling should succeed for valid input");
 
         // Compare results
         assert_eq!(
@@ -111,15 +111,18 @@ mod tests {
 
         // Resample to same rate (should be no-op)
         let original_data = buffer.data.clone();
-        LinearResampler::resample_buffer(&mut buffer, 44100).unwrap();
+        LinearResampler::resample_buffer(&mut buffer, 44100)
+            .expect("Resampling to same rate should succeed");
         assert_eq!(buffer.data, original_data);
 
         // Resample to half rate
-        LinearResampler::resample_buffer(&mut buffer, 22050).unwrap();
+        LinearResampler::resample_buffer(&mut buffer, 22050)
+            .expect("Resampling to lower rate should succeed");
         assert_eq!(buffer.data.len(), 2);
 
         // Resample to double rate
-        LinearResampler::resample_buffer(&mut buffer, 44100).unwrap();
+        LinearResampler::resample_buffer(&mut buffer, 44100)
+            .expect("Resampling to higher rate should succeed");
         assert_eq!(buffer.data.len(), 4);
     }
 
@@ -154,7 +157,8 @@ mod tests {
             ..Default::default()
         };
 
-        let mut resampler = LinearResampler::new(config).unwrap();
+        let mut resampler = LinearResampler::new(config)
+            .expect("Resampler creation should succeed with valid config");
         let result = resampler.process(&mut buffer);
 
         assert!(result.is_ok());
@@ -173,7 +177,8 @@ mod tests {
             ..Default::default()
         };
 
-        let mut resampler = LinearResampler::new(config).unwrap();
+        let mut resampler = LinearResampler::new(config)
+            .expect("Resampler creation should succeed with valid config");
         let result = resampler.process(&mut buffer);
 
         assert!(result.is_ok());
@@ -194,7 +199,8 @@ mod tests {
             ..Default::default()
         };
 
-        let mut resampler = LinearResampler::new(config).unwrap();
+        let mut resampler = LinearResampler::new(config)
+            .expect("Resampler creation should succeed with valid config");
         let result = resampler.process(&mut buffer);
 
         assert!(result.is_ok());
@@ -210,7 +216,8 @@ mod tests {
             ..Default::default()
         };
 
-        let mut resampler = LinearResampler::new(config).unwrap();
+        let mut resampler = LinearResampler::new(config)
+            .expect("Resampler creation should succeed with valid config");
         let result = resampler.process(&mut buffer);
 
         assert!(result.is_ok());
@@ -236,7 +243,9 @@ mod tests {
     fn test_resampler_with_target_rate() {
         let resampler = LinearResampler::with_target_rate(48000);
         assert!(resampler.is_ok());
-        assert_eq!(resampler.unwrap().config.target_sample_rate, Some(48000));
+        let created_resampler =
+            resampler.expect("Resampler creation should succeed with valid target rate");
+        assert_eq!(created_resampler.config.target_sample_rate, Some(48000));
     }
 
     #[test]
@@ -263,7 +272,8 @@ mod tests {
 
         // Test creating resampler with different function types
         let config = ResamplerConfig::default();
-        let mut resampler = LinearResampler::new(config).unwrap();
+        let mut resampler = LinearResampler::new(config)
+            .expect("Resampler creation should succeed with default config");
 
         #[cfg(test)]
         resampler.set_resample_fn(ResampleBufferFn::Scalar);
