@@ -3,9 +3,9 @@
 use super::{ElevationStyle, MaterialElevation};
 use iced::{Color, Shadow, Vector};
 use serde::{
-    Deserialize, Serialize, Serializer,
     de::{Deserializer, MapAccess, Visitor},
     ser::SerializeStruct,
+    Deserialize, Serialize, Serializer,
 };
 use std::fmt;
 
@@ -241,11 +241,13 @@ mod tests {
         let style = ElevationStyle::new(ElevationLevel::Level2, Color::BLACK, Color::WHITE);
 
         // Test serialization
-        let serialized = serde_json::to_string(&style).unwrap();
+        let serialized =
+            serde_json::to_string(&style).expect("ElevationStyle serialization should succeed");
         assert!(!serialized.is_empty());
 
         // Test deserialization
-        let deserialized: ElevationStyle = serde_json::from_str(&serialized).unwrap();
+        let deserialized: ElevationStyle = serde_json::from_str(&serialized)
+            .expect("ElevationStyle deserialization should succeed");
         assert_eq!(deserialized.level, style.level);
         assert_eq!(deserialized.dp, style.dp);
         assert_eq!(deserialized.tint_opacity, style.tint_opacity);
@@ -261,11 +263,13 @@ mod tests {
         let elevation = MaterialElevation::default();
 
         // Test serialization
-        let serialized = serde_json::to_string(&elevation).unwrap();
+        let serialized = serde_json::to_string(&elevation)
+            .expect("MaterialElevation serialization should succeed");
         assert!(!serialized.is_empty());
 
         // Test deserialization
-        let deserialized: MaterialElevation = serde_json::from_str(&serialized).unwrap();
+        let deserialized: MaterialElevation = serde_json::from_str(&serialized)
+            .expect("MaterialElevation deserialization should succeed");
 
         // Check that all levels match
         for level in ElevationLevel::all() {
