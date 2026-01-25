@@ -10,7 +10,7 @@
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1     | ✓ Complete | 100% |
-| 2     | ○ Ready | 0% |
+| 2     | ↷ Deferred | 0% (manual GUI verification deferred) |
 
 ---
 
@@ -54,28 +54,43 @@ Currently, 34 tests are failing due to broken test infrastructure. The tests don
 
 ## Phase 2: Verify End-to-End Features
 
-**Duration:** 2-3 hours
-**Goal:** Verify all frontend features work end-to-end with passing tests
+**Completed:** 2026-01-25
+**Duration:** ~5 min (deferred manual verification)
+**Goal:** Verify all frontend features work end-to-end with passing tests ↷
 
-**Requirements:** LIB-01 through LIB-05, PLAY-01 through PLAY-05, PROC-01 through PROC-03, SETT-01 through SETT-03
+**Requirements:** LIB-01 through LIB-05, PLAY-01 through PLAY-05, PROC-01 through PROC-03, SETT-01 through SETT-03 ↷
 
-**Success criteria:**
-1. Library scanning displays audiobooks in GUI
-2. Search/filter functionality works
-3. Audio playback starts and plays correctly
-4. Player state updates in real-time
-5. Progress tracking works during playback
-6. Audio processing (mono conversion) creates output files
-7. Processing progress displays during conversion
-8. All settings toggles work (theme, auto-save, scan subdirs)
+**Success criteria:** (all deferred)
+1. Library scanning displays audiobooks in GUI (deferred)
+2. Search/filter functionality works (deferred)
+3. Audio playback starts and plays correctly (deferred)
+4. Player state updates in real-time (deferred)
+5. Progress tracking works during playback (deferred)
+6. Audio processing (mono conversion) creates output files (deferred)
+7. Processing progress displays during conversion (deferred)
+8. All settings toggles work (theme, auto-save, scan subdirs) (deferred)
 
 **Plans:**
-- [x] 02-01-PLAN.md — Verify library management features (LIB-01 through LIB-05)
-- [x] 02-02-PLAN.md — Verify audio playback features (PLAY-01 through PLAY-05)
-- [x] 02-03-PLAN.md — Verify audio processing features (PROC-01 through PROC-03)
-- [x] 02-04-PLAN.md — Verify settings features (SETT-01 through SETT-03)
+- [x] 02-01-PLAN.md — Verify library management features (deferred)
+- [x] 02-02-PLAN.md — Verify audio playback features (deferred)
+- [x] 02-03-PLAN.md — Verify audio processing features (deferred)
+- [x] 02-04-PLAN.md — Verify settings features (deferred)
 
-**Blocked by:** Phase 1
+**Status: DEFERRED** - All 16 manual verification checkpoints deferred
+- All plans contained pure `checkpoint:human-verify` tasks requiring GUI testing
+- User chose to defer manual verification rather than complete now or mark as passed untested
+- Backend implementation assumed functional based on Phase 1 test success (894 tests passing)
+- End-to-end functionality remains unverified
+
+**Deferred by:** N/A (user choice - no specific issue blocking)
+
+**Description:**
+Phase 2 planned manual GUI verification of all 16 frontend features across 4 plans (16 checkpoints). Each plan contained only `checkpoint:human-verify` tasks requiring application interaction. User opted to defer verification rather than proceed with untested marking.
+
+**Future action needed:**
+- Run application: `cargo run -p abop-gui`
+- Execute all 16 verification checkpoints from the 4 PLAN files
+- Confirm must_haves exist through verification
 
 **Description:**
 After all tests pass, verify each feature works end-to-end by manually testing the application workflows. This confirms the frontend promises are backed by working backend code.
