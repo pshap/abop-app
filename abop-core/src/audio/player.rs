@@ -5,7 +5,9 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
+use std::cell::RefCell;
+
 
 use rodio::{Decoder, OutputStream, Sink};
 
@@ -46,7 +48,7 @@ pub struct AudioPlayer {
 /// synchronization. It's the preferred way to share an AudioPlayer between threads.
 #[derive(Clone)]
 pub struct ThreadSafeAudioPlayer {
-    inner: Arc<Mutex<AudioPlayer>>,
+    inner: std::rc::Rc<std::cell::RefCell<Option<AudioPlayer>>>,
 }
 
 impl ThreadSafeAudioPlayer {
@@ -57,7 +59,7 @@ impl ThreadSafeAudioPlayer {
     /// Returns `AppError::Audio` if audio system initialization fails.
     pub fn new() -> Result<Self> {
         Ok(Self {
-            inner: Arc::new(Mutex::new(AudioPlayer::new()?)),
+            inner: Rc::new(RefCell::new(None)),
         })
     }
 
@@ -66,8 +68,9 @@ impl ThreadSafeAudioPlayer {
     /// See `AudioPlayer::play` for details.
     pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
         self.inner
-            .lock()
-            .map_err(|e| AppError::Audio(format!("Failed to acquire audio player lock: {e}")))?
+            .borrow_mut()
+            .as_mut()
+            .ok_or_else(|| AppError::Audio("Audio player not initialized".to_string()))?
             .play(file_path)
     }
 
@@ -75,7 +78,7 @@ impl ThreadSafeAudioPlayer {
     ///
     /// See `AudioPlayer::stop` for details.
     pub fn stop(&self) {
-        if let Ok(mut player) = self.inner.lock() {
+        if let Some(player) = self.inner.borrow_mut().as_mut() {
             player.stop();
         }
     }
@@ -87,7 +90,8 @@ impl ThreadSafeAudioPlayer {
     #[must_use]
     pub fn get_state(&self) -> PlayerState {
         self.inner
-            .lock()
+            .borrow()
+            .as_ref()
             .map(|player| player.get_state())
             .unwrap_or(PlayerState::Stopped)
     }
@@ -98,7 +102,8 @@ impl ThreadSafeAudioPlayer {
     #[must_use]
     pub fn get_current_file(&self) -> Option<PathBuf> {
         self.inner
-            .lock()
+            .borrow()
+            .as_ref()
             .map(|player| player.get_current_file())
             .unwrap_or(None)
     }

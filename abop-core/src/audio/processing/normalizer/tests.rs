@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use super::core::AudioNormalizer;
+    use super::AudioNormalizer;
     use crate::audio::processing::config::{NormalizationAlgorithm, NormalizerConfig};
     use crate::audio::SampleFormat;
     use crate::test_utils::audio::create_test_buffer;
