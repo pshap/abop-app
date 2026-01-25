@@ -9,8 +9,8 @@ use abop_core::models::Audiobook;
 
 use crate::components::cover_art::CoverArt;
 use crate::messages::Message;
-use crate::styling::material::components::data;
 use crate::styling::material::MaterialTokens;
+use crate::styling::material::components::data;
 use crate::utils::image_cache::ImageCache;
 
 /// Component for creating table rows with Material Design styling
@@ -227,7 +227,7 @@ impl TableRow {
             "actions" => {
                 return container(iced::widget::Space::with_width(Length::Fixed(0.0)))
                     .width(Length::Fixed(0.0))
-                    .into()
+                    .into();
             } // Already handled in create_single_row
             _ => String::new(),
         };

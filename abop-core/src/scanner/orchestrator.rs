@@ -152,7 +152,11 @@ impl ScanOrchestrator {
                 return Err(ScanError::Cancelled);
             }
 
-            info!("Processing batch {} ({} files)", batch_index + 1, file_chunk.len());
+            info!(
+                "Processing batch {} ({} files)",
+                batch_index + 1,
+                file_chunk.len()
+            );
             let batch_start_time = Instant::now();
 
             // Clone necessary data for parallel processing
@@ -190,10 +194,7 @@ impl ScanOrchestrator {
                         if error_msg.contains("end of stream")
                             || error_msg.contains("Failed to probe audio format")
                         {
-                            warn!(
-                                "Skipping file with unreadable format: {}",
-                                e
-                            );
+                            warn!("Skipping file with unreadable format: {}", e);
                         } else {
                             error!("Error processing file: {}", e);
                         }

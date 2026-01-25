@@ -1,9 +1,6 @@
 //! Scalar implementation of linear resampling algorithm
 
-use super::super::{
-    casting_utils::error_conversion::cast_to_audio_error,
-    error::Result,
-};
+use super::super::{casting_utils::error_conversion::cast_to_audio_error, error::Result};
 use crate::audio::AudioBuffer;
 use crate::utils::casting::domain::audio::{safe_f64_to_usize_samples, safe_usize_to_f64_audio};
 

@@ -6,8 +6,8 @@ use std::collections::HashSet;
 
 use crate::styling::MaterialTokens;
 
-use abop_core::models::Audiobook;
 use abop_core::PlayerState;
+use abop_core::models::Audiobook;
 
 use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;
@@ -107,32 +107,27 @@ impl AudioControls {
         }
 
         // Add processing options panel
-        content = content.push(
-            // MaterialSurface::new()
-                .variant(SurfaceVariant::SurfaceContainer)
-                .padding(material_tokens.spacing().md)
-                .container(
-                    column![
-                        text("Processing Options").size(18),
-                        row![
-                            text("Stereo to Mono:"),
-                            text("Converts stereo audio to mono, reducing file size.")
-                        ]
-                        .spacing(material_tokens.spacing().md)
-                        .align_y(Alignment::Start),
-                        row![
-                            text("Audio Playback:"),
-                            text("Preview audio files before processing.")
-                        ]
-                        .spacing(material_tokens.spacing().md)
-                        .align_y(Alignment::Start),
-                    ]
-                    .spacing(material_tokens.spacing().md)
-                    .width(Length::Fill)
-                    .into(),
-                    material_tokens,
-                ),
-        );
+        content = content.push(container(
+            column![
+                text("Processing Options").size(18),
+                row![
+                    text("Stereo to Mono:"),
+                    text("Converts stereo audio to mono, reducing file size.")
+                ]
+                .spacing(material_tokens.spacing().md)
+                .align_y(Alignment::Start),
+                row![
+                    text("Audio Playback:"),
+                    text("Preview audio files before processing.")
+                ]
+                .spacing(material_tokens.spacing().md)
+                .align_y(Alignment::Start),
+            ]
+            .spacing(material_tokens.spacing().md)
+            .width(Length::Fill)
+            .into(),
+            material_tokens,
+        ));
 
         container(content)
             .padding(material_tokens.spacing().md)

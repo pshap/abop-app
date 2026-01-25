@@ -5,10 +5,10 @@
 
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
+use abop_core::PlayerState;
 use abop_core::models::audiobook::Audiobook;
 use abop_core::models::library::Library;
 use abop_core::models::progress::Progress;
-use abop_core::PlayerState;
 use std::collections::HashSet;
 use std::path::PathBuf;
 

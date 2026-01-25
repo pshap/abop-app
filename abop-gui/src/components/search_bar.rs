@@ -7,8 +7,8 @@ use iced::widget::{button, column, container, row, text};
 use iced::{Element, Length, Padding};
 
 use crate::messages::Message;
-use crate::styling::material::components::inputs::MaterialSearchField;
 use crate::styling::material::MaterialTokens;
+use crate::styling::material::components::inputs::MaterialSearchField;
 
 /// Search bar component for filtering audiobooks
 #[derive(Debug, Clone)]

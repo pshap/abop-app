@@ -1,6 +1,5 @@
 //! Resampler error types
 
-
 /// Audio resampling error type
 #[derive(Debug, thiserror::Error)]
 pub enum ResamplerError {

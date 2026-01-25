@@ -1,7 +1,7 @@
 //! Library view module
 
-use iced::widget::{column, container};
 use iced::Length;
+use iced::widget::{column, container};
 
 use crate::components::audio_toolbar::AudioToolbar;
 use crate::components::search_bar::SearchBar;

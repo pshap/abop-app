@@ -85,7 +85,12 @@ fn handle_commit_rename(
     state.ui.renaming_id = None;
 
     // Find the audiobook in state to get current path
-    let audiobook = state.library.audiobooks.iter().find(|a| a.id == id)?.clone();
+    let audiobook = state
+        .library
+        .audiobooks
+        .iter()
+        .find(|a| a.id == id)?
+        .clone();
 
     Some(Task::perform(
         async move {
@@ -93,7 +98,7 @@ fn handle_commit_rename(
                 let db = Database::open_app_database()?;
                 let repo = Arc::new(db.audiobook_repository());
                 let service = RenamingService::new(repo);
-                
+
                 service.rename_audiobook(&audiobook, &new_name)
             })
             .await
@@ -103,7 +108,7 @@ fn handle_commit_rename(
         |result| match result {
             Ok(updated) => {
                 log::info!("Rename successful: {}", updated.path.display());
-                // We could send a message to update local state, 
+                // We could send a message to update local state,
                 // but for now let's just trigger a re-scan or partial update
                 Message::NoOp // Or Message::RenameSuccess(updated)
             }

@@ -91,7 +91,11 @@ impl ThemeMode {
     /// TODO: Enhance to detect actual OS theme preference
     pub fn resolve_palette<T>(&self, dark_value: T, light_value: T) -> T {
         match self {
-            Self::Dark | Self::Slate | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
+            Self::Dark
+            | Self::Slate
+            | Self::System
+            | Self::MaterialDark
+            | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
         }
     }
@@ -246,9 +250,11 @@ impl ThemeMode {
     pub fn material_tokens(&self) -> MaterialTokens {
         match self {
             Self::Light | Self::MaterialLight => MaterialTokens::light(),
-            Self::Dark | Self::Slate | Self::System | Self::MaterialDark | Self::MaterialDynamic => {
-                MaterialTokens::dark()
-            }
+            Self::Dark
+            | Self::Slate
+            | Self::System
+            | Self::MaterialDark
+            | Self::MaterialDynamic => MaterialTokens::dark(),
         }
     }
 }

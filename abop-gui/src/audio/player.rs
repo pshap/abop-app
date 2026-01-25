@@ -23,7 +23,6 @@ pub fn get_audio_player() -> &'static ThreadSafeAudioPlayer {
     AUDIO_PLAYER.get_or_init(init_audio_player)
 }
 
-
 /// Play selected audio files
 ///
 /// # Errors

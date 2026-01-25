@@ -44,16 +44,23 @@ pub fn handle_ui_message(state: &mut AppState, message: Message) -> Option<Task<
 
 fn handle_begin_rename(state: &mut AppState, audiobook_id: String) -> Option<Task<Message>> {
     log::info!("Beginning rename for audiobook: {audiobook_id}");
-    
+
     // Pre-fill the input with the current name
-    if let Some(audiobook) = state.library.audiobooks.iter().find(|a| a.id == audiobook_id) {
-        let current_name = audiobook.path.file_stem()
+    if let Some(audiobook) = state
+        .library
+        .audiobooks
+        .iter()
+        .find(|a| a.id == audiobook_id)
+    {
+        let current_name = audiobook
+            .path
+            .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("")
             .to_string();
         state.ui.rename_input = current_name;
     }
-    
+
     state.ui.renaming_id = Some(audiobook_id);
     Some(Task::none())
 }

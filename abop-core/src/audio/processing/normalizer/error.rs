@@ -1,6 +1,5 @@
 //! Normalizer error types
 
-
 /// Normalization error type
 #[derive(Debug, thiserror::Error)]
 pub enum NormalizerError {

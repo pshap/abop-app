@@ -1,7 +1,7 @@
 //! Audio buffer validation utilities
 
-use crate::audio::processing::error::{AudioProcessingError, Result};
 use crate::audio::AudioBuffer;
+use crate::audio::processing::error::{AudioProcessingError, Result};
 
 /// Validates basic buffer properties
 ///

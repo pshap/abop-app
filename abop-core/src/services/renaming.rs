@@ -35,7 +35,7 @@ impl RenamingService {
     #[instrument(skip(self, audiobook))]
     pub fn rename_audiobook(&self, audiobook: &Audiobook, new_name: &str) -> Result<Audiobook> {
         let old_path = &audiobook.path;
-        
+
         // Ensure the old path exists
         if !old_path.exists() {
             return Err(AppError::Io(format!(
@@ -47,13 +47,13 @@ impl RenamingService {
         // Determine new path while preserving extension
         let extension = old_path.extension().and_then(|e| e.to_str()).unwrap_or("");
         let mut new_path = old_path.parent().map(Path::to_path_buf).unwrap_or_default();
-        
+
         let filename_with_ext = if extension.is_empty() {
             new_name.to_string()
         } else {
             format!("{new_name}.{extension}")
         };
-        
+
         new_path.push(filename_with_ext);
 
         // Don't overwrite existing files

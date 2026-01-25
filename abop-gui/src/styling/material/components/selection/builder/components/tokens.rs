@@ -4,7 +4,7 @@
 //! light and dark themes, used as fallbacks when no specific tokens
 //! are provided for component styling.
 
-use crate::styling::material::{tokens::core::MaterialTokens, MaterialColors};
+use crate::styling::material::{MaterialColors, tokens::core::MaterialTokens};
 
 /// Default light theme Material Design tokens for selection components.
 ///

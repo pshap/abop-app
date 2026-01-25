@@ -20,11 +20,8 @@ fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
     tracing::debug!("Attempting M4B metadata extraction for: {}", path.display());
 
     // Try to open with mp4ameta
-    let metadata = mp4ameta::Tag::read_from_path(path).map_err(|e| {
-        AppError::Audio(format!(
-            "Failed to read M4B metadata: {e}"
-        ))
-    })?;
+    let metadata = mp4ameta::Tag::read_from_path(path)
+        .map_err(|e| AppError::Audio(format!("Failed to read M4B metadata: {e}")))?;
 
     tracing::debug!("Successfully read M4B metadata from: {}", path.display());
 
@@ -40,9 +37,7 @@ fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
     audio_metadata.album = metadata.album().map(|s| s.to_string());
 
     // Track number (safe conversion)
-    audio_metadata.track = metadata
-        .track_number()
-        .map(u32::from);
+    audio_metadata.track = metadata.track_number().map(u32::from);
 
     // Duration from mp4ameta
     audio_metadata.duration_seconds = metadata.duration().map(|d| d.as_secs_f64());
@@ -108,13 +103,20 @@ impl AudioMetadata {
         let path = path.as_ref();
         let is_m4b = is_m4b_file(path);
 
-        tracing::debug!("Extracting metadata from: {} (is_m4b: {})", path.display(), is_m4b);
+        tracing::debug!(
+            "Extracting metadata from: {} (is_m4b: {})",
+            path.display(),
+            is_m4b
+        );
 
         // For M4B files, try mp4ameta first as it's more reliable for audiobook metadata
         if is_m4b {
             match extract_m4b_metadata(path) {
                 Ok(metadata) => {
-                    tracing::debug!("Successfully extracted M4B metadata from: {}", path.display());
+                    tracing::debug!(
+                        "Successfully extracted M4B metadata from: {}",
+                        path.display()
+                    );
                     return Ok(metadata);
                 }
                 Err(e) => {

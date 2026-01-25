@@ -2,12 +2,11 @@
 //!
 //! This module provides audio playback capabilities for the ABOP application.
 
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::cell::RefCell;
-
 
 use rodio::{Decoder, OutputStream, Sink};
 

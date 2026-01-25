@@ -7,7 +7,7 @@ use crate::styling::material::components::selection::common::prelude::*;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use iced::{theme::Theme, widget::Radio as IcedRadio, Element, Renderer};
+use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
 
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]

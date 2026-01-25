@@ -1,11 +1,11 @@
 //! Benchmarks for the audio resampler
 
 use abop_core::audio::{
-    processing::{resampler::LinearResampler, traits::AudioProcessor},
     AudioBuffer, SampleFormat,
+    processing::{resampler::LinearResampler, traits::AudioProcessor},
 };
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use rand::{rng, Rng};
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use rand::{Rng, rng};
 use std::hint::black_box;
 
 /// Audio signal types for more realistic benchmarking
