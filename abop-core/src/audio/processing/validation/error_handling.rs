@@ -88,10 +88,9 @@ pub mod result_utils {
         if errors.is_empty() {
             Ok(valid_values)
         } else {
-            Err(ValidationError::with_context(
+            Err(ValidationError::new(
                 "multiple_validations",
-                format!("{} validation errors occurred", errors.len()),
-                format!("{:?}", errors),
+                format!("{} validation errors occurred: {:?}", errors.len(), errors),
             ))
         }
     }

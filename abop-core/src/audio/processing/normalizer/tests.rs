@@ -2,10 +2,11 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::audio::processing::config::{NormalizationAlgorithm, NormalizerConfig};
+    use crate::audio::processing::traits::core::{AudioProcessor, Validatable};
+    use crate::audio::processing::traits::reporting::LatencyReporting;
     use crate::audio::AudioNormalizer;
     use crate::audio::SampleFormat;
-    use crate::audio::processing::config::{NormalizationAlgorithm, NormalizerConfig};
-    use crate::audio::processing::traits::core::AudioProcessor;
     use crate::test_utils::audio::create_test_buffer;
 
     #[test]

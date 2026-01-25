@@ -18,6 +18,7 @@ pub use range_validators::*;
 mod tests {
     use super::super::config::MixingAlgorithm;
     use super::*;
+    use crate::error::AppError;
     use std::time::Duration;
 
     #[test]
