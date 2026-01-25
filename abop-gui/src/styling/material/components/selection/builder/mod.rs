@@ -64,12 +64,14 @@ pub use validation::{
 mod checkbox;
 mod chip;
 mod common_builder;
-pub mod components;
-pub mod factory;
-pub mod patterns;
+mod factory;
+mod patterns;
 mod radio;
 mod switch;
 mod validation;
+
+// Re-export components module
+pub mod components;
 
 // Common imports used across all builder modules
 mod common {}
