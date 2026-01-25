@@ -46,18 +46,20 @@ fn init_logging() -> Result<(), InitError> {
         }
     };
 
-    // Initialize log->tracing bridge; ok if already set (e.g., in tests)
-    if let Err(e) = tracing_log::LogTracer::init() {
-        // Use stderr to avoid depending on logger setup order
-        eprintln!("LogTracer initialization skipped: {e}");
-    }
-
-    tracing_subscriber::fmt()
+    // Initialize tracing subscriber (handles log crate compatibility automatically)
+    // Use try_init() in case of test double-initialization
+    if tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_target(true)
         .with_thread_ids(false)
         .with_thread_names(false)
-        .init();
+        .try_init()
+        .is_err()
+    {
+        eprintln!(
+            "Warning: Tracing subscriber already initialized (test-mode double-initialization)"
+        );
+    }
     Ok(())
 }
 

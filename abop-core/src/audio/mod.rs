@@ -86,6 +86,12 @@ impl AudioFormat {
             .and_then(|ext| ext.to_str())
             .and_then(Self::from_extension)
     }
+
+    /// Checks if this format is an M4B audiobook
+    #[must_use]
+    pub const fn is_m4b_audiobook(&self) -> bool {
+        matches!(self, Self::Aac)
+    }
 }
 
 /// Represents an audio stream with its properties

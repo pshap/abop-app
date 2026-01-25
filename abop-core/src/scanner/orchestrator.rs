@@ -23,6 +23,8 @@ use crate::{
     },
 };
 
+use rayon::prelude::*;
+
 /// Options for scan operations
 #[derive(Debug, Clone)]
 pub struct ScanOptions {
@@ -143,34 +145,42 @@ impl ScanOrchestrator {
         let batch_size = options.batch_size.unwrap_or(self.config.batch_size);
         info!("Processing in batches of {} files", batch_size);
 
-        // Process files in batches
+        // Process files in batches with parallel processing
         for (batch_index, file_chunk) in files.chunks(batch_size).enumerate() {
             if self.cancelled.load(Ordering::Relaxed) {
                 info!("Scan operation was cancelled");
                 return Err(ScanError::Cancelled);
             }
 
-            info!("Processing batch {}", batch_index + 1);
+            info!("Processing batch {} ({} files)", batch_index + 1, file_chunk.len());
             let batch_start_time = Instant::now();
 
-            // Process files sequentially within the batch (truly synchronous)
+            // Clone necessary data for parallel processing
+            let library_id = self.library.id.clone();
+
+            // Process files in parallel using rayon
+            let batch_results: Vec<crate::error::Result<Audiobook>> = file_chunk
+                .par_iter()
+                .map(|path| self.core_scanner.extract_metadata(&library_id, path))
+                .collect();
+
+            // Separate successes from errors
             let mut batch_audiobooks = Vec::new();
-            for (file_index, path) in file_chunk.iter().enumerate() {
+            for (file_index, result) in batch_results.into_iter().enumerate() {
                 let overall_index = batch_index * batch_size + file_index;
 
-                // Report progress
+                // Report progress (only when processing completes for a file)
                 if options.enable_progress
                     && let Some(reporter) = &self.progress_reporter
                 {
-                    let progress = overall_index as f32 / total_files as f32;
+                    let progress = (overall_index + 1) as f32 / total_files as f32;
                     let rt = tokio::runtime::Handle::try_current();
                     if let Ok(rt) = rt {
                         rt.block_on(async { reporter.report_progress(progress).await });
                     }
                 }
 
-                // Process the file using extract_metadata (now synchronous)
-                match self.core_scanner.extract_metadata(&self.library.id, path) {
+                match result {
                     Ok(audiobook) => {
                         batch_audiobooks.push(audiobook);
                     }
@@ -181,12 +191,11 @@ impl ScanOrchestrator {
                             || error_msg.contains("Failed to probe audio format")
                         {
                             warn!(
-                                "Skipping file with unreadable format {}: {}",
-                                path.display(),
+                                "Skipping file with unreadable format: {}",
                                 e
                             );
                         } else {
-                            error!("Error processing file {}: {}", path.display(), e);
+                            error!("Error processing file: {}", e);
                         }
                         error_count += 1;
                     }
@@ -194,6 +203,7 @@ impl ScanOrchestrator {
             }
 
             // Persist the batch to the database
+            let audiobook_count = batch_audiobooks.len();
             if !batch_audiobooks.is_empty() {
                 if let Err(e) = self.persist_batch(&batch_audiobooks) {
                     error!("Error persisting batch: {}", e);
@@ -204,11 +214,10 @@ impl ScanOrchestrator {
             }
 
             info!(
-                "Processed batch {} in {:.2?} ({} items)",
+                "Processed batch {} in {:.2?} ({} audiobooks)",
                 batch_index + 1,
                 batch_start_time.elapsed(),
-                processed_audiobooks.len()
-                    - (batch_index * batch_size).min(processed_audiobooks.len())
+                audiobook_count
             );
         }
 

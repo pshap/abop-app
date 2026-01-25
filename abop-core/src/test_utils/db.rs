@@ -6,7 +6,7 @@
 use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
 use crate::models::{Audiobook, Library, Progress};
 use chrono::Utc;
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::{NamedTempFile, TempPath};

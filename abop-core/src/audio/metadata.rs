@@ -7,6 +7,61 @@ use symphonia::core::probe::Hint;
 use super::{AudioStream, SampleFormat};
 use crate::error::{AppError, Result};
 
+/// Checks if a file is an M4B audiobook by extension
+fn is_m4b_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_lowercase() == "m4b")
+        .unwrap_or(false)
+}
+
+/// Extracts M4B metadata using mp4ameta library
+fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
+    tracing::debug!("Attempting M4B metadata extraction for: {}", path.display());
+
+    // Try to open with mp4ameta
+    let metadata = mp4ameta::Tag::read_from_path(path).map_err(|e| {
+        AppError::Audio(format!(
+            "Failed to read M4B metadata: {e}"
+        ))
+    })?;
+
+    tracing::debug!("Successfully read M4B metadata from: {}", path.display());
+
+    let mut audio_metadata = AudioMetadata::new();
+
+    // Extract title
+    audio_metadata.title = metadata.title().map(|s| s.to_string());
+
+    // Extract artist (for audiobooks, this is typically the author)
+    audio_metadata.artist = metadata.artist().map(|s| s.to_string());
+
+    // Extract album (for audiobooks, this might be series name)
+    audio_metadata.album = metadata.album().map(|s| s.to_string());
+
+    // Track number (safe conversion)
+    audio_metadata.track = metadata
+        .disc_number()
+        .map(|t| u32::try_from(t).unwrap_or(1));
+
+    // Duration from mp4ameta
+    audio_metadata.duration_seconds = metadata.duration().map(|d| d.as_secs_f64());
+
+    // Cover art from mp4ameta - artwork.data is a field
+    if let Some(artwork) = metadata.artwork() {
+        audio_metadata.cover_art = Some(artwork.data.to_vec());
+    }
+
+    // Try to extract narrator from comments (common metadata location)
+    // comments() returns an iterator, so we get the first item
+    for comment in metadata.comments() {
+        audio_metadata.narrator = Some(comment.to_string());
+        break;
+    }
+
+    Ok(audio_metadata)
+}
+
 /// Represents the metadata for an audio file
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct AudioMetadata {
@@ -51,6 +106,34 @@ impl AudioMetadata {
     /// Returns an error if the file cannot be opened, the format is not supported,
     /// or there's an error reading the metadata.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
+        let is_m4b = is_m4b_file(path);
+
+        tracing::debug!("Extracting metadata from: {} (is_m4b: {})", path.display(), is_m4b);
+
+        // For M4B files, try mp4ameta first as it's more reliable for audiobook metadata
+        if is_m4b {
+            match extract_m4b_metadata(path) {
+                Ok(metadata) => {
+                    tracing::debug!("Successfully extracted M4B metadata from: {}", path.display());
+                    return Ok(metadata);
+                }
+                Err(e) => {
+                    tracing::warn!("M4B metadata extraction failed, trying Symphonia: {}", e);
+                    // Fall through to Symphonia as backup
+                }
+            }
+        }
+
+        // Try Symphonia for all formats (primary path for non-M4B, backup for M4B)
+        Self::from_file_symphonia(path)
+    }
+
+    /// Extracts metadata from a file using Symphonia
+    ///
+    /// This is the primary extraction method for most formats, and the fallback
+    /// for M4B files if mp4ameta fails.
+    fn from_file_symphonia<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         let mut meta = Self::new();
 
