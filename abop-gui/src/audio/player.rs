@@ -23,11 +23,6 @@ pub fn get_audio_player() -> &'static ThreadSafeAudioPlayer {
     AUDIO_PLAYER.get_or_init(init_audio_player)
 }
 
-/// Get a reference to the global audio player
-#[must_use]
-pub fn get_audio_player() -> std::rc::Rc<std::cell::RefCell<Option<ThreadSafeAudioPlayer>>> {
-    AUDIO_PLAYER.get_or_init(init_audio_player).clone()
-}
 
 /// Play selected audio files
 ///

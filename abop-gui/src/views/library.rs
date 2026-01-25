@@ -88,11 +88,7 @@ fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
     container(debug_container)
         .width(Length::Fill)
         .height(Length::Fill)
-        .style(|_theme: &iced::Theme| {
-            // MaterialSurface::new()
-                // .variant(SurfaceVariant::SurfaceContainerLow)
-                .style(&state.ui.material_tokens)
-        })
+        .style(&state.ui.material_tokens)
         .padding(iced::Padding {
             top: 8.0,
             right: 8.0,

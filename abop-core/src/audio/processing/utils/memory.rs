@@ -1,7 +1,6 @@
 //! Memory estimation utilities
 
 use crate::audio::processing::error::{AudioProcessingError, Result};
-use crate::audio::AudioBuffer;
 use crate::utils::casting::domain::audio::safe_duration_to_samples;
 
 /// Estimates memory usage for f32 audio buffer
@@ -39,7 +38,6 @@ pub fn validate_memory_usage(estimated_bytes: usize, max_bytes: usize) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio::{AudioBuffer, SampleFormat};
 
     #[test]
     fn test_estimate_f32_buffer_size() {

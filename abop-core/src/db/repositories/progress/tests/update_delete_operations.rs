@@ -2,7 +2,7 @@
 
 use super::super::ProgressRepository;
 use crate::models::Progress;
-use crate::test_utils::{TestDataFactory, TestDatabase};
+use crate::test_utils::TestDatabase;
 use chrono::Utc;
 
 /// Create a test progress repository with a fresh database

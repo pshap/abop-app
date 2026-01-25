@@ -13,7 +13,7 @@ fn setup() -> (TestDatabase, LibraryRepository) {
 
 #[test]
 fn test_update_library_success() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     // Create initial library
     let library = repo.create("Original Name", "/original/path").unwrap();
@@ -33,7 +33,7 @@ fn test_update_library_success() {
 
 #[test]
 fn test_update_library_not_found() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     let result = repo
         .update("nonexistent-id", "New Name", Path::new("/new/path"))
@@ -43,7 +43,7 @@ fn test_update_library_not_found() {
 
 #[test]
 fn test_update_library_duplicate_name() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     // Create two libraries
     let lib1 = repo.create("Library 1", "/path1").unwrap();
@@ -72,7 +72,7 @@ fn test_update_library_duplicate_name() {
 
 #[test]
 fn test_update_library_duplicate_path() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     // Create two libraries
     let lib1 = repo.create("Library 1", "/path1").unwrap();
@@ -85,7 +85,7 @@ fn test_update_library_duplicate_path() {
 
 #[test]
 fn test_delete_library_success() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     // Create library
     let library = repo.create("To Delete", "/delete/path").unwrap();
@@ -101,7 +101,7 @@ fn test_delete_library_success() {
 
 #[test]
 fn test_delete_library_not_found() {
-    let (db, repo) = setup();
+    let (_db, repo) = setup();
 
     let result = repo.delete("nonexistent-id").unwrap();
     assert!(!result, "Deleting nonexistent library should return false");

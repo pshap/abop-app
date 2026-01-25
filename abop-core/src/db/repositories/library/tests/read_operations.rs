@@ -2,7 +2,6 @@
 
 use super::super::LibraryRepository;
 use crate::test_utils::{TestAssertions, TestDatabase};
-use std::path::Path;
 
 /// Create a test repository with fresh database
 fn setup() -> (TestDatabase, LibraryRepository) {

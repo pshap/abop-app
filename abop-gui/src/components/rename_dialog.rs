@@ -3,7 +3,7 @@
 //! Provides a modal dialog for renaming an audiobook file and its database record.
 
 use iced::widget::{column, container, row, text, text_input};
-use iced::{Alignment, Border, Element, Length};
+use iced::{Alignment, Element, Length};
 
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
@@ -75,7 +75,7 @@ pub fn view<'a>(
         .width(Length::Fixed(400.0))
         .style(move |_theme| container::Style {
             background: Some(material_tokens.colors().surface_container_high.into()),
-            border: iced::border::Radius::new(12.0),
+            border_radius: iced::border::Radius::new(12.0),
             ..container::Style::default()
         })
         .into()

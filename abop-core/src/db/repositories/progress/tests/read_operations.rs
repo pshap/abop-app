@@ -54,7 +54,7 @@ fn test_find_all_empty() {
 
 #[test]
 fn test_find_all_multiple() {
-    let (repo, test_db) =
+    let (repo, _test_db) =
         create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
 
     // Create multiple progress records

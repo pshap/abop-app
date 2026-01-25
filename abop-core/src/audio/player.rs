@@ -44,8 +44,8 @@ pub struct AudioPlayer {
 
 /// Thread-safe wrapper around AudioPlayer
 ///
-/// This type provides `Send` and `Sync` implementations by using internal
-/// synchronization. It's the preferred way to share an AudioPlayer between threads.
+/// This type provides thread-safe access by using internal
+/// synchronization. Note: This is designed for single-threaded GUI use.
 #[derive(Clone)]
 pub struct ThreadSafeAudioPlayer {
     inner: std::rc::Rc<std::cell::RefCell<Option<AudioPlayer>>>,

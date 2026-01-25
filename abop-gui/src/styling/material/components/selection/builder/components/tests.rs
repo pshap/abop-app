@@ -5,8 +5,9 @@
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use crate::styling::material::components::selection::common::prelude::*;
+    use crate::styling::material::{Checkbox, Chip, Switch};
 
     #[test]
     fn test_checkbox_creation() {

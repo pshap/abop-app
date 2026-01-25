@@ -3,12 +3,10 @@
 //! This module contains the Radio component implementation with all its
 //! trait implementations and methods for state management.
 
-use super::tokens::{DARK_TOKENS, LIGHT_TOKENS};
 use crate::styling::material::components::selection::common::prelude::*;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use crate::styling::material::{tokens::core::MaterialTokens, MaterialColors};
 use iced::{theme::Theme, widget::Radio as IcedRadio, Element, Renderer};
 
 /// Material Design 3 Radio Button component (modern implementation)

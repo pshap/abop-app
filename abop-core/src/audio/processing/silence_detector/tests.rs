@@ -1,8 +1,9 @@
 //! Tests for silence detector
-
+#[cfg(test)]
 use crate::audio::SilenceDetector;
 #[cfg(test)]
 use crate::test_utils::audio::create_test_buffer_with_silence;
+#[cfg(test)]
 use crate::utils::casting::safe_samples_to_duration;
 
 #[test]

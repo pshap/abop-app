@@ -4,9 +4,6 @@
 //! trait implementations and methods for state management.
 
 use crate::styling::material::components::selection::common::prelude::*;
-use crate::styling::material::components::selection_style::{
-    SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
-};
 
 /// Material Design 3 Checkbox component (modern implementation)
 #[derive(Debug, Clone, Default)]

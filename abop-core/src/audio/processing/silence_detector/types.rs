@@ -48,14 +48,12 @@ impl SilenceSegment {
         if self.start >= self.end {
             return Err(AudioProcessingError::Configuration(
                 "Silence segment start must be less than end".to_string(),
-            )
-            .into());
+            ));
         }
         if self.duration_secs < 0.0 {
             return Err(AudioProcessingError::Configuration(
                 "Silence segment duration must be non-negative".to_string(),
-            )
-            .into());
+            ));
         }
         Ok(())
     }

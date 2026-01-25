@@ -61,7 +61,7 @@ mod tests {
 
         let buffer_i16 = AudioBuffer {
             data: vec![0i16; 1000],
-            format: SampleFormat::I16,
+            format: SampleFormat::S16,
             sample_rate: 44100,
             channels: 2,
         };

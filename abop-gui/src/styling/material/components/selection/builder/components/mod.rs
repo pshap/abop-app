@@ -26,9 +26,3 @@ pub use switch::Switch;
 pub use tokens::{DARK_TOKENS, LIGHT_TOKENS};
 
 // Import common traits and types for the components
-use crate::styling::material::components::selection::common::prelude::*;
-use crate::styling::material::components::selection_style::{
-    SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
-};
-use crate::styling::material::{tokens::core::MaterialTokens, MaterialColors};
-use iced::{theme::Theme, Element, Renderer};

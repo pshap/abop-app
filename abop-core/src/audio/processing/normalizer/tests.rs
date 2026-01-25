@@ -2,8 +2,9 @@
 
 #[cfg(test)]
 mod tests {
-    use super::AudioNormalizer;
     use crate::audio::processing::config::{NormalizationAlgorithm, NormalizerConfig};
+    use crate::audio::processing::traits::core::AudioProcessor;
+    use crate::audio::AudioNormalizer;
     use crate::audio::SampleFormat;
     use crate::test_utils::audio::create_test_buffer;
 
@@ -43,7 +44,7 @@ mod tests {
     #[test]
     fn test_rms_normalization() {
         let mut buffer = create_test_buffer(44100, 1, 0.1, Some(0.1)); // Quiet signal
-        let config = super::super::config::NormalizerConfig {
+        let config = crate::audio::processing::config::NormalizerConfig {
             algorithm: NormalizationAlgorithm::Rms,
             target_loudness: -12.0,
             headroom_db: 2.0,

@@ -1,11 +1,6 @@
 //! Core audio normalizer struct and basic functionality
 
-use super::super::{
-    config::NormalizerConfig,
-    error::Result,
-    traits::{Configurable, LatencyReporting, Validatable},
-    validation::ConfigValidator,
-};
+use super::super::{config::NormalizerConfig, error::Result, validation::ConfigValidator};
 use crate::audio::AudioBuffer;
 
 /// Audio normalizer for volume normalization
@@ -180,6 +175,7 @@ impl AudioNormalizer {
     }
 
     /// Gets current configuration
+    #[allow(dead_code)]
     pub(crate) fn config(&self) -> &NormalizerConfig {
         &self.config
     }

@@ -1,6 +1,5 @@
 //! Tests for audiobook repository search and validation operations
 
-use super::*;
 use crate::db::repositories::AudiobookRepository;
 use crate::test_utils::{TestDataFactory, TestDatabase};
 

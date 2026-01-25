@@ -5,10 +5,10 @@
 
 use crate::styling::material::MaterialTokens;
 use crate::theme::ThemeMode;
-use abop_core::PlayerState;
 use abop_core::models::audiobook::Audiobook;
 use abop_core::models::library::Library;
 use abop_core::models::progress::Progress;
+use abop_core::PlayerState;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -155,6 +155,10 @@ impl TestStateFactory {
             ThemeMode::Dark | ThemeMode::MaterialDark | ThemeMode::System => MaterialTokens::dark(),
             ThemeMode::MaterialDynamic => {
                 let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
+                MaterialTokens::from_seed_color(seed_color, true)
+            }
+            ThemeMode::Slate => {
+                let seed_color = iced::Color::from_rgb(0.3, 0.3, 0.4);
                 MaterialTokens::from_seed_color(seed_color, true)
             }
         }
