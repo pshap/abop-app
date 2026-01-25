@@ -29,7 +29,9 @@
 5. Database migrations run before test execution
 
 **Plans:**
-- [ ] TBD (created by /gsd-plan-phase 1)
+- [ ] 01-01-PLAN.md — Migrate audiobook repository tests
+- [ ] 01-02-PLAN.md — Migrate progress repository tests
+- [ ] 01-03-PLAN.md — Fix minor failing tests
 
 **Blocked by:** None
 
