@@ -1,0 +1,5 @@
+//! Tests for audiobook repository operations
+
+pub mod basic_operations;
+pub mod crud_operations;
+pub mod search_operations;
