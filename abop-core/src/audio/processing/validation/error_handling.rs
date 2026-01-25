@@ -1,6 +1,6 @@
 //! Error handling and conversions for audio validation
 
-use crate::error::{AppError, Result as AppResult};
+use crate::error::AppError;
 
 /// Enhanced error context for validation failures
 #[derive(Debug, Clone)]
@@ -57,17 +57,6 @@ impl From<ValidationError> for AppError {
     }
 }
 
-/// Macro for creating validation errors with consistent formatting
-#[macro_export]
-macro_rules! validation_error_local {
-    ($field:expr, $message:expr) => {
-        ValidationError::new($field, $message).into_app_error()
-    };
-    ($field:expr, $message:expr, $context:expr) => {
-        ValidationError::with_context($field, $message, $context).into_app_error()
-    };
-}
-
 /// Common validation error messages
 pub mod error_messages {
     pub const INVALID_SAMPLE_RATE: &str = "Sample rate is outside supported range (8000-192000 Hz)";
@@ -84,7 +73,7 @@ pub mod error_messages {
 pub mod result_utils {
     use super::*;
 
-        /// Combine multiple validation results
+    /// Combine multiple validation results
     pub fn combine_results<T>(results: Vec<ValidationResult<T>>) -> ValidationResult<Vec<T>> {
         let mut valid_values = Vec::new();
         let mut errors = Vec::new();
@@ -102,21 +91,8 @@ pub mod result_utils {
             Err(ValidationError::with_context(
                 "multiple_validations",
                 format!("{} validation errors occurred", errors.len()),
-                "errors",
                 format!("{:?}", errors),
             ))
-        }
-    }
-        }
-
-        if errors.is_empty() {
-            Ok(valid_values)
-        } else {
-            Err(ValidationError::new(
-                "multiple_validations",
-                format!("{} validation errors occurred", errors.len()),
-            )
-            .with_context("errors", format!("{:?}", errors)))
         }
     }
 
