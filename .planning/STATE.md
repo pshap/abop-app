@@ -1,65 +1,81 @@
-# State: ABOP Frontend Feature Completion
+# State: ABOP Codebase Improvements
 
 **Last updated:** 2026-01-25
-**Current phase:** Phase 2 Complete (Deferred) - All manual GUI verification deferred
+**Current phase:** Initialization complete
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2025-01-24)
+See: `.planning/PROJECT.md` (updated 2026-01-25)
 
-**Core value:** Implement and verify as many frontend features as reasonably possible with passing tests.
-**Current focus:** Phase 2 - Verify all frontend features work end-to-end
+**Core value:** Maintainable, well-documented, performant Rust codebase with excellent engineering practices
+**Current focus:** Phase 1 - Code Quality Improvements
 
 ---
 
 ## Current Position
 
-**Phase:** Phase 2 of 2 (Verify End-to-End Features)
-**Plan:** 4 of 4 complete (all deferred - manual GUI verification)
-**Status:** Phase 2 Complete (deferred verification)
-**Last activity:** 2026-01-25 - Phase 2 plans executed (verification deferred)
+**Phase:** 1 of 5 (Code Quality Improvements)
+**Plan:** 1 of 4 in current phase
+**Status:** In progress
+**Last activity:** 2026-01-25 - Completed 01-01-PLAN.md
 
-**Progress:** ██████████ 100% (phase execution complete, verification deferred)
+**Progress:** ████░░░ 20%
 
 ---
 
 ## Requirements Progress
 
-**Total v1 requirements:** 18
-**Complete:** 3
+**Total v1 requirements:** 20
+**Complete:** 0
 **In Progress:** 0
-**Pending:** 15
+**Pending:** 20
 
-### Test Infrastructure (Phase 1) ✓
-- [x] TEST-01: All audiobook repository tests pass (13/13)
-- [x] TEST-02: All progress repository tests pass (23/23)
-- [x] TEST-03: All minor tests pass (permission test skipped with justification)
+### Code Quality (Phase 1)
+- [x] QUAL-03: Improve modularity (files < 300 lines avg)
+- [ ] QUAL-01: Reduce code duplication (DRY violations < 5%)
+- [ ] QUAL-02: Fix all unwrap() calls with proper error handling
+- [ ] QUAL-04: Follow consistent code style throughout codebase
 
-### Library Management (Phase 2) ↷
-- [ ] LIB-01: Users can scan audiobook directories (deferred)
-- [ ] LIB-02: Users can browse audiobook library with table display (deferred)
-- [ ] LIB-03: Users can search/filter audiobooks by title, author, narrator (deferred)
-- [ ] LIB-04: Users can select multiple audiobooks (deferred)
-- [ ] LIB-05: Users can sort audiobooks by various columns (deferred)
+---
 
-### Audio Playback (Phase 2) ↷
-- [ ] PLAY-01: Users can play/pause audio (deferred)
-- [ ] PLAY-02: Users can stop audio playback (deferred)
-- [ ] PLAY-03: Users can navigate to next/previous tracks (deferred)
-- [ ] PLAY-04: Users can view player state and current file (deferred)
-- [ ] PLAY-05: Users can track progress during playback (deferred)
+## Requirements Progress
 
-### Audio Processing (Phase 2) ↷
-- [ ] PROC-01: Users can convert selected audiobooks to mono (deferred)
-- [ ] PROC-02: Users can view processing progress (deferred)
-- [ ] PROC-03: Users can view processing status messages (deferred)
+**Total v1 requirements:** 20
+**Complete:** 0
+**In Progress:** 0
+**Pending:** 20
 
-### Settings (Phase 2) ↷
-- [ ] SETT-01: Users can toggle light/dark theme (deferred)
-- [ ] SETT-02: Users can toggle auto-save library (deferred)
-- [ ] SETT-03: Users can toggle scan subdirectories (deferred)
+### Code Quality (Phase 1)
+- [ ] QUAL-01: Reduce code duplication (DRY violations < 5%)
+- [ ] QUAL-02: Fix all unwrap() calls with proper error handling
+- [ ] QUAL-03: Improve modularity (files < 300 lines avg)
+- [ ] QUAL-04: Follow consistent code style throughout codebase
+
+### Technical Debt (Phase 2)
+- [ ] DEBT-01: Replace unsafe unwrap() with Result/Option handling
+- [ ] DEBT-02: Improve error messages and error context
+- [ ] DEBT-03: Remove deprecated code and unused imports
+- [ ] DEBT-04: Standardize error types and propagation
+
+### Performance (Phase 3)
+- [ ] PERF-01: Optimize hot paths reduce allocations by 20%
+- [ ] PERF-02: Run benchmarks before/after optimizations
+- [ ] PERF-03: Fix identified performance bottlenecks
+- [ ] PERF-04: Reduce binary size optimizations
+
+### Documentation (Phase 4)
+- [ ] DOCS-01: Add documentation to all public APIs
+- [ ] DOCS-02: Update README with current features
+- [ ] DOCS-03: Document complex algorithms and data structures
+- [ ] DOCS-04: Add inline comments for non-obvious code
+
+### Tests (Phase 5)
+- [ ] TEST-01: Remove unnecessary/redundant tests
+- [ ] TEST-02: Improve test coverage of critical paths
+- [ ] TEST-03: Ensure test names clearly describe what they test
+- [ ] TEST-04: Keep fast test suite (< 5s execution)
 
 ---
 
@@ -67,78 +83,70 @@ See: `.planning/PROJECT.md` (updated 2025-01-24)
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Skip research phase | PROJECT.md already has well-defined implementation plan with clear tasks | — Pending (working) |
-| Test infrastructure priority | 34 failing tests block verification of all features | — Pending (working) |
-| Two-phase structure | Clear separation: Phase 1 fixes tests, Phase 2 verifies features | — Pending (working) |
+| Shift to codebase improvements | Features complete and tested | — Complete |
+| 5-phase structure | Logical grouping of improvement types | — Complete |
+| Remove unnecessary tests | Maintain valuable coverage, reduce noise | — Complete |
+| Split test files into focused modules | Improves maintainability and organization | — Complete |
 
 ---
 
 ## Pending Todos
 
 From PROJECT.md:
+1. Phase 1: Code Quality Improvements
+   - Reduce code duplication
+   - Fix unwrap() calls
+   - Improve modularity
+   - Ensure consistent style
 
-1. ~~Fix audiobook repository tests (9 tests)~~ [COMPLETED]
-    - ~~Replace `TestContext::setup()` with `TestDatabase::new()`~~ ✓
-    - ~~Use `TestDataFactory::create_test_library()`, `create_test_audiobook()`~~ ✓
-    - ~~Use `TestAssertions::assert_audiobook_equals()`~~ ✓
-    - ~~Ensure database migrations run~~ ✓
-    - Result: All 13 audiobook repository tests pass (100% pass rate)
+2. Phase 2: Technical Debt Reduction
+   - Replace unsafe unwrap() calls
+   - Improve error handling
+   - Remove dead code
+   - Standardize error types
 
-2. Fix progress repository tests (23 tests)
-    - Same migration pattern as audiobook tests
+3. Phase 3: Performance Optimizations
+   - Profile and optimize hot paths
+   - Reduce allocations
+   - Benchmark improvements
+   - Reduce binary size
 
-3. Fix minor permission and utils tests (2 tests)
-    - Permission denied handling test
-    - GUI path utils trait implementation
+4. Phase 4: Documentation Improvements
+   - Document public APIs
+   - Update README
+   - Document algorithms
+   - Add inline comments
 
-4. ~~Verify all features work end-to-end~~ [DEFERRED]
-    - Test library management flow (deferred)
-    - Test audio playback flow (deferred)
-    - Test audio processing flow (deferred)
-    - Test settings functionality (deferred)
-
----
-
-## Known Issues
-
-### Test Infrastructure
-- ~~**Audiobook repository tests:** 9 failing with "disk I/O error" or "no such table: libraries"~~ [RESOLVED]
-- **Progress repository tests:** Need verification of migration status
-- **Root cause:** Legacy infrastructure not using proper database initialization and migrations
-
-### Minor Test Failures
-- **Scanner permission test:** Permission denied scenario hard to create
-- **GUI path utils test:** Trait implementation issue
+5. Phase 5: Test Quality Improvements
+   - Remove unnecessary tests
+   - Improve critical path coverage
+   - Clarify test names
+   - Optimize test speed
 
 ---
 
 ## Tech Stack
 
-From PROJECT.md and codebase analysis:
-
 - **Language:** Rust 2024 Edition
-- **GUI Framework:** Iced 0.13.1 with Material Design 3 theming
+- **GUI Framework:** Iced 0.13.1
 - **Audio Processing:** Symphonia (decoding), Rodio (playback)
-- **Database:** SQLite with rusqlite, connection pooling via r2d2
-- **Testing:** nextest (preferred), cargo test (fallback), criterion (benchmarks)
-- **Async Runtime:** Tokio
+- **Database:** SQLite with rusqlite
+- **Testing:** nextest, criterion (benchmarks)
 
 ---
 
 ## Notes
 
-- **Test migration pattern:** Centralized test utilities in `abop-core/src/test_utils/db.rs`
-- **Library tests migrated:** 700 → 422 lines (40% reduction, all passing)
-- **Audiobook tests migrated:** 9 failing → 13 passing (100% pass rate, verified)
-- **Phase status:** 1/3 plans complete (audiobook tests), ready for progress tests
-- **Verification:** End-to-end testing only after all tests pass
+- **Current test status:** 894 tests passing (after previous phase work)
+- **Codebase size:** ~50k lines across 3 crates
+- **Goal:** Quality over quantity - meaningful improvements
 
 ---
-## Session Continuity
 
-Last session: 2025-01-25 02:43:00Z
-Stopped at: Completed 01-01-PLAN.md (audiobook repository tests)
+## Last session: 2026-01-25T06:25:11Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
 
 ---
-*State updated: 2025-01-25*
+
+*State updated: 2026-01-25T06:25:11Z
