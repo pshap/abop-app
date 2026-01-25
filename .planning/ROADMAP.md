@@ -9,7 +9,7 @@
 
 | Phase | Status | Requirements |
 |-------|--------|--------------|
-| 1     | ○ Pending | QUAL-01 through QUAL-04 |
+| 1     | ◐ In Progress | QUAL-01 through QUAL-04 (2/4 plans complete) |
 | 2     | ○ Pending | DEBT-01 through DEBT-04 |
 | 3     | ○ Pending | PERF-01 through PERF-04 |
 | 4     | ○ Pending | DOCS-01 through DOCS-04 |
@@ -39,8 +39,8 @@ Focus on foundational code quality improvements: eliminate DRY violations, break
 - Standardize patterns (error handling, imports, naming)
 
 **Plans:**
-- [ ] 01-01-PLAN.md — Split test files into focused modules
-- [ ] 01-02-PLAN.md — Split styling files into focused modules
+- [x] 01-01-PLAN.md — Split test files into focused modules
+- [x] 01-02-PLAN.md — Split styling files into focused modules
 - [ ] 01-03-PLAN.md — Split audio processing files into focused modules
 - [ ] 01-04-PLAN.md — Apply clippy fixes and formatting
 
