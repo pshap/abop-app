@@ -10,16 +10,16 @@
 use super::builder::components::LIGHT_TOKENS;
 use super::builder::{Switch, SwitchBuilder};
 use super::common::prelude::*;
-use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
+use crate::styling::material::MaterialColors;
 
 use iced::{
-    Element,
-    Renderer,
     theme::Theme,
     widget::Checkbox as IcedCheckbox, // Temporary: Phase 4 will implement custom widget
+    Element,
+    Renderer,
 };
 
 // ============================================================================
@@ -313,10 +313,18 @@ mod tests {
 
     #[test]
     fn test_convenience_functions() {
-        let sw1 = switch_on().build().unwrap();
-        let sw2 = switch_off().build().unwrap();
-        let sw3 = switch_from_bool(true).build().unwrap();
-        let sw4 = switch(SwitchState::Off).build().unwrap();
+        let sw1 = switch_on()
+            .build()
+            .expect("Building switch from on state should succeed");
+        let sw2 = switch_off()
+            .build()
+            .expect("Building switch from off state should succeed");
+        let sw3 = switch_from_bool(true)
+            .build()
+            .expect("Building switch from true should succeed");
+        let sw4 = switch(SwitchState::Off)
+            .build()
+            .expect("Building switch from Off state should succeed");
 
         assert_eq!(sw1.state(), SwitchState::On);
         assert_eq!(sw2.state(), SwitchState::Off);

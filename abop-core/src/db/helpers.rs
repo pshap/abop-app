@@ -92,7 +92,12 @@ impl DatabaseHelpers {
         let sql = sql.to_string();
         let params: Vec<String> = params
             .iter()
-            .map(|p| format!("{:?}", p.to_sql().unwrap()))
+            .map(|p| {
+                format!(
+                    "{:?}",
+                    p.to_sql().expect("SQL parameter conversion should succeed")
+                )
+            })
             .collect();
 
         ops.execute(move |conn| {
@@ -220,13 +225,15 @@ mod tests {
     fn test_datetime_parsing() {
         // Test RFC3339 format
         let rfc3339_str = "2023-12-01T15:30:45Z";
-        let parsed = parse_datetime_string(rfc3339_str).unwrap();
+        let parsed =
+            parse_datetime_string(rfc3339_str).expect("RFC3339 datetime parsing should succeed");
         assert_eq!(parsed.year(), 2023);
         assert_eq!(parsed.month(), 12);
 
         // Test alternative format
         let alt_str = "2023-12-01 15:30:45";
-        let parsed_alt = parse_datetime_string(alt_str).unwrap();
+        let parsed_alt =
+            parse_datetime_string(alt_str).expect("Alternative datetime parsing should succeed");
         assert_eq!(parsed_alt.year(), 2023);
         assert_eq!(parsed_alt.month(), 12);
     }
