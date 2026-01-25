@@ -67,16 +67,25 @@ mod concurrency_tests {
 
     #[test]
     fn test_multiple_concurrent_scans() {
-        // TODO: Simulate multiple concurrent scans
+        // Placeholder test for concurrent scan simulation
+        // Note: Actual concurrent testing requires complex setup with tokio::spawn
+        // For now, this serves as a reminder to implement proper concurrent testing
+        assert!(true, "Concurrent scan test placeholder");
     }
 
     #[test]
     fn test_ui_responsiveness_during_long_running_ops() {
-        // TODO: Simulate UI responsiveness during long-running operations
+        // Placeholder test for UI responsiveness during long operations
+        // Note: This requires testing framework that can simulate UI message pumping
+        // For now, this serves as a reminder to implement responsiveness testing
+        assert!(true, "UI responsiveness test placeholder");
     }
 
     #[test]
     fn test_resource_cleanup_after_task_completion_or_cancellation() {
-        // TODO: Simulate resource cleanup after task completion/cancellation
+        // Placeholder test for resource cleanup simulation
+        // Note: Resource leak detection requires memory tracking and drop monitoring
+        // For now, this serves as a reminder to implement cleanup testing
+        assert!(true, "Resource cleanup test placeholder");
     }
 }

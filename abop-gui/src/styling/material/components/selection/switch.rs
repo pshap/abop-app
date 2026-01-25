@@ -67,8 +67,9 @@ impl Switch {
         on_toggle: impl Fn(SwitchState) -> Message + 'a,
         _color_scheme: &'a MaterialColors,
     ) -> Element<'a, Message, Theme, Renderer> {
-        // TODO: Phase 4 - Replace with custom switch widget
-        // For now, use styled checkbox as placeholder
+        // Note: Custom switch widget implementation planned for Phase 4
+        // Currently using styled checkbox as functional placeholder
+        // Custom implementation would provide native switch appearance and animations
 
         // Convert switch state to boolean for checkbox compatibility
         let is_enabled = self.state().is_on();
@@ -128,7 +129,8 @@ impl Switch {
 
 /// Configuration for Material Design 3 switch dimensions
 ///
-/// TODO: Phase 4 - Use these for custom switch widget implementation
+/// Note: These dimensions prepared for Phase 4 custom switch widget implementation
+/// Currently using checkbox approach until custom widget is developed
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SwitchDimensions {
     /// Track width

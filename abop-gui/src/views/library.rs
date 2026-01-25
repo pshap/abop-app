@@ -1,7 +1,7 @@
 //! Library view module
 
-use iced::Length;
 use iced::widget::{column, container};
+use iced::Length;
 
 use crate::components::audio_toolbar::AudioToolbar;
 use crate::components::search_bar::SearchBar;
@@ -37,10 +37,16 @@ fn create_status_display(state: &AppState) -> iced::Element<'_, Message> {
         EnhancedStatusDisplayParams {
             scanning: state.library.is_scanning(),
             scan_progress: state.library.scanner_progress.clone(),
-            cached_scan_progress_text: None, // TODO: implement progress cache retrieval
+            cached_scan_progress_text: state
+                .library
+                .scanner_progress
+                .map(|p| format!("Scanning... {}%", (p * 100.0) as i32)),
             processing_audio: state.player.processing_audio,
             processing_progress: state.player.processing_progress,
-            cached_processing_progress_text: None, // TODO: implement progress cache retrieval
+            cached_processing_progress_text: state
+                .player
+                .processing_progress
+                .map(|p| format!("Processing... {}%", (p * 100.0) as i32)),
             processing_status: state.player.processing_status.as_deref(),
             player_state: state.player.player_state.clone(),
             current_playing_file: state.player.current_playing_file.as_ref(),

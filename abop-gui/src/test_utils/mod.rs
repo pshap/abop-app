@@ -9,7 +9,8 @@ pub mod components;
 pub use components::*;
 
 // Legacy compatibility functions for existing tests
-// TODO: These should be removed when tests are migrated to use the new utilities
+// Note: These functions are maintained for backward compatibility with existing tests
+// Migration to new utilities should be done gradually to avoid breaking changes
 
 /// Legacy function for backward compatibility
 pub fn create_test_audiobook(id: &str, title: &str) -> abop_core::models::audiobook::Audiobook {

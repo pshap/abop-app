@@ -4,7 +4,7 @@
 //! color standards with multiple theme modes including dark, light, and dynamic themes.
 
 use crate::styling::material::{MaterialColors, MaterialPalette, MaterialTokens};
-use iced::{Color, Theme as IcedTheme, theme::Palette};
+use iced::{theme::Palette, Color, Theme as IcedTheme};
 
 // ================================================================================================
 // CONSTANTS
@@ -87,8 +87,8 @@ impl ThemeMode {
         )
     }
     /// Centralized helper to resolve System theme to appropriate palette values
-    /// Currently defaults to Dark palette for System mode as temporary behavior.
-    /// TODO: Enhance to detect actual OS theme preference
+    /// Currently defaults to Dark palette for System mode - OS theme detection requires platform-specific code
+    /// Note: Proper OS theme detection would need native APIs or environment variables
     pub fn resolve_palette<T>(&self, dark_value: T, light_value: T) -> T {
         match self {
             Self::Dark

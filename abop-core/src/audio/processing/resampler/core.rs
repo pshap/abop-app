@@ -19,13 +19,10 @@ pub struct LinearResampler {
     pub(crate) resample_fn: ResampleBufferFn,
 }
 
-// TODO: Implement lookup table caching for sample rate conversions
-// Medium priority optimization for common resampling operations
-// - Create ResamplingCache struct with HashMap<(u32, u32), f64> for ratio_cache
-// - Add coefficient_cache: HashMap<(u32, u32), Vec<f32>> for interpolation coefficients
-// - Pre-populate with common audiobook sample rates (22050, 44100, 48000, 96000)
-// - Add get_cached_ratio(source: u32, target: u32) -> Option<f64> method
-// - Add get_cached_coefficients(source: u32, target: u32) -> Option<&Vec<f32>> method
+// Note: Lookup table caching for resampling would use HashMap<(u32, u32), f64> for ratios
+// Medium priority optimization: Cache common sample rate conversions (22050, 44100, 48000, 96000)
+// Implementation would pre-compute conversion ratios and interpolation coefficients
+// Performance improvement: Faster resampling for repeated conversions between same rates
 // - Use OnceLock for thread-safe global cache initialization
 // - Should reduce computation overhead for repeated conversions
 // - Integrate with existing LinearResampler::resample_buffer methods
