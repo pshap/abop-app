@@ -21,14 +21,9 @@ use abop_core::services::ServiceContainer;
 
 /// Messages for task management
 #[derive(Debug)]
-#[allow(dead_code)] // Status and Shutdown are infrastructure for future functionality
 enum TaskMessage {
     /// Cancel a task by ID
     Cancel(u64),
-    /// Request status of a task by ID
-    Status(u64),
-    /// Shutdown the task manager
-    Shutdown,
 }
 
 /// Main application struct
@@ -63,14 +58,6 @@ impl App {
                         if let Err(e) = services_clone.cancel_task(task_id) {
                             error!("Failed to cancel task {task_id}: {e}");
                         }
-                    }
-                    TaskMessage::Status(task_id) => {
-                        // Log task status - could be extended to return status via channel
-                        debug!("Task status requested for task {task_id}");
-                    }
-                    TaskMessage::Shutdown => {
-                        info!("Task manager received shutdown signal");
-                        break;
                     }
                 }
             }

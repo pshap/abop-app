@@ -1,64 +1,14 @@
 //! Tests for audiobook repository operations
 
 use super::*;
-use crate::test_utils::TestDataFactory;
-use crate::{
-    db::{EnhancedConnection, migrations::run_migrations, repositories::AudiobookRepository},
-    models::Audiobook,
-};
-use rusqlite::{Connection, params};
-use std::sync::Arc;
-use tempfile::NamedTempFile;
-
-fn setup_test_db() -> (AudiobookRepository, tempfile::TempPath) {
-    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    let db_path = temp_file.into_temp_path();
-
-    // Create a new connection to the database
-    let mut conn = Connection::open(&db_path).expect("Failed to open database");
-
-    // Run migrations on the connection
-    run_migrations(&mut conn).expect("Failed to run migrations");
-
-    // Set up test data
-    conn.execute(
-        "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-        params!["test-library-1", "Test Library", "/test/library/path"],
-    )
-    .expect("Failed to create test library");
-
-    // Create the EnhancedConnection and repository
-    let connection = Arc::new(EnhancedConnection::new(
-        db_path.to_str().expect("Invalid temp path"),
-    ));
-    // Ensure the connection is established before use
-    connection
-        .connect()
-        .expect("Failed to connect EnhancedConnection in test");
-
-    (AudiobookRepository::new(connection), db_path)
-}
-
-fn create_test_db() -> AudiobookRepository {
-    let (repo, _temp_file) = setup_test_db();
-    repo
-}
-
-fn create_test_audiobook(library_id: &str, path: &str) -> Audiobook {
-    TestDataFactory::custom_audiobook(
-        &uuid::Uuid::new_v4().to_string(),
-        library_id,
-        Some("Test Audiobook"),
-        Some("Test Author"),
-        Some(PathBuf::from(path).as_path()),
-        Some(3600),
-        Some(1024 * 1024 * 100),
-    )
-}
+use crate::db::repositories::AudiobookRepository;
+use crate::test_utils::{TestDataFactory, TestDatabase};
+use std::path::{Path, PathBuf};
 
 #[test]
 fn test_audiobook_repository_creation() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Verify we can execute a query
     let conn = repo.connect();
@@ -78,9 +28,22 @@ fn test_audiobook_repository_creation() {
 
 #[test]
 fn test_upsert_new_audiobook() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
-    let mut audiobook = create_test_audiobook("test-library-1", "/test/path/to/audiobook");
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+
+    let audiobook_id = uuid::Uuid::new_v4().to_string();
+    let mut audiobook = TestDataFactory::custom_audiobook(
+        &audiobook_id,
+        library_id,
+        Some("Test Audiobook"),
+        Some("Test Author"),
+        Some(Path::new("/test/path/to/audiobook")),
+        Some(3600),
+        Some(1024 * 1024 * 100),
+    );
 
     // Test inserting a new audiobook
     let result = repo.upsert(&audiobook);
@@ -116,10 +79,24 @@ fn test_upsert_new_audiobook() {
 
 #[test]
 fn test_find_audiobook_by_id() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+
+    let audiobook_id = uuid::Uuid::new_v4().to_string();
+    let audiobook = TestDataFactory::custom_audiobook(
+        &audiobook_id,
+        library_id,
+        Some("Test Audiobook"),
+        Some("Test Author"),
+        Some(Path::new("/test/path/to/audiobook")),
+        Some(3600),
+        Some(1024 * 1024),
+    );
 
     // Insert test data
-    let audiobook = create_test_audiobook("test-library-1", "/test/path/to/audiobook");
     repo.upsert(&audiobook)
         .expect("Failed to insert test audiobook");
 
@@ -140,14 +117,14 @@ fn test_find_audiobook_by_id() {
     );
 
     // Test with empty ID
-    let empty_id = "";
-    let empty_result = repo.find_by_id(empty_id);
+    let empty_result = repo.find_by_id("");
     assert!(empty_result.is_err(), "Empty ID should return an error");
 }
 
 #[test]
 fn test_find_nonexistent_audiobook() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Test with a non-existent ID
     let non_existent_id = "this-id-does-not-exist-123";
@@ -166,7 +143,8 @@ fn test_find_nonexistent_audiobook() {
 
 #[test]
 fn test_find_all_audiobooks_empty() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Test find_all on empty database
     let result = repo
@@ -181,26 +159,47 @@ fn test_find_all_audiobooks_empty() {
 
 #[test]
 fn test_find_all_audiobooks_multiple() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Insert libraries for used library_ids
-    repo.execute_query(|conn| {
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["test-library-1", "Test Library 1", "/path/to/library1"],
-        )?;
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["test-library-2", "Test Library 2", "/path/to/library2"],
-        )?;
-        Ok(())
-    })
-    .expect("Failed to insert test libraries");
+    let lib1_id = "test-library-1";
+    let lib2_id = "test-library-2";
+    test_db.insert_test_library(lib1_id, "Test Library 1", "/path/to/library1");
+    test_db.insert_test_library(lib2_id, "Test Library 2", "/path/to/library2");
 
     // Create test data with libraries
-    let book1 = create_test_audiobook("test-library-1", "/test/path/to/audiobook1");
-    let book2 = create_test_audiobook("test-library-1", "/test/path/to/audiobook2");
-    let book3 = create_test_audiobook("test-library-2", "/test/path/to/audiobook3");
+    let book1_id = uuid::Uuid::new_v4().to_string();
+    let book2_id = uuid::Uuid::new_v4().to_string();
+    let book3_id = uuid::Uuid::new_v4().to_string();
+
+    let book1 = TestDataFactory::custom_audiobook(
+        &book1_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook1")),
+        Some(3600),
+        Some(1024),
+    );
+    let book2 = TestDataFactory::custom_audiobook(
+        &book2_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook2")),
+        Some(3600),
+        Some(1024),
+    );
+    let book3 = TestDataFactory::custom_audiobook(
+        &book3_id,
+        lib2_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook3")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -220,26 +219,46 @@ fn test_find_all_audiobooks_multiple() {
 
 #[test]
 fn test_find_by_library() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Create test data with libraries
-    let book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
-    let book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
-    let book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
+    let lib1_id = "lib1";
+    let lib2_id = "lib2";
+    test_db.insert_test_library(lib1_id, "Library 1", "/path/to/library1");
+    test_db.insert_test_library(lib2_id, "Library 2", "/path/to/library2");
 
-    // Insert libraries for used library_ids
-    repo.execute_query(|conn| {
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["lib1", "Library 1", "/path/to/library1"],
-        )?;
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["lib2", "Library 2", "/path/to/library2"],
-        )?;
-        Ok(())
-    })
-    .expect("Failed to insert test libraries");
+    let book1_id = uuid::Uuid::new_v4().to_string();
+    let book2_id = uuid::Uuid::new_v4().to_string();
+    let book3_id = uuid::Uuid::new_v4().to_string();
+
+    let book1 = TestDataFactory::custom_audiobook(
+        &book1_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook1")),
+        Some(3600),
+        Some(1024),
+    );
+    let book2 = TestDataFactory::custom_audiobook(
+        &book2_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook2")),
+        Some(3600),
+        Some(1024),
+    );
+    let book3 = TestDataFactory::custom_audiobook(
+        &book3_id,
+        lib2_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook3")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -248,7 +267,7 @@ fn test_find_by_library() {
 
     // Test find_by_library with lib1
     let lib1_books = repo
-        .find_by_library("lib1")
+        .find_by_library(lib1_id)
         .expect("find_by_library should not fail");
 
     // Verify only books from lib1 are returned
@@ -265,7 +284,7 @@ fn test_find_by_library() {
 
     // Test find_by_library with lib2
     let lib2_books = repo
-        .find_by_library("lib2")
+        .find_by_library(lib2_id)
         .expect("find_by_library should not fail");
     assert_eq!(lib2_books.len(), 1, "Should return 1 book from lib2");
     assert_eq!(
@@ -285,26 +304,47 @@ fn test_find_by_library() {
 
 #[test]
 fn test_count_by_library() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Insert libraries for used library_ids
-    repo.execute_query(|conn| {
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["lib1", "Library 1", "/path/to/library1"],
-        )?;
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["lib2", "Library 2", "/path/to/library2"],
-        )?;
-        Ok(())
-    })
-    .expect("Failed to insert test libraries");
+    let lib1_id = "lib1";
+    let lib2_id = "lib2";
+    test_db.insert_test_library(lib1_id, "Library 1", "/path/to/library1");
+    test_db.insert_test_library(lib2_id, "Library 2", "/path/to/library2");
 
     // Create test data with libraries
-    let book1 = create_test_audiobook("lib1", "/test/path/to/audiobook1");
-    let book2 = create_test_audiobook("lib1", "/test/path/to/audiobook2");
-    let book3 = create_test_audiobook("lib2", "/test/path/to/audiobook3");
+    let book1_id = uuid::Uuid::new_v4().to_string();
+    let book2_id = uuid::Uuid::new_v4().to_string();
+    let book3_id = uuid::Uuid::new_v4().to_string();
+
+    let book1 = TestDataFactory::custom_audiobook(
+        &book1_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook1")),
+        Some(3600),
+        Some(1024),
+    );
+    let book2 = TestDataFactory::custom_audiobook(
+        &book2_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook2")),
+        Some(3600),
+        Some(1024),
+    );
+    let book3 = TestDataFactory::custom_audiobook(
+        &book3_id,
+        lib2_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook3")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -313,13 +353,13 @@ fn test_count_by_library() {
 
     // Test count_by_library with lib1
     let lib1_count = repo
-        .count_by_library("lib1")
+        .count_by_library(lib1_id)
         .expect("count_by_library should not fail");
     assert_eq!(lib1_count, 2, "Should count 2 books in lib1");
 
     // Test count_by_library with lib2
     let lib2_count = repo
-        .count_by_library("lib2")
+        .count_by_library(lib2_id)
         .expect("count_by_library should not fail");
     assert_eq!(lib2_count, 1, "Should count 1 book in lib2");
 
@@ -336,28 +376,50 @@ fn test_count_by_library() {
         "Empty library ID should return an error"
     );
 }
+
 #[test]
 fn test_find_by_author() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
 
     // Insert libraries for used library_ids
-    repo.execute_query(|conn| {
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["test-library-1", "Test Library 1", "/path/to/library1"],
-        )?;
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id, name, path) VALUES (?, ?, ?)",
-            params!["test-library-2", "Test Library 2", "/path/to/library2"],
-        )?;
-        Ok(())
-    })
-    .expect("Failed to insert test libraries");
+    let lib1_id = "test-library-1";
+    let lib2_id = "test-library-2";
+    test_db.insert_test_library(lib1_id, "Test Library 1", "/path/to/library1");
+    test_db.insert_test_library(lib2_id, "Test Library 2", "/path/to/library2");
 
     // Create test data with different authors
-    let mut book1 = create_test_audiobook("test-library-1", "/test/path/to/audiobook1");
-    let mut book2 = create_test_audiobook("test-library-1", "/test/path/to/audiobook2");
-    let mut book3 = create_test_audiobook("test-library-2", "/test/path/to/audiobook3");
+    let book1_id = uuid::Uuid::new_v4().to_string();
+    let book2_id = uuid::Uuid::new_v4().to_string();
+    let book3_id = uuid::Uuid::new_v4().to_string();
+
+    let mut book1 = TestDataFactory::custom_audiobook(
+        &book1_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook1")),
+        Some(3600),
+        Some(1024),
+    );
+    let mut book2 = TestDataFactory::custom_audiobook(
+        &book2_id,
+        lib1_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook2")),
+        Some(3600),
+        Some(1024),
+    );
+    let mut book3 = TestDataFactory::custom_audiobook(
+        &book3_id,
+        lib2_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook3")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Set different authors
     book1.author = Some("Author A".to_string());
@@ -416,11 +478,34 @@ fn test_find_by_author() {
 
 #[test]
 fn test_find_by_path() {
-    let repo = create_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
 
     // Create test data with paths
-    let book1 = create_test_audiobook("test-library-1", "/audiobooks/fiction/book1.mp3");
-    let book2 = create_test_audiobook("test-library-1", "/audiobooks/nonfiction/book2.mp3");
+    let book1_id = uuid::Uuid::new_v4().to_string();
+    let book2_id = uuid::Uuid::new_v4().to_string();
+
+    let book1 = TestDataFactory::custom_audiobook(
+        &book1_id,
+        library_id,
+        None,
+        None,
+        Some(Path::new("/audiobooks/fiction/book1.mp3")),
+        Some(3600),
+        Some(1024),
+    );
+    let book2 = TestDataFactory::custom_audiobook(
+        &book2_id,
+        library_id,
+        None,
+        None,
+        Some(Path::new("/audiobooks/nonfiction/book2.mp3")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Insert test data
     repo.upsert(&book1).expect("Failed to insert book1");
@@ -476,8 +561,22 @@ fn test_find_by_path() {
 
 #[test]
 fn test_exists() {
-    let repo = create_test_db();
-    let audiobook = create_test_audiobook("test-library-1", "/test/path/to/audiobook");
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+
+    let audiobook_id = uuid::Uuid::new_v4().to_string();
+    let audiobook = TestDataFactory::custom_audiobook(
+        &audiobook_id,
+        library_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Test with non-existent audiobook
     let exists = repo
@@ -515,9 +614,22 @@ fn test_exists() {
 
 #[test]
 fn test_delete_audiobook() {
-    // Setup
-    let (repo, _temp_file) = setup_test_db();
-    let audiobook = create_test_audiobook("test-library-1", "/test/path/to/audiobook");
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+
+    let audiobook_id = uuid::Uuid::new_v4().to_string();
+    let audiobook = TestDataFactory::custom_audiobook(
+        &audiobook_id,
+        library_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Insert the audiobook
     repo.upsert(&audiobook)
@@ -568,8 +680,11 @@ fn test_delete_audiobook() {
 
 #[test]
 fn test_repository_basic_operations() {
-    // Setup
-    let (repo, _temp_file) = setup_test_db();
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+
+    let library_id = "test-library-1";
+    test_db.insert_test_library(library_id, "Test Library", "/test/path");
 
     // Test initial state - no audiobooks
     let all_audiobooks = repo
@@ -578,7 +693,16 @@ fn test_repository_basic_operations() {
     assert!(all_audiobooks.is_empty(), "Should start with no audiobooks");
 
     // Create a test audiobook
-    let mut audiobook = create_test_audiobook("test-library-1", "/test/path/to/audiobook");
+    let audiobook_id = uuid::Uuid::new_v4().to_string();
+    let mut audiobook = TestDataFactory::custom_audiobook(
+        &audiobook_id,
+        library_id,
+        None,
+        None,
+        Some(Path::new("/test/path/to/audiobook")),
+        Some(3600),
+        Some(1024),
+    );
 
     // Test insert
     let insert_result = repo.upsert(&audiobook);

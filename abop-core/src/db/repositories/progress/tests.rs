@@ -1,74 +1,46 @@
 #[cfg(test)]
 mod progress_tests {
     use super::super::ProgressRepository;
-    use crate::db::repositories::{AudiobookRepository, LibraryRepository};
-    use crate::db::{connection::EnhancedConnection, migrations::run_migrations};
+    use crate::db::repositories::AudiobookRepository;
     use crate::models::Progress;
-    use crate::test_utils::TestDataFactory;
+    use crate::test_utils::{TestDataFactory, TestDatabase};
     use chrono::Utc;
-    use rusqlite::Connection;
-    use std::path::PathBuf;
-    use std::sync::Arc;
-    use tempfile::NamedTempFile;
-    /// Set up test database with migrations
-    fn setup_test_db() -> Arc<EnhancedConnection> {
-        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
-        let db_path = temp_file.path();
-
-        let enhanced_conn = Arc::new(EnhancedConnection::new(db_path));
-
-        // Connect to the database first
-        enhanced_conn
-            .connect()
-            .expect("Failed to connect to database");
-
-        // Set up database schema using migrations
-        let mut conn = Connection::open(db_path).expect("Failed to open database");
-        run_migrations(&mut conn).expect("Failed to run migrations");
-        enhanced_conn
-    }
-
-    // Centralized audiobook creation via TestDataFactory
+    use std::path::Path;
 
     /// Create a test progress repository with necessary dependencies
-    fn create_test_repo_with_deps(audiobook_ids: &[&str]) -> (ProgressRepository, Vec<String>) {
-        let enhanced_conn = setup_test_db();
+    fn create_test_repo_with_deps(audiobook_ids: &[&str]) -> (ProgressRepository, TestDatabase) {
+        let test_db = TestDatabase::new();
 
-        // Create repositories for setting up dependencies
-        let library_repo = LibraryRepository::new(Arc::clone(&enhanced_conn));
-        let audiobook_repo = AudiobookRepository::new(Arc::clone(&enhanced_conn));
-        let progress_repo = ProgressRepository::new(enhanced_conn);
+        // Create repositories
+        let audiobook_repo = AudiobookRepository::new(test_db.connection.clone());
+        let progress_repo = ProgressRepository::new(test_db.connection.clone());
 
         // Create a test library
-        let _library = library_repo
-            .create("Test Library", "/test/path")
-            .expect("Failed to create test library");
-
-        let mut created_audiobook_ids = Vec::new();
+        let library_id = "test-library-1";
+        test_db.insert_test_library(library_id, "Test Library", "/test/path");
 
         // Create test audiobooks for each ID
-        for (i, &audiobook_id) in audiobook_ids.iter().enumerate() {
+        for (i, audiobook_id) in audiobook_ids.iter().enumerate() {
             let audiobook = TestDataFactory::audiobook_with_path(
                 audiobook_id,
-                &_library.id,
-                PathBuf::from(format!("/test/audiobook-{}.mp3", i + 1)).as_path(),
+                library_id,
+                Path::new(&format!("/test/audiobook-{}.mp3", i + 1)),
                 &format!("Test Audiobook {}", i + 1),
                 "Test Author",
             );
             audiobook_repo
                 .upsert(&audiobook)
                 .expect("Failed to create test audiobook");
-            created_audiobook_ids.push(audiobook_id.to_string());
         }
 
-        (progress_repo, created_audiobook_ids)
+        (progress_repo, test_db)
     }
 
     /// Create a test progress repository with a fresh database
-    fn create_test_repo() -> ProgressRepository {
-        let (repo, _) = create_test_repo_with_deps(&["audiobook-1"]);
-        repo
+    fn create_test_repo() -> (ProgressRepository, TestDatabase) {
+        create_test_repo_with_deps(&["audiobook-1"])
     }
+
     /// Create a test progress record
     fn create_test_progress(audiobook_id: &str, position: u64, completed: bool) -> Progress {
         Progress {
@@ -84,7 +56,7 @@ mod progress_tests {
 
     #[test]
     fn test_upsert_new_progress() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         let result = repo.upsert(&progress);
@@ -102,7 +74,7 @@ mod progress_tests {
 
     #[test]
     fn test_upsert_update_existing_progress() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let initial_progress = create_test_progress("audiobook-1", 300, false);
 
         // Insert initial progress
@@ -130,7 +102,7 @@ mod progress_tests {
 
     #[test]
     fn test_find_by_audiobook_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 450, false);
 
         repo.upsert(&progress).unwrap();
@@ -149,7 +121,7 @@ mod progress_tests {
 
     #[test]
     fn test_find_by_audiobook_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.find_by_audiobook("non-existent-audiobook");
         assert!(result.is_ok());
@@ -160,7 +132,7 @@ mod progress_tests {
 
     #[test]
     fn test_find_by_id_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 450, false);
 
         repo.upsert(&progress).unwrap();
@@ -178,7 +150,7 @@ mod progress_tests {
 
     #[test]
     fn test_find_by_id_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.find_by_id("non-existent-id");
         assert!(result.is_ok());
@@ -189,7 +161,7 @@ mod progress_tests {
 
     #[test]
     fn test_find_all_empty() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.find_all();
         assert!(result.is_ok());
@@ -197,6 +169,7 @@ mod progress_tests {
         let progress_list = result.unwrap();
         assert!(progress_list.is_empty());
     }
+
     #[test]
     fn test_find_all_multiple() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
@@ -226,6 +199,7 @@ mod progress_tests {
         assert!(audiobook_ids.contains(&"audiobook-2".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-3".to_string()));
     }
+
     #[test]
     fn test_get_recently_played() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
@@ -257,6 +231,7 @@ mod progress_tests {
         assert!(audiobook_ids.contains(&"audiobook-1".to_string()));
         assert!(audiobook_ids.contains(&"audiobook-2".to_string()));
     }
+
     #[test]
     fn test_get_completed() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
@@ -284,6 +259,7 @@ mod progress_tests {
         assert!(audiobook_ids.contains(&"audiobook-3".to_string()));
         assert!(!audiobook_ids.contains(&"audiobook-1".to_string()));
     }
+
     #[test]
     fn test_get_in_progress() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-1", "audiobook-2", "audiobook-3"]);
@@ -311,7 +287,7 @@ mod progress_tests {
 
     #[test]
     fn test_update_position_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         repo.upsert(&progress).unwrap();
@@ -327,7 +303,7 @@ mod progress_tests {
 
     #[test]
     fn test_update_position_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.update_position("non-existent-audiobook", 500);
         assert!(result.is_ok());
@@ -336,7 +312,7 @@ mod progress_tests {
 
     #[test]
     fn test_mark_completed_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         repo.upsert(&progress).unwrap();
@@ -352,7 +328,7 @@ mod progress_tests {
 
     #[test]
     fn test_mark_completed_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.mark_completed("non-existent-audiobook", true);
         assert!(result.is_ok());
@@ -361,7 +337,7 @@ mod progress_tests {
 
     #[test]
     fn test_delete_by_audiobook_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         repo.upsert(&progress).unwrap();
@@ -377,7 +353,7 @@ mod progress_tests {
 
     #[test]
     fn test_delete_by_audiobook_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.delete_by_audiobook("non-existent-audiobook");
         assert!(result.is_ok());
@@ -386,7 +362,7 @@ mod progress_tests {
 
     #[test]
     fn test_delete_by_id_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         repo.upsert(&progress).unwrap();
@@ -402,12 +378,13 @@ mod progress_tests {
 
     #[test]
     fn test_delete_by_id_non_existing() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.delete("non-existent-id");
         assert!(result.is_ok());
         assert!(!result.unwrap()); // Should return false for non-existent progress
     }
+
     #[test]
     fn test_get_statistics() {
         let (repo, _) = create_test_repo_with_deps(&[
@@ -439,7 +416,7 @@ mod progress_tests {
 
     #[test]
     fn test_exists_for_audiobook_true() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
         let progress = create_test_progress("audiobook-1", 300, false);
 
         repo.upsert(&progress).unwrap();
@@ -451,12 +428,13 @@ mod progress_tests {
 
     #[test]
     fn test_exists_for_audiobook_false() {
-        let repo = create_test_repo();
+        let (repo, _) = create_test_repo();
 
         let result = repo.exists_for_audiobook("non-existent-audiobook");
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
+
     #[test]
     fn test_progress_workflow() {
         let (repo, _) = create_test_repo_with_deps(&["audiobook-workflow"]);
