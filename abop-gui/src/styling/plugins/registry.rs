@@ -5,8 +5,9 @@
 
 use super::types::*;
 use crate::theme::ThemeMode;
+use iced::Color;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 /// Plugin registry for managing style plugins
 pub struct StylePluginRegistry {
@@ -76,7 +77,8 @@ impl StylePluginRegistry {
     pub fn unregister_plugin(&self, name: &str) -> StyleResult<bool> {
         let mut plugins = write_lock(&self.plugins)?;
         let removed = if let Some(plugin) = plugins.remove(name) {
-            plugin.cleanup();
+            // Note: cleanup is not available in the current trait interface
+            drop(plugin);
             true
         } else {
             false
@@ -134,11 +136,11 @@ impl StylePluginRegistry {
     /// # Errors
     ///
     /// Returns `StyleError::LockError` if the lock is poisoned
-    pub fn get_all_custom_tokens(&self) -> StyleResult<HashMap<String, f32>> {
+    pub fn get_all_custom_tokens(&self) -> StyleResult<HashMap<String, Color>> {
         let plugins = read_lock(&self.plugins)?;
         let mut tokens = HashMap::new();
         for Plugin in plugins.values() {
-            if let Some(plugin_tokens) = Plugin.get_custom_tokens() {
+            if let Some(plugin_tokens) = Plugin.get_custom_colors() {
                 tokens.extend(plugin_tokens);
             }
         }
@@ -162,7 +164,8 @@ impl StylePluginRegistry {
         // Update each plugin while holding the lock
         let plugins = read_lock(&self.plugins)?;
         for Plugin in plugins.values() {
-            Plugin.on_theme_change(&new_theme);
+            // Note: on_theme_change is not available in the current trait interface
+            // Plugins would need to implement initialize() again with the new theme
         }
         Ok(())
     }

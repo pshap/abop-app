@@ -3,8 +3,7 @@
 //! This module provides MaterialTokens implementation that integrates
 //! with the enhanced token system for complete Material Design 3 support.
 
-use super::enhanced_tokens::*;
-use crate::styling::material::unified_colors::MaterialColors;
+use crate::styling::material::enhanced_tokens::types::EnhancedMaterialTokens;
 
 impl MaterialTokens for EnhancedMaterialTokens {
     /// Create a Material surface with the current tokens

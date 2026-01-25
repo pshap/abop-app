@@ -41,8 +41,8 @@ fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
 
     // Track number (safe conversion)
     audio_metadata.track = metadata
-        .disc_number()
-        .map(|t| u32::try_from(t).unwrap_or(1));
+        .track_number()
+        .map(u32::from);
 
     // Duration from mp4ameta
     audio_metadata.duration_seconds = metadata.duration().map(|d| d.as_secs_f64());
@@ -54,9 +54,8 @@ fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
 
     // Try to extract narrator from comments (common metadata location)
     // comments() returns an iterator, so we get the first item
-    for comment in metadata.comments() {
+    if let Some(comment) = metadata.comments().next() {
         audio_metadata.narrator = Some(comment.to_string());
-        break;
     }
 
     Ok(audio_metadata)

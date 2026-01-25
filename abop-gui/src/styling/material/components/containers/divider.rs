@@ -3,7 +3,8 @@
 //! This module provides Material Design 3 Divider component with
 //! horizontal and vertical orientations, configurable thickness, and styling integration.
 
-use iced::{Element, Length, Rule, Theme, Vector};
+use iced::widget::Rule;
+use iced::{Element, Length, Theme, Vector};
 
 /// Divider orientation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

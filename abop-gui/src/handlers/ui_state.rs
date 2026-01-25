@@ -35,8 +35,38 @@ pub fn handle_ui_message(state: &mut AppState, message: Message) -> Option<Task<
         Message::ResetRedrawFlag => handle_reset_redraw_flag(state),
         Message::SortBy(column_id) => handle_sort_by(state, column_id),
         Message::SearchQuery(query) => handle_search_query(state, query),
+        Message::BeginRename(audiobook_id) => handle_begin_rename(state, audiobook_id),
+        Message::RenameInputChanged(new_input) => handle_rename_input_changed(state, new_input),
+        Message::CancelRename => handle_cancel_rename(state),
         _ => None, // Not a UI message
     }
+}
+
+fn handle_begin_rename(state: &mut AppState, audiobook_id: String) -> Option<Task<Message>> {
+    log::info!("Beginning rename for audiobook: {audiobook_id}");
+    
+    // Pre-fill the input with the current name
+    if let Some(audiobook) = state.library.audiobooks.iter().find(|a| a.id == audiobook_id) {
+        let current_name = audiobook.path.file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
+        state.ui.rename_input = current_name;
+    }
+    
+    state.ui.renaming_id = Some(audiobook_id);
+    Some(Task::none())
+}
+
+fn handle_rename_input_changed(state: &mut AppState, new_input: String) -> Option<Task<Message>> {
+    state.ui.rename_input = new_input;
+    Some(Task::none())
+}
+
+fn handle_cancel_rename(state: &mut AppState) -> Option<Task<Message>> {
+    state.ui.renaming_id = None;
+    state.ui.rename_input.clear();
+    Some(Task::none())
 }
 
 fn handle_show_settings(state: &mut AppState) -> Option<Task<Message>> {

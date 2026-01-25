@@ -148,8 +148,8 @@ impl App {
         // Initialize the application with default state and router
         let app = Self::new();
 
-        // Return the app with a no-op task
-        (app, Task::none())
+        // Return the app with font registration task
+        (app, crate::assets::register_fonts().map(|_| Message::NoOp))
     }
 
     /// Get the application title

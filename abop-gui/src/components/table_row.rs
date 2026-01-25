@@ -9,8 +9,8 @@ use abop_core::models::Audiobook;
 
 use crate::components::cover_art::CoverArt;
 use crate::messages::Message;
-use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
+use crate::styling::material::MaterialTokens;
 use crate::utils::image_cache::ImageCache;
 
 /// Component for creating table rows with Material Design styling
@@ -112,6 +112,10 @@ impl TableRow {
 
         all_cells.extend(data_cells);
 
+        // Add action cell (Rename button)
+        let action_cell = Self::create_action_cell(audiobook, tokens);
+        all_cells.push(action_cell);
+
         let row_content = row(all_cells);
 
         // Make the entire row clickable for selection (excluding checkbox area)
@@ -145,6 +149,35 @@ impl TableRow {
             .width(Length::Fill)
             .height(Length::Fixed(config.density.row_height())) // Ensure each row has a proper height
             .padding(Padding::from([2, 0])) // Minimal vertical padding, no horizontal padding
+            .into()
+    }
+
+    /// Create action cell with buttons for operations like renaming
+    fn create_action_cell<'a>(
+        audiobook: &'a Audiobook,
+        tokens: &'a MaterialTokens,
+    ) -> Element<'a, Message> {
+        let rename_button = button(
+            text("✎")
+                .size(tokens.typography().label_large.size)
+                .align_x(iced::Alignment::Center)
+                .align_y(iced::Alignment::Center),
+        )
+        .on_press(Message::BeginRename(audiobook.id.clone()))
+        .style(move |theme, status| {
+            let mut style = button::secondary(theme, status);
+            style.background = Some(tokens.colors.secondary.container.into());
+            style.text_color = tokens.colors.on_secondary_container();
+            style.border.radius = 4.0.into();
+            style
+        })
+        .padding(Padding::from([4, 8]));
+
+        container(rename_button)
+            .width(Length::Fixed(64.0))
+            .height(Length::Fill)
+            .align_x(iced::Alignment::Center)
+            .align_y(iced::Alignment::Center)
             .into()
     }
 
@@ -191,6 +224,11 @@ impl TableRow {
             "author" => audiobook.author.as_deref().unwrap_or("Unknown").to_string(),
             "duration" => Self::format_duration(audiobook.duration_seconds.unwrap_or(0)),
             "size" => Self::format_file_size(audiobook.size_bytes.unwrap_or(0)),
+            "actions" => {
+                return container(iced::widget::Space::with_width(Length::Fixed(0.0)))
+                    .width(Length::Fixed(0.0))
+                    .into()
+            } // Already handled in create_single_row
             _ => String::new(),
         };
         let width = match column.width {

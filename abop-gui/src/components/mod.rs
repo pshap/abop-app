@@ -31,6 +31,8 @@ pub mod main_toolbar;
 pub mod search_bar;
 /// Status display and information presentation widgets
 pub mod status;
+/// Rename audiobook dialog component
+pub mod rename_dialog;
 /// Table core functionality - main table component
 pub mod table_core;
 /// Table header component with sorting functionality

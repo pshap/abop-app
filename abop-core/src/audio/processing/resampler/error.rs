@@ -1,6 +1,5 @@
 //! Resampler error types
 
-use thiserror::Error;
 
 /// Audio resampling error type
 #[derive(Debug, thiserror::Error)]

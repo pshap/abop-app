@@ -21,17 +21,19 @@ const DEFAULT_MATERIAL_SEED_COLOR: Color = Color::from_rgb(0.5, 0.2, 0.8);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
     /// Professional dark sunset theme with warm oranges and cool blues
-    #[default]
     Dark,
     /// Professional light theme matching the dark sunset palette
     Light,
+    /// Professional slate/steel theme for a more modern look
+    #[default]
+    Slate,
     /// System theme that follows OS preference
     System,
     /// Material Design dark theme
     MaterialDark,
     /// Material Design light theme
     MaterialLight,
-    /// Dynamic Material theme based on seed color
+    /// Material Design dynamic theme based on seed color
     MaterialDynamic,
 }
 
@@ -42,9 +44,10 @@ impl ThemeMode {
         match self {
             Self::Dark => dark_sunset_theme(),
             Self::Light => light_sunset_theme(),
+            Self::Slate => slate_theme(),
             Self::System => {
-                // For now, default to dark. Could be enhanced to detect OS theme
-                dark_sunset_theme()
+                // For now, default to Slate. Could be enhanced to detect OS theme
+                slate_theme()
             }
             Self::MaterialDark => {
                 let colors = MaterialColors::dark(&MaterialPalette::default());
@@ -68,6 +71,7 @@ impl ThemeMode {
         match self {
             Self::Dark => "Dark Sunset",
             Self::Light => "Light Sunset",
+            Self::Slate => "Slate",
             Self::System => "System",
             Self::MaterialDark => "Material Dark",
             Self::MaterialLight => "Material Light",
@@ -79,7 +83,7 @@ impl ThemeMode {
     pub const fn is_dark(&self) -> bool {
         matches!(
             self,
-            Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic
+            Self::Dark | Self::Slate | Self::System | Self::MaterialDark | Self::MaterialDynamic
         )
     }
     /// Centralized helper to resolve System theme to appropriate palette values
@@ -87,7 +91,7 @@ impl ThemeMode {
     /// TODO: Enhance to detect actual OS theme preference
     pub fn resolve_palette<T>(&self, dark_value: T, light_value: T) -> T {
         match self {
-            Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
+            Self::Dark | Self::Slate | Self::System | Self::MaterialDark | Self::MaterialDynamic => dark_value,
             Self::Light | Self::MaterialLight => light_value,
         }
     }
@@ -242,9 +246,9 @@ impl ThemeMode {
     pub fn material_tokens(&self) -> MaterialTokens {
         match self {
             Self::Light | Self::MaterialLight => MaterialTokens::light(),
-            Self::Dark | Self::System | Self::MaterialDark | Self::MaterialDynamic => {
+            Self::Dark | Self::Slate | Self::System | Self::MaterialDark | Self::MaterialDynamic => {
                 MaterialTokens::dark()
-            } // TODO: Implement dynamic
+            }
         }
     }
 }
@@ -278,6 +282,24 @@ fn calculate_luminance(color: Color) -> f32 {
 // ================================================================================================
 // THEME CONSTRUCTORS
 // ================================================================================================
+
+/// Create a professional slate/steel theme
+#[must_use]
+pub fn slate_theme() -> IcedTheme {
+    let seed = Color::from_rgb(0.2, 0.25, 0.3); // Deep slate blue-grey
+    let colors = MaterialColors::dark(&MaterialPalette::from_seed(seed));
+    let semantic = crate::styling::material::SemanticColors::dark();
+
+    let palette = Palette {
+        background: colors.background,
+        text: colors.on_background,
+        primary: colors.primary.base,
+        success: semantic.success,
+        danger: colors.error.base,
+    };
+
+    IcedTheme::custom("Slate".to_string(), palette)
+}
 
 /// Create the dark sunset theme using Material Design colors
 #[must_use]
@@ -344,6 +366,7 @@ mod tests {
         // Ensure all primary modes produce an IcedTheme without panic
         let _ = ThemeMode::Dark.theme();
         let _ = ThemeMode::Light.theme();
+        let _ = ThemeMode::Slate.theme();
         let _ = ThemeMode::System.theme();
     }
 
@@ -351,7 +374,8 @@ mod tests {
     fn is_dark_reflects_mode_intent() {
         assert!(ThemeMode::Dark.is_dark());
         assert!(!ThemeMode::Light.is_dark());
-        // System currently resolves to dark by default
+        assert!(ThemeMode::Slate.is_dark());
+        // System currently resolves to slate by default
         assert!(ThemeMode::System.is_dark());
     }
 }

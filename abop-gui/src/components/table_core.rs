@@ -66,6 +66,10 @@ impl AudiobookTable {
                 .width(data::ColumnWidth::FillPortion(2))
                 .align(data::TextAlignment::End)
                 .sortable(true),
+            data::TableColumn::new("actions", "Actions")
+                .width(data::ColumnWidth::Fixed(64.0))
+                .align(data::TextAlignment::Center)
+                .sortable(false),
         ]
     }
     /// Renders the enhanced Material Design audiobook table view

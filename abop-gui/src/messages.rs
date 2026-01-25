@@ -60,6 +60,14 @@ pub enum Message {
     ToggleAudiobookSelection(String),
     /// Toggle selection state of all audiobooks
     ToggleSelectAll,
+    /// Begin renaming an audiobook (opens dialog)
+    BeginRename(String),
+    /// Input in rename dialog changed
+    RenameInputChanged(String),
+    /// Commit a rename operation
+    CommitRename(String, String),
+    /// Cancel a rename operation
+    CancelRename,
     /// Deselect all audiobooks
     DeselectAll,
     /// Sort audiobooks by the specified column

@@ -1,11 +1,11 @@
 //! Benchmarks for the audio resampler
 
 use abop_core::audio::{
-    AudioBuffer, SampleFormat,
     processing::{resampler::LinearResampler, traits::AudioProcessor},
+    AudioBuffer, SampleFormat,
 };
-use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use rand::{Rng, rng};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use rand::{rng, Rng};
 use std::hint::black_box;
 
 /// Audio signal types for more realistic benchmarking
@@ -153,7 +153,7 @@ fn bench_resampler(c: &mut Criterion) {
                     |b| {
                         b.iter(|| {
                             let mut buffer = buffer.clone();
-                            abop_core::audio::processing::resampler::LinearResampler::resample_buffer_scalar(&mut buffer, *dst_rate).unwrap();
+                            abop_core::audio::processing::resampler::LinearResampler::resample_buffer(&mut buffer, *dst_rate).unwrap();
                             black_box(&buffer);
                         })
                     },

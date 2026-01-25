@@ -30,6 +30,8 @@ pub enum PlayerState {
 pub struct AudioPlayer {
     /// Current audio sink
     sink: Option<Sink>,
+    /// Audio output stream handle (must be kept alive)
+    _stream: Option<OutputStream>,
     /// Current player state
     state: PlayerState,
     /// Current volume (0.0 to 1.0)
@@ -111,6 +113,7 @@ impl AudioPlayer {
     pub const fn new() -> Result<Self> {
         Ok(Self {
             sink: None,
+            _stream: None,
             state: PlayerState::Stopped,
             volume: 0.7, // Default volume 70%
             current_file: None,
@@ -142,7 +145,7 @@ impl AudioPlayer {
         self.stop();
 
         // Create output stream for this playback session
-        let (_stream, stream_handle) = OutputStream::try_default()
+        let (stream, stream_handle) = OutputStream::try_default()
             .map_err(|e| AppError::Audio(format!("Failed to create audio output stream: {e}")))?;
 
         // Open the audio file
@@ -169,6 +172,7 @@ impl AudioPlayer {
 
         // Update state
         self.sink = Some(sink);
+        self._stream = Some(stream);
         self.state = PlayerState::Playing;
         self.current_file = Some(file_path.to_path_buf());
 
@@ -182,6 +186,7 @@ impl AudioPlayer {
             sink.stop();
             log::info!("Stopped audio playback");
         }
+        self._stream = None;
 
         self.state = PlayerState::Stopped;
         self.current_file = None;
@@ -272,6 +277,7 @@ impl Default for AudioPlayer {
         // This matches the field types in the struct definition exactly
         AudioPlayer {
             sink: None,                  // Option<Sink>
+            _stream: None,               // Option<OutputStream>
             state: PlayerState::Stopped, // PlayerState
             volume: 0.7,                 // f32
             current_file: None,          // Option<PathBuf>

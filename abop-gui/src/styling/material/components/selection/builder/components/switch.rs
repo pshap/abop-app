@@ -3,7 +3,6 @@
 //! This module contains Switch component implementation with all its
 //! trait implementations and methods for state management.
 
-use crate::styling::material::components::selection::builder::common_builder::validate_switch_state;
 use crate::styling::material::components::selection::common::prelude::*;
 
 /// Material Design 3 Switch component (modern implementation)

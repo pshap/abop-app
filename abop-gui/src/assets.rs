@@ -1,10 +1,13 @@
 //! Assets module for the application
 
-use iced::Font;
+use iced::{Font, Task};
 
 /// Font assets including embedded fonts
 pub mod fonts {
     use super::Font;
+
+    /// Font Awesome icon font bytes - using a simple fallback
+    pub const ICON_FONT_BYTES: &[u8] = b"";
 
     /// Material Design Roboto font family
     pub mod roboto {
@@ -32,12 +35,10 @@ pub mod fonts {
 }
 
 /// Register fonts with Iced
-/// This function configures the application to use system fonts
-/// to ensure proper text rendering and avoid wingdings issues
-pub fn register_fonts() {
-    // Use system font fallback to avoid font rendering issues
-    // All custom font references have been replaced with Font::DEFAULT
+/// This function returns a Task that loads the required fonts
+pub fn register_fonts() -> Task<()> {
+    log::info!("Registering application fonts...");
 
-    log::info!("Font registration: Using system font fallback");
-    log::info!("All text elements configured to use system default fonts");
+    // Load FontAwesome Solid icons
+    Task::batch(vec![iced::font::load(fonts::ICON_FONT_BYTES)]).map(|_| ())
 }

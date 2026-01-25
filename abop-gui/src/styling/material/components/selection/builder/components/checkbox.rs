@@ -3,7 +3,6 @@
 //! This module contains the Checkbox component implementation with all its
 //! trait implementations and methods for state management.
 
-use crate::styling::material::components::selection::builder::common_builder::validate_checkbox_state;
 use crate::styling::material::components::selection::common::prelude::*;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,

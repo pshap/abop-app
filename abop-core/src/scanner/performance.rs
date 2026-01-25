@@ -151,7 +151,7 @@ impl PerformanceMonitor {
         }
 
         // Sort by duration (slowest first) and take top 10
-        all_operations.sort_by(|a, b| b.duration.cmp(&a.duration));
+        all_operations.sort_by_key(|a| std::cmp::Reverse(a.duration));
         all_operations.truncate(10);
         metrics.slowest_operations = all_operations;
 

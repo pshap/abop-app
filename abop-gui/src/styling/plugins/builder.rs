@@ -3,12 +3,9 @@
 //! This module provides a fluent builder pattern for creating custom component
 //! styles with plugin integration and theme override support.
 
-use super::customization::*;
-use super::registry::*;
 use super::types::*;
 use crate::theme::ThemeMode;
-use std::collections::HashMap;
-use std::sync::Arc;
+use iced::{Background, Border, Color, Shadow};
 
 /// Builder for custom component styles
 pub struct CustomStyleBuilder {

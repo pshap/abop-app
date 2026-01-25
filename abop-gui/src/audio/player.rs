@@ -3,21 +3,21 @@
 use std::path::PathBuf;
 
 use abop_core::PlayerState;
-use abop_core::audio::player::ThreadSafeAudioPlayer;
 
 // ================================================================================================
 // GLOBAL AUDIO PLAYER
 // ================================================================================================
 
-/// Global audio player instance
-static AUDIO_PLAYER: std::sync::LazyLock<ThreadSafeAudioPlayer> = std::sync::LazyLock::new(|| {
-    ThreadSafeAudioPlayer::new().expect("Failed to create audio player")
-});
+/// Placeholder audio player to avoid thread safety issues during development
+#[must_use]
+pub fn get_audio_player() -> Option<PlayerState> {
+    None // TODO: Implement thread-safe audio player
+}
 
 /// Get a reference to the global audio player
 #[must_use]
-pub fn get_audio_player() -> &'static ThreadSafeAudioPlayer {
-    &AUDIO_PLAYER
+pub fn get_audio_player() -> std::rc::Rc<std::cell::RefCell<Option<ThreadSafeAudioPlayer>>> {
+    AUDIO_PLAYER.get_or_init(init_audio_player).clone()
 }
 
 /// Play selected audio files

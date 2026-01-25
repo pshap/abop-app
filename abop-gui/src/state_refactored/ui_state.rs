@@ -18,6 +18,10 @@ pub struct UiState {
     pub recent_directories_open: bool,
     /// Whether task history dialog is open
     pub show_task_history: bool,
+    /// ID of the audiobook currently being renamed, if any
+    pub renaming_id: Option<String>,
+    /// Temporary storage for the new name during rename operation
+    pub rename_input: String,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
 }
@@ -34,6 +38,10 @@ impl UiState {
                 let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
                 MaterialTokens::from_seed_color(seed_color, true)
             }
+            ThemeMode::Slate => {
+                // Use slate theme with default light tokens
+                MaterialTokens::light()
+            }
         };
 
         Self {
@@ -42,6 +50,8 @@ impl UiState {
             settings_open: false,
             recent_directories_open: false,
             show_task_history: false,
+            renaming_id: None,
+            rename_input: String::new(),
             needs_redraw: false,
         }
     }
@@ -59,6 +69,10 @@ impl UiState {
                     // Use purple seed color for dynamic Material Design theme
                     let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
                     MaterialTokens::from_seed_color(seed_color, true)
+                }
+                ThemeMode::Slate => {
+                    // Use slate theme with default light tokens
+                    MaterialTokens::light()
                 }
             };
             self.needs_redraw = true;

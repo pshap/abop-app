@@ -7,6 +7,10 @@ use std::future::Future;
 use std::sync::{Arc, RwLock, atomic::Ordering};
 use tokio::task::JoinHandle;
 
+pub mod renaming;
+
+pub use renaming::RenamingService;
+
 /// Represents a handle to a background task
 #[derive(Debug)]
 pub struct TaskHandle {

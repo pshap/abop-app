@@ -2,7 +2,7 @@
 
 use super::super::{
     config::ResamplerConfig,
-    error::{AudioProcessingError, Result},
+    error::Result,
     traits::{AudioProcessor, Configurable, LatencyReporting, Validatable},
 };
 use super::{core::LinearResampler, types::ResampleBufferFn};

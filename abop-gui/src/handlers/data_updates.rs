@@ -5,7 +5,10 @@
 use crate::commands::library::scan_directory_async;
 use crate::messages::Message;
 use crate::state::AppState;
+use abop_core::db::Database;
+use abop_core::services::RenamingService;
 use iced::Task;
+use std::sync::Arc;
 
 /// Handles GUI messages that require async operations
 #[must_use]
@@ -68,8 +71,48 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
             state.library.update_scan_progress(progress);
             Some(Task::none())
         }
+        Message::CommitRename(id, new_name) => handle_commit_rename(state, id, new_name),
         _ => None,
     }
+}
+
+fn handle_commit_rename(
+    state: &mut AppState,
+    id: String,
+    new_name: String,
+) -> Option<Task<Message>> {
+    log::info!("Committing rename for {id} to {new_name}");
+    state.ui.renaming_id = None;
+
+    // Find the audiobook in state to get current path
+    let audiobook = state.library.audiobooks.iter().find(|a| a.id == id)?.clone();
+
+    Some(Task::perform(
+        async move {
+            tokio::task::spawn_blocking(move || {
+                let db = Database::open_app_database()?;
+                let repo = Arc::new(db.audiobook_repository());
+                let service = RenamingService::new(repo);
+                
+                service.rename_audiobook(&audiobook, &new_name)
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())
+        },
+        |result| match result {
+            Ok(updated) => {
+                log::info!("Rename successful: {}", updated.path.display());
+                // We could send a message to update local state, 
+                // but for now let's just trigger a re-scan or partial update
+                Message::NoOp // Or Message::RenameSuccess(updated)
+            }
+            Err(e) => {
+                log::error!("Rename failed: {e}");
+                Message::NoOp
+            }
+        },
+    ))
 }
 
 /// Handles core operation messages that require async operations

@@ -3,10 +3,9 @@
 use super::super::{
     config::ResamplerConfig,
     error::{AudioProcessingError, Result},
-    traits::{Configurable, LatencyReporting, Validatable},
     validation::ConfigValidator,
 };
-use super::{error::ResamplerError, types::ResampleBufferFn};
+use super::types::ResampleBufferFn;
 use crate::audio::AudioBuffer;
 
 /// Simple linear resampler for audio sample rate conversion

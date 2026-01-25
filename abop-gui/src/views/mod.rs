@@ -73,8 +73,18 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
         .spacing(state.ui.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
         .padding(state.ui.material_tokens.spacing().md); // Reduced from LG to MD (16px)
 
-    // If settings dialog is open, show it as a modal overlay (single render)
-    if state.ui.settings_open {
+    // Modal overlays
+    if let Some(audiobook_id) = &state.ui.renaming_id {
+        modal(
+            main_content,
+            crate::components::rename_dialog::view(
+                audiobook_id.clone(),
+                &state.ui.rename_input,
+                &state.ui.material_tokens,
+            ),
+            Message::CancelRename,
+        )
+    } else if state.ui.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
         main_content.into()

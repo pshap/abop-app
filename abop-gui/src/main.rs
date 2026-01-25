@@ -73,10 +73,6 @@ fn main() -> iced::Result {
 
     info!("Starting ABOP GUI with Iced 0.13.1 (trait-based approach)...");
 
-    // Register embedded fonts (Roboto only, Font Awesome handled by iced_font_awesome)
-    assets::register_fonts();
-    info!("Material Design fonts registered");
-
     // Load configuration with fallback to defaults
     let config = load_config_with_fallback().unwrap_or_else(|e| {
         log::warn!("Failed to load configuration: {e}. Using defaults.");
@@ -88,9 +84,10 @@ fn main() -> iced::Result {
         .theme(App::theme)
         .subscription(App::subscription)
         .window_size(iced::Size::new(
-            config.window.min_width as f32,
-            config.window.min_height as f32,
+            config.window.initial_width as f32,
+            config.window.initial_height as f32,
         ))
+        .scale_factor(config.ui.scale_factor)
         .run_with(App::initial)
         .map_err(|e| {
             log::error!("Application failed to run: {e}");

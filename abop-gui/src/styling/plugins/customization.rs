@@ -5,7 +5,6 @@
 
 use super::types::*;
 use super::registry::*;
-use crate::theme::ThemeMode;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
