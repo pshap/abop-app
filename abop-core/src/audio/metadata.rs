@@ -15,6 +15,16 @@ fn is_m4b_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+/// The year from a date tag such as "2023" or "2023-05-01T00:00:00Z"
+///
+/// ID3v2.3 also maps TDAT ("DDMM") to the date, so implausible years are ignored.
+fn parse_year(date: &str) -> Option<i32> {
+    date.trim()
+        .get(..4)
+        .and_then(|year| year.parse::<i32>().ok())
+        .filter(|year| *year >= 1000)
+}
+
 /// Extracts M4B metadata using mp4ameta library
 fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
     tracing::debug!("Attempting M4B metadata extraction for: {}", path.display());
@@ -47,11 +57,12 @@ fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
         audio_metadata.cover_art = Some(artwork.data.to_vec());
     }
 
-    // Try to extract narrator from comments (common metadata location)
-    // comments() returns an iterator, so we get the first item
-    if let Some(comment) = metadata.comments().next() {
-        audio_metadata.narrator = Some(comment.to_string());
-    }
+    // Audiobook tools (Audible, m4b-tool, OpenAudible) store the narrator as
+    // the composer. Comments often hold encoder notes or blurbs, so don't use them.
+    audio_metadata.narrator = metadata.composer().map(ToString::to_string);
+    audio_metadata.genre = metadata.genre().map(ToString::to_string);
+    audio_metadata.description = metadata.description().map(ToString::to_string);
+    audio_metadata.year = metadata.year().and_then(parse_year);
 
     Ok(audio_metadata)
 }
@@ -360,12 +371,7 @@ fn process_metadata_tags(
                         meta.genre = Some(tag.value.to_string());
                     }
                     symphonia::core::meta::StandardTagKey::Date => {
-                        // Dates are often full timestamps like "2023-05-01"; keep the year
-                        let date = tag.value.to_string();
-                        // ID3v2.3 also maps TDAT ("DDMM") to Date, so ignore implausible years
-                        if let Some(Ok(year)) = date.get(..4).map(str::parse::<i32>)
-                            && year >= 1000
-                        {
+                        if let Some(year) = parse_year(&tag.value.to_string()) {
                             meta.year = Some(year);
                         }
                     } // Ignore composer and comment fields for now
@@ -387,6 +393,16 @@ fn process_metadata_tags(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parses_years_from_date_tags() {
+        assert_eq!(super::parse_year("2023"), Some(2023));
+        assert_eq!(super::parse_year("2023-05-01T00:00:00Z"), Some(2023));
+        assert_eq!(super::parse_year(" 1999 "), Some(1999));
+        assert_eq!(super::parse_year("0105"), None, "ID3v2.3 TDAT day/month");
+        assert_eq!(super::parse_year("n/a"), None);
+        assert_eq!(super::parse_year(""), None);
+    }
+
     use super::*;
     use crate::test_constants::metadata::*;
 
