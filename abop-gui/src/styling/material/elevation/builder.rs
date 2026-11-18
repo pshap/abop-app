@@ -130,8 +130,8 @@ impl ElevationStyleBuilder {
             ValidationResult::Valid => {}
         }
 
-        let shadow_color = self.shadow_color.unwrap_or_else(|| Color::BLACK);
-        let tint_color = self.tint_color.unwrap_or_else(|| Color::WHITE);
+        let shadow_color = self.shadow_color.unwrap_or(Color::BLACK);
+        let tint_color = self.tint_color.unwrap_or(Color::WHITE);
 
         let style = self.custom_shadow.map_or_else(
             || {
@@ -168,8 +168,8 @@ impl ElevationStyleBuilder {
 
     /// Build the elevation style without validation (use with caution)
     pub fn build_unchecked(self) -> ElevationStyle {
-        let shadow_color = self.shadow_color.unwrap_or_else(|| Color::BLACK);
-        let tint_color = self.tint_color.unwrap_or_else(|| Color::WHITE);
+        let shadow_color = self.shadow_color.unwrap_or(Color::BLACK);
+        let tint_color = self.tint_color.unwrap_or(Color::WHITE);
 
         self.custom_shadow.map_or_else(
             || {
