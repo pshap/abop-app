@@ -130,8 +130,11 @@ fn clear_current(state: &mut AppState) {
 /// Start playing a specific audiobook, resuming from its saved position
 fn play_book(state: &mut AppState, book: Audiobook) -> Task<Message> {
     log::info!("Playing {}", book.path.display());
-    // Remember where we were in the previous book
-    let save_previous = if state.player.player_state == CorePlayerState::Stopped {
+    // Remember where we were in the previous book. While a start is still
+    // pending the player's position belongs to an older book, so skip it.
+    let save_previous = if state.player.player_state == CorePlayerState::Stopped
+        || state.player.pending_starts > 0
+    {
         Task::none()
     } else {
         state.player.position = audio::get_position();
@@ -144,6 +147,7 @@ fn play_book(state: &mut AppState, book: Audiobook) -> Task<Message> {
     state.player.position = Duration::ZERO;
     state.player.last_saved_position = Duration::ZERO;
     state.player.duration = book.duration_seconds.map(Duration::from_secs);
+    state.player.pending_starts = state.player.pending_starts.saturating_add(1);
     Task::batch([
         save_previous,
         Task::perform(audio::play_audiobook(book), Message::PlaybackStarted),
@@ -235,13 +239,17 @@ fn skip(state: &mut AppState, offset: isize) -> Task<Message> {
 }
 
 fn playback_started(state: &mut AppState, result: &Result<String, String>) {
+    state.player.pending_starts = state.player.pending_starts.saturating_sub(1);
     match result {
         Ok(message) => {
             log::info!("{message}");
             state.ui.notice = None;
         }
         Err(error) => {
-            clear_current(state);
+            // A newer play request supersedes this one; only reset if none is pending
+            if state.player.pending_starts == 0 {
+                clear_current(state);
+            }
             state
                 .ui
                 .notify_error(format!("Couldn't play audiobook: {error}"));
@@ -251,7 +259,7 @@ fn playback_started(state: &mut AppState, result: &Result<String, String>) {
 
 /// Reflect the real player state: position, duration and the end of a book
 fn sync_with_player(state: &mut AppState) -> Task<Message> {
-    if state.player.player_state != CorePlayerState::Playing {
+    if state.player.player_state != CorePlayerState::Playing || state.player.pending_starts > 0 {
         return Task::none();
     }
     if audio::get_player_state() == CorePlayerState::Stopped {
@@ -355,6 +363,39 @@ mod tests {
             state.player.current_playing_file.as_deref(),
             Some(std::path::Path::new("/nonexistent/a.mp3"))
         );
+    }
+
+    #[test]
+    fn ticks_are_ignored_until_playback_has_started() {
+        let mut state = state_with_books();
+        state.library.selected_audiobooks.insert("a".into());
+        let _ = handle_playback_message(&mut state, &Message::StartPlayback);
+        assert_eq!(state.player.pending_starts, 1);
+
+        // The audio thread hasn't started the book yet: the tick must not
+        // treat its stale "stopped" status as the end of the book
+        let _ = handle_playback_message(&mut state, &Message::PlayerTick);
+        assert_eq!(state.player.player_state, CorePlayerState::Playing);
+        assert_eq!(state.player.playing_audiobook_id.as_deref(), Some("a"));
+        assert!(!state.library.progress.contains_key("a"));
+    }
+
+    #[test]
+    fn superseded_start_failure_keeps_the_newer_book() {
+        let mut state = state_with_books();
+        state.library.selected_audiobooks.insert("a".into());
+        let _ = handle_playback_message(&mut state, &Message::StartPlayback);
+        let _ = handle_playback_message(&mut state, &Message::Next);
+        assert_eq!(state.player.pending_starts, 2);
+        assert_eq!(state.player.playing_audiobook_id.as_deref(), Some("b"));
+
+        // The first request fails after the second was sent
+        let _ = handle_playback_message(
+            &mut state,
+            &Message::PlaybackStarted(Err("file not found".into())),
+        );
+        assert_eq!(state.player.pending_starts, 1);
+        assert_eq!(state.player.playing_audiobook_id.as_deref(), Some("b"));
     }
 
     #[test]

@@ -28,6 +28,9 @@ pub struct PlayerState {
     pub duration: Option<std::time::Duration>,
     /// Position at which progress was last saved
     pub last_saved_position: std::time::Duration,
+    /// Play requests sent to the audio thread that have not reported back yet;
+    /// until they do, the player's status still describes the previous book
+    pub pending_starts: u32,
 }
 
 impl PlayerState {
@@ -45,6 +48,7 @@ impl PlayerState {
             position: std::time::Duration::ZERO,
             duration: None,
             last_saved_position: std::time::Duration::ZERO,
+            pending_starts: 0,
         }
     }
 
