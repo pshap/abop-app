@@ -26,6 +26,8 @@ pub struct UiState {
     pub needs_redraw: bool,
     /// Latest user-facing message (operation result or error), shown in the status bar
     pub notice: Option<Notice>,
+    /// Whether the "convert to mono" confirmation dialog is open
+    pub confirm_process: bool,
 }
 
 /// Severity of a [`Notice`]
@@ -74,6 +76,7 @@ impl UiState {
             rename_input: String::new(),
             needs_redraw: false,
             notice: None,
+            confirm_process: false,
         }
     }
 

@@ -19,6 +19,8 @@ pub mod audio_toolbar;
 /// - progress: Progress indicators and status components
 /// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
+/// Generic confirmation dialog
+pub mod confirm_dialog;
 /// Cover art display component for audiobooks
 pub mod cover_art;
 /// Icon support utilities for buttons and widgets

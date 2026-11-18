@@ -89,9 +89,48 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
             ),
             Message::CancelRename,
         )
+    } else if state.ui.confirm_process {
+        modal(
+            main_content,
+            confirm_process_dialog(state),
+            Message::CancelProcess,
+        )
     } else if state.ui.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
         main_content.into()
     }
+}
+
+/// Confirmation for converting the selected audiobooks to mono
+fn confirm_process_dialog(state: &AppState) -> Element<'_, Message> {
+    let selected: Vec<_> = state
+        .library
+        .audiobooks
+        .iter()
+        .filter(|book| state.library.selected_audiobooks.contains(&book.id))
+        .collect();
+    let count = selected.len();
+    let estimate = crate::audio::processing::estimate_output_bytes(selected.iter().copied());
+
+    crate::components::confirm_dialog::ConfirmDialog {
+        title: if count == 1 {
+            "Convert 1 audiobook to mono?".to_string()
+        } else {
+            format!("Convert {count} audiobooks to mono?")
+        },
+        body: vec![
+            "A mono WAV copy is created next to each original, named “… (mono).wav”. \
+             Originals are not changed."
+                .to_string(),
+            format!(
+                "WAV files are uncompressed: the copies will need about {} of disk space.",
+                abop_core::utils::casting::format_file_size_standard(estimate)
+            ),
+        ],
+        confirm_label: "Convert",
+        on_confirm: Message::ConfirmProcess,
+        on_cancel: Message::CancelProcess,
+    }
+    .view(&state.ui.material_tokens)
 }

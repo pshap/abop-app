@@ -102,6 +102,12 @@ pub enum Message {
     // ===== System Messages =====
     /// Result of an audio processing operation
     AudioProcessingComplete(Result<String, String>),
+    /// Audio processing progress (0.0–1.0) and current step
+    ProcessingProgress(f32, String),
+    /// Confirm the pending "convert to mono" request
+    ConfirmProcess,
+    /// Dismiss the "convert to mono" confirmation
+    CancelProcess,
     /// Result of starting playback
     PlaybackStarted(Result<String, String>),
     /// Result of saving application state

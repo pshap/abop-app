@@ -174,6 +174,8 @@ impl App {
             Message::Escape => {
                 let next = if self.state.ui.renaming_id.is_some() {
                     Message::CancelRename
+                } else if self.state.ui.confirm_process {
+                    Message::CancelProcess
                 } else if self.state.ui.settings_open {
                     Message::CloseSettings
                 } else {
@@ -196,6 +198,11 @@ impl App {
             _ => {
                 if let Some(task) =
                     handlers::playback::handle_playback_message(&mut self.state, &message)
+                {
+                    return task;
+                }
+                if let Some(task) =
+                    handlers::processing::handle_processing_message(&mut self.state, &message)
                 {
                     return task;
                 }

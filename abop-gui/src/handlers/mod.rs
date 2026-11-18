@@ -5,6 +5,7 @@
 
 pub mod data_updates;
 pub mod playback;
+pub mod processing;
 pub mod ui_state;
 
 #[cfg(test)]

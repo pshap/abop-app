@@ -4,7 +4,7 @@
 //! to ensure consistent behavior across different component types.
 
 #[cfg(test)]
-mod tests {
+mod selection_component_tests {
 
     use crate::styling::material::components::selection::common::prelude::*;
     use crate::styling::material::selection::Chip;

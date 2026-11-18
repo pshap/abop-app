@@ -178,14 +178,22 @@ fn selection_bar(state: &AppState) -> Element<'_, Message> {
             ButtonKind::Tonal,
             Some("play"),
             "Play",
-            (count == 1).then_some(Message::StartPlayback),
+            Some(Message::StartPlayback),
         )
     };
 
     let bar = row![
         text(format!("{count} selected")).size(tokens.typography().title_small.size),
         Space::with_width(Length::Fill),
-        ui::with_tooltip(tokens, play, "Preview a single selected audiobook"),
+        ui::with_tooltip(
+            tokens,
+            play,
+            if count == 1 {
+                "Play the selected audiobook"
+            } else {
+                "Play the first selected audiobook"
+            }
+        ),
         ui::action_button(
             tokens,
             ButtonKind::Primary,

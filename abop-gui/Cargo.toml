@@ -56,3 +56,4 @@ fuzzy-matcher.workspace = true
 [dev-dependencies]
 # Pin to the resolved version from Cargo.lock for reproducibility
 approx = "0.5.1"  # For floating-point comparisons in tests
+tempfile.workspace = true

@@ -1,11 +1,10 @@
 //! Audio command handlers for asynchronous audio operations
 
-use iced::Task;
-use std::collections::HashSet;
-
-use crate::audio::{convert_selected_to_mono, play_selected_audio, stop_audio};
+use crate::audio::processing::{ProcessingEvent, convert_to_mono};
+use crate::audio::{play_selected_audio, stop_audio};
 use crate::messages::{Command as GuiCommand, Message};
 use crate::state::AppState;
+use iced::Task;
 
 /// Handles audio-related commands
 #[must_use]
@@ -15,19 +14,25 @@ pub fn handle_audio_command(state: &mut AppState, command: GuiCommand) -> Option
             selected_ids,
             audiobooks,
         } => {
-            state.player.start_processing(Some(
-                "Converting selected audiobooks to mono...".to_string(),
-            ));
+            if state.player.processing_audio {
+                state.ui.notify_info("Audio processing is already running");
+                return Some(Task::none());
+            }
+            let books: Vec<_> = audiobooks
+                .into_iter()
+                .filter(|book| selected_ids.contains(&book.id))
+                .collect();
+            log::info!("Converting {} audiobooks to mono", books.len());
+            state
+                .player
+                .start_processing(Some("Preparing conversion…".to_string()));
             state.progress_cache.clear_processing_cache();
-            log::info!(
-                "Executing ConvertToMono command for {} audiobooks",
-                selected_ids.len()
-            );
-            let selected_set: HashSet<String> = selected_ids.into_iter().collect();
-            Some(Task::perform(
-                convert_selected_to_mono(selected_set, audiobooks),
-                Message::AudioProcessingComplete,
-            ))
+            Some(Task::run(convert_to_mono(books), |event| match event {
+                ProcessingEvent::Progress(progress, status) => {
+                    Message::ProcessingProgress(progress, status)
+                }
+                ProcessingEvent::Finished(result) => Message::AudioProcessingComplete(result),
+            }))
         }
         GuiCommand::PlayAudio {
             selected_ids,
