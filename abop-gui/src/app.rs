@@ -234,13 +234,16 @@ impl App {
             // Settings open as a modal dialog; handled by the UI state handlers below
 
             // Escape dismisses the topmost dialog, otherwise stops playback
-            Message::Escape => {
+            Message::Escape { in_text_input } => {
                 let next = if self.state.ui.renaming_id.is_some() {
                     Message::CancelRename
                 } else if self.state.ui.confirm_process {
                     Message::CancelProcess
                 } else if self.state.ui.settings_open {
                     Message::CloseSettings
+                } else if in_text_input {
+                    // The text field has already let go of focus
+                    return Task::none();
                 } else {
                     Message::Stop
                 };
@@ -342,7 +345,9 @@ impl App {
             }
 
             if matches!(key.as_ref(), Key::Named(keyboard::key::Named::Escape)) {
-                return Some(Message::Escape);
+                return Some(Message::Escape {
+                    in_text_input: status == iced::event::Status::Captured,
+                });
             }
 
             // Playback shortcuts must not steal keys from focused widgets (e.g. search input)
@@ -367,6 +372,26 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn escape_in_a_text_field_does_not_stop_playback() {
+        let mut app = App::new();
+        app.state.player.player_state = abop_core::PlayerState::Playing;
+        let _ = app.handle_message(Message::Escape {
+            in_text_input: true,
+        });
+        assert_eq!(
+            app.state.player.player_state,
+            abop_core::PlayerState::Playing
+        );
+
+        // It still closes an open dialog
+        app.state.ui.settings_open = true;
+        let _ = app.handle_message(Message::Escape {
+            in_text_input: true,
+        });
+        assert!(!app.state.ui.settings_open);
+    }
 
     #[tokio::test]
     async fn title_shows_playing_audiobook() {

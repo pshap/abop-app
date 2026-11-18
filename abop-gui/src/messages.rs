@@ -26,8 +26,13 @@ pub enum Message {
     // ===== Settings =====
     /// Show the settings dialog
     ShowSettings,
-    /// Escape key: closes the open dialog, or stops playback when none is open
-    Escape,
+    /// Escape key: closes the open dialog, or stops playback when none is open.
+    /// Pressed inside a text field (which uses it to give up focus), it only
+    /// closes dialogs.
+    Escape {
+        /// A focused text input received the key
+        in_text_input: bool,
+    },
     /// Move keyboard focus to the search field
     FocusSearch,
     /// Dismiss the notice shown in the status bar
@@ -186,14 +191,6 @@ pub enum Command {
         audiobooks: Vec<Audiobook>,
     },
 
-    /// Start playing the selected audiobooks
-    PlayAudio {
-        /// IDs of the selected audiobooks
-        selected_ids: Vec<String>,
-        /// Full list of audiobooks for reference
-        audiobooks: Vec<Audiobook>,
-    },
-
     /// Stop any currently playing audio
     StopAudio,
 
@@ -212,13 +209,5 @@ impl Command {
     /// Creates a new scan library command
     pub fn scan_library(library_path: PathBuf) -> Self {
         Self::ScanLibrary { library_path }
-    }
-
-    /// Creates a new play audio command
-    pub fn play_audio(selected_ids: Vec<String>, audiobooks: Vec<Audiobook>) -> Self {
-        Self::PlayAudio {
-            selected_ids,
-            audiobooks,
-        }
     }
 }
