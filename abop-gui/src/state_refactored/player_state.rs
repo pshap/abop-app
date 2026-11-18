@@ -20,6 +20,17 @@ pub struct PlayerState {
     pub processing_status: Option<String>,
     /// Flag to indicate player state needs UI redraw
     pub needs_redraw: bool,
+    /// Id of the audiobook currently loaded in the player
+    pub playing_audiobook_id: Option<String>,
+    /// Playback position of the current audiobook
+    pub position: std::time::Duration,
+    /// Duration of the current audiobook, if known
+    pub duration: Option<std::time::Duration>,
+    /// Position at which progress was last saved
+    pub last_saved_position: std::time::Duration,
+    /// Play requests sent to the audio thread that have not reported back yet;
+    /// until they do, the player's status still describes the previous book
+    pub pending_starts: u32,
 }
 
 impl PlayerState {
@@ -33,6 +44,11 @@ impl PlayerState {
             processing_progress: None,
             processing_status: None,
             needs_redraw: false,
+            playing_audiobook_id: None,
+            position: std::time::Duration::ZERO,
+            duration: None,
+            last_saved_position: std::time::Duration::ZERO,
+            pending_starts: 0,
         }
     }
 

@@ -3,6 +3,7 @@
 use iced::widget::{button, checkbox, container, row, text};
 use iced::{Background, Color, Element, Length, Padding};
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::Arc;
 
 use abop_core::models::Audiobook;
@@ -13,6 +14,29 @@ use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
 use crate::utils::image_cache::ImageCache;
 
+/// Height of each audiobook row
+pub const ROW_HEIGHT: f32 = 56.0;
+
+/// Inputs shared by every row of one table render
+///
+/// `'c` borrows per-render values; `'a` is the lifetime of the produced elements.
+pub struct RowContext<'c, 'a> {
+    /// Columns to render, in order
+    pub columns: &'c [data::TableColumn],
+    /// Ids of the selected audiobooks
+    pub selected: &'c HashSet<String>,
+    /// Table behavior (selection, striping)
+    pub config: &'c data::DataTableConfig,
+    /// File currently playing, highlighted in the table
+    pub now_playing: Option<&'c Path>,
+    /// Saved listening progress by audiobook id
+    pub progress: &'c std::collections::HashMap<String, crate::state::ListeningProgress>,
+    /// Design tokens
+    pub tokens: &'a MaterialTokens,
+    /// Cover thumbnail cache
+    pub image_cache: &'a Arc<ImageCache>,
+}
+
 /// Component for creating table rows with Material Design styling
 pub struct TableRow;
 
@@ -21,42 +45,24 @@ impl TableRow {
     #[must_use]
     pub fn create_rows<'a>(
         audiobooks: &'a [Audiobook],
-        columns: &[data::TableColumn],
-        selected_items: &HashSet<String>,
-        tokens: &'a MaterialTokens,
-        config: &data::DataTableConfig,
-        image_cache: &'a Arc<ImageCache>,
+        context: &RowContext<'_, 'a>,
     ) -> Vec<Element<'a, Message>> {
-        log::debug!("Creating {} rows for audiobooks", audiobooks.len());
-        let result: Vec<Element<'a, Message>> = audiobooks
+        audiobooks
             .iter()
             .enumerate()
-            .map(|(index, audiobook)| {
-                Self::create_single_row(
-                    audiobook,
-                    columns,
-                    selected_items,
-                    tokens,
-                    config,
-                    image_cache,
-                    index,
-                )
-            })
-            .collect();
-        log::debug!("Finished creating rows, total: {}", result.len());
-        result
+            .map(|(index, audiobook)| Self::create_single_row(audiobook, context, index))
+            .collect()
     }
     /// Create a single row element with selection checkbox
     fn create_single_row<'a>(
         audiobook: &'a Audiobook,
-        columns: &[data::TableColumn],
-        selected_items: &HashSet<String>,
-        tokens: &'a MaterialTokens,
-        config: &data::DataTableConfig,
-        image_cache: &'a Arc<ImageCache>,
+        context: &RowContext<'_, 'a>,
         row_index: usize,
     ) -> Element<'a, Message> {
-        let is_selected = selected_items.contains(&audiobook.id);
+        let tokens = context.tokens;
+        let config = context.config;
+        let is_selected = context.selected.contains(&audiobook.id);
+        let is_playing = context.now_playing == Some(audiobook.path.as_path());
         let is_striped = config.striped && row_index % 2 == 1;
 
         // Create enhanced selection checkbox with improved Material Design 3 styling
@@ -101,16 +107,26 @@ impl TableRow {
         all_cells.push(checkbox_cell.into());
 
         // Create data cells
-        let data_cells: Vec<Element<'a, Message>> = columns
+        let data_cells: Vec<Element<'a, Message>> = context
+            .columns
             .iter()
             .map(|column| {
-                log::debug!("Creating cell for column: {}", column.id);
-                Self::create_cell(audiobook, column, tokens, image_cache)
+                Self::create_cell(
+                    audiobook,
+                    column,
+                    tokens,
+                    context.image_cache,
+                    is_playing,
+                    context.progress.get(&audiobook.id),
+                )
             })
             .collect();
-        log::debug!("Created {} cells for row {}", data_cells.len(), row_index);
 
         all_cells.extend(data_cells);
+
+        // Add action cell (Rename button)
+        let action_cell = Self::create_action_cell(audiobook, tokens);
+        all_cells.push(action_cell);
 
         let row_content = row(all_cells);
 
@@ -127,8 +143,9 @@ impl TableRow {
                         row_index,
                     )
                 })
-                .on_press(Message::ToggleAudiobookSelection(audiobook.id.clone()))
+                .on_press(Message::RowClicked(audiobook.id.clone()))
                 .width(Length::Fill)
+                .padding(0)
                 .into()
         } else {
             container(row_content)
@@ -143,8 +160,28 @@ impl TableRow {
         };
         container(styled_row)
             .width(Length::Fill)
-            .height(Length::Fixed(config.density.row_height())) // Ensure each row has a proper height
-            .padding(Padding::from([2, 0])) // Minimal vertical padding, no horizontal padding
+            .height(Length::Fixed(ROW_HEIGHT))
+            .into()
+    }
+
+    /// Create action cell with buttons for operations like renaming
+    fn create_action_cell<'a>(
+        audiobook: &'a Audiobook,
+        tokens: &'a MaterialTokens,
+    ) -> Element<'a, Message> {
+        let rename_button = crate::components::ui::icon_button(
+            tokens,
+            crate::components::ui::ButtonKind::Ghost,
+            "pen",
+            "Rename",
+            Some(Message::BeginRename(audiobook.id.clone())),
+        );
+
+        container(rename_button)
+            .width(Length::Fixed(64.0))
+            .height(Length::Fill)
+            .align_x(iced::Alignment::Center)
+            .align_y(iced::Alignment::Center)
             .into()
     }
 
@@ -154,12 +191,14 @@ impl TableRow {
         column: &data::TableColumn,
         tokens: &'a MaterialTokens,
         image_cache: &'a Arc<ImageCache>,
+        is_playing: bool,
+        listened: Option<&crate::state::ListeningProgress>,
     ) -> Element<'a, Message> {
         // Handle cover art column specially
         if column.id == "cover_art" {
             let cover_art = CoverArt::from_data(
                 audiobook.cover_art.as_deref(),
-                48, // 48x48 thumbnail for table
+                crate::components::cover_art::TABLE_THUMBNAIL_SIZE,
                 image_cache,
                 &audiobook.id,
             )
@@ -169,14 +208,15 @@ impl TableRow {
                 data::ColumnWidth::Fixed(w) => Length::Fixed(w),
                 data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
                 data::ColumnWidth::Auto => Length::Fixed(64.0), // Default width for cover art
-                data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+                data::ColumnWidth::Ratio(num, _den) => {
+                    Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+                }
                 data::ColumnWidth::Shrink => Length::Fixed(64.0),
             };
 
             return container(cover_art.view(tokens))
                 .width(width)
-                .height(Length::Fixed(48.0))
-                .padding(Padding::from([4, 8]))
+                .height(Length::Fill)
                 .align_x(iced::Alignment::Center)
                 .align_y(iced::alignment::Vertical::Center)
                 .into();
@@ -191,117 +231,129 @@ impl TableRow {
             "author" => audiobook.author.as_deref().unwrap_or("Unknown").to_string(),
             "duration" => Self::format_duration(audiobook.duration_seconds.unwrap_or(0)),
             "size" => Self::format_file_size(audiobook.size_bytes.unwrap_or(0)),
+            "progress" => Self::format_progress(listened, audiobook.duration_seconds),
+            "actions" => {
+                return container(iced::widget::Space::with_width(Length::Fixed(0.0)))
+                    .width(Length::Fixed(0.0))
+                    .into();
+            } // Already handled in create_single_row
             _ => String::new(),
         };
         let width = match column.width {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Auto => Length::Shrink,
-            data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+            data::ColumnWidth::Ratio(num, _den) => {
+                Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+            }
             data::ColumnWidth::Shrink => Length::Shrink,
         };
 
-        // Use proper Material Design text color
-        let text_color = tokens.colors.on_surface;
-        log::debug!("Table cell text: {} (column: {})", cell_text, column.id);
+        // Primary text for title/author, muted for numeric metadata
+        let (text_color, size, font) = match column.id.as_str() {
+            "title" => (
+                if is_playing {
+                    tokens.colors.primary.base
+                } else {
+                    tokens.colors.on_surface
+                },
+                tokens.typography().body_large.size,
+                iced::Font {
+                    weight: iced::font::Weight::Medium,
+                    ..iced::Font::DEFAULT
+                },
+            ),
+            "author" => (
+                tokens.colors.on_surface,
+                tokens.typography().body_medium.size,
+                iced::Font::DEFAULT,
+            ),
+            _ => (
+                tokens.colors.on_surface_variant,
+                tokens.typography().body_medium.size,
+                iced::Font::DEFAULT,
+            ),
+        };
+        let align = match column.alignment {
+            data::TextAlignment::End => iced::Alignment::End,
+            data::TextAlignment::Center => iced::Alignment::Center,
+            _ => iced::Alignment::Start,
+        };
 
-        container(
-            text(cell_text)
-                .size(tokens.typography().body_medium.size)
-                .line_height(iced::widget::text::LineHeight::Absolute(
-                    tokens.typography().body_medium.line_height,
-                ))
-                .color(text_color),
-        )
-        .width(width)
-        .padding(Padding::from([8, 8])) // Increased padding for Standard density
-        .align_y(iced::alignment::Vertical::Center) // Center text vertically
-        .into()
+        let label = text(cell_text)
+            .size(size)
+            .font(font)
+            .color(text_color)
+            .wrapping(iced::widget::text::Wrapping::None);
+        let content: Element<'a, Message> = if is_playing && column.id == "title" {
+            row![
+                crate::components::ui::icon("volume-high", 14.0, tokens.colors.primary.base),
+                label
+            ]
+            .spacing(8)
+            .align_y(iced::Alignment::Center)
+            .into()
+        } else {
+            label.into()
+        };
+
+        container(content)
+            .width(width)
+            .height(Length::Fill)
+            .padding(Padding::from([0, 12]))
+            .clip(true)
+            .align_x(align)
+            .align_y(iced::alignment::Vertical::Center)
+            .into()
     }
 
-    /// Style for selectable row buttons with Material Design 3 hover effects
+    /// Style for selectable rows: flat, with subtle hover and a tinted selection
     fn row_button_style(
         _theme: &iced::Theme,
         status: button::Status,
         tokens: &MaterialTokens,
         is_selected: bool,
         is_striped: bool,
-        row_index: usize,
+        _row_index: usize,
     ) -> button::Style {
+        use crate::components::ui::blend;
         let colors = &tokens.colors;
-
-        // Get the base background color using Material Design patterns
-        let base_background = if is_selected {
-            colors.secondary.container
-        } else if is_striped && row_index % 2 == 1 {
+        let surface = if is_striped {
             colors.surface_container
         } else {
-            colors.surface_container_lowest
+            colors.surface_container_low
         };
-
-        let background_color = match status {
-            button::Status::Hovered => {
-                // Create a visible hover effect using Material Design overlay technique
-                // This creates a subtle but noticeable visual feedback on hover
-                let hover_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.08, // Material Design 3 hover overlay opacity
-                };
-
-                // Blend the hover overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background
-                        .r
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.r * hover_overlay.a),
-                    g: base_background
-                        .g
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.g * hover_overlay.a),
-                    b: base_background
-                        .b
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.b * hover_overlay.a),
-                    a: base_background.a.max(hover_overlay.a),
-                }))
-            }
-            button::Status::Pressed => {
-                // Create a more visible pressed effect
-                let pressed_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.12, // Material Design 3 pressed overlay opacity
-                };
-
-                // Blend the pressed overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background.r.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.r * pressed_overlay.a,
-                    ),
-                    g: base_background.g.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.g * pressed_overlay.a,
-                    ),
-                    b: base_background.b.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.b * pressed_overlay.a,
-                    ),
-                    a: base_background.a.max(pressed_overlay.a),
-                }))
-            }
-            _ => Some(Background::Color(base_background)),
+        let base = if is_selected {
+            blend(surface, colors.primary.base, 0.14)
+        } else {
+            surface
+        };
+        let background = match status {
+            button::Status::Hovered => blend(base, colors.on_surface, 0.05),
+            button::Status::Pressed => blend(base, colors.on_surface, 0.10),
+            _ => base,
         };
 
         button::Style {
-            background: background_color,
+            background: Some(Background::Color(background)),
             text_color: colors.on_surface,
-            border: iced::Border {
-                color: colors.outline_variant,
-                width: 0.5,
-                radius: iced::border::Radius::new(0.0),
-            },
+            border: iced::Border::default(),
             shadow: iced::Shadow::default(),
+        }
+    }
+
+    /// "Finished", a percentage, or a dash when the book hasn't been started
+    fn format_progress(
+        listened: Option<&crate::state::ListeningProgress>,
+        duration_seconds: Option<u64>,
+    ) -> String {
+        match listened {
+            Some(progress) if progress.completed => "Finished".to_string(),
+            Some(progress) => match progress.fraction(duration_seconds) {
+                Some(fraction) if fraction > 0.0 => format!("{:.0}%", (fraction * 100.0).max(1.0)),
+                _ => "—".to_string(),
+            },
+            None => "—".to_string(),
         }
     }
 
@@ -314,5 +366,37 @@ impl TableRow {
     fn format_file_size(bytes: u64) -> String {
         // Use the unified file size formatting from the casting module
         abop_core::utils::casting::format_file_size_standard(bytes)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::ListeningProgress;
+
+    #[test]
+    fn formats_progress_cells() {
+        let progress = |position_seconds, completed| ListeningProgress {
+            position_seconds,
+            completed,
+        };
+        assert_eq!(TableRow::format_progress(None, Some(100)), "—");
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(0, false)), Some(100)),
+            "—"
+        );
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(42, false)), Some(100)),
+            "42%"
+        );
+        // A few seconds in still shows as started
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(1, false)), Some(36_000)),
+            "1%"
+        );
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(5, true)), None),
+            "Finished"
+        );
     }
 }

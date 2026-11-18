@@ -4,12 +4,14 @@ use iced::widget::{column, container, row, text};
 use iced::{Alignment, Element, Length};
 use std::collections::HashSet;
 
+use crate::styling::MaterialTokens;
+
 use abop_core::PlayerState;
 use abop_core::models::Audiobook;
 
 use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;
-use crate::styling::material::{MaterialSurface, MaterialTokens, SurfaceVariant};
+// use crate::styling::material::{MaterialSurface, MaterialTokens, SurfaceVariant}; // Temporarily disabled
 
 /// Audio playback controls and manipulation component
 ///
@@ -58,79 +60,84 @@ impl AudioControls {
             let selected_count = selected_ids.len();
             content =
                 content.push(text(format!("{selected_count} audiobook(s) selected")).size(16)); // Add process button
-            content = content.push(
-                ButtonBuilder::new(material_tokens)
-                    .variant(ButtonVariant::Filled)
-                    .label("Process Selected")
-                    .on_press(Message::ProcessSelected)
-                    .build()
-                    .unwrap(),
-            );
+            content = content.push(crate::components::buttons::create_button(
+                || {
+                    ButtonBuilder::new(material_tokens)
+                        .variant(ButtonVariant::Filled)
+                        .label("Process Selected")
+                        .on_press(Message::ProcessSelected)
+                        .build()
+                },
+                "audio control",
+                None,
+            ));
 
             // Add preview button if playing
             match player_state {
                 PlayerState::Playing => {
-                    content = content.push(
-                        ButtonBuilder::new(material_tokens)
-                            .variant(ButtonVariant::Outlined)
-                            .label("Stop Preview")
-                            .on_press(Message::Stop)
-                            .build()
-                            .unwrap(),
-                    );
+                    content = content.push(crate::components::buttons::create_button(
+                        || {
+                            ButtonBuilder::new(material_tokens)
+                                .variant(ButtonVariant::Outlined)
+                                .label("Stop Preview")
+                                .on_press(Message::Stop)
+                                .build()
+                        },
+                        "audio control",
+                        None,
+                    ));
                 }
                 PlayerState::Stopped => {
                     if selected_count == 1 {
-                        content = content.push(
-                            ButtonBuilder::new(material_tokens)
-                                .variant(ButtonVariant::Outlined)
-                                .label("Preview Audio")
-                                .on_press(Message::StartPlayback)
-                                .build()
-                                .unwrap(),
-                        );
+                        content = content.push(crate::components::buttons::create_button(
+                            || {
+                                ButtonBuilder::new(material_tokens)
+                                    .variant(ButtonVariant::Outlined)
+                                    .label("Preview Audio")
+                                    .on_press(Message::StartPlayback)
+                                    .build()
+                            },
+                            "audio control",
+                            None,
+                        ));
                     }
                 }
                 PlayerState::Paused => {
-                    content = content.push(
-                        ButtonBuilder::new(material_tokens)
-                            .variant(ButtonVariant::Outlined)
-                            .label("Resume Preview")
-                            .on_press(Message::StartPlayback)
-                            .build()
-                            .unwrap(),
-                    );
+                    content = content.push(crate::components::buttons::create_button(
+                        || {
+                            ButtonBuilder::new(material_tokens)
+                                .variant(ButtonVariant::Outlined)
+                                .label("Resume Preview")
+                                .on_press(Message::StartPlayback)
+                                .build()
+                        },
+                        "audio control",
+                        None,
+                    ));
                 }
             }
         }
 
         // Add processing options panel
-        content = content.push(
-            MaterialSurface::new()
-                .variant(SurfaceVariant::SurfaceContainer)
-                .padding(material_tokens.spacing().md)
-                .container(
-                    column![
-                        text("Processing Options").size(18),
-                        row![
-                            text("Stereo to Mono:"),
-                            text("Converts stereo audio to mono, reducing file size.")
-                        ]
-                        .spacing(material_tokens.spacing().md)
-                        .align_y(Alignment::Start),
-                        row![
-                            text("Audio Playback:"),
-                            text("Preview audio files before processing.")
-                        ]
-                        .spacing(material_tokens.spacing().md)
-                        .align_y(Alignment::Start),
-                    ]
-                    .spacing(material_tokens.spacing().md)
-                    .width(Length::Fill)
-                    .into(),
-                    material_tokens,
-                ),
-        );
+        content = content.push(container(
+            column![
+                text("Processing Options").size(18),
+                row![
+                    text("Stereo to Mono:"),
+                    text("Converts stereo audio to mono, reducing file size.")
+                ]
+                .spacing(material_tokens.spacing().md)
+                .align_y(Alignment::Start),
+                row![
+                    text("Audio Playback:"),
+                    text("Preview audio files before processing.")
+                ]
+                .spacing(material_tokens.spacing().md)
+                .align_y(Alignment::Start),
+            ]
+            .spacing(material_tokens.spacing().md)
+            .width(Length::Fill),
+        ));
 
         container(content)
             .padding(material_tokens.spacing().md)

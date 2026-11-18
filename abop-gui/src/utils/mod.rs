@@ -4,6 +4,7 @@
 //! utilities used throughout the GUI components.
 
 use crate::state::AppState;
+use abop_core::models::Audiobook;
 use std::path::Path;
 
 pub mod image_cache;
@@ -55,40 +56,138 @@ pub fn get_file_format_simple(path: &Path) -> String {
 /// sort_audiobooks(&mut state);
 /// ```
 pub fn sort_audiobooks(state: &mut AppState) {
-    let column = &state.library.table_state.sort_column;
-    let ascending = state.library.table_state.sort_ascending;
-
-    state.library.audiobooks.sort_by(|a, b| {
-        let ordering = match column.as_str() {
-            "title" => a
-                .title
-                .as_deref()
-                .unwrap_or(&a.id)
-                .cmp(b.title.as_deref().unwrap_or(&b.id)),
-            "author" => a
-                .author
-                .as_deref()
-                .unwrap_or("Unknown")
-                .cmp(b.author.as_deref().unwrap_or("Unknown")),
-            "duration" => a.duration_seconds.cmp(&b.duration_seconds),
-            "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
-            "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
-            "path" => a.path.to_string_lossy().cmp(&b.path.to_string_lossy()),
-            "library_id" => a.library_id.cmp(&b.library_id),
-            // For unknown columns, fall back to sorting by title to provide consistent behavior
-            _ => {
-                log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
-                a.title
-                    .as_deref()
-                    .unwrap_or(&a.id)
-                    .cmp(b.title.as_deref().unwrap_or(&b.id))
-            }
-        };
-
+    let library = &mut state.library;
+    let column = library.table_state.sort_column.as_str();
+    let ascending = library.table_state.sort_ascending;
+    let progress = &library.progress;
+    let compare = |a: &Audiobook, b: &Audiobook| {
+        let ordering = compare_audiobooks(a, b, column, progress);
         if ascending {
             ordering
         } else {
             ordering.reverse()
         }
-    });
+    };
+
+    library.audiobooks.sort_by(compare);
+    // Keep the search results (shown while a search is active) in the same order
+    library.filtered_audiobooks.sort_by(compare);
+}
+
+/// Case-insensitive comparison of text fields used for sorting (no allocation)
+fn compare_text(a: &str, b: &str) -> std::cmp::Ordering {
+    a.chars()
+        .flat_map(char::to_lowercase)
+        .cmp(b.chars().flat_map(char::to_lowercase))
+        .then_with(|| a.cmp(b))
+}
+
+/// The title used for sorting, falling back to the id
+fn sort_title(book: &Audiobook) -> &str {
+    book.title.as_deref().unwrap_or(&book.id)
+}
+
+/// Compares two audiobooks by the given table column
+fn compare_audiobooks(
+    a: &Audiobook,
+    b: &Audiobook,
+    column: &str,
+    progress: &std::collections::HashMap<String, crate::state::ListeningProgress>,
+) -> std::cmp::Ordering {
+    let listened = |book: &Audiobook| {
+        progress
+            .get(&book.id)
+            .and_then(|p| p.fraction(book.duration_seconds))
+            .unwrap_or(0.0)
+    };
+    match column {
+        "title" => compare_text(sort_title(a), sort_title(b)),
+        "author" => compare_text(
+            a.author.as_deref().unwrap_or("Unknown"),
+            b.author.as_deref().unwrap_or("Unknown"),
+        ),
+        "duration" => a.duration_seconds.cmp(&b.duration_seconds),
+        "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
+        "progress" => listened(a).total_cmp(&listened(b)),
+        "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
+        "path" => a.path.to_string_lossy().cmp(&b.path.to_string_lossy()),
+        "library_id" => a.library_id.cmp(&b.library_id),
+        // For unknown columns, fall back to sorting by title to provide consistent behavior
+        _ => {
+            log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
+            compare_text(sort_title(a), sort_title(b))
+        }
+    }
+}
+
+#[cfg(test)]
+mod sort_tests {
+    use super::*;
+
+    fn book(title: &str) -> Audiobook {
+        let mut book = Audiobook::new("lib", format!("/books/{title}.mp3"));
+        book.title = Some(title.to_string());
+        book
+    }
+
+    fn titles(books: &[Audiobook]) -> Vec<&str> {
+        books.iter().filter_map(|b| b.title.as_deref()).collect()
+    }
+
+    #[test]
+    fn sorts_titles_case_insensitively_in_both_directions() {
+        let mut state = AppState::default();
+        state.library.audiobooks = vec![book("zebra"), book("Apple"), book("mango")];
+        state.library.filtered_audiobooks = vec![book("mango"), book("Apple")];
+
+        sort_audiobooks(&mut state);
+        assert_eq!(
+            titles(&state.library.audiobooks),
+            ["Apple", "mango", "zebra"]
+        );
+        assert_eq!(
+            titles(&state.library.filtered_audiobooks),
+            ["Apple", "mango"]
+        );
+
+        state.library.table_state.sort_ascending = false;
+        sort_audiobooks(&mut state);
+        assert_eq!(
+            titles(&state.library.audiobooks),
+            ["zebra", "mango", "Apple"]
+        );
+    }
+
+    #[test]
+    fn sorts_by_listening_progress() {
+        use crate::state::ListeningProgress;
+        let mut state = AppState::default();
+        let mut books = vec![book("Unstarted"), book("Finished"), book("Halfway")];
+        for b in &mut books {
+            b.duration_seconds = Some(100);
+        }
+        let (finished, halfway) = (books[1].id.clone(), books[2].id.clone());
+        state.library.audiobooks = books;
+        state.library.progress.insert(
+            finished,
+            ListeningProgress {
+                position_seconds: 0,
+                completed: true,
+            },
+        );
+        state.library.progress.insert(
+            halfway,
+            ListeningProgress {
+                position_seconds: 50,
+                completed: false,
+            },
+        );
+        state.library.table_state.sort_column = "progress".into();
+
+        sort_audiobooks(&mut state);
+        assert_eq!(
+            titles(&state.library.audiobooks),
+            ["Unstarted", "Halfway", "Finished"]
+        );
+    }
 }

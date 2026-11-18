@@ -10,6 +10,9 @@ use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
 use crate::styling::material::components::selection_style::constants;
 
+/// Height of the table header row
+pub const HEADER_HEIGHT: f32 = 44.0;
+
 /// Component for creating table headers with Material Design styling
 pub struct TableHeader;
 
@@ -89,14 +92,22 @@ impl TableHeader {
 
         container(
             row(header_cells)
-                .height(Length::Fixed(48.0)) // Standard header height
+                .height(Length::Fixed(HEADER_HEIGHT))
                 .width(Length::Fill)
                 .align_y(iced::Alignment::Center),
         )
-        .style(data::MaterialDataTable::header_container(tokens))
+        .style(move |_theme| iced::widget::container::Style {
+            background: Some(Background::Color(tokens.colors.surface_container)),
+            border: iced::Border {
+                radius: iced::border::Radius::default()
+                    .top(crate::components::ui::CARD_RADIUS - 1.0),
+                ..iced::Border::default()
+            },
+            ..iced::widget::container::Style::default()
+        })
         .width(Length::Fill)
-        .height(Length::Fixed(48.0)) // Ensure container matches content height
-        .padding(Padding::ZERO) // Remove padding to prevent extra space
+        .height(Length::Fixed(HEADER_HEIGHT))
+        .padding(Padding::ZERO)
         .into()
     }
 
@@ -108,138 +119,92 @@ impl TableHeader {
         tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
         let is_sorted = state.sort_column == column.id;
-
-        let sort_icon = if is_sorted {
-            if state.sort_ascending { " ↑" } else { " ↓" }
+        let color = if is_sorted {
+            tokens.colors.primary.base
         } else {
-            ""
+            tokens.colors.on_surface_variant
         };
-
-        let header_text = format!("{}{}", column.title, sort_icon);
+        let align = match column.alignment {
+            data::TextAlignment::End => iced::Alignment::End,
+            data::TextAlignment::Center => iced::Alignment::Center,
+            _ => iced::Alignment::Start,
+        };
 
         let width = match column.width {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Auto => Length::Shrink,
-            data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+            data::ColumnWidth::Ratio(num, _den) => {
+                Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+            }
             data::ColumnWidth::Shrink => Length::Shrink,
         };
 
-        // Create the entire header cell as a clickable button for better UX
+        let mut label = row![
+            text(column.title.clone())
+                .size(tokens.typography().label_large.size)
+                .color(color)
+                .wrapping(iced::widget::text::Wrapping::None)
+        ]
+        .spacing(6)
+        .align_y(iced::Alignment::Center);
+        if is_sorted {
+            let chevron = if state.sort_ascending {
+                "chevron-up"
+            } else {
+                "chevron-down"
+            };
+            label = label.push(crate::components::ui::icon(chevron, 10.0, color));
+        }
+        let content = container(label)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .align_x(align)
+            .align_y(iced::Alignment::Center);
+
         if column.sortable {
-            button(
-                text(header_text)
-                    .size(tokens.typography().title_medium.size)
-                    .color(tokens.colors.on_surface_variant)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .align_x(iced::Alignment::Start)
-                    .align_y(iced::Alignment::Center),
-            )
-            .width(width)
-            .height(Length::Fill)
-            .padding(Padding::from([8.0, 8.0]))
-            .style(move |theme, status| {
-                Self::header_cell_button_style(theme, status, tokens, is_sorted)
-            })
-            .on_press(Message::SortBy(column.id.clone()))
-            .into()
+            button(content)
+                .width(width)
+                .height(Length::Fill)
+                .padding(Padding::from([0.0, 12.0]))
+                .style(move |theme, status| {
+                    Self::header_cell_button_style(theme, status, tokens, is_sorted)
+                })
+                .on_press(Message::SortBy(column.id.clone()))
+                .into()
         } else {
-            container(
-                text(header_text)
-                    .size(tokens.typography().title_medium.size)
-                    .color(tokens.colors.on_surface_variant),
-            )
-            .width(width)
-            .height(Length::Fill)
-            .padding(Padding::from([8.0, 8.0]))
-            .style(data::MaterialDataTable::header_cell(
-                tokens,
-                column.sortable,
-                is_sorted,
-            ))
-            .align_y(iced::Alignment::Center)
-            .into()
+            container(content)
+                .width(width)
+                .height(Length::Fill)
+                .padding(Padding::from([0.0, 12.0]))
+                .into()
         }
     }
 
-    /// Style for header cell as a clickable button (entire cell area)
+    /// Style for header cells: transparent, with a subtle hover tint
     fn header_cell_button_style(
         _theme: &iced::Theme,
         status: button::Status,
         tokens: &MaterialTokens,
-        is_sorted: bool,
+        _is_sorted: bool,
     ) -> button::Style {
         let colors = &tokens.colors;
-
-        // Base colors for normal state
-        let base_background = if is_sorted {
-            colors.primary.container
-        } else {
-            colors.surface_variant
-        };
-
-        let background_color = match status {
-            button::Status::Hovered => {
-                // Create a more visible hover effect
-                let hover_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.08,
-                };
-
-                // Blend the hover overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background
-                        .r
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.r * hover_overlay.a),
-                    g: base_background
-                        .g
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.g * hover_overlay.a),
-                    b: base_background
-                        .b
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.b * hover_overlay.a),
-                    a: base_background.a.max(hover_overlay.a),
-                }))
-            }
-            button::Status::Pressed => {
-                // Create a more visible pressed effect
-                let pressed_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.12,
-                };
-
-                // Blend the pressed overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background.r.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.r * pressed_overlay.a,
-                    ),
-                    g: base_background.g.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.g * pressed_overlay.a,
-                    ),
-                    b: base_background.b.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.b * pressed_overlay.a,
-                    ),
-                    a: base_background.a.max(pressed_overlay.a),
-                }))
-            }
-            _ => Some(Background::Color(base_background)),
+        let background = match status {
+            button::Status::Hovered => Some(Background::Color(Color {
+                a: 0.06,
+                ..colors.on_surface
+            })),
+            button::Status::Pressed => Some(Background::Color(Color {
+                a: 0.10,
+                ..colors.on_surface
+            })),
+            _ => None,
         };
 
         button::Style {
-            background: background_color,
+            background,
             text_color: colors.on_surface_variant,
-            border: iced::Border {
-                color: colors.outline_variant,
-                width: 0.5,
-                radius: iced::border::Radius::new(0.0),
-            },
+            border: iced::Border::default(),
             shadow: iced::Shadow::default(),
         }
     }

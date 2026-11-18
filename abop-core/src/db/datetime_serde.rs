@@ -34,9 +34,12 @@ impl ToSql for SqliteDateTime {
 impl FromSql for SqliteDateTime {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let s = value.as_str()?;
-        DateTime::parse_from_rfc3339(s)
+        // RFC 3339 is what we write; SQLite's CURRENT_TIMESTAMP default
+        // ("YYYY-MM-DD HH:MM:SS", UTC) and similar forms are accepted too, so one
+        // row written elsewhere can't make whole queries fail
+        crate::db::helpers::parse_datetime_string(s)
+            .map(Self)
             .map_err(|e| FromSqlError::Other(Box::new(e)))
-            .map(|dt| Self(dt.with_timezone(&Utc)))
     }
 }
 
@@ -96,6 +99,24 @@ pub fn optional_datetime_to_sql_output(dt: &Option<DateTime<Utc>>) -> ToSqlOutpu
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn reads_rfc3339_and_sqlite_default_timestamps() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        for (text, expected) in [
+            ("2026-11-18T04:02:22+00:00", "2026-11-18T04:02:22+00:00"),
+            ("2026-11-18T06:02:22+02:00", "2026-11-18T04:02:22+00:00"),
+            ("2026-11-18 04:02:22", "2026-11-18T04:02:22+00:00"),
+        ] {
+            let parsed: SqliteDateTime = conn
+                .query_row("SELECT ?1", [text], |row| row.get(0))
+                .unwrap();
+            assert_eq!(parsed.0.to_rfc3339(), expected, "{text}");
+        }
+        let invalid: rusqlite::Result<SqliteDateTime> =
+            conn.query_row("SELECT 'yesterday'", [], |row| row.get(0));
+        assert!(invalid.is_err());
+    }
     use super::*;
     use chrono::TimeZone;
 

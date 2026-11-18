@@ -1,160 +1,167 @@
-//! Enhanced Settings view module with improved styling
-//!
-//! This module provides an enhanced settings view with consistent styling
-//! and improved user interaction patterns.
+//! Settings dialog
 
-use iced::widget::{Space, column, container, row, text};
-use iced::{Element, Length};
+use iced::widget::{Space, column, container, row, text, toggler};
+use iced::{Alignment, Background, Border, Color, Element, Length, Padding, Shadow, Vector};
 
-use crate::components::buttons;
-use crate::components::buttons::builder::ButtonBuilder;
-use crate::components::buttons::variants::ButtonVariant;
+use crate::components::ui::{self, ButtonKind};
 use crate::messages::Message;
 use crate::state::AppState;
-use crate::styling::container::dialog::DialogContainerStyles;
-use crate::styling::material::components::selection::builder::CommonSelectionBuilder;
+use crate::styling::material::MaterialTokens;
 
-// Import Material Design 3 selection components
-use crate::styling::material::components::feedback::dialog::DialogSize;
-use crate::styling::material::components::selection::Switch;
-use crate::styling::material::components::selection::common::{ComponentSize, SwitchState};
-
-/// Creates the enhanced settings view with Material Design 3 selection components
+/// Creates the settings dialog
 #[must_use]
 pub fn settings_view(state: &AppState) -> Element<'_, Message> {
-    // Create switches for each setting using the Material Design 3 selection components
-    let theme_switch = create_theme_switch(state);
-    let auto_save_switch = create_auto_save_switch(state);
-    let scan_subdirs_switch = create_scan_subdirs_switch(state);
+    let tokens = &state.ui.material_tokens;
+    let is_dark = matches!(state.ui.theme_mode, crate::theme::ThemeMode::Dark);
 
-    // Create the settings content with proper spacing
-    let settings_content = column![
-        text("Application Settings").size(state.ui.material_tokens.typography().title_medium.size),
-        // Theme Setting
-        row![
-            column![
-                text("Theme").size(state.ui.material_tokens.typography().label_large.size),
-                text("Switch between light and dark theme")
-                    .size(state.ui.material_tokens.typography().body_small.size)
-            ]
-            .width(Length::Fill),
-            theme_switch
-        ]
-        .spacing(state.ui.material_tokens.spacing().md)
-        .align_y(iced::Alignment::Center),
-        // Auto-save Library Setting
-        row![
-            column![
-                text("Auto-save Library")
-                    .size(state.ui.material_tokens.typography().label_large.size),
-                text("Automatically save library changes")
-                    .size(state.ui.material_tokens.typography().body_small.size)
-            ]
-            .width(Length::Fill),
-            auto_save_switch
-        ]
-        .spacing(state.ui.material_tokens.spacing().md)
-        .align_y(iced::Alignment::Center),
-        // Scan Subdirectories Setting
-        row![
-            column![
-                text("Scan Subdirectories")
-                    .size(state.ui.material_tokens.typography().label_large.size),
-                text("Include subdirectories when scanning for audiobooks")
-                    .size(state.ui.material_tokens.typography().body_small.size)
-            ]
-            .width(Length::Fill),
-            scan_subdirs_switch
-        ]
-        .spacing(state.ui.material_tokens.spacing().md)
-        .align_y(iced::Alignment::Center),
+    let header = row![
+        text("Settings").size(tokens.typography().title_large.size),
+        Space::with_width(Length::Fill),
+        ui::icon_button(
+            tokens,
+            ButtonKind::Ghost,
+            "xmark",
+            "Close (Esc)",
+            Some(Message::CloseSettings),
+        ),
     ]
-    .spacing(state.ui.material_tokens.spacing().lg)
-    .padding(state.ui.material_tokens.spacing().lg); // Create the settings modal container with proper styling
-    container(
-        column![
-            settings_content,
-            // Close button row
-            row![
-                Space::new(Length::Fill, 0),
-                buttons::create_button(
-                    || ButtonBuilder::new(&state.ui.material_tokens)
-                        .label("Close")
-                        .variant(ButtonVariant::Filled)
-                        .on_press(Message::CloseSettings)
-                        .build(),
-                    "close settings",
-                    Some("Close"),
-                )
-            ]
+    .align_y(Alignment::Center);
+
+    let content = column![
+        header,
+        section_label(tokens, "Appearance"),
+        setting_row(
+            tokens,
+            "Dark theme",
+            "Use a dark color scheme",
+            is_dark,
+            Message::ToggleTheme,
+        ),
+        section_label(tokens, "Library"),
+        setting_row(
+            tokens,
+            "Scan subfolders",
+            "Include audiobooks in subfolders when scanning",
+            state.library.scan_subdirectories,
+            Message::ToggleScanSubdirectories,
+        ),
+        Space::with_height(8),
+        row![
+            text(concat!("ABOP version ", env!("CARGO_PKG_VERSION")))
+                .size(tokens.typography().body_small.size)
+                .color(tokens.colors.on_surface_variant),
+            Space::with_width(Length::Fill),
+            ui::action_button(
+                tokens,
+                ButtonKind::Primary,
+                None,
+                "Done",
+                Some(Message::CloseSettings)
+            ),
         ]
-        .spacing(state.ui.material_tokens.spacing().md),
+        .align_y(Alignment::Center),
+    ]
+    .spacing(12)
+    .padding(Padding::from([20.0, 24.0]));
+
+    container(content)
+        .width(Length::Fixed(480.0))
+        .style(move |_theme| container::Style {
+            background: Some(Background::Color(tokens.colors.surface_container_high)),
+            text_color: Some(tokens.colors.on_surface),
+            border: Border {
+                radius: 16.0.into(),
+                ..Border::default()
+            },
+            shadow: Shadow {
+                color: Color {
+                    a: 0.4,
+                    ..Color::BLACK
+                },
+                offset: Vector::new(0.0, 8.0),
+                blur_radius: 24.0,
+            },
+        })
+        .into()
+}
+
+/// Small accent-colored heading above a group of settings
+fn section_label<'a>(tokens: &'a MaterialTokens, label: &'a str) -> Element<'a, Message> {
+    container(
+        text(label)
+            .size(tokens.typography().label_medium.size)
+            .color(tokens.colors.primary.base),
     )
-    .width(Length::from(DialogSize::Medium))
-    .style(DialogContainerStyles::modal(state.ui.theme_mode))
+    .padding(Padding::ZERO.top(8))
     .into()
 }
 
-/// Helper function to create MD3 switches with consistent styling
-fn create_settings_switch<'a, ToggleHandler>(
-    label: &'a str,
-    state: &'a AppState,
-    is_enabled: bool,
-    on_toggle: ToggleHandler,
-) -> Element<'a, Message>
-where
-    ToggleHandler: Fn(SwitchState) -> Message + 'static,
-{
-    let is_dark = matches!(state.ui.theme_mode, crate::theme::ThemeMode::Dark);
-    let switch_state = if is_enabled {
-        SwitchState::On
-    } else {
-        SwitchState::Off
-    };
-
-    // Create Material Design 3 Switch component with fallback
-    let md3_switch = Switch::builder(switch_state)
-        .label(label)
-        .size(ComponentSize::Medium)
-        .build()
-        .unwrap_or_else(|_err| {
-            // Log validation error for debugging
-            #[cfg(debug_assertions)]
-            log::warn!("Switch validation failed: {_err}. Using fallback.");
-
-            // Fallback to basic switch - this should always succeed
-            Switch::builder(switch_state).build_unchecked()
+/// A setting with a title, description and toggle switch
+fn setting_row<'a>(
+    tokens: &'a MaterialTokens,
+    title: &'a str,
+    description: &'a str,
+    enabled: bool,
+    on_toggle: Message,
+) -> Element<'a, Message> {
+    let switch = toggler(enabled)
+        .on_toggle(move |_| on_toggle.clone())
+        .size(22)
+        .style(move |_theme, status| {
+            let colors = &tokens.colors;
+            let hovered = matches!(status, toggler::Status::Hovered { .. });
+            let (background, foreground, border) = if enabled {
+                (
+                    colors.primary.base,
+                    colors.primary.on_base,
+                    colors.primary.base,
+                )
+            } else {
+                (
+                    colors.surface_container_highest,
+                    colors.outline,
+                    colors.outline,
+                )
+            };
+            toggler::Style {
+                background: if hovered {
+                    ui::blend(background, colors.on_surface, 0.08)
+                } else {
+                    background
+                },
+                background_border_width: 2.0,
+                background_border_color: border,
+                foreground,
+                foreground_border_width: 0.0,
+                foreground_border_color: Color::TRANSPARENT,
+            }
         });
 
-    // Use static MaterialColors to solve lifetime issues
-    static DARK_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-        std::sync::LazyLock::new(crate::styling::material::MaterialColors::dark_default);
-    static LIGHT_COLORS: std::sync::LazyLock<crate::styling::material::MaterialColors> =
-        std::sync::LazyLock::new(crate::styling::material::MaterialColors::light_default);
-
-    let colors = if is_dark { &DARK_COLORS } else { &LIGHT_COLORS };
-    md3_switch.view(on_toggle, colors)
+    row![
+        column![
+            text(title).size(tokens.typography().body_large.size),
+            text(description)
+                .size(tokens.typography().body_small.size)
+                .color(tokens.colors.on_surface_variant),
+        ]
+        .spacing(2)
+        .width(Length::Fill),
+        switch,
+    ]
+    .spacing(16)
+    .align_y(Alignment::Center)
+    .into()
 }
 
-/// Creates a switch for theme toggling using Material Design 3 Switch component
-fn create_theme_switch(state: &AppState) -> Element<'_, Message> {
-    let is_dark = matches!(state.ui.theme_mode, crate::theme::ThemeMode::Dark);
-    create_settings_switch("Dark Theme", state, is_dark, |_| Message::ToggleTheme)
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Creates a switch for auto-save library setting using Material Design 3 Switch component
-fn create_auto_save_switch(state: &AppState) -> Element<'_, Message> {
-    create_settings_switch("Auto-save", state, state.library.auto_save_library, |_| {
-        Message::ToggleAutoSaveLibrary
-    })
-}
-
-/// Creates a switch for scan subdirectories setting using Material Design 3 Switch component
-fn create_scan_subdirs_switch(state: &AppState) -> Element<'_, Message> {
-    create_settings_switch(
-        "Scan subdirectories",
-        state,
-        state.library.scan_subdirectories,
-        |_| Message::ToggleScanSubdirectories,
-    )
+    #[test]
+    fn renders_in_both_themes() {
+        let mut state = AppState::default();
+        let _ = settings_view(&state);
+        state.ui.theme_mode = crate::theme::ThemeMode::Light;
+        let _ = settings_view(&state);
+    }
 }

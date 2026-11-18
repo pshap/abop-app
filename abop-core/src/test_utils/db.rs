@@ -19,6 +19,12 @@ pub struct TestDatabase {
     pub _temp_path: TempPath,
 }
 
+impl Default for TestDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestDatabase {
     /// Create a new test database with migrations applied
     ///

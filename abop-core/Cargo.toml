@@ -50,6 +50,9 @@ lru.workspace = true
 tracing.workspace = true
 serde.workspace = true
 
+# M4B metadata extraction
+mp4ameta.workspace = true
+
 # Platform-specific dependencies
 directories = { version = "6.0.0", default-features = false }
 

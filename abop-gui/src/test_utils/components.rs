@@ -157,6 +157,10 @@ impl TestStateFactory {
                 let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
                 MaterialTokens::from_seed_color(seed_color, true)
             }
+            ThemeMode::Slate => {
+                let seed_color = iced::Color::from_rgb(0.3, 0.3, 0.4);
+                MaterialTokens::from_seed_color(seed_color, true)
+            }
         }
     }
 

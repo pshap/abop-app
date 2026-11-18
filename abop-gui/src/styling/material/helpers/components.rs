@@ -15,8 +15,8 @@ pub trait ComponentHelpers {
     ///
     /// # Returns
     /// A `MaterialCard` component with Level 1 elevation and proper styling
-    fn card(&self) -> crate::styling::material::components::containers::MaterialCard {
-        crate::styling::material::components::containers::MaterialCard::default()
+    fn card(&self) -> iced::widget::container::Style {
+        iced::widget::container::Style::default()
     }
 
     /// Create a Material Design progress indicator

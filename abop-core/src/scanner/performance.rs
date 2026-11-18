@@ -101,7 +101,10 @@ impl PerformanceMonitor {
 
     /// Record a completed file processing
     pub fn record_file_processed(&self, duration: Duration, success: bool) {
-        let mut metrics = self.metrics.lock().unwrap();
+        let mut metrics = self
+            .metrics
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         metrics.files_processed += 1;
 
         if !success {
@@ -131,13 +134,22 @@ impl PerformanceMonitor {
     /// Get current performance metrics
     #[must_use]
     pub fn get_metrics(&self) -> PerformanceMetrics {
-        let mut metrics = self.metrics.lock().unwrap().clone();
+        let mut metrics = self
+            .metrics
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
         metrics.total_duration = self.start_time.elapsed();
 
         // Collect slowest operations
         let mut all_operations = Vec::new();
 
-        for (file_path, operations) in self.operation_times.lock().unwrap().iter() {
+        for (file_path, operations) in self
+            .operation_times
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .iter()
+        {
             for (op_type, duration) in operations {
                 if *duration > self.slowest_threshold {
                     all_operations.push(SlowOperation {
@@ -151,7 +163,7 @@ impl PerformanceMonitor {
         }
 
         // Sort by duration (slowest first) and take top 10
-        all_operations.sort_by(|a, b| b.duration.cmp(&a.duration));
+        all_operations.sort_by_key(|a| std::cmp::Reverse(a.duration));
         all_operations.truncate(10);
         metrics.slowest_operations = all_operations;
 
@@ -269,7 +281,10 @@ impl OperationTimer {
 
         // Record the operation time
         {
-            let mut times = self.operation_times.lock().unwrap();
+            let mut times = self
+                .operation_times
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             times
                 .entry(self.file_path.clone())
                 .or_default()

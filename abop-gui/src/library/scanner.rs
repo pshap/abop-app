@@ -36,15 +36,19 @@ pub async fn open_directory_dialog() -> Option<PathBuf> {
         .map(|handle| handle.path().to_path_buf());
 
     if let Some(path) = &result {
-        log::warn!("🗂️  FOLDER SELECTED: {}", path.display());
+        log::debug!("Folder selected: {}", path.display());
     }
 
     result
 }
 
 /// Scans a library directory and returns a task that will complete with the scan result
-pub async fn scan_library(db: Database, library: Library) -> Result<ScanResult> {
-    let scanner = LibraryScanner::new(db, library);
+pub async fn scan_library(db: Database, library: Library, recursive: bool) -> Result<ScanResult> {
+    let config = abop_core::scanner::ScannerConfig {
+        recursive,
+        ..Default::default()
+    };
+    let scanner = LibraryScanner::new(db, library).with_config(config);
     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
     let (std_tx, std_rx) = std::sync::mpsc::channel();
 

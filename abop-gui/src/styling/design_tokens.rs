@@ -7,7 +7,7 @@
 //! # Usage
 //!
 //! ```rust
-//! use crate::styling::design_tokens::{animation, validation, spacing};
+//! use abop_gui::styling::design_tokens::{animation, validation};
 //!
 //! // Animation durations
 //! let duration = animation::STANDARD_DURATION;

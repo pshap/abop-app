@@ -7,7 +7,7 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use tokio::task;
-use tracing::{debug, warn};
+use tracing::{debug, trace, warn};
 use walkdir::WalkDir;
 
 use super::constants::SUPPORTED_AUDIO_EXTENSIONS;
@@ -58,7 +58,7 @@ impl DefaultFileDiscoverer {
 
     /// Find audio files synchronously (used internally)
     fn find_audio_files_sync(path: &Path, extensions: &[String]) -> crate::Result<Vec<PathBuf>> {
-        debug!("🔍 Starting scan of path: {}", path.display());
+        debug!("Starting scan of path: {}", path.display());
 
         // Check if the path exists and is a directory
         if !path.exists() {
@@ -71,6 +71,13 @@ impl DefaultFileDiscoverer {
             debug!("{}", msg);
             return Err(crate::error::AppError::Io(msg));
         }
+        // Fail if the folder itself can't be read, rather than reporting it as empty
+        if let Err(e) = std::fs::read_dir(path) {
+            return Err(crate::error::AppError::Io(format!(
+                "Cannot read directory {}: {e}",
+                path.display()
+            )));
+        }
 
         // Normalize extensions to lowercase for consistent comparison
         let extensions: Vec<String> = extensions.iter().map(|ext| ext.to_lowercase()).collect();
@@ -80,7 +87,7 @@ impl DefaultFileDiscoverer {
             .filter_map(|entry| match entry {
                 Ok(entry) => {
                     let entry_path = entry.path();
-                    debug!("🔍 Examining entry: {}", entry_path.display());
+                    trace!("Examining entry: {}", entry_path.display());
                     Some(entry)
                 }
                 Err(e) => {
@@ -93,14 +100,14 @@ impl DefaultFileDiscoverer {
                 let path = entry.path();
                 let is_match = Self::has_valid_extension(path, &extensions);
                 if is_match {
-                    debug!("🎵 Found audio file: {}", path.display());
+                    trace!("Found audio file: {}", path.display());
                 }
                 is_match
             })
             .map(|entry| entry.into_path())
             .collect();
 
-        debug!("🔍 Completed scan, found {} files", results.len());
+        debug!("Completed scan, found {} files", results.len());
         Ok(results)
     }
 }

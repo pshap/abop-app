@@ -11,32 +11,36 @@ pub mod buttons;
 pub mod about;
 /// Audio playback controls and manipulation widgets
 pub mod audio_controls;
-/// Audio toolbar component for playback controls
-pub mod audio_toolbar;
 /// Shared components used across multiple views and contexts
 ///
 /// Contains reusable Material Design 3 components:
 /// - progress: Progress indicators and status components
 /// Note: Button functionality has been moved to the dedicated `buttons` module
 pub mod common;
+/// Generic confirmation dialog
+pub mod confirm_dialog;
 /// Cover art display component for audiobooks
 pub mod cover_art;
 /// Icon support utilities for buttons and widgets
 pub mod icon_support;
 /// Icon utilities and Font Awesome integration
 pub mod icons;
-/// Unified main toolbar combining navigation and actions
+/// Application bar (brand, open library, actions, settings, exit)
 pub mod main_toolbar;
-/// Search bar component for filtering audiobooks
-pub mod search_bar;
+/// Rename audiobook dialog component
+pub mod rename_dialog;
 /// Status display and information presentation widgets
 pub mod status;
+/// Status bar along the bottom of the window
+pub mod status_bar;
 /// Table core functionality - main table component
 pub mod table_core;
 /// Table header component with sorting functionality
 pub mod table_header;
 /// Table row component for data display
 pub mod table_row;
+/// Shared, token-driven widget helpers for the application shell
+pub mod ui;
 
 #[cfg(test)]
 #[path = "tests/mod.rs"]

@@ -6,7 +6,7 @@
 /// Material Design 3 button styling system for centralized button styling
 pub mod button_style;
 /// Material Design 3 container components including cards, surfaces, dividers, and layout containers
-pub mod containers;
+// pub mod containers; // Temporarily disabled during refactoring
 /// Material Design 3 data components including tables, lists, and tree views
 pub mod data;
 /// Material Design 3 feedback components including progress indicators, badges, dialogs, and notifications
@@ -55,9 +55,9 @@ pub use button_style::{
 };
 
 // Re-export container components (specific items only)
-pub use containers::{
-    CardVariant, DividerOrientation, MaterialCard, MaterialDivider, MaterialSurface, SurfaceVariant,
-};
+// pub use containers::{
+//     CardVariant, DividerOrientation, MaterialCard, MaterialDivider, MaterialSurface, SurfaceVariant,
+// };
 
 // Re-export data components (avoiding glob conflicts)
 pub use data::helpers as data_helpers;

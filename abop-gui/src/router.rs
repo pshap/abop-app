@@ -92,8 +92,9 @@ impl Router {
     pub fn navigate_back(&mut self) -> Task<Message> {
         if self.history.len() > 1 {
             self.history.pop_back();
-            // Safe: we verified history.len() > 1, so after pop_back() it's still not empty
-            self.current_route = *self.history.back().unwrap();
+            if let Some(route) = self.history.back() {
+                self.current_route = *route;
+            }
         }
         Task::none()
     }

@@ -46,6 +46,28 @@ impl Default for TableState {
     }
 }
 
+/// Saved listening position of one audiobook
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListeningProgress {
+    /// Last saved position in seconds
+    pub position_seconds: u64,
+    /// Whether the book was listened to the end
+    pub completed: bool,
+}
+
+impl ListeningProgress {
+    /// Fraction listened (0.0–1.0), if the duration is known
+    #[must_use]
+    pub fn fraction(&self, duration_seconds: Option<u64>) -> Option<f32> {
+        if self.completed {
+            return Some(1.0);
+        }
+        let total = usize::try_from(duration_seconds.filter(|d| *d > 0)?).ok()?;
+        let position = usize::try_from(self.position_seconds).ok()?.min(total);
+        abop_core::utils::casting::safe_progress(position, total).ok()
+    }
+}
+
 /// Library management state (audiobooks, directories, scanning)
 #[derive(Clone)]
 pub struct LibraryState {
@@ -86,6 +108,8 @@ pub struct LibraryState {
     pub filtered_audiobooks: Vec<Audiobook>,
     /// Whether search is currently active
     pub search_active: bool,
+    /// Listening progress by audiobook id
+    pub progress: std::collections::HashMap<String, ListeningProgress>,
 
     /// Flag to indicate library state needs UI redraw
     needs_redraw: bool,
@@ -127,6 +151,7 @@ impl LibraryState {
             search_query: String::new(),
             filtered_audiobooks: core_state.app_data.audiobooks.clone(),
             search_active: false,
+            progress: std::collections::HashMap::new(),
             needs_redraw: false,
         }
     }
@@ -191,6 +216,10 @@ impl LibraryState {
     /// Update audiobooks list
     pub fn set_audiobooks(&mut self, audiobooks: Vec<Audiobook>) {
         self.audiobooks = audiobooks;
+        // Drop selections for books that are no longer in the library
+        let ids: HashSet<&str> = self.audiobooks.iter().map(|b| b.id.as_str()).collect();
+        self.selected_audiobooks
+            .retain(|id| ids.contains(id.as_str()));
         self.sync_directory_metadata();
         self.update_search_index();
         self.mark_for_redraw();
@@ -255,6 +284,21 @@ impl LibraryState {
     #[must_use]
     pub fn is_scanning(&self) -> bool {
         matches!(self.scanner_state, ScannerState::Scanning)
+    }
+
+    /// Whether the last scan finished (successfully or not)
+    #[must_use]
+    pub fn has_scanned(&self) -> bool {
+        matches!(
+            self.scanner_state,
+            ScannerState::Complete | ScannerState::Error
+        )
+    }
+
+    /// Whether the last scan failed
+    #[must_use]
+    pub fn scan_failed(&self) -> bool {
+        matches!(self.scanner_state, ScannerState::Error)
     }
 
     /// Get current scan progress as legacy f32 (modern API with legacy compatibility)
@@ -458,5 +502,59 @@ impl LibraryState {
 impl Default for LibraryState {
     fn default() -> Self {
         Self::from_core_state(&AppState::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn book(id: &str, title: &str) -> Audiobook {
+        let mut book = Audiobook::new("lib", format!("/books/{id}.mp3"));
+        book.id = id.to_string();
+        book.title = Some(title.to_string());
+        book
+    }
+
+    #[test]
+    fn listening_progress_fraction() {
+        let halfway = ListeningProgress {
+            position_seconds: 1800,
+            completed: false,
+        };
+        assert_eq!(halfway.fraction(Some(3600)), Some(0.5));
+        assert_eq!(halfway.fraction(None), None);
+        assert_eq!(halfway.fraction(Some(0)), None);
+        // Positions past the end are capped
+        assert_eq!(halfway.fraction(Some(900)), Some(1.0));
+        let finished = ListeningProgress {
+            position_seconds: 0,
+            completed: true,
+        };
+        assert_eq!(finished.fraction(None), Some(1.0));
+    }
+
+    #[test]
+    fn set_audiobooks_drops_stale_selection_and_refreshes_search() {
+        let mut library = LibraryState::from_core_state(&AppState::default());
+        library.set_audiobooks(vec![book("a", "Dune"), book("b", "Emma")]);
+        library.selected_audiobooks.insert("a".into());
+        library.selected_audiobooks.insert("b".into());
+        library.update_search_query("Emma".into());
+        assert_eq!(library.filtered_audiobooks.len(), 1);
+
+        // Rescan: "a" was deleted, "c" was added
+        library.set_audiobooks(vec![book("b", "Emma"), book("c", "Emma II")]);
+
+        assert_eq!(
+            library.selected_audiobooks,
+            HashSet::from(["b".to_string()])
+        );
+        let found: Vec<_> = library
+            .filtered_audiobooks
+            .iter()
+            .map(|b| b.id.as_str())
+            .collect();
+        assert!(found.contains(&"b") && found.contains(&"c"), "{found:?}");
     }
 }

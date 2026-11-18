@@ -18,6 +18,9 @@ pub mod assets;
 // Message and command definitions
 pub mod messages;
 
+/// Persisted GUI preferences
+pub mod preferences;
+
 /// Command handling modules for async operations
 pub mod commands;
 
@@ -26,6 +29,9 @@ pub mod handlers;
 
 /// Application state management
 pub mod state;
+
+/// Shared application database handle
+pub mod database;
 
 // Update logic is handled within `app` and `handlers`; legacy `update` module removed.
 

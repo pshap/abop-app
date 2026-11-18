@@ -153,13 +153,14 @@ impl ProgressCache {
             (cached.last_value - progress_percentage).abs() >= PROGRESS_CACHE_THRESHOLD
         });
 
-        if needs_update {
-            let new_text = formatter(progress_percentage);
-            *cache_slot = Some(CachedProgress::new(progress_percentage, new_text));
+        match cache_slot {
+            Some(cached) if !needs_update => cached.cached_text.clone(),
+            _ => {
+                let text = formatter(progress_percentage);
+                *cache_slot = Some(CachedProgress::new(progress_percentage, text.clone()));
+                text
+            }
         }
-
-        // Return the cached text (guaranteed to exist after the update above)
-        cache_slot.as_ref().unwrap().cached_text.clone()
     }
 }
 

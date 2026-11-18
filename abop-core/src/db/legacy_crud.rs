@@ -49,7 +49,7 @@ impl Database {
         // Update cache
         self.state
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .library_cache
             .insert(library_path_for_cache, id.clone());
 
@@ -62,7 +62,13 @@ impl Database {
         let path_str = path.to_string_lossy().to_string();
 
         // Check cache first
-        if let Some(id) = self.state.lock().unwrap().library_cache.get(&path_str) {
+        if let Some(id) = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .library_cache
+            .get(&path_str)
+        {
             return Ok(id.clone());
         }
 
@@ -87,7 +93,7 @@ impl Database {
             // Update cache
             self.state
                 .lock()
-                .unwrap()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .library_cache
                 .insert(path_str, id.clone());
             Ok(id)
@@ -102,7 +108,13 @@ impl Database {
     /// Adds an audiobook to the database (direct insert)
     #[instrument(skip(self, audiobook))]
     pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
-        let library_id = self.get_library_id(audiobook.path.parent().unwrap())?;
+        let parent = audiobook.path.parent().ok_or_else(|| {
+            AppError::InvalidData(format!(
+                "Audiobook path has no parent directory: {}",
+                audiobook.path.display()
+            ))
+        })?;
+        let library_id = self.get_library_id(parent)?;
 
         let audiobook_clone = audiobook.clone();
         let library_id_clone = library_id.clone();
@@ -158,11 +170,24 @@ impl Database {
         // Process each library's audiobooks
         for (library_id, audiobooks_for_library) in library_groups {
             self.operations.execute_transaction(move |tx| {
+                // Upsert by path: existing rows keep their id and created_at.
+                // (INSERT OR REPLACE deleted and re-inserted rows, changing ids and
+                // cascading deletes to rows that reference them.)
                 let mut stmt = tx.prepare(
-                    "INSERT OR REPLACE INTO audiobooks 
-                    (id, library_id, path, title, author, narrator, description, 
-                     duration_seconds, size_bytes, cover_art, created_at, updated_at) 
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    "INSERT INTO audiobooks
+                    (id, library_id, path, title, author, narrator, description,
+                     duration_seconds, size_bytes, cover_art, created_at, updated_at)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+                    ON CONFLICT(path) DO UPDATE SET
+                        library_id = excluded.library_id,
+                        title = excluded.title,
+                        author = excluded.author,
+                        narrator = excluded.narrator,
+                        description = excluded.description,
+                        duration_seconds = excluded.duration_seconds,
+                        size_bytes = excluded.size_bytes,
+                        cover_art = excluded.cover_art,
+                        updated_at = excluded.updated_at",
                 )?;
 
                 for audiobook in &audiobooks_for_library {

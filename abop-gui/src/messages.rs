@@ -26,6 +26,21 @@ pub enum Message {
     // ===== Settings =====
     /// Show the settings dialog
     ShowSettings,
+    /// Escape key: closes the open dialog, or stops playback when none is open.
+    /// Pressed inside a text field (which uses it to give up focus), it only
+    /// closes dialogs.
+    Escape {
+        /// A focused text input received the key
+        in_text_input: bool,
+    },
+    /// Move keyboard focus to the search field
+    FocusSearch,
+    /// Dismiss the notice shown in the status bar
+    DismissNotice,
+    /// Jump forward (positive) or back (negative) by this many seconds
+    SeekBy(i64),
+    /// Periodic check of the audio player while playing (detects end of playback)
+    PlayerTick,
     /// Close the settings dialog
     CloseSettings,
     /// Toggle between light and dark theme
@@ -50,6 +65,13 @@ pub enum Message {
     QuickScanComplete(Result<DirectoryInfo, String>),
     /// Result of a full library scan
     ScanComplete(Result<crate::library::ScanResult, String>),
+    /// Audiobooks of a previously scanned library loaded from the database
+    /// (`None` if the folder was never scanned)
+    LibraryLoaded(PathBuf, Result<Option<Vec<Audiobook>>, String>),
+    /// Saved listening progress loaded from the database
+    ProgressLoaded(
+        Result<std::collections::HashMap<String, crate::state::ListeningProgress>, String>,
+    ),
     /// Progress information for a scan operation
     ScanProgress(abop_core::scanner::ScanProgress),
 
@@ -58,8 +80,20 @@ pub enum Message {
     SelectAudiobook(String),
     /// Toggle selection state of an audiobook by ID
     ToggleAudiobookSelection(String),
+    /// A table row was clicked (toggles selection; a double-click plays the book)
+    RowClicked(String),
     /// Toggle selection state of all audiobooks
     ToggleSelectAll,
+    /// Begin renaming an audiobook (opens dialog)
+    BeginRename(String),
+    /// Input in rename dialog changed
+    RenameInputChanged(String),
+    /// Commit a rename operation
+    CommitRename(String, String),
+    /// Result of a rename: the updated audiobook, or an error message
+    RenameFinished(Result<abop_core::models::Audiobook, String>),
+    /// Cancel a rename operation
+    CancelRename,
     /// Deselect all audiobooks
     DeselectAll,
     /// Sort audiobooks by the specified column
@@ -86,6 +120,12 @@ pub enum Message {
     // ===== System Messages =====
     /// Result of an audio processing operation
     AudioProcessingComplete(Result<String, String>),
+    /// Audio processing progress (0.0–1.0) and current step
+    ProcessingProgress(f32, String),
+    /// Confirm the pending "convert to mono" request
+    ConfirmProcess,
+    /// Dismiss the "convert to mono" confirmation
+    CancelProcess,
     /// Result of starting playback
     PlaybackStarted(Result<String, String>),
     /// Result of saving application state
@@ -151,14 +191,6 @@ pub enum Command {
         audiobooks: Vec<Audiobook>,
     },
 
-    /// Start playing the selected audiobooks
-    PlayAudio {
-        /// IDs of the selected audiobooks
-        selected_ids: Vec<String>,
-        /// Full list of audiobooks for reference
-        audiobooks: Vec<Audiobook>,
-    },
-
     /// Stop any currently playing audio
     StopAudio,
 
@@ -177,13 +209,5 @@ impl Command {
     /// Creates a new scan library command
     pub fn scan_library(library_path: PathBuf) -> Self {
         Self::ScanLibrary { library_path }
-    }
-
-    /// Creates a new play audio command
-    pub fn play_audio(selected_ids: Vec<String>, audiobooks: Vec<Audiobook>) -> Self {
-        Self::PlayAudio {
-            selected_ids,
-            audiobooks,
-        }
     }
 }

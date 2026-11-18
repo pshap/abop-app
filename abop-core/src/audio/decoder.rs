@@ -16,6 +16,9 @@ use symphonia::core::{
 use super::{AudioBuffer, AudioStream, SampleFormat};
 use crate::error::{AppError, Result};
 
+/// Corrupt packets skipped in a row before decoding gives up
+const MAX_CONSECUTIVE_DECODE_ERRORS: usize = 16;
+
 /// Audio decoder for various audio formats
 pub struct AudioDecoder {
     /// The format reader for the audio file
@@ -139,19 +142,33 @@ impl AudioDecoder {
         // Clear the sample buffer
         self.sample_buffer.clear();
 
-        // Read the next packet from the format reader
-        let packet = match self.format.next_packet() {
-            Ok(packet) => packet,
-            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-                return Ok(None);
+        // Read packets until one from our track decodes. Containers such as M4B
+        // interleave other tracks (chapter titles, cover art) that must be
+        // skipped, and an occasional corrupt packet shouldn't end the stream.
+        let mut decode_errors = 0;
+        let decoded = loop {
+            let packet = match self.format.next_packet() {
+                Ok(packet) => packet,
+                Err(SymphoniaError::IoError(e))
+                    if e.kind() == std::io::ErrorKind::UnexpectedEof =>
+                {
+                    return Ok(None);
+                }
+                Err(e) => return Err(AppError::Audio(format!("Failed to read packet: {e}"))),
+            };
+            if packet.track_id() != self.track.id {
+                continue;
             }
-            Err(e) => return Err(AppError::Audio(format!("Failed to read packet: {e}"))),
-        };
-
-        // Decode the packet
-        let decoded = match self.decoder.decode(&packet) {
-            Ok(decoded) => decoded,
-            Err(e) => return Err(AppError::Audio(format!("Failed to decode packet: {e}"))),
+            match self.decoder.decode(&packet) {
+                Ok(decoded) => break decoded,
+                Err(SymphoniaError::DecodeError(e))
+                    if decode_errors < MAX_CONSECUTIVE_DECODE_ERRORS =>
+                {
+                    decode_errors += 1;
+                    log::debug!("Skipping undecodable packet: {e}");
+                }
+                Err(e) => return Err(AppError::Audio(format!("Failed to decode packet: {e}"))),
+            }
         };
 
         // Get the audio specification
@@ -306,20 +323,19 @@ impl AudioDecoder {
     /// Returns an error if the seek operation fails, the time base is not available,
     /// or the seek position is invalid.
     pub fn seek(&mut self, timestamp: f64) -> Result<()> {
-        // Get the time base for the track
-        let time_base =
-            self.track.codec_params.time_base.ok_or_else(|| {
-                AppError::Audio("Cannot seek: no time base available".to_string())
-            })?; // Calculate the target time in the track's time base
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let time = (timestamp * f64::from(time_base.denom) / f64::from(time_base.numer)) as u64;
+        if !timestamp.is_finite() || timestamp < 0.0 {
+            return Err(AppError::Audio(format!(
+                "Invalid seek position: {timestamp}"
+            )));
+        }
 
-        // Seek to the specified time
+        // SeekTo::Time takes seconds (previously this passed time-base ticks,
+        // so every seek landed far past the end of the stream)
         self.format
             .seek(
                 SeekMode::Coarse,
                 SeekTo::Time {
-                    time: time.into(),
+                    time: symphonia::core::units::Time::from(timestamp),
                     track_id: Some(self.track.id),
                 },
             )

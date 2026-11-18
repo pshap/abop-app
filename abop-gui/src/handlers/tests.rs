@@ -87,6 +87,23 @@ mod ui_state_tests {
     }
 
     #[test]
+    fn test_theme_change_updates_design_tokens() {
+        let mut state = AppState::default();
+        state.ui.set_theme_mode(ThemeMode::Dark);
+        let dark_surface = state.ui.material_tokens.colors.surface;
+
+        let _ = handle_ui_message(&mut state, Message::ToggleTheme);
+        assert_eq!(state.ui.theme_mode, ThemeMode::Light);
+        assert_ne!(
+            state.ui.material_tokens.colors.surface, dark_surface,
+            "toggling the theme must regenerate the color tokens"
+        );
+
+        let _ = handle_ui_message(&mut state, Message::SetTheme(ThemeMode::Dark));
+        assert_eq!(state.ui.material_tokens.colors.surface, dark_surface);
+    }
+
+    #[test]
     fn test_handle_toggle_select_all() {
         let mut state = AppState::default();
         // Add some audiobooks using the correct structure
@@ -167,32 +184,20 @@ mod ui_state_tests {
     }
 
     #[test]
-    fn test_handle_play_pause() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::PlayPause);
-        // Play/pause should return a task
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_stop() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Stop);
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_previous() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Previous);
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_next() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Next);
-        assert!(task.is_some());
+    fn test_playback_messages_are_routed_to_playback_handler() {
+        // Behavior is covered in handlers::playback; here we pin down the routing
+        for message in [
+            Message::PlayPause,
+            Message::Stop,
+            Message::Previous,
+            Message::Next,
+        ] {
+            let mut state = AppState::default();
+            assert!(handle_ui_message(&mut state, message.clone()).is_none());
+            assert!(
+                crate::handlers::playback::handle_playback_message(&mut state, &message).is_some()
+            );
+        }
     }
 
     #[test]

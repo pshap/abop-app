@@ -237,9 +237,9 @@ impl Chip {
         // Add leading icon if specified
         if let Some(icon_name) = config.leading_icon {
             let icon_size = match self.props().size {
-                ComponentSize::Small => 12.0,
-                ComponentSize::Medium => 14.0,
-                ComponentSize::Large => 16.0,
+                ComponentSize::Small => 12.0_f32,
+                ComponentSize::Medium => 14.0_f32,
+                ComponentSize::Large => 16.0_f32,
             };
 
             let icon = fa_icon_solid(icon_name)
@@ -287,9 +287,9 @@ impl Chip {
         // Add trailing icon if specified (typically for delete functionality)
         if let Some(icon_name) = config.trailing_icon {
             let icon_size = match self.props().size {
-                ComponentSize::Small => 12.0,
-                ComponentSize::Medium => 14.0,
-                ComponentSize::Large => 16.0,
+                ComponentSize::Small => 12.0_f32,
+                ComponentSize::Medium => 14.0_f32,
+                ComponentSize::Large => 16.0_f32,
             };
 
             // If there's a trailing press action, make it a separate button

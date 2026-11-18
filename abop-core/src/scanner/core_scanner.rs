@@ -43,10 +43,7 @@ impl CoreScanner {
 
     /// Discovers all audio files in a directory (synchronous)
     pub fn discover_files(&self, path: &Path) -> ScanResult<Vec<PathBuf>> {
-        log::warn!(
-            "🔍 CORE SCANNER: discover_files called with path: '{}'",
-            path.display()
-        );
+        log::debug!("Discovering audio files in {}", path.display());
         let extensions = &self.config.extensions;
 
         // Verify the path exists before scanning
@@ -57,8 +54,15 @@ impl CoreScanner {
             );
             return Ok(Vec::new()); // Return empty list instead of failing
         }
+        // An unreadable library folder is an error, not an empty library: callers
+        // would otherwise treat every known book as deleted
+        std::fs::read_dir(path)?;
 
-        Ok(Self::find_audio_files_in_path(path, extensions))
+        Ok(Self::find_audio_files_in_path(
+            path,
+            extensions,
+            self.config.recursive,
+        ))
     }
 
     /// Extracts metadata from an audio file (synchronous)
@@ -93,9 +97,11 @@ impl CoreScanner {
     }
 
     /// Internal helper to find audio files in a path (synchronous)
-    fn find_audio_files_in_path(path: &Path, extensions: &[String]) -> Vec<PathBuf> {
-        log::debug!("🔍 CORE SCANNER: Starting scan of path: {}", path.display());
-
+    fn find_audio_files_in_path(
+        path: &Path,
+        extensions: &[String],
+        recursive: bool,
+    ) -> Vec<PathBuf> {
         // Double-check that the path exists and is accessible
         if !path.exists() {
             warn!(
@@ -105,13 +111,17 @@ impl CoreScanner {
             return Vec::new();
         }
 
-        let results: Vec<PathBuf> = WalkDir::new(path)
-            .follow_links(true) // Follow symbolic links
+        let mut walker = WalkDir::new(path).follow_links(true);
+        if !recursive {
+            // Depth 0 is the folder itself, depth 1 its direct children
+            walker = walker.max_depth(1);
+        }
+        let results: Vec<PathBuf> = walker
             .into_iter()
             .filter_map(|entry| match entry {
                 Ok(entry) => {
                     let entry_path = entry.path();
-                    log::debug!("🔍 CORE SCANNER: Examining entry: {}", entry_path.display());
+                    log::trace!("Examining {}", entry_path.display());
                     Some(entry)
                 }
                 Err(e) => {
@@ -132,7 +142,7 @@ impl CoreScanner {
                     .map(str::to_lowercase)
                 {
                     if extensions.contains(&ext) {
-                        log::debug!("🎵 CORE SCANNER: Found audio file: {}", path.display());
+                        log::trace!("Found audio file: {}", path.display());
                         Some(entry.into_path())
                     } else {
                         None
@@ -144,7 +154,7 @@ impl CoreScanner {
             .collect();
 
         log::debug!(
-            "🔍 CORE SCANNER: Completed scan, found {} files",
+            "CORE SCANNER: Completed scan, found {} files",
             results.len()
         );
         results
@@ -254,5 +264,31 @@ mod tests {
         assert!(files.iter().any(|p| p.file_name().unwrap() == "test.m4b"));
         assert!(files.iter().any(|p| p.file_name().unwrap() == "test.flac"));
         assert!(!files.iter().any(|p| p.file_name().unwrap() == "test.txt"));
+    }
+
+    #[test]
+    fn test_discover_files_respects_recursive_setting() {
+        let temp_dir = tempdir().unwrap();
+        std::fs::create_dir_all(temp_dir.path().join("author/series")).unwrap();
+        for path in ["top.mp3", "author/nested.m4b", "author/series/deep.mp3"] {
+            File::create(temp_dir.path().join(path)).unwrap();
+        }
+        let names = |recursive: bool| {
+            let scanner = CoreScanner::with_config(ScannerConfig {
+                recursive,
+                ..ScannerConfig::default()
+            });
+            let mut names: Vec<_> = scanner
+                .discover_files(temp_dir.path())
+                .unwrap()
+                .iter()
+                .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+                .collect();
+            names.sort();
+            names
+        };
+
+        assert_eq!(names(true), ["deep.mp3", "nested.m4b", "top.mp3"]);
+        assert_eq!(names(false), ["top.mp3"]);
     }
 }

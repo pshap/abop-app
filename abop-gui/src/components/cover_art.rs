@@ -4,11 +4,19 @@
 //! with proper fallbacks and caching.
 
 use iced::widget::{container, image, text};
-use iced::{Element, Length, Padding};
+use iced::{Element, Length};
 use std::sync::Arc;
 
 use crate::styling::material::MaterialTokens;
 use crate::utils::image_cache::{CacheStats, ImageCache};
+
+/// Pixel size of the cover thumbnails shown in the library table
+pub const TABLE_THUMBNAIL_SIZE: u32 = 40;
+
+/// Convert a pixel size to `f32` without lossy casts (sizes beyond `u16` are clamped)
+fn pixels(size: u32) -> f32 {
+    f32::from(u16::try_from(size).unwrap_or(u16::MAX))
+}
 
 /// Cover art display component
 #[derive(Debug, Clone)]
@@ -31,8 +39,11 @@ impl CoverArt {
         cache: &Arc<ImageCache>,
         audiobook_id: &str,
     ) -> Self {
-        let handle = cache.get_or_create_handle(audiobook_id, image_data, size);
-        let is_placeholder = image_data.is_none();
+        // Never decode in the view: thumbnails are preloaded in the background
+        // (see `ImageCache::preload`) and a placeholder is shown until then.
+        let cached = image_data.and_then(|_| cache.cached_handle(audiobook_id, size));
+        let is_placeholder = cached.is_none();
+        let handle = cached.unwrap_or_else(|| cache.create_placeholder_handle(size));
 
         Self {
             handle,
@@ -62,53 +73,33 @@ impl CoverArt {
 
     /// Create the view for this cover art component
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
-        const ICON_SCALE: f32 = 0.6;
-        const OUTER_PADDING: f32 = 4.0;
-        let content = if self.is_placeholder {
-            // For placeholder, show a simple icon or text
-            styled_square_container(
-                text("🎵").size(self.size as f32 * ICON_SCALE),
-                self.size,
-                tokens,
-            )
+        let size = pixels(self.size);
+        let content: Element<'a, crate::messages::Message> = if self.is_placeholder {
+            crate::components::ui::icon("book", size * 0.45, tokens.colors.on_surface_variant)
         } else {
-            // For actual cover art, show the image
-            styled_square_container(
-                image(self.handle.clone())
-                    .width(Length::Fixed(self.size as f32))
-                    .height(Length::Fixed(self.size as f32)),
-                self.size,
-                tokens,
-            )
+            image(self.handle.clone())
+                .width(Length::Fixed(size))
+                .height(Length::Fixed(size))
+                .content_fit(iced::ContentFit::Cover)
+                .into()
         };
 
-        // Add padding and rounded corners
         container(content)
-            .padding(Padding::from(OUTER_PADDING))
-            .style(|_theme| {
-                crate::styling::material::MaterialSurface::new()
-                    .variant(crate::styling::material::SurfaceVariant::SurfaceContainerLow)
-                    .style(tokens)
+            .width(Length::Fixed(size))
+            .height(Length::Fixed(size))
+            .align_x(iced::Alignment::Center)
+            .align_y(iced::Alignment::Center)
+            .clip(true)
+            .style(move |_theme| iced::widget::container::Style {
+                background: Some(tokens.colors.surface_container_highest.into()),
+                border: iced::Border {
+                    radius: 6.0.into(),
+                    ..iced::Border::default()
+                },
+                ..iced::widget::container::Style::default()
             })
             .into()
     }
-}
-
-/// Helper to create a styled square container for cover art or placeholder
-fn styled_square_container<'a, C: Into<Element<'a, crate::messages::Message>>>(
-    content: C,
-    size: u32,
-    tokens: &'a MaterialTokens,
-) -> Element<'a, crate::messages::Message> {
-    container(content)
-        .width(Length::Fixed(size as f32))
-        .height(Length::Fixed(size as f32))
-        .style(|_theme| {
-            crate::styling::material::MaterialSurface::new()
-                .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                .style(tokens)
-        })
-        .into()
 }
 
 impl CoverArt {
@@ -166,14 +157,10 @@ impl CoverArtWithLoading {
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
         if self.loading {
             // Show loading indicator
-            container(text("⏳").size(self.loading_size as f32 * 0.6))
-                .width(Length::Fixed(self.loading_size as f32))
-                .height(Length::Fixed(self.loading_size as f32))
-                .style(|_theme| {
-                    crate::styling::material::MaterialSurface::new()
-                        .variant(crate::styling::material::SurfaceVariant::SurfaceContainer)
-                        .style(tokens)
-                })
+            container(text("⏳").size(pixels(self.loading_size) * 0.6))
+                .width(Length::Fixed(pixels(self.loading_size)))
+                .height(Length::Fixed(pixels(self.loading_size)))
+                .style(tokens.container_style())
                 .into()
         } else {
             self.cover_art.view(tokens)

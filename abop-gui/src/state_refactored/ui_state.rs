@@ -18,8 +18,36 @@ pub struct UiState {
     pub recent_directories_open: bool,
     /// Whether task history dialog is open
     pub show_task_history: bool,
+    /// ID of the audiobook currently being renamed, if any
+    pub renaming_id: Option<String>,
+    /// Temporary storage for the new name during rename operation
+    pub rename_input: String,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
+    /// Latest user-facing message (operation result or error), shown in the status bar
+    pub notice: Option<Notice>,
+    /// Whether the "convert to mono" confirmation dialog is open
+    pub confirm_process: bool,
+    /// Last clicked table row and when, for double-click detection
+    pub last_row_click: Option<(String, std::time::Instant)>,
+}
+
+/// Severity of a [`Notice`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoticeKind {
+    /// Successful or informational result
+    Info,
+    /// Something went wrong and the user should know
+    Error,
+}
+
+/// A short message for the user, shown until dismissed or replaced
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Notice {
+    /// Message text
+    pub message: String,
+    /// Severity
+    pub kind: NoticeKind,
 }
 
 impl UiState {
@@ -34,6 +62,10 @@ impl UiState {
                 let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
                 MaterialTokens::from_seed_color(seed_color, true)
             }
+            ThemeMode::Slate => {
+                // Use slate theme with default light tokens
+                MaterialTokens::light()
+            }
         };
 
         Self {
@@ -42,8 +74,31 @@ impl UiState {
             settings_open: false,
             recent_directories_open: false,
             show_task_history: false,
+            renaming_id: None,
+            rename_input: String::new(),
             needs_redraw: false,
+            notice: None,
+            confirm_process: false,
+            last_row_click: None,
         }
+    }
+
+    /// Show an informational message in the status bar
+    pub fn notify_info(&mut self, message: impl Into<String>) {
+        self.notice = Some(Notice {
+            message: message.into(),
+            kind: NoticeKind::Info,
+        });
+    }
+
+    /// Show an error message in the status bar
+    pub fn notify_error(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        log::warn!("{message}");
+        self.notice = Some(Notice {
+            message,
+            kind: NoticeKind::Error,
+        });
     }
 
     /// Update the theme mode and regenerate material tokens
@@ -59,6 +114,10 @@ impl UiState {
                     // Use purple seed color for dynamic Material Design theme
                     let seed_color = iced::Color::from_rgb(0.4, 0.2, 0.8);
                     MaterialTokens::from_seed_color(seed_color, true)
+                }
+                ThemeMode::Slate => {
+                    // Use slate theme with default light tokens
+                    MaterialTokens::light()
                 }
             };
             self.needs_redraw = true;

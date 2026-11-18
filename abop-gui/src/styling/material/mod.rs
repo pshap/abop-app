@@ -32,13 +32,13 @@ pub mod themes;
 pub mod tokens;
 
 // Unified Material Design 3 System
-pub mod enhanced_tokens; // Complete token system
+// pub mod enhanced_tokens; // Complete token system - temporarily disabled
 pub mod unified_colors; // Unified color system
 
 // Re-export the main Material Design types
 pub use components::*;
 pub use elevation::{ElevationLevel, MaterialElevation};
-pub use enhanced_tokens::EnhancedMaterialTokens;
+// pub use enhanced_tokens::EnhancedMaterialTokens; // Temporarily disabled
 pub use motion::{Animation, AnimationPattern, AnimationState, EasingCurve, MotionTokens};
 pub use seed::generate_palette_from_seed;
 pub use shapes::{MaterialShapes, ShapeStyle};

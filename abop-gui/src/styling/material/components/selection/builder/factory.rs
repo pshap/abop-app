@@ -25,7 +25,7 @@ use super::{
 ///
 /// # Examples
 /// ```
-/// use abop_gui::styling::material::components::selection::builder::factory::checkbox;
+/// use abop_gui::styling::material::components::selection::builder::checkbox;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::{CheckboxState, ComponentSize};
 /// use abop_gui::styling::material::components::selection::builder::CommonSelectionBuilder;
@@ -45,7 +45,7 @@ pub fn checkbox(state: CheckboxState) -> CheckboxBuilder {
 ///
 /// # Examples
 /// ```
-/// use abop_gui::styling::material::components::selection::builder::factory::radio;
+/// use abop_gui::styling::material::components::selection::builder::radio;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::ComponentSize;
 ///
@@ -67,7 +67,7 @@ where
 ///
 /// # Examples
 /// ```
-/// use abop_gui::styling::material::components::selection::builder::factory::switch;
+/// use abop_gui::styling::material::components::selection::builder::switch;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::{SwitchState, ComponentSize};
 /// use abop_gui::styling::material::components::selection::builder::CommonSelectionBuilder;
@@ -87,7 +87,7 @@ pub fn switch(state: SwitchState) -> SwitchBuilder {
 ///
 /// # Examples
 /// ```
-/// use abop_gui::styling::material::components::selection::builder::factory::chip;
+/// use abop_gui::styling::material::components::selection::builder::chip;
 /// use abop_gui::styling::material::components::selection::builder::ComponentBuilder;
 /// use abop_gui::styling::material::components::selection::ChipVariant;
 ///

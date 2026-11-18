@@ -153,7 +153,7 @@ fn bench_resampler(c: &mut Criterion) {
                     |b| {
                         b.iter(|| {
                             let mut buffer = buffer.clone();
-                            abop_core::audio::processing::resampler::LinearResampler::resample_buffer_scalar(&mut buffer, *dst_rate).unwrap();
+                            abop_core::audio::processing::resampler::LinearResampler::resample_buffer(&mut buffer, *dst_rate).unwrap();
                             black_box(&buffer);
                         })
                     },

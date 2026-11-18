@@ -211,7 +211,7 @@ mod tests {
     fn test_builder_basic() {
         let style = ElevationStyleBuilder::new(ElevationLevel::Level2)
             .build()
-            .unwrap();
+            .expect("Building valid elevation style should succeed");
         assert_eq!(style.level(), ElevationLevel::Level2);
         assert_eq!(style.dp, 3.0);
     }
@@ -225,7 +225,7 @@ mod tests {
             .with_shadow_color(shadow_color)
             .with_tint_color(tint_color)
             .build()
-            .unwrap();
+            .expect("Building elevation style with valid colors should succeed");
 
         assert_eq!(style.shadow.color.r, shadow_color.r);
         assert_eq!(style.shadow.color.g, shadow_color.g);
@@ -243,7 +243,7 @@ mod tests {
         let style = ElevationStyleBuilder::new(ElevationLevel::Level1)
             .with_custom_shadow(custom_shadow)
             .build()
-            .unwrap();
+            .expect("Building elevation style with valid custom shadow should succeed");
 
         assert_eq!(style.shadow.offset.y, 4.0);
         assert_eq!(style.shadow.blur_radius, 8.0);
@@ -255,7 +255,7 @@ mod tests {
         let style = ElevationStyleBuilder::new(ElevationLevel::Level2)
             .with_custom_tint_opacity(0.15)
             .build()
-            .unwrap();
+            .expect("Building elevation style with valid tint opacity should succeed");
 
         assert_eq!(style.tint_opacity, 0.15);
     }

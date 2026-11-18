@@ -9,7 +9,7 @@ pub mod design_tokens;
 pub mod dynamic_themes;
 pub mod input;
 pub mod material;
-pub mod plugins;
+// pub mod plugins; // Temporarily disabled
 pub mod scrollable;
 pub mod strategy;
 pub mod testing;

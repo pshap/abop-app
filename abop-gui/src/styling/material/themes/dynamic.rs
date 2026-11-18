@@ -49,6 +49,7 @@ impl DynamicTheme {
                 MaterialTokens::dark()
             }
             ThemeMode::MaterialDynamic => MaterialTokens::default(),
+            ThemeMode::Slate => MaterialTokens::light(),
         }
     }
 

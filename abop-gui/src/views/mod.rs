@@ -9,9 +9,10 @@ pub mod settings;
 mod tests;
 
 use iced::widget::{center, column, container, mouse_area, opaque, stack};
-use iced::{Color, Element};
+use iced::{Color, Element, Length};
 
 use crate::components::main_toolbar::MainToolbar;
+use crate::components::status_bar::StatusBar;
 use crate::messages::Message;
 use crate::state::AppState;
 
@@ -33,7 +34,7 @@ fn modal<'a>(
                 container::Style {
                     background: Some(
                         Color {
-                            a: 0.8,
+                            a: 0.55,
                             ..Color::BLACK
                         }
                         .into(),
@@ -50,12 +51,7 @@ fn modal<'a>(
 /// View function that renders the application UI based on current state and route
 #[must_use]
 pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Message> {
-    // Unified toolbar at the top combining navigation and actions
-    let toolbar = MainToolbar::view(
-        &state.library.recent_directories,
-        &state.library.library_path,
-        &state.ui.material_tokens,
-    );
+    let tokens = &state.ui.material_tokens;
 
     // Route-specific content (avoid double rendering settings)
     let content = match route {
@@ -69,14 +65,72 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
         crate::router::Route::About => about_view(state),
     };
 
-    let main_content = column![toolbar, content]
-        .spacing(state.ui.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.ui.material_tokens.spacing().md); // Reduced from LG to MD (16px)
+    let main_content = container(column![
+        MainToolbar::view(state),
+        container(content).width(Length::Fill).height(Length::Fill),
+        StatusBar::view(state),
+    ])
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(move |_theme| container::Style {
+        background: Some(tokens.colors.surface.into()),
+        text_color: Some(tokens.colors.on_surface),
+        ..container::Style::default()
+    });
 
-    // If settings dialog is open, show it as a modal overlay (single render)
-    if state.ui.settings_open {
+    // Modal overlays
+    if let Some(audiobook_id) = &state.ui.renaming_id {
+        modal(
+            main_content,
+            crate::components::rename_dialog::view(
+                audiobook_id.clone(),
+                &state.ui.rename_input,
+                &state.ui.material_tokens,
+            ),
+            Message::CancelRename,
+        )
+    } else if state.ui.confirm_process {
+        modal(
+            main_content,
+            confirm_process_dialog(state),
+            Message::CancelProcess,
+        )
+    } else if state.ui.settings_open {
         modal(main_content, settings_view(state), Message::CloseSettings)
     } else {
         main_content.into()
     }
+}
+
+/// Confirmation for converting the selected audiobooks to mono
+fn confirm_process_dialog(state: &AppState) -> Element<'_, Message> {
+    let selected: Vec<_> = state
+        .library
+        .audiobooks
+        .iter()
+        .filter(|book| state.library.selected_audiobooks.contains(&book.id))
+        .collect();
+    let count = selected.len();
+    let estimate = crate::audio::processing::estimate_output_bytes(selected.iter().copied());
+
+    crate::components::confirm_dialog::ConfirmDialog {
+        title: if count == 1 {
+            "Convert 1 audiobook to mono?".to_string()
+        } else {
+            format!("Convert {count} audiobooks to mono?")
+        },
+        body: vec![
+            "A mono WAV copy is created next to each original, named “… (mono).wav”. \
+             Originals are not changed."
+                .to_string(),
+            format!(
+                "WAV files are uncompressed: the copies will need about {} of disk space.",
+                abop_core::utils::casting::format_file_size_standard(estimate)
+            ),
+        ],
+        confirm_label: "Convert",
+        on_confirm: Message::ConfirmProcess,
+        on_cancel: Message::CancelProcess,
+    }
+    .view(&state.ui.material_tokens)
 }

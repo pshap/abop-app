@@ -36,9 +36,8 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
         GuiCommand::ScanLibrary { library_path } => {
-            use abop_core::db::Database;
-
             state.library.start_scanning();
+            let recursive = state.library.scan_subdirectories;
             log::info!(
                 "Executing ScanLibrary command for path: {}",
                 library_path.display()
@@ -48,7 +47,8 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
             Some(Task::perform(
                 async move {
                     // Open centralized database synchronously in a blocking task
-                    let db = match tokio::task::spawn_blocking(Database::open_app_database).await {
+                    let db = match tokio::task::spawn_blocking(crate::database::app_database).await
+                    {
                         Ok(Ok(db)) => db,
                         Ok(Err(e)) => return Err(e.to_string()),
                         Err(e) => return Err(e.to_string()),
@@ -57,16 +57,16 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                     // Look up or create library based on the selected path
                     let library = match db.libraries().find_by_path(&library_path) {
                         Ok(Some(lib)) => {
-                            log::warn!(
-                                "🔍 LIBRARY COMMAND: Found existing library '{}' with path: '{}'",
+                            log::debug!(
+                                "LIBRARY COMMAND: Found existing library '{}' with path: '{}'",
                                 lib.name,
                                 lib.path.display()
                             );
                             lib
                         }
                         Ok(None) => {
-                            log::warn!(
-                                "🔍 LIBRARY COMMAND: Creating new library with path: '{}'",
+                            log::debug!(
+                                "LIBRARY COMMAND: Creating new library with path: '{}'",
                                 library_path.display()
                             );
                             // Create a library name based on the directory name
@@ -86,8 +86,8 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                             // Now get the actual Library struct
                             match db.libraries().find_by_id(&library_id) {
                                 Ok(Some(lib)) => {
-                                    log::warn!(
-                                        "🔍 LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'",
+                                    log::debug!(
+                                        "LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'",
                                         lib.name,
                                         lib.path.display()
                                     );
@@ -103,7 +103,7 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                     };
 
                     // Use our new unified scanning interface
-                    let scan_result = scan_library(db, library).await;
+                    let scan_result = scan_library(db, library, recursive).await;
                     match scan_result {
                         Ok(result) => Ok(result),
                         Err(e) => Err(e.to_string()),
@@ -131,4 +131,33 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
         }
         _ => None, // Not a library command
     }
+}
+
+/// Load a previously scanned library's audiobooks from the database
+///
+/// Returns `Ok(None)` if the folder has never been scanned.
+///
+/// # Errors
+///
+/// Returns an error message if the database cannot be opened or queried.
+pub async fn load_library_from_db(
+    library_path: PathBuf,
+) -> Result<Option<Vec<abop_core::models::Audiobook>>, String> {
+    tokio::task::spawn_blocking(move || {
+        let db = crate::database::app_database().map_err(|e| e.to_string())?;
+        let Some(library) = db
+            .libraries()
+            .find_by_path(&library_path)
+            .map_err(|e| e.to_string())?
+        else {
+            return Ok(None);
+        };
+        let books = db
+            .audiobook_repository()
+            .find_by_library(&library.id)
+            .map_err(|e| e.to_string())?;
+        Ok(Some(books))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

@@ -29,9 +29,9 @@ impl<'a> MaterialComponentFactory<'a> {
     }
     /// Create a Material Design card
     #[must_use]
-    pub fn create_card(&self) -> crate::styling::material::components::containers::MaterialCard {
+    pub fn create_card(&self) -> iced::widget::container::Style {
         // Component creation with token integration will be implemented as needed
-        crate::styling::material::components::containers::MaterialCard::default()
+        iced::widget::container::Style::default()
     }
 
     /// Create a Material Design progress indicator

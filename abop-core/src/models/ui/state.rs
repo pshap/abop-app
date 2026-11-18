@@ -233,15 +233,38 @@ impl AppState {
 
     /// Perform state recovery if needed
     pub fn recover(&mut self) -> Result<()> {
-        if let Some(ref validator) = self.validator {
+        use crate::validation::{RepairContext, StateRepairStrategy};
+
+        if let Some(validator) = self.validator.clone() {
             let validation_result = validator.validate(self);
             if validation_result.has_critical_issues() {
-                // For now, just log the issues - recovery logic would go here
                 warn!(
                     "State has critical issues that need recovery: {}",
                     validation_result
                 );
-                // TODO: Implement actual recovery logic
+
+                // Create repair context and apply repair strategy
+                let repair_context = RepairContext::new(&validation_result);
+                let repair_actions =
+                    StateRepairStrategy::conservative().repair(self, &repair_context);
+
+                info!(
+                    "Applied {} repair actions during recovery",
+                    repair_actions.len()
+                );
+
+                // Validate state after recovery
+                let post_recovery_result = validator.validate(self);
+                if post_recovery_result.has_critical_issues() {
+                    return Err(crate::error::AppError::ValidationFailed(format!(
+                        "Critical issues remain after recovery: {}",
+                        post_recovery_result.critical_issues().len()
+                    )));
+                }
+
+                info!("State recovery completed successfully");
+            } else {
+                debug!("No recovery needed - state validation passed");
             }
         }
         Ok(())

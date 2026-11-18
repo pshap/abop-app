@@ -9,17 +9,10 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-#[cfg(windows)]
 use std::path::Component;
 
 #[cfg(windows)]
 use abop_core::platform::windows::path_utils as win_path_utils;
-
-/// Typical number of components in a file system path for pre-allocation optimization.
-/// Based on analysis of common file system structures, most paths have 3-8 components.
-/// This helps avoid multiple reallocations during path normalization.
-#[cfg(windows)]
-const TYPICAL_PATH_COMPONENT_COUNT: usize = 8;
 
 /// Normalizes a path for comparison, handling platform-specific cases
 ///
@@ -57,48 +50,44 @@ pub fn normalize_path<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
         // Normalize separators first
         let sep_norm = win_path_utils::normalize_path_separators(path);
 
-        // Process components while preserving drive and root information
-        let mut normalized = PathBuf::new();
-        // Pre-allocate for typical path depth (8 components covers most file system paths efficiently)
-        let mut components_stack: Vec<&std::ffi::OsStr> =
-            Vec::with_capacity(TYPICAL_PATH_COMPONENT_COUNT);
-
-        for comp in sep_norm.components() {
-            match comp {
-                Component::Prefix(prefix) => {
-                    // Preserve drive/UNC prefix information
-                    normalized.push(prefix.as_os_str());
-                }
-                Component::RootDir => {
-                    // Preserve root directory
-                    normalized.push(Component::RootDir.as_os_str());
-                }
-                Component::Normal(s) => {
-                    components_stack.push(s);
-                }
-                Component::CurDir => {
-                    // Skip current directory references
-                }
-                Component::ParentDir => {
-                    // Pop the last normal component if available
-                    components_stack.pop();
-                }
-            }
-        }
-
-        // Add the processed normal components
-        for component in components_stack {
-            normalized.push(component);
-        }
-
-        Ok(normalized)
+        Ok(lexically_normalize(&sep_norm))
     }
 
-    // On Unix, just canonicalize the path
+    // On Unix, resolve symlinks when the path exists; otherwise normalize lexically
+    // so both platforms agree on paths that don't exist (yet)
     #[cfg(not(windows))]
     {
-        path.canonicalize().or_else(|_| Ok(path.to_path_buf()))
+        path.canonicalize()
+            .or_else(|_| Ok(lexically_normalize(path)))
     }
+}
+
+/// Remove `.` and resolve `..` components without touching the file system
+///
+/// Leading `..` components of relative paths are kept (they cannot be
+/// resolved lexically), and `..` never climbs above the root.
+#[must_use]
+pub fn lexically_normalize(path: &Path) -> PathBuf {
+    let mut prefix = PathBuf::new();
+    let mut parts: Vec<Component<'_>> = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Prefix(_) | Component::RootDir => prefix.push(component.as_os_str()),
+            Component::CurDir => {}
+            Component::ParentDir => match parts.last() {
+                Some(Component::Normal(_)) => {
+                    parts.pop();
+                }
+                // Already at the root: ".." has no effect
+                _ if prefix.has_root() => {}
+                _ => parts.push(component),
+            },
+            Component::Normal(_) => parts.push(component),
+        }
+    }
+    let mut normalized = prefix;
+    normalized.extend(parts.into_iter().map(Component::as_os_str));
+    normalized
 }
 
 /// Compares two paths in a platform-appropriate way
@@ -207,6 +196,26 @@ impl PathCompare for PathBuf {
 mod tests {
     use super::*;
     use std::path::Path;
+
+    #[test]
+    fn lexically_normalizes_dots() {
+        let cases = [
+            ("test/../test/file.txt", "test/file.txt"),
+            ("./a/./b", "a/b"),
+            ("a/b/../../c", "c"),
+            ("../up/x", "../up/x"),
+            ("a/../../x", "../x"),
+            ("/../etc", "/etc"),
+            ("/a/b/..", "/a"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(
+                lexically_normalize(Path::new(input)),
+                Path::new(expected),
+                "{input}"
+            );
+        }
+    }
 
     #[test]
     fn test_paths_equal() -> io::Result<()> {

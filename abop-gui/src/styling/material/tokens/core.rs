@@ -244,3 +244,39 @@ impl ElevationHelpers for MaterialTokens {
 impl AnimationHelpers for MaterialTokens {}
 
 impl ComponentHelpers for MaterialTokens {}
+
+/// Style functions for MaterialTokens
+impl MaterialTokens {
+    /// Create a container style function for Iced containers
+    pub fn container_style(&self) -> impl Fn(&iced::Theme) -> iced::widget::container::Style {
+        let tokens = self.clone();
+        move |_theme| iced::widget::container::Style {
+            text_color: Some(tokens.colors.on_surface),
+            background: Some(iced::Background::Color(tokens.colors.surface)),
+            border: iced::Border {
+                color: tokens.colors.outline,
+                width: 1.0,
+                radius: tokens.shapes.corner_small.radius,
+            },
+            shadow: iced::Shadow::default(),
+        }
+    }
+
+    /// Create a container style function with custom background
+    pub fn container_style_with_background(
+        &self,
+        background: iced::Color,
+    ) -> impl Fn(&iced::Theme) -> iced::widget::container::Style {
+        let tokens = self.clone();
+        move |_theme| iced::widget::container::Style {
+            text_color: Some(tokens.colors.on_surface),
+            background: Some(iced::Background::Color(background)),
+            border: iced::Border {
+                color: tokens.colors.outline,
+                width: 1.0,
+                radius: tokens.shapes.corner_small.radius,
+            },
+            shadow: iced::Shadow::default(),
+        }
+    }
+}

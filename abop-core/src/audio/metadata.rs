@@ -7,6 +7,66 @@ use symphonia::core::probe::Hint;
 use super::{AudioStream, SampleFormat};
 use crate::error::{AppError, Result};
 
+/// Checks if a file is an M4B audiobook by extension
+fn is_m4b_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_lowercase() == "m4b")
+        .unwrap_or(false)
+}
+
+/// The year from a date tag such as "2023" or "2023-05-01T00:00:00Z"
+///
+/// ID3v2.3 also maps TDAT ("DDMM") to the date, so implausible years are ignored.
+fn parse_year(date: &str) -> Option<i32> {
+    date.trim()
+        .get(..4)
+        .and_then(|year| year.parse::<i32>().ok())
+        .filter(|year| *year >= 1000)
+}
+
+/// Extracts M4B metadata using mp4ameta library
+fn extract_m4b_metadata(path: &Path) -> Result<AudioMetadata> {
+    tracing::debug!("Attempting M4B metadata extraction for: {}", path.display());
+
+    // Try to open with mp4ameta
+    let metadata = mp4ameta::Tag::read_from_path(path)
+        .map_err(|e| AppError::Audio(format!("Failed to read M4B metadata: {e}")))?;
+
+    tracing::debug!("Successfully read M4B metadata from: {}", path.display());
+
+    let mut audio_metadata = AudioMetadata::new();
+
+    // Extract title
+    audio_metadata.title = metadata.title().map(|s| s.to_string());
+
+    // Extract artist (for audiobooks, this is typically the author)
+    audio_metadata.artist = metadata.artist().map(|s| s.to_string());
+
+    // Extract album (for audiobooks, this might be series name)
+    audio_metadata.album = metadata.album().map(|s| s.to_string());
+
+    // Track number (safe conversion)
+    audio_metadata.track = metadata.track_number().map(u32::from);
+
+    // Duration from mp4ameta
+    audio_metadata.duration_seconds = metadata.duration().map(|d| d.as_secs_f64());
+
+    // Cover art from mp4ameta - artwork.data is a field
+    if let Some(artwork) = metadata.artwork() {
+        audio_metadata.cover_art = Some(artwork.data.to_vec());
+    }
+
+    // Audiobook tools (Audible, m4b-tool, OpenAudible) store the narrator as
+    // the composer. Comments often hold encoder notes or blurbs, so don't use them.
+    audio_metadata.narrator = metadata.composer().map(ToString::to_string);
+    audio_metadata.genre = metadata.genre().map(ToString::to_string);
+    audio_metadata.description = metadata.description().map(ToString::to_string);
+    audio_metadata.year = metadata.year().and_then(parse_year);
+
+    Ok(audio_metadata)
+}
+
 /// Represents the metadata for an audio file
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct AudioMetadata {
@@ -52,6 +112,41 @@ impl AudioMetadata {
     /// or there's an error reading the metadata.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
+        let is_m4b = is_m4b_file(path);
+
+        tracing::debug!(
+            "Extracting metadata from: {} (is_m4b: {})",
+            path.display(),
+            is_m4b
+        );
+
+        // For M4B files, try mp4ameta first as it's more reliable for audiobook metadata
+        if is_m4b {
+            match extract_m4b_metadata(path) {
+                Ok(metadata) => {
+                    tracing::debug!(
+                        "Successfully extracted M4B metadata from: {}",
+                        path.display()
+                    );
+                    return Ok(metadata);
+                }
+                Err(e) => {
+                    tracing::warn!("M4B metadata extraction failed, trying Symphonia: {}", e);
+                    // Fall through to Symphonia as backup
+                }
+            }
+        }
+
+        // Try Symphonia for all formats (primary path for non-M4B, backup for M4B)
+        Self::from_file_symphonia(path)
+    }
+
+    /// Extracts metadata from a file using Symphonia
+    ///
+    /// This is the primary extraction method for most formats, and the fallback
+    /// for M4B files if mp4ameta fails.
+    fn from_file_symphonia<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
         let mut meta = Self::new();
 
         // Try to read metadata using symphonia
@@ -91,9 +186,15 @@ impl AudioMetadata {
             meta = process_track_metadata(track, meta);
         }
 
-        // Extract metadata tags from the format's metadata
-        let metadata = probed.format.metadata();
-        meta = process_metadata_tags(&metadata, meta);
+        // Tags may live in two places: metadata found while probing (e.g. ID3v2 tags
+        // preceding an MP3 stream) and metadata embedded in the container itself.
+        // Apply probe-level tags first so container tags take precedence.
+        if let Some(revision) = probed.metadata.get().as_ref().and_then(|m| m.current()) {
+            meta = process_metadata_tags(revision, meta);
+        }
+        if let Some(revision) = probed.format.metadata().current() {
+            meta = process_metadata_tags(revision, meta);
+        }
 
         Ok(meta)
     }
@@ -245,11 +346,11 @@ fn process_track_metadata(
 /// Extracts standard metadata tags such as title, artist, album, track number,
 /// genre, date, and cover art from the format's metadata reader.
 fn process_metadata_tags(
-    metadata: &symphonia::core::meta::Metadata,
+    revision: &symphonia::core::meta::MetadataRevision,
     mut meta: AudioMetadata,
 ) -> AudioMetadata {
-    if let Some(reader) = metadata.current() {
-        for tag in reader.tags() {
+    {
+        for tag in revision.tags() {
             if let Some(std_key) = tag.std_key {
                 match std_key {
                     symphonia::core::meta::StandardTagKey::TrackTitle => {
@@ -270,7 +371,7 @@ fn process_metadata_tags(
                         meta.genre = Some(tag.value.to_string());
                     }
                     symphonia::core::meta::StandardTagKey::Date => {
-                        if let Ok(year) = tag.value.to_string().parse::<i32>() {
+                        if let Some(year) = parse_year(&tag.value.to_string()) {
                             meta.year = Some(year);
                         }
                     } // Ignore composer and comment fields for now
@@ -283,9 +384,7 @@ fn process_metadata_tags(
     }
 
     // Extract cover art if available (first visual in the metadata)
-    if let Some(reader) = metadata.current()
-        && let Some(visual) = reader.visuals().iter().next()
-    {
+    if let Some(visual) = revision.visuals().first() {
         meta.cover_art = Some(visual.data.to_vec());
     }
 
@@ -294,8 +393,38 @@ fn process_metadata_tags(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parses_years_from_date_tags() {
+        assert_eq!(super::parse_year("2023"), Some(2023));
+        assert_eq!(super::parse_year("2023-05-01T00:00:00Z"), Some(2023));
+        assert_eq!(super::parse_year(" 1999 "), Some(1999));
+        assert_eq!(super::parse_year("0105"), None, "ID3v2.3 TDAT day/month");
+        assert_eq!(super::parse_year("n/a"), None);
+        assert_eq!(super::parse_year(""), None);
+    }
+
     use super::*;
     use crate::test_constants::metadata::*;
+
+    #[test]
+    fn test_reads_tags_from_m4b() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.m4b");
+        let meta = AudioMetadata::from_file(path).expect("fixture should be readable");
+        assert_eq!(meta.title.as_deref(), Some("M4B Fixture"));
+        assert_eq!(meta.artist.as_deref(), Some("M4B Author"));
+    }
+
+    #[test]
+    fn test_reads_id3_tags_from_mp3() {
+        // ID3v2 tags precede the MP3 stream, so Symphonia reports them at probe level
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.mp3");
+        let meta = AudioMetadata::from_file(path).expect("fixture should be readable");
+        assert_eq!(meta.title.as_deref(), Some("Fixture Title"));
+        assert_eq!(meta.artist.as_deref(), Some("Fixture Author"));
+        assert_eq!(meta.album.as_deref(), Some("Fixture Album"));
+        assert_eq!(meta.year, Some(2021));
+        assert!(meta.duration_seconds.is_some_and(|d| d > 0.5));
+    }
 
     #[test]
     fn test_metadata_builder() {

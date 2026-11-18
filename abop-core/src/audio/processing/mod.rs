@@ -20,8 +20,11 @@ pub mod normalizer;
 pub mod pipeline;
 /// Resampler configuration and implementation.
 pub mod resampler;
+
 /// Silence detector configuration and implementation.
 pub mod silence_detector;
+/// Streaming, memory-bounded conversions for files of any length
+pub mod streaming;
 /// Processing traits and common interfaces.
 pub mod traits;
 /// Utility functions for audio processing.

@@ -4,6 +4,8 @@
 
 pub mod decoder;
 pub mod metadata;
+/// rodio playback source backed by the Symphonia decoder
+pub mod playback_source;
 pub mod player;
 pub mod processing;
 
@@ -85,6 +87,12 @@ impl AudioFormat {
             .extension()
             .and_then(|ext| ext.to_str())
             .and_then(Self::from_extension)
+    }
+
+    /// Checks if this format is an M4B audiobook
+    #[must_use]
+    pub const fn is_m4b_audiobook(&self) -> bool {
+        matches!(self, Self::Aac)
     }
 }
 
