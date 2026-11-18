@@ -391,6 +391,14 @@ mod tests {
     use crate::test_constants::metadata::*;
 
     #[test]
+    fn test_reads_tags_from_m4b() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.m4b");
+        let meta = AudioMetadata::from_file(path).expect("fixture should be readable");
+        assert_eq!(meta.title.as_deref(), Some("M4B Fixture"));
+        assert_eq!(meta.artist.as_deref(), Some("M4B Author"));
+    }
+
+    #[test]
     fn test_reads_id3_tags_from_mp3() {
         // ID3v2 tags precede the MP3 stream, so Symphonia reports them at probe level
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.mp3");

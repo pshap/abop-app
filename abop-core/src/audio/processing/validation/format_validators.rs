@@ -1,8 +1,7 @@
 //! Audio format validation logic
 
 use super::super::config::{
-    ChannelMixerConfig, NormalizerConfig, ProcessingConfig, ResamplerConfig,
-    SilenceDetectorConfig,
+    ChannelMixerConfig, NormalizerConfig, ProcessingConfig, ResamplerConfig, SilenceDetectorConfig,
 };
 use super::super::utils::{channels::validate_channels, sample_rate::validate_sample_rate};
 use crate::error::{AppError, Result as AppResult};

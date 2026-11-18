@@ -3,10 +3,10 @@
 #[cfg(test)]
 #[allow(clippy::module_inception)]
 mod tests {
+    use crate::audio::SampleFormat;
     use crate::audio::processing::config::ResamplerConfig;
     use crate::audio::processing::resampler::{LinearResampler, ResampleBufferFn};
     use crate::audio::processing::traits::{AudioProcessor, LatencyReporting, Validatable};
-    use crate::audio::SampleFormat;
     use crate::test_utils::audio::{create_stereo_test_buffer, create_test_buffer};
     use crate::utils::casting::domain::audio::safe_duration_to_samples;
 

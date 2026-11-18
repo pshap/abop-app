@@ -91,7 +91,7 @@ impl RenamingService {
                     old_path.display()
                 );
             }
-            return Err(db_error.into());
+            return Err(db_error);
         }
 
         Ok(updated_audiobook)

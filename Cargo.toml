@@ -44,8 +44,9 @@ tempfile = "3.24.0"
 rfd = "0.15.4"
 
 # Audio processing
-symphonia = "0.5.5"
-rodio = "0.20.1"
+# aac/isomp4/alac are needed for M4B/M4A audiobooks (not in symphonia's defaults)
+symphonia = { version = "0.5.5", features = ["aac", "isomp4", "alac"] }
+rodio = { version = "0.20.1", features = ["symphonia-aac", "symphonia-isomp4", "symphonia-alac"] }
 hound = "3.5.1"
 id3 = "1.16.4"
 mp4ameta = "0.11.0"

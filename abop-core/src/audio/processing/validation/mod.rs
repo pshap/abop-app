@@ -110,11 +110,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Missing duration
-        let result = validate_metadata_completeness(
-            Some("Test Title"),
-            Some("Test Artist"),
-            None,
-        );
+        let result = validate_metadata_completeness(Some("Test Title"), Some("Test Artist"), None);
         assert!(result.is_err());
 
         // Zero duration
@@ -130,7 +126,7 @@ mod tests {
     fn test_validation_error_handling() {
         let error = ValidationError::new("test_field", "Test validation error");
         let app_error: AppError = error.into();
-        
+
         assert!(matches!(app_error, AppError::Audio(_)));
     }
 

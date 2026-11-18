@@ -2,13 +2,11 @@
 //!
 //! This module provides audio playback capabilities for the ABOP application.
 
-use std::fs::File;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
 use std::time::Duration;
 
-use rodio::{Decoder, OutputStream, Sink};
+use rodio::{OutputStream, Sink};
 
 use crate::error::{AppError, Result};
 
@@ -251,16 +249,11 @@ impl AudioPlayer {
         let (stream, stream_handle) = OutputStream::try_default()
             .map_err(|e| AppError::Audio(format!("Failed to create audio output stream: {e}")))?;
 
-        // Open the audio file
-        let file = File::open(file_path)?;
-        let buf_reader = BufReader::new(file);
-
-        // Create decoder
-        let source = Decoder::new(buf_reader).map_err(|e| {
+        // Decode with our Symphonia decoder (rodio's own fails on many M4B files)
+        let source = super::playback_source::DecoderSource::open(file_path).map_err(|e| {
             AppError::Audio(format!(
-                "Failed to decode audio file '{}': {}",
-                file_path.display(),
-                e
+                "Failed to decode audio file '{}': {e}",
+                file_path.display()
             ))
         })?;
 
@@ -459,6 +452,17 @@ mod tests {
         // The fixture is one second long; the audio thread should notice the end
         std::thread::sleep(Duration::from_millis(2000));
         assert_eq!(player.get_state(), PlayerState::Stopped);
+    }
+
+    /// M4B/M4A need symphonia's aac + isomp4 features (enabled in the workspace)
+    #[test]
+    #[ignore = "requires an audio output device"]
+    fn test_thread_safe_player_plays_m4b() {
+        let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.m4b");
+        let player = ThreadSafeAudioPlayer::new().unwrap();
+        player.play(fixture).expect("m4b fixture should play");
+        assert_eq!(player.get_state(), PlayerState::Playing);
+        player.stop();
     }
 
     #[test]

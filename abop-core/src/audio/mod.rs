@@ -4,6 +4,8 @@
 
 pub mod decoder;
 pub mod metadata;
+/// rodio playback source backed by the Symphonia decoder
+pub mod playback_source;
 pub mod player;
 pub mod processing;
 
