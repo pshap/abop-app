@@ -12,7 +12,7 @@ use crate::styling::{
 };
 
 #[cfg(test)]
-mod button_contrast_tests {
+mod dark_theme_contrast {
     use super::*;
 
     /// Test button contrast ratios in dark theme to identify issues
@@ -127,7 +127,7 @@ mod button_contrast_tests {
         test_contrast("Text strategy", text_bg, text_fg);
         
         // Icon button (transparent background, on_surface text)
-        let icon_bg = Color::TRANSPARENT;
+        let _icon_bg = Color::TRANSPARENT;
         let icon_fg = dark_colors.on_surface;
         println!("Icon button on surface:");
         test_contrast("Icon strategy", dark_colors.surface, icon_fg);
