@@ -3,6 +3,8 @@
 //! This module provides high-level coordination between core scanning,
 //! database operations, progress reporting, and performance monitoring.
 
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
@@ -113,8 +115,8 @@ impl ScanOrchestrator {
 
     /// Performs a complete scan operation (synchronous)
     pub fn scan(&self, options: ScanOptions) -> ScanResult<ScanSummary> {
-        log::warn!(
-            "🔍 SCAN ORCHESTRATOR: Starting scan for library '{}' with path: '{}', library ID: '{}'",
+        log::debug!(
+            "SCAN ORCHESTRATOR: Starting scan for library '{}' with path: '{}', library ID: '{}'",
             self.library.name,
             self.library.path.display(),
             self.library.id
@@ -138,8 +140,20 @@ impl ScanOrchestrator {
             }
         }
 
+        // Books already in the database for this library, by path, so rescans
+        // keep stable ids and we can prune files that no longer exist
+        let repository = self.database.audiobook_repository();
+        let existing: HashMap<PathBuf, Audiobook> = repository
+            .find_by_library(&self.library.id)
+            .map(|books| books.into_iter().map(|b| (b.path.clone(), b)).collect())
+            .unwrap_or_else(|e| {
+                warn!("Could not load existing audiobooks: {e}");
+                HashMap::new()
+            });
+
         let mut processed_audiobooks = Vec::new();
         let mut error_count = 0;
+        let mut persist_failed = false;
 
         // Determine batch size
         let batch_size = options.batch_size.unwrap_or(self.config.batch_size);
@@ -185,7 +199,11 @@ impl ScanOrchestrator {
                 }
 
                 match result {
-                    Ok(audiobook) => {
+                    Ok(mut audiobook) => {
+                        if let Some(known) = existing.get(&audiobook.path) {
+                            audiobook.id.clone_from(&known.id);
+                            audiobook.created_at = known.created_at;
+                        }
                         batch_audiobooks.push(audiobook);
                     }
                     Err(e) => {
@@ -209,6 +227,7 @@ impl ScanOrchestrator {
                 if let Err(e) = self.persist_batch(&batch_audiobooks) {
                     error!("Error persisting batch: {}", e);
                     error_count += batch_audiobooks.len(); // Consider all items in batch as errors
+                    persist_failed = true;
                     continue;
                 }
                 processed_audiobooks.extend(batch_audiobooks);
@@ -220,6 +239,23 @@ impl ScanOrchestrator {
                 batch_start_time.elapsed(),
                 audiobook_count
             );
+        }
+
+        // Forget books whose files are gone. Files that exist but failed to
+        // read are kept, and nothing is pruned if saving failed or the library
+        // folder itself is missing (e.g. an unmounted drive).
+        if !persist_failed && self.library.path.is_dir() {
+            let found: HashSet<&PathBuf> = files.iter().collect();
+            for (path, book) in &existing {
+                if !found.contains(path) {
+                    match repository.delete(&book.id) {
+                        Ok(_) => info!("Removed missing audiobook {}", path.display()),
+                        Err(e) => {
+                            warn!("Could not remove missing audiobook {}: {e}", path.display())
+                        }
+                    }
+                }
+            }
         }
 
         // Report completion

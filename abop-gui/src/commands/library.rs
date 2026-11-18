@@ -39,6 +39,7 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
             use abop_core::db::Database;
 
             state.library.start_scanning();
+            let recursive = state.library.scan_subdirectories;
             log::info!(
                 "Executing ScanLibrary command for path: {}",
                 library_path.display()
@@ -57,16 +58,16 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                     // Look up or create library based on the selected path
                     let library = match db.libraries().find_by_path(&library_path) {
                         Ok(Some(lib)) => {
-                            log::warn!(
-                                "🔍 LIBRARY COMMAND: Found existing library '{}' with path: '{}'",
+                            log::debug!(
+                                "LIBRARY COMMAND: Found existing library '{}' with path: '{}'",
                                 lib.name,
                                 lib.path.display()
                             );
                             lib
                         }
                         Ok(None) => {
-                            log::warn!(
-                                "🔍 LIBRARY COMMAND: Creating new library with path: '{}'",
+                            log::debug!(
+                                "LIBRARY COMMAND: Creating new library with path: '{}'",
                                 library_path.display()
                             );
                             // Create a library name based on the directory name
@@ -86,8 +87,8 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                             // Now get the actual Library struct
                             match db.libraries().find_by_id(&library_id) {
                                 Ok(Some(lib)) => {
-                                    log::warn!(
-                                        "🔍 LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'",
+                                    log::debug!(
+                                        "LIBRARY COMMAND: Created and retrieved library '{}' with path: '{}'",
                                         lib.name,
                                         lib.path.display()
                                     );
@@ -103,7 +104,7 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
                     };
 
                     // Use our new unified scanning interface
-                    let scan_result = scan_library(db, library).await;
+                    let scan_result = scan_library(db, library, recursive).await;
                     match scan_result {
                         Ok(result) => Ok(result),
                         Err(e) => Err(e.to_string()),

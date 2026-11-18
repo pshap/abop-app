@@ -35,6 +35,14 @@ pub struct ScannerConfig {
     /// Maximum file size to process (in bytes)
     #[serde(default = "default_max_file_size")]
     pub max_file_size: u64,
+
+    /// Whether to include files in subdirectories
+    #[serde(default = "default_recursive")]
+    pub recursive: bool,
+}
+
+const fn default_recursive() -> bool {
+    true
 }
 
 impl Default for ScannerConfig {
@@ -47,6 +55,7 @@ impl Default for ScannerConfig {
             use_mmap: true,
             extensions: default_extensions(),
             max_file_size: default_max_file_size(),
+            recursive: default_recursive(),
         }
     }
 }
@@ -102,6 +111,7 @@ impl ScannerConfig {
             use_mmap: true,
             extensions: default_extensions(),
             max_file_size: DEFAULT_MAX_FILE_SIZE * 2,
+            recursive: true,
         }
     }
 
@@ -116,6 +126,7 @@ impl ScannerConfig {
             use_mmap: true,
             extensions: default_extensions(),
             max_file_size: DEFAULT_MAX_FILE_SIZE,
+            recursive: true,
         }
     }
 
@@ -130,6 +141,7 @@ impl ScannerConfig {
             use_mmap: false,
             extensions: default_extensions(),
             max_file_size: DEFAULT_MAX_FILE_SIZE / 2,
+            recursive: true,
         }
     }
 }

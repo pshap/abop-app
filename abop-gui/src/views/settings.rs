@@ -45,13 +45,6 @@ pub fn settings_view(state: &AppState) -> Element<'_, Message> {
             state.library.scan_subdirectories,
             Message::ToggleScanSubdirectories,
         ),
-        setting_row(
-            tokens,
-            "Auto-save library",
-            "Save library changes automatically",
-            state.library.auto_save_library,
-            Message::ToggleAutoSaveLibrary,
-        ),
         Space::with_height(8),
         row![
             Space::with_width(Length::Fill),

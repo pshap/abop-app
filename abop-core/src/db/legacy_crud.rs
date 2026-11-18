@@ -158,11 +158,24 @@ impl Database {
         // Process each library's audiobooks
         for (library_id, audiobooks_for_library) in library_groups {
             self.operations.execute_transaction(move |tx| {
+                // Upsert by path: existing rows keep their id and created_at.
+                // (INSERT OR REPLACE deleted and re-inserted rows, changing ids and
+                // cascading deletes to rows that reference them.)
                 let mut stmt = tx.prepare(
-                    "INSERT OR REPLACE INTO audiobooks 
-                    (id, library_id, path, title, author, narrator, description, 
-                     duration_seconds, size_bytes, cover_art, created_at, updated_at) 
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    "INSERT INTO audiobooks
+                    (id, library_id, path, title, author, narrator, description,
+                     duration_seconds, size_bytes, cover_art, created_at, updated_at)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+                    ON CONFLICT(path) DO UPDATE SET
+                        library_id = excluded.library_id,
+                        title = excluded.title,
+                        author = excluded.author,
+                        narrator = excluded.narrator,
+                        description = excluded.description,
+                        duration_seconds = excluded.duration_seconds,
+                        size_bytes = excluded.size_bytes,
+                        cover_art = excluded.cover_art,
+                        updated_at = excluded.updated_at",
                 )?;
 
                 for audiobook in &audiobooks_for_library {
