@@ -4,8 +4,10 @@
 //! performance when displaying large audiobook libraries.
 
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use iced::widget::image::Handle;
 use image::DynamicImage;
@@ -15,8 +17,8 @@ use image::DynamicImage;
 struct CacheEntry {
     /// Ready-to-draw handle; reusing the same handle lets iced reuse the GPU texture
     handle: Handle,
-    /// When this entry was created
-    created_at: Instant,
+    /// Fingerprint of the source image bytes, to notice a changed cover
+    source: u64,
     /// Last time this entry was accessed
     last_accessed: Instant,
     /// Number of times this entry has been accessed
@@ -25,12 +27,11 @@ struct CacheEntry {
 
 impl CacheEntry {
     /// Create a new cache entry
-    fn new(handle: Handle) -> Self {
-        let now = Instant::now();
+    fn new(handle: Handle, source: u64) -> Self {
         Self {
             handle,
-            created_at: now,
-            last_accessed: now,
+            source,
+            last_accessed: Instant::now(),
             access_count: 1,
         }
     }
@@ -40,40 +41,41 @@ impl CacheEntry {
         self.last_accessed = Instant::now();
         self.access_count += 1;
     }
+}
 
-    /// Check if this entry is stale (older than max_age)
-    fn is_stale(&self, max_age: Duration) -> bool {
-        self.created_at.elapsed() > max_age
-    }
+/// Cheap fingerprint of image bytes
+fn fingerprint(data: &[u8]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    data.hash(&mut hasher);
+    hasher.finish()
 }
 
 /// LRU cache for cover art thumbnails
 ///
 /// Decoding cover art is expensive, so it should happen off the UI thread via
 /// [`ImageCache::preload`]. Views read thumbnails with [`ImageCache::cached_handle`],
-/// which never decodes.
+/// which never decodes, so an entry that is evicted stays missing until the next
+/// preload. Entries therefore never expire, and preloading grows the capacity
+/// to fit the whole library.
 #[derive(Debug)]
 pub struct ImageCache {
     /// The actual cache storage, keyed by `"{id}@{size}"`
     cache: Arc<Mutex<HashMap<String, CacheEntry>>>,
     /// Maximum number of images to cache
-    max_size: usize,
-    /// Maximum age for cached images
-    max_age: Duration,
+    max_size: AtomicUsize,
 }
 
 impl ImageCache {
     /// Create a new image cache with default settings
     pub fn new() -> Self {
-        Self::with_settings(500, Duration::from_secs(3600)) // 1 hour
+        Self::with_capacity(500)
     }
 
-    /// Create a new image cache with custom settings
-    pub fn with_settings(max_size: usize, max_age: Duration) -> Self {
+    /// Create a new image cache holding up to `max_size` thumbnails
+    pub fn with_capacity(max_size: usize) -> Self {
         Self {
             cache: Arc::new(Mutex::new(HashMap::new())),
-            max_size,
-            max_age,
+            max_size: AtomicUsize::new(max_size),
         }
     }
 
@@ -86,14 +88,7 @@ impl ImageCache {
     /// Safe to call from `view()`; returns `None` if the thumbnail isn't ready yet.
     pub fn cached_handle(&self, key: &str, size: u32) -> Option<Handle> {
         let mut cache = self.cache.lock().ok()?;
-        let cache_key = Self::cache_key(key, size);
-        let entry = cache.get_mut(&cache_key)?;
-
-        if entry.is_stale(self.max_age) {
-            cache.remove(&cache_key);
-            return None;
-        }
-
+        let entry = cache.get_mut(&Self::cache_key(key, size))?;
         entry.touch();
         Some(entry.handle.clone())
     }
@@ -109,7 +104,7 @@ impl ImageCache {
         if let Some(data) = image_data
             && let Some(handle) = Self::decode_thumbnail(data, size)
         {
-            self.insert(key, size, handle.clone());
+            self.insert(key, size, handle.clone(), fingerprint(data));
             return handle;
         }
 
@@ -118,23 +113,37 @@ impl ImageCache {
 
     /// Decode and cache thumbnails for many images; intended for background threads
     ///
-    /// Returns how many thumbnails were newly decoded.
+    /// Thumbnails already cached from the same bytes are kept; changed covers
+    /// are decoded again. The capacity grows to fit every item. Returns how
+    /// many thumbnails were newly decoded.
     pub fn preload<'a>(
         &self,
         items: impl IntoIterator<Item = (&'a str, &'a [u8])>,
         size: u32,
     ) -> usize {
+        let items: Vec<_> = items.into_iter().collect();
+        self.max_size.fetch_max(items.len(), Ordering::Relaxed);
+
         let mut decoded = 0;
         for (key, data) in items {
-            if self.cached_handle(key, size).is_some() {
+            let source = fingerprint(data);
+            if self.cached_source(key, size) == Some(source) {
                 continue;
             }
             if let Some(handle) = Self::decode_thumbnail(data, size) {
-                self.insert(key, size, handle);
+                self.insert(key, size, handle, source);
                 decoded += 1;
             }
         }
         decoded
+    }
+
+    /// Fingerprint of the bytes a cached thumbnail was decoded from
+    fn cached_source(&self, key: &str, size: u32) -> Option<u64> {
+        let cache = self.cache.lock().ok()?;
+        cache
+            .get(&Self::cache_key(key, size))
+            .map(|entry| entry.source)
     }
 
     /// Decode image bytes into a thumbnail handle (aspect ratio preserved)
@@ -157,12 +166,15 @@ impl ImageCache {
     }
 
     /// Cache a thumbnail handle with basic LRU eviction
-    fn insert(&self, key: &str, size: u32, handle: Handle) {
+    fn insert(&self, key: &str, size: u32, handle: Handle, source: u64) {
         if let Ok(mut cache) = self.cache.lock() {
-            if cache.len() >= self.max_size {
+            let cache_key = Self::cache_key(key, size);
+            if !cache.contains_key(&cache_key)
+                && cache.len() >= self.max_size.load(Ordering::Relaxed)
+            {
                 Self::evict_oldest(&mut cache);
             }
-            cache.insert(Self::cache_key(key, size), CacheEntry::new(handle));
+            cache.insert(cache_key, CacheEntry::new(handle, source));
         }
     }
 
@@ -199,7 +211,8 @@ impl ImageCache {
             let total_entries = cache.len();
             let total_accesses: u32 = cache.values().map(|entry| entry.access_count).sum();
             let avg_accesses = if total_entries > 0 {
-                total_accesses as f32 / total_entries as f32
+                f64::from(total_accesses)
+                    / f64::from(u32::try_from(total_entries).unwrap_or(u32::MAX))
             } else {
                 0.0
             };
@@ -208,7 +221,7 @@ impl ImageCache {
                 total_entries,
                 total_accesses,
                 avg_accesses,
-                max_size: self.max_size,
+                max_size: self.max_size.load(Ordering::Relaxed),
             }
         } else {
             CacheStats::default()
@@ -230,7 +243,7 @@ pub struct CacheStats {
     /// Total number of cache accesses
     pub total_accesses: u32,
     /// Average accesses per entry
-    pub avg_accesses: f32,
+    pub avg_accesses: f64,
     /// Maximum cache size
     pub max_size: usize,
 }
@@ -246,11 +259,35 @@ mod tests {
     }
 
     #[test]
-    fn test_image_cache_with_settings() {
-        let cache = ImageCache::with_settings(50, Duration::from_secs(1800));
+    fn test_image_cache_with_capacity() {
+        let cache = ImageCache::with_capacity(50);
         let stats = cache.stats();
         assert_eq!(stats.max_size, 50);
         assert_eq!(stats.total_entries, 0);
+    }
+
+    #[test]
+    fn preload_grows_capacity_to_fit_the_library() {
+        let cache = ImageCache::with_capacity(2);
+        let data = png_bytes(8, 8);
+        let keys = ["a", "b", "c", "d"];
+        assert_eq!(cache.preload(keys.map(|k| (k, data.as_slice())), 40), 4);
+        for key in keys {
+            assert!(cache.cached_handle(key, 40).is_some(), "{key} was evicted");
+        }
+        assert_eq!(cache.stats().max_size, 4);
+    }
+
+    #[test]
+    fn preload_redecodes_changed_covers() {
+        let cache = ImageCache::new();
+        let old = png_bytes(8, 8);
+        let new = png_bytes(16, 8);
+        assert_eq!(cache.preload([("book", old.as_slice())], 40), 1);
+        let before = cache.cached_handle("book", 40).unwrap();
+        assert_eq!(cache.preload([("book", new.as_slice())], 40), 1);
+        let after = cache.cached_handle("book", 40).unwrap();
+        assert_ne!(before.id(), after.id());
     }
 
     #[test]
