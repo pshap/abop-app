@@ -3,6 +3,7 @@
 use iced::widget::{button, checkbox, container, row, text};
 use iced::{Background, Color, Element, Length, Padding};
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::Arc;
 
 use abop_core::models::Audiobook;
@@ -16,6 +17,24 @@ use crate::utils::image_cache::ImageCache;
 /// Height of each audiobook row
 pub const ROW_HEIGHT: f32 = 56.0;
 
+/// Inputs shared by every row of one table render
+///
+/// `'c` borrows per-render values; `'a` is the lifetime of the produced elements.
+pub struct RowContext<'c, 'a> {
+    /// Columns to render, in order
+    pub columns: &'c [data::TableColumn],
+    /// Ids of the selected audiobooks
+    pub selected: &'c HashSet<String>,
+    /// Table behavior (selection, striping)
+    pub config: &'c data::DataTableConfig,
+    /// File currently playing, highlighted in the table
+    pub now_playing: Option<&'c Path>,
+    /// Design tokens
+    pub tokens: &'a MaterialTokens,
+    /// Cover thumbnail cache
+    pub image_cache: &'a Arc<ImageCache>,
+}
+
 /// Component for creating table rows with Material Design styling
 pub struct TableRow;
 
@@ -24,42 +43,24 @@ impl TableRow {
     #[must_use]
     pub fn create_rows<'a>(
         audiobooks: &'a [Audiobook],
-        columns: &[data::TableColumn],
-        selected_items: &HashSet<String>,
-        tokens: &'a MaterialTokens,
-        config: &data::DataTableConfig,
-        image_cache: &'a Arc<ImageCache>,
+        context: &RowContext<'_, 'a>,
     ) -> Vec<Element<'a, Message>> {
-        log::debug!("Creating {} rows for audiobooks", audiobooks.len());
-        let result: Vec<Element<'a, Message>> = audiobooks
+        audiobooks
             .iter()
             .enumerate()
-            .map(|(index, audiobook)| {
-                Self::create_single_row(
-                    audiobook,
-                    columns,
-                    selected_items,
-                    tokens,
-                    config,
-                    image_cache,
-                    index,
-                )
-            })
-            .collect();
-        log::debug!("Finished creating rows, total: {}", result.len());
-        result
+            .map(|(index, audiobook)| Self::create_single_row(audiobook, context, index))
+            .collect()
     }
     /// Create a single row element with selection checkbox
     fn create_single_row<'a>(
         audiobook: &'a Audiobook,
-        columns: &[data::TableColumn],
-        selected_items: &HashSet<String>,
-        tokens: &'a MaterialTokens,
-        config: &data::DataTableConfig,
-        image_cache: &'a Arc<ImageCache>,
+        context: &RowContext<'_, 'a>,
         row_index: usize,
     ) -> Element<'a, Message> {
-        let is_selected = selected_items.contains(&audiobook.id);
+        let tokens = context.tokens;
+        let config = context.config;
+        let is_selected = context.selected.contains(&audiobook.id);
+        let is_playing = context.now_playing == Some(audiobook.path.as_path());
         let is_striped = config.striped && row_index % 2 == 1;
 
         // Create enhanced selection checkbox with improved Material Design 3 styling
@@ -104,14 +105,13 @@ impl TableRow {
         all_cells.push(checkbox_cell.into());
 
         // Create data cells
-        let data_cells: Vec<Element<'a, Message>> = columns
+        let data_cells: Vec<Element<'a, Message>> = context
+            .columns
             .iter()
             .map(|column| {
-                log::debug!("Creating cell for column: {}", column.id);
-                Self::create_cell(audiobook, column, tokens, image_cache)
+                Self::create_cell(audiobook, column, tokens, context.image_cache, is_playing)
             })
             .collect();
-        log::debug!("Created {} cells for row {}", data_cells.len(), row_index);
 
         all_cells.extend(data_cells);
 
@@ -182,6 +182,7 @@ impl TableRow {
         column: &data::TableColumn,
         tokens: &'a MaterialTokens,
         image_cache: &'a Arc<ImageCache>,
+        is_playing: bool,
     ) -> Element<'a, Message> {
         // Handle cover art column specially
         if column.id == "cover_art" {
@@ -240,7 +241,11 @@ impl TableRow {
         // Primary text for title/author, muted for numeric metadata
         let (text_color, size, font) = match column.id.as_str() {
             "title" => (
-                tokens.colors.on_surface,
+                if is_playing {
+                    tokens.colors.primary.base
+                } else {
+                    tokens.colors.on_surface
+                },
                 tokens.typography().body_large.size,
                 iced::Font {
                     weight: iced::font::Weight::Medium,
@@ -264,20 +269,31 @@ impl TableRow {
             _ => iced::Alignment::Start,
         };
 
-        container(
-            text(cell_text)
-                .size(size)
-                .font(font)
-                .color(text_color)
-                .wrapping(iced::widget::text::Wrapping::None),
-        )
-        .width(width)
-        .height(Length::Fill)
-        .padding(Padding::from([0, 12]))
-        .clip(true)
-        .align_x(align)
-        .align_y(iced::alignment::Vertical::Center)
-        .into()
+        let label = text(cell_text)
+            .size(size)
+            .font(font)
+            .color(text_color)
+            .wrapping(iced::widget::text::Wrapping::None);
+        let content: Element<'a, Message> = if is_playing && column.id == "title" {
+            row![
+                crate::components::ui::icon("volume-high", 14.0, tokens.colors.primary.base),
+                label
+            ]
+            .spacing(8)
+            .align_y(iced::Alignment::Center)
+            .into()
+        } else {
+            label.into()
+        };
+
+        container(content)
+            .width(width)
+            .height(Length::Fill)
+            .padding(Padding::from([0, 12]))
+            .clip(true)
+            .align_x(align)
+            .align_y(iced::alignment::Vertical::Center)
+            .into()
     }
 
     /// Style for selectable rows: flat, with subtle hover and a tinted selection

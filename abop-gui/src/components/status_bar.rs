@@ -36,22 +36,34 @@ impl StatusBar {
                 .size(size)
                 .color(muted)
                 .wrapping(text::Wrapping::None),
-            Space::with_width(Length::Fill),
         ]
         .spacing(8)
         .align_y(Alignment::Center);
+
+        // Compact transport controls while something is playing or paused
+        let transport = match state.player.player_state {
+            abop_core::PlayerState::Playing => Some(("pause", "Pause (Space)")),
+            abop_core::PlayerState::Paused => Some(("play", "Resume (Space)")),
+            abop_core::PlayerState::Stopped => None,
+        };
+        if let Some((toggle_icon, toggle_tip)) = transport {
+            bar = bar
+                .push(compact_button(
+                    state,
+                    toggle_icon,
+                    toggle_tip,
+                    Message::PlayPause,
+                ))
+                .push(compact_button(state, "stop", "Stop", Message::Stop));
+        }
+        bar = bar.push(Space::with_width(Length::Fill));
 
         if let Some(notice) = &state.ui.notice {
             let (icon_name, color) = match notice.kind {
                 NoticeKind::Error => ("circle-exclamation", tokens.colors.error.base),
                 NoticeKind::Info => ("circle-info", tokens.colors.on_surface),
             };
-            let dismiss = button(ui::icon("xmark", size, muted))
-                .padding(Padding::from([2.0, 6.0]))
-                .style(move |_theme, status| {
-                    ui::button_style(tokens, ui::ButtonKind::Ghost, status)
-                })
-                .on_press(Message::DismissNotice);
+            let dismiss = compact_button(state, "xmark", "Dismiss", Message::DismissNotice);
             bar = bar.push(
                 row![
                     ui::icon(icon_name, size, color),
@@ -59,7 +71,7 @@ impl StatusBar {
                         .size(size)
                         .color(color)
                         .wrapping(text::Wrapping::None),
-                    ui::with_tooltip(tokens, dismiss, "Dismiss"),
+                    dismiss,
                 ]
                 .spacing(6)
                 .align_y(Alignment::Center),
@@ -83,6 +95,22 @@ impl StatusBar {
             })
             .into()
     }
+}
+
+/// A small ghost icon button sized for the status bar, with a tooltip
+fn compact_button<'a>(
+    state: &'a AppState,
+    icon_name: &str,
+    tip: &'a str,
+    message: Message,
+) -> Element<'a, Message> {
+    let tokens = &state.ui.material_tokens;
+    let size = tokens.typography().body_small.size;
+    let btn = button(ui::icon(icon_name, size, tokens.colors.on_surface_variant))
+        .padding(Padding::from([2.0, 6.0]))
+        .style(move |_theme, status| ui::button_style(tokens, ui::ButtonKind::Ghost, status))
+        .on_press(message);
+    ui::with_tooltip(tokens, btn, tip)
 }
 
 /// Icon, text and whether to highlight the icon for the current activity

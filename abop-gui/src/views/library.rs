@@ -39,6 +39,7 @@ pub fn library_view(state: &AppState) -> Element<'_, Message> {
             &library.table_state,
             tokens,
             &library.image_cache,
+            state.player.current_playing_file.as_deref(),
         )
     };
 

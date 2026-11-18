@@ -14,7 +14,7 @@ use crate::styling::material::components::data;
 use crate::utils::image_cache::ImageCache;
 
 use super::table_header::TableHeader;
-use super::table_row::TableRow;
+use super::table_row::{RowContext, TableRow};
 
 /// Main table component for displaying the audiobook library
 pub struct AudiobookTable;
@@ -81,6 +81,7 @@ impl AudiobookTable {
         table_state: &'a TableState,
         material_tokens: &'a MaterialTokens,
         image_cache: &'a Arc<ImageCache>,
+        now_playing: Option<&std::path::Path>,
     ) -> Element<'a, Message> {
         let config = Self::default_config();
         let columns = Self::define_columns();
@@ -95,11 +96,14 @@ impl AudiobookTable {
 
         let rows = TableRow::create_rows(
             audiobooks,
-            &columns,
-            selected,
-            material_tokens,
-            &config,
-            image_cache,
+            &RowContext {
+                columns: &columns,
+                selected,
+                config: &config,
+                now_playing,
+                tokens: material_tokens,
+                image_cache,
+            },
         );
         let divider = move || -> Element<'a, Message> {
             rule::Rule::horizontal(1)
