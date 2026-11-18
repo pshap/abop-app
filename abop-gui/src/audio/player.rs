@@ -199,6 +199,36 @@ pub async fn save_progress(
     .map_err(|e| e.to_string())?
 }
 
+/// Load saved listening progress for every audiobook
+///
+/// # Errors
+///
+/// Returns an error message if the database cannot be read.
+pub async fn load_all_progress()
+-> Result<std::collections::HashMap<String, crate::state::ListeningProgress>, String> {
+    tokio::task::spawn_blocking(|| {
+        let db = abop_core::db::Database::open_app_database().map_err(|e| e.to_string())?;
+        let all = db
+            .progress_repository()
+            .find_all()
+            .map_err(|e| e.to_string())?;
+        Ok(all
+            .into_iter()
+            .map(|p| {
+                (
+                    p.audiobook_id,
+                    crate::state::ListeningProgress {
+                        position_seconds: p.position_seconds,
+                        completed: p.completed,
+                    },
+                )
+            })
+            .collect())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[cfg(test)]
 mod resume_tests {
     use super::*;

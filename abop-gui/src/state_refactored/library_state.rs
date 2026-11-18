@@ -46,6 +46,28 @@ impl Default for TableState {
     }
 }
 
+/// Saved listening position of one audiobook
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListeningProgress {
+    /// Last saved position in seconds
+    pub position_seconds: u64,
+    /// Whether the book was listened to the end
+    pub completed: bool,
+}
+
+impl ListeningProgress {
+    /// Fraction listened (0.0–1.0), if the duration is known
+    #[must_use]
+    pub fn fraction(&self, duration_seconds: Option<u64>) -> Option<f32> {
+        if self.completed {
+            return Some(1.0);
+        }
+        let total = usize::try_from(duration_seconds.filter(|d| *d > 0)?).ok()?;
+        let position = usize::try_from(self.position_seconds).ok()?.min(total);
+        abop_core::utils::casting::safe_progress(position, total).ok()
+    }
+}
+
 /// Library management state (audiobooks, directories, scanning)
 #[derive(Clone)]
 pub struct LibraryState {
@@ -86,6 +108,8 @@ pub struct LibraryState {
     pub filtered_audiobooks: Vec<Audiobook>,
     /// Whether search is currently active
     pub search_active: bool,
+    /// Listening progress by audiobook id
+    pub progress: std::collections::HashMap<String, ListeningProgress>,
 
     /// Flag to indicate library state needs UI redraw
     needs_redraw: bool,
@@ -127,6 +151,7 @@ impl LibraryState {
             search_query: String::new(),
             filtered_audiobooks: core_state.app_data.audiobooks.clone(),
             search_active: false,
+            progress: std::collections::HashMap::new(),
             needs_redraw: false,
         }
     }
@@ -489,6 +514,24 @@ mod tests {
         book.id = id.to_string();
         book.title = Some(title.to_string());
         book
+    }
+
+    #[test]
+    fn listening_progress_fraction() {
+        let halfway = ListeningProgress {
+            position_seconds: 1800,
+            completed: false,
+        };
+        assert_eq!(halfway.fraction(Some(3600)), Some(0.5));
+        assert_eq!(halfway.fraction(None), None);
+        assert_eq!(halfway.fraction(Some(0)), None);
+        // Positions past the end are capped
+        assert_eq!(halfway.fraction(Some(900)), Some(1.0));
+        let finished = ListeningProgress {
+            position_seconds: 0,
+            completed: true,
+        };
+        assert_eq!(finished.fraction(None), Some(1.0));
     }
 
     #[test]

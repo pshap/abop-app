@@ -16,7 +16,15 @@ fn test_audiobook_table_empty() {
     let table_state = TableState::default();
 
     let cache = Arc::new(ImageCache::new());
-    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache, None);
+    let element = AudiobookTable::view(
+        &audiobooks,
+        &selected,
+        &table_state,
+        &tokens,
+        &cache,
+        None,
+        &std::collections::HashMap::new(),
+    );
     let _ = element; // Just verify it compiles and runs
 }
 
@@ -31,7 +39,15 @@ fn test_audiobook_table_with_data() {
     let table_state = TableState::default();
 
     let cache = Arc::new(ImageCache::new());
-    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache, None);
+    let element = AudiobookTable::view(
+        &audiobooks,
+        &selected,
+        &table_state,
+        &tokens,
+        &cache,
+        None,
+        &std::collections::HashMap::new(),
+    );
     let _ = element; // Just verify it compiles and runs
 }
 
@@ -47,6 +63,14 @@ fn test_audiobook_table_with_selection() {
     let table_state = TableState::default();
 
     let cache = Arc::new(ImageCache::new());
-    let element = AudiobookTable::view(&audiobooks, &selected, &table_state, &tokens, &cache, None);
+    let element = AudiobookTable::view(
+        &audiobooks,
+        &selected,
+        &table_state,
+        &tokens,
+        &cache,
+        None,
+        &std::collections::HashMap::new(),
+    );
     let _ = element; // Just verify it compiles and runs
 }

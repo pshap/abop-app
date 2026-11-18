@@ -29,6 +29,8 @@ pub struct RowContext<'c, 'a> {
     pub config: &'c data::DataTableConfig,
     /// File currently playing, highlighted in the table
     pub now_playing: Option<&'c Path>,
+    /// Saved listening progress by audiobook id
+    pub progress: &'c std::collections::HashMap<String, crate::state::ListeningProgress>,
     /// Design tokens
     pub tokens: &'a MaterialTokens,
     /// Cover thumbnail cache
@@ -109,7 +111,14 @@ impl TableRow {
             .columns
             .iter()
             .map(|column| {
-                Self::create_cell(audiobook, column, tokens, context.image_cache, is_playing)
+                Self::create_cell(
+                    audiobook,
+                    column,
+                    tokens,
+                    context.image_cache,
+                    is_playing,
+                    context.progress.get(&audiobook.id),
+                )
             })
             .collect();
 
@@ -183,6 +192,7 @@ impl TableRow {
         tokens: &'a MaterialTokens,
         image_cache: &'a Arc<ImageCache>,
         is_playing: bool,
+        listened: Option<&crate::state::ListeningProgress>,
     ) -> Element<'a, Message> {
         // Handle cover art column specially
         if column.id == "cover_art" {
@@ -221,6 +231,7 @@ impl TableRow {
             "author" => audiobook.author.as_deref().unwrap_or("Unknown").to_string(),
             "duration" => Self::format_duration(audiobook.duration_seconds.unwrap_or(0)),
             "size" => Self::format_file_size(audiobook.size_bytes.unwrap_or(0)),
+            "progress" => Self::format_progress(listened, audiobook.duration_seconds),
             "actions" => {
                 return container(iced::widget::Space::with_width(Length::Fixed(0.0)))
                     .width(Length::Fixed(0.0))
@@ -331,6 +342,21 @@ impl TableRow {
         }
     }
 
+    /// "Finished", a percentage, or a dash when the book hasn't been started
+    fn format_progress(
+        listened: Option<&crate::state::ListeningProgress>,
+        duration_seconds: Option<u64>,
+    ) -> String {
+        match listened {
+            Some(progress) if progress.completed => "Finished".to_string(),
+            Some(progress) => match progress.fraction(duration_seconds) {
+                Some(fraction) if fraction > 0.0 => format!("{:.0}%", (fraction * 100.0).max(1.0)),
+                _ => "—".to_string(),
+            },
+            None => "—".to_string(),
+        }
+    }
+
     /// Format duration in seconds to human-readable string (delegates to core utils)
     fn format_duration(seconds: u64) -> String {
         abop_core::utils::format_seconds(seconds, abop_core::utils::TimeFormat::HoursWhenNonZero)
@@ -340,5 +366,37 @@ impl TableRow {
     fn format_file_size(bytes: u64) -> String {
         // Use the unified file size formatting from the casting module
         abop_core::utils::casting::format_file_size_standard(bytes)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::ListeningProgress;
+
+    #[test]
+    fn formats_progress_cells() {
+        let progress = |position_seconds, completed| ListeningProgress {
+            position_seconds,
+            completed,
+        };
+        assert_eq!(TableRow::format_progress(None, Some(100)), "—");
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(0, false)), Some(100)),
+            "—"
+        );
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(42, false)), Some(100)),
+            "42%"
+        );
+        // A few seconds in still shows as started
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(1, false)), Some(36_000)),
+            "1%"
+        );
+        assert_eq!(
+            TableRow::format_progress(Some(&progress(5, true)), None),
+            "Finished"
+        );
     }
 }

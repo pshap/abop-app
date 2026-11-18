@@ -57,6 +57,10 @@ impl AudiobookTable {
                 .width(data::ColumnWidth::FillPortion(4))
                 .align(data::TextAlignment::Start)
                 .sortable(true),
+            data::TableColumn::new("progress", "Progress")
+                .width(data::ColumnWidth::FillPortion(2))
+                .align(data::TextAlignment::End)
+                .sortable(true),
             data::TableColumn::new("duration", "Duration")
                 .width(data::ColumnWidth::FillPortion(2))
                 .align(data::TextAlignment::End)
@@ -82,6 +86,7 @@ impl AudiobookTable {
         material_tokens: &'a MaterialTokens,
         image_cache: &'a Arc<ImageCache>,
         now_playing: Option<&std::path::Path>,
+        progress: &std::collections::HashMap<String, crate::state::ListeningProgress>,
     ) -> Element<'a, Message> {
         let config = Self::default_config();
         let columns = Self::define_columns();
@@ -101,6 +106,7 @@ impl AudiobookTable {
                 selected,
                 config: &config,
                 now_playing,
+                progress,
                 tokens: material_tokens,
                 image_cache,
             },

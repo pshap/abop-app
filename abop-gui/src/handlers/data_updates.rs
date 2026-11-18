@@ -64,7 +64,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                     // Update state with scan results
                     state.library.set_audiobooks(scan_result.audiobooks);
                     crate::utils::sort_audiobooks(state);
-                    let preload = preload_cover_art(state);
+                    let preload = Task::batch([preload_cover_art(state), load_progress()]);
                     // scan_progress is cleared automatically by complete_scanning()
                     state.library.complete_scanning();
                     Some(preload)
@@ -81,6 +81,17 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
         }
         Message::CommitRename(id, new_name) => handle_commit_rename(state, id, new_name),
         Message::LibraryLoaded(path, result) => Some(apply_loaded_library(state, path, result)),
+        Message::ProgressLoaded(result) => {
+            match result {
+                Ok(progress) => {
+                    state.library.progress = progress;
+                    // Progress may affect the current sort order
+                    crate::utils::sort_audiobooks(state);
+                }
+                Err(error) => log::warn!("Could not load listening progress: {error}"),
+            }
+            Some(Task::none())
+        }
         Message::RenameFinished(result) => {
             apply_rename_result(state, result);
             Some(Task::none())
@@ -202,6 +213,14 @@ pub fn handle_core_operation(state: &mut AppState, message: Message) -> Task<Mes
     }
 }
 
+/// Load saved listening progress in the background
+fn load_progress() -> Task<Message> {
+    Task::perform(
+        crate::audio::player::load_all_progress(),
+        Message::ProgressLoaded,
+    )
+}
+
 /// Show a library loaded from the database, or scan it if it was never scanned
 fn apply_loaded_library(
     state: &mut AppState,
@@ -219,7 +238,7 @@ fn apply_loaded_library(
             state.library.set_audiobooks(audiobooks);
             crate::utils::sort_audiobooks(state);
             state.library.complete_scanning();
-            preload_cover_art(state)
+            Task::batch([preload_cover_art(state), load_progress()])
         }
         Ok(None) => Task::done(Message::command(crate::messages::Command::scan_library(
             path,

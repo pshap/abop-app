@@ -91,6 +91,13 @@ fn save_progress_task(state: &mut AppState, completed: bool) -> Task<Message> {
         state.player.position
     };
     state.player.last_saved_position = position;
+    state.library.progress.insert(
+        id.clone(),
+        crate::state::ListeningProgress {
+            position_seconds: position.as_secs(),
+            completed,
+        },
+    );
     Task::perform(
         audio::save_progress(id, position.as_secs(), completed),
         |result| {

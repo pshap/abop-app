@@ -14,7 +14,7 @@ pub mod task_state;
 pub mod ui_state;
 
 // Re-export the main state types
-pub use library_state::{DirectoryInfo, LibraryState, TableState};
+pub use library_state::{DirectoryInfo, LibraryState, ListeningProgress, TableState};
 pub use player_state::PlayerState;
 pub use progress_cache::ProgressCache;
 pub use task_state::{TaskInfo, TaskState, TaskType};

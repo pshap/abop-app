@@ -23,6 +23,7 @@ pub const VALID_SORT_COLUMNS: &[&str] = &[
     "author",
     "duration", // Numeric: sorts by duration_seconds field
     "size",     // Numeric: sorts by size_bytes field
+    "progress", // Numeric: fraction listened (finished books last)
     "format",
     "path",
     "library_id",

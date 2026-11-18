@@ -63,6 +63,10 @@ pub enum Message {
     /// Audiobooks of a previously scanned library loaded from the database
     /// (`None` if the folder was never scanned)
     LibraryLoaded(PathBuf, Result<Option<Vec<Audiobook>>, String>),
+    /// Saved listening progress loaded from the database
+    ProgressLoaded(
+        Result<std::collections::HashMap<String, crate::state::ListeningProgress>, String>,
+    ),
     /// Progress information for a scan operation
     ScanProgress(abop_core::scanner::ScanProgress),
 
