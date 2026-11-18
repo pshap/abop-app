@@ -54,6 +54,9 @@ impl CoreScanner {
             );
             return Ok(Vec::new()); // Return empty list instead of failing
         }
+        // An unreadable library folder is an error, not an empty library: callers
+        // would otherwise treat every known book as deleted
+        std::fs::read_dir(path)?;
 
         Ok(Self::find_audio_files_in_path(
             path,

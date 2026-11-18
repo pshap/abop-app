@@ -315,3 +315,43 @@ fn scan_of_missing_folder_keeps_existing_books() {
         .unwrap();
     assert_eq!(books.len(), 1);
 }
+
+/// An unreadable library folder (permissions, flaky mount) must fail the scan
+/// instead of looking empty, which would remove every book from the library
+#[cfg(unix)]
+#[test]
+fn scan_of_unreadable_folder_fails_and_keeps_books() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let parent = tempdir().unwrap();
+    let library_path = parent.path().join("Books");
+    std::fs::create_dir(&library_path).unwrap();
+    std::fs::copy(fixtures.join("tagged.mp3"), library_path.join("one.mp3")).unwrap();
+
+    let db_dir = tempdir().unwrap();
+    let db = Database::open(db_dir.path().join("test.db")).unwrap();
+    let library_id = db
+        .add_library_with_path("Books", library_path.clone())
+        .unwrap();
+    let library = db.libraries().find_by_id(&library_id).unwrap().unwrap();
+    let options = abop_core::scanner::ScanOptions::default;
+    LibraryScanner::new(db.clone(), library.clone())
+        .scan(options())
+        .unwrap();
+
+    std::fs::set_permissions(&library_path, std::fs::Permissions::from_mode(0o000)).unwrap();
+    // Root ignores permissions, so the scenario can't be reproduced there
+    let unreadable = std::fs::read_dir(&library_path).is_err();
+    let result = LibraryScanner::new(db.clone(), library).scan(options());
+    std::fs::set_permissions(&library_path, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    if unreadable {
+        assert!(result.is_err(), "scanning an unreadable folder must fail");
+    }
+    let books = db
+        .audiobook_repository()
+        .find_by_library(&library_id)
+        .unwrap();
+    assert_eq!(books.len(), 1, "books must survive a failed scan");
+}

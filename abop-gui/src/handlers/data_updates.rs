@@ -52,8 +52,10 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                         crate::messages::Command::scan_library(library_path),
                     )))
                 }
-                Err(_e) => {
-                    log::error!("Quick scan failed: {_e}");
+                Err(error) => {
+                    state
+                        .ui
+                        .notify_error(format!("Couldn't open folder: {error}"));
                     Some(Task::none())
                 }
             }
@@ -69,8 +71,9 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                     state.library.complete_scanning();
                     Some(preload)
                 }
-                Err(_e) => {
+                Err(error) => {
                     state.library.error_scanning();
+                    state.ui.notify_error(format!("Scan failed: {error}"));
                     Some(Task::none())
                 }
             }
