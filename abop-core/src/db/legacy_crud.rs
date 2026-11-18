@@ -93,7 +93,7 @@ impl Database {
             // Update cache
             self.state
                 .lock()
-                .unwrap()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .library_cache
                 .insert(path_str, id.clone());
             Ok(id)
