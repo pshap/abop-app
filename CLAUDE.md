@@ -68,6 +68,16 @@ cargo fmt --all
 cargo doc --workspace --open
 ```
 
+### Pre-commit hook (no CI)
+This project deliberately has **no CI**. Quality is enforced locally by a pre-commit hook
+that runs `scripts/check.sh`: `cargo fmt --check`, `cargo clippy -D warnings` and the full
+nextest suite. Commits touching Rust/Cargo files are rejected until all three pass.
+
+- Enable once per clone: `git config core.hooksPath .githooks`
+- Run the same checks by hand: `scripts/check.sh` (about 10 s warm)
+- **Never bypass the hook with `git commit --no-verify`.** If it fails, fix the cause; if a
+  failure looks unrelated to your change, investigate it rather than skipping the check
+
 ## Architecture Overview
 
 ### Core Dependencies & Technologies

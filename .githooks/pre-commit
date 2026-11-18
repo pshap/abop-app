@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Block commits that don't pass formatting, clippy and tests.
+# Enable once per clone with: git config core.hooksPath .githooks
+
+# Only Rust/Cargo changes need the full check
+if ! git diff --cached --name-only | grep -qE '\.rs$|(^|/)Cargo\.(toml|lock)$|rust-toolchain'; then
+    exit 0
+fi
+
+exec "$(git rev-parse --show-toplevel)/scripts/check.sh"
