@@ -296,7 +296,8 @@ impl StatePersistence {
 
         let backup_dir = backup_dir
             .cloned()
-            .unwrap_or_else(|| self.state_path.parent().unwrap().to_path_buf());
+            .or_else(|| self.state_path.parent().map(std::path::Path::to_path_buf))
+            .unwrap_or_default();
 
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
         let backup_filename = format!("app_state_backup_{timestamp}.toml");

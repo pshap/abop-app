@@ -50,21 +50,19 @@ pub fn resample_buffer_scalar(buffer: &mut AudioBuffer<f32>, target_rate: u32) -
             let idx1 = pos1 * channels_usize + c;
 
             // Get sample values with bounds checking
-            let sample0 = if idx0 < buffer.data.len() {
-                buffer.data[idx0]
-            } else if !buffer.data.is_empty() {
-                *buffer.data.last().unwrap()
-            } else {
-                0.0
-            };
+            let sample0 = buffer
+                .data
+                .get(idx0)
+                .or_else(|| buffer.data.last())
+                .copied()
+                .unwrap_or(0.0);
 
-            let sample1 = if idx1 < buffer.data.len() {
-                buffer.data[idx1]
-            } else if !buffer.data.is_empty() {
-                *buffer.data.last().unwrap()
-            } else {
-                0.0
-            };
+            let sample1 = buffer
+                .data
+                .get(idx1)
+                .or_else(|| buffer.data.last())
+                .copied()
+                .unwrap_or(0.0);
 
             // Linear interpolation: sample0 + (sample1 - sample0) * pos_frac
             let interpolated = sample0 + (sample1 - sample0) * pos_frac as f32;

@@ -85,13 +85,15 @@ impl FastElevation {
     /// More efficient than creating them individually
     #[must_use]
     pub fn create_all_styles_fast(shadow_color: Color, tint_color: Color) -> [ElevationStyle; 6] {
-        ElevationLevel::all()
-            .iter()
-            .copied()
-            .map(|level| ElevationStyle::new(level, shadow_color, tint_color))
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
+        [
+            ElevationLevel::Level0,
+            ElevationLevel::Level1,
+            ElevationLevel::Level2,
+            ElevationLevel::Level3,
+            ElevationLevel::Level4,
+            ElevationLevel::Level5,
+        ]
+        .map(|level| ElevationStyle::new(level, shadow_color, tint_color))
     }
 
     /// Fast interpolation between two elevation levels

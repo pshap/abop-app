@@ -49,7 +49,7 @@ impl Database {
         // Update cache
         self.state
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .library_cache
             .insert(library_path_for_cache, id.clone());
 
@@ -62,7 +62,13 @@ impl Database {
         let path_str = path.to_string_lossy().to_string();
 
         // Check cache first
-        if let Some(id) = self.state.lock().unwrap().library_cache.get(&path_str) {
+        if let Some(id) = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .library_cache
+            .get(&path_str)
+        {
             return Ok(id.clone());
         }
 
@@ -102,7 +108,13 @@ impl Database {
     /// Adds an audiobook to the database (direct insert)
     #[instrument(skip(self, audiobook))]
     pub fn add_audiobook(&self, audiobook: &Audiobook) -> Result<()> {
-        let library_id = self.get_library_id(audiobook.path.parent().unwrap())?;
+        let parent = audiobook.path.parent().ok_or_else(|| {
+            AppError::InvalidData(format!(
+                "Audiobook path has no parent directory: {}",
+                audiobook.path.display()
+            ))
+        })?;
+        let library_id = self.get_library_id(parent)?;
 
         let audiobook_clone = audiobook.clone();
         let library_id_clone = library_id.clone();

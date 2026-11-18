@@ -177,7 +177,7 @@ pub fn validate_metadata_completeness(
     duration: Option<std::time::Duration>,
 ) -> AppResult<()> {
     // Check if essential metadata is present
-    if title.is_none() || title.unwrap().is_empty() {
+    if title.is_none_or(str::is_empty) {
         log::warn!("Audio file has no title metadata");
     }
 

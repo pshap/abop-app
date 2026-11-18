@@ -60,48 +60,60 @@ impl AudioControls {
             let selected_count = selected_ids.len();
             content =
                 content.push(text(format!("{selected_count} audiobook(s) selected")).size(16)); // Add process button
-            content = content.push(
-                ButtonBuilder::new(material_tokens)
-                    .variant(ButtonVariant::Filled)
-                    .label("Process Selected")
-                    .on_press(Message::ProcessSelected)
-                    .build()
-                    .unwrap(),
-            );
+            content = content.push(crate::components::buttons::create_button(
+                || {
+                    ButtonBuilder::new(material_tokens)
+                        .variant(ButtonVariant::Filled)
+                        .label("Process Selected")
+                        .on_press(Message::ProcessSelected)
+                        .build()
+                },
+                "audio control",
+                None,
+            ));
 
             // Add preview button if playing
             match player_state {
                 PlayerState::Playing => {
-                    content = content.push(
-                        ButtonBuilder::new(material_tokens)
-                            .variant(ButtonVariant::Outlined)
-                            .label("Stop Preview")
-                            .on_press(Message::Stop)
-                            .build()
-                            .unwrap(),
-                    );
+                    content = content.push(crate::components::buttons::create_button(
+                        || {
+                            ButtonBuilder::new(material_tokens)
+                                .variant(ButtonVariant::Outlined)
+                                .label("Stop Preview")
+                                .on_press(Message::Stop)
+                                .build()
+                        },
+                        "audio control",
+                        None,
+                    ));
                 }
                 PlayerState::Stopped => {
                     if selected_count == 1 {
-                        content = content.push(
-                            ButtonBuilder::new(material_tokens)
-                                .variant(ButtonVariant::Outlined)
-                                .label("Preview Audio")
-                                .on_press(Message::StartPlayback)
-                                .build()
-                                .unwrap(),
-                        );
+                        content = content.push(crate::components::buttons::create_button(
+                            || {
+                                ButtonBuilder::new(material_tokens)
+                                    .variant(ButtonVariant::Outlined)
+                                    .label("Preview Audio")
+                                    .on_press(Message::StartPlayback)
+                                    .build()
+                            },
+                            "audio control",
+                            None,
+                        ));
                     }
                 }
                 PlayerState::Paused => {
-                    content = content.push(
-                        ButtonBuilder::new(material_tokens)
-                            .variant(ButtonVariant::Outlined)
-                            .label("Resume Preview")
-                            .on_press(Message::StartPlayback)
-                            .build()
-                            .unwrap(),
-                    );
+                    content = content.push(crate::components::buttons::create_button(
+                        || {
+                            ButtonBuilder::new(material_tokens)
+                                .variant(ButtonVariant::Outlined)
+                                .label("Resume Preview")
+                                .on_press(Message::StartPlayback)
+                                .build()
+                        },
+                        "audio control",
+                        None,
+                    ));
                 }
             }
         }

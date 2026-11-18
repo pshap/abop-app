@@ -84,21 +84,19 @@ pub fn resample_buffer_simd(buffer: &mut AudioBuffer<f32>, target_rate: u32) -> 
                     let idx1 = pos1 * channels_usize + c;
 
                     // Get sample values with bounds checking
-                    sample0_data[vec_idx] = if idx0 < buffer.data.len() {
-                        buffer.data[idx0]
-                    } else if !buffer.data.is_empty() {
-                        *buffer.data.last().unwrap()
-                    } else {
-                        0.0
-                    };
+                    sample0_data[vec_idx] = buffer
+                        .data
+                        .get(idx0)
+                        .or_else(|| buffer.data.last())
+                        .copied()
+                        .unwrap_or(0.0);
 
-                    sample1_data[vec_idx] = if idx1 < buffer.data.len() {
-                        buffer.data[idx1]
-                    } else if !buffer.data.is_empty() {
-                        *buffer.data.last().unwrap()
-                    } else {
-                        0.0
-                    };
+                    sample1_data[vec_idx] = buffer
+                        .data
+                        .get(idx1)
+                        .or_else(|| buffer.data.last())
+                        .copied()
+                        .unwrap_or(0.0);
                 }
             }
         }
@@ -138,21 +136,19 @@ pub fn resample_buffer_simd(buffer: &mut AudioBuffer<f32>, target_rate: u32) -> 
             let idx0 = pos0 * channels_usize + c;
             let idx1 = pos1 * channels_usize + c;
 
-            let sample0 = if idx0 < buffer.data.len() {
-                buffer.data[idx0]
-            } else if !buffer.data.is_empty() {
-                *buffer.data.last().unwrap()
-            } else {
-                0.0
-            };
+            let sample0 = buffer
+                .data
+                .get(idx0)
+                .or_else(|| buffer.data.last())
+                .copied()
+                .unwrap_or(0.0);
 
-            let sample1 = if idx1 < buffer.data.len() {
-                buffer.data[idx1]
-            } else if !buffer.data.is_empty() {
-                *buffer.data.last().unwrap()
-            } else {
-                0.0
-            };
+            let sample1 = buffer
+                .data
+                .get(idx1)
+                .or_else(|| buffer.data.last())
+                .copied()
+                .unwrap_or(0.0);
 
             let interpolated = sample0 + (sample1 - sample0) * pos_frac as f32;
             resampled_data.push(interpolated);
