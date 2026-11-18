@@ -56,6 +56,9 @@ pub enum Message {
     QuickScanComplete(Result<DirectoryInfo, String>),
     /// Result of a full library scan
     ScanComplete(Result<crate::library::ScanResult, String>),
+    /// Audiobooks of a previously scanned library loaded from the database
+    /// (`None` if the folder was never scanned)
+    LibraryLoaded(PathBuf, Result<Option<Vec<Audiobook>>, String>),
     /// Progress information for a scan operation
     ScanProgress(abop_core::scanner::ScanProgress),
 

@@ -132,3 +132,32 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
         _ => None, // Not a library command
     }
 }
+
+/// Load a previously scanned library's audiobooks from the database
+///
+/// Returns `Ok(None)` if the folder has never been scanned.
+///
+/// # Errors
+///
+/// Returns an error message if the database cannot be opened or queried.
+pub async fn load_library_from_db(
+    library_path: PathBuf,
+) -> Result<Option<Vec<abop_core::models::Audiobook>>, String> {
+    tokio::task::spawn_blocking(move || {
+        let db = abop_core::db::Database::open_app_database().map_err(|e| e.to_string())?;
+        let Some(library) = db
+            .libraries()
+            .find_by_path(&library_path)
+            .map_err(|e| e.to_string())?
+        else {
+            return Ok(None);
+        };
+        let books = db
+            .audiobook_repository()
+            .find_by_library(&library.id)
+            .map_err(|e| e.to_string())?;
+        Ok(Some(books))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

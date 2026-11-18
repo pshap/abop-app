@@ -10,6 +10,7 @@ use log::{error, info};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, UnboundedSender};
 
+use crate::preferences::GuiPreferences;
 use crate::{handlers, messages::Message, router, state::AppState, views};
 use abop_core::services::ServiceContainer;
 
@@ -31,6 +32,10 @@ pub struct App {
     services: Arc<ServiceContainer>,
     /// Sender for task management messages
     task_tx: Option<UnboundedSender<TaskMessage>>,
+    /// Where preferences are saved; `None` disables persistence (e.g. in tests)
+    preferences_path: Option<std::path::PathBuf>,
+    /// Preferences as last written, to save only when they change
+    saved_preferences: Option<GuiPreferences>,
 }
 
 impl App {
@@ -67,6 +72,8 @@ impl App {
             router: router::Router::new(),
             services,
             task_tx: Some(task_tx),
+            preferences_path: None,
+            saved_preferences: None,
         }
     }
 
@@ -143,15 +150,51 @@ impl App {
     }
 
     /// Initialize the application, optionally opening and scanning a library folder
+    ///
+    /// Restores saved preferences. A folder passed on the command line is scanned;
+    /// otherwise the last open library is reloaded from the database.
     pub fn with_library(library_path: Option<std::path::PathBuf>) -> (Self, Task<Message>) {
-        let app = Self::new();
-        let fonts = crate::assets::register_fonts().map(|_| Message::NoOp);
+        let mut app = Self::new();
+        let preferences_path = GuiPreferences::default_path();
+        let preferences = preferences_path
+            .as_deref()
+            .map(GuiPreferences::load_from)
+            .unwrap_or_default();
+        preferences.apply_to(&mut app.state);
 
-        let task = match library_path {
-            Some(path) => Task::batch([fonts, Task::done(Message::DirectorySelected(Some(path)))]),
-            None => fonts,
+        let fonts = crate::assets::register_fonts().map(|_| Message::NoOp);
+        let open_library = match (library_path, &preferences.last_library) {
+            (Some(path), _) => Task::done(Message::DirectorySelected(Some(path))),
+            (None, Some(last)) if last.is_dir() => {
+                let last = last.clone();
+                Task::perform(
+                    crate::commands::library::load_library_from_db(last.clone()),
+                    move |result| Message::LibraryLoaded(last.clone(), result),
+                )
+            }
+            (None, _) => Task::none(),
         };
-        (app, task)
+
+        app.saved_preferences = Some(preferences);
+        app.preferences_path = preferences_path;
+        (app, Task::batch([fonts, open_library]))
+    }
+
+    /// Save preferences if they changed since the last save
+    fn persist_preferences(&mut self) {
+        let Some(path) = &self.preferences_path else {
+            return;
+        };
+        let current = GuiPreferences::from_state(&self.state);
+        if self.saved_preferences.as_ref() == Some(&current) {
+            return;
+        }
+        match current.save_to(path) {
+            Ok(()) => log::debug!("Saved preferences to {}", path.display()),
+            Err(error) => log::warn!("Could not save preferences to {}: {error}", path.display()),
+        }
+        // Remember even on failure so a broken config dir doesn't retry every update
+        self.saved_preferences = Some(current);
     }
 
     /// Get the application title
@@ -161,6 +204,13 @@ impl App {
 
     /// Update the application state based on messages
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        let task = self.handle_message(message);
+        self.persist_preferences();
+        task
+    }
+
+    /// Route a message to the matching handler
+    fn handle_message(&mut self, message: Message) -> Task<Message> {
         log::debug!("Processing message: {message:?}");
 
         match message {
@@ -181,7 +231,7 @@ impl App {
                 } else {
                     Message::Stop
                 };
-                self.update(next)
+                self.handle_message(next)
             }
 
             // Handle command execution

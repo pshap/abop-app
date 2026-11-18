@@ -80,6 +80,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
             Some(Task::none())
         }
         Message::CommitRename(id, new_name) => handle_commit_rename(state, id, new_name),
+        Message::LibraryLoaded(path, result) => Some(apply_loaded_library(state, path, result)),
         Message::RenameFinished(result) => {
             apply_rename_result(state, result);
             Some(Task::none())
@@ -198,6 +199,37 @@ pub fn handle_core_operation(state: &mut AppState, message: Message) -> Task<Mes
             Task::none()
         }
         _ => Task::none(),
+    }
+}
+
+/// Show a library loaded from the database, or scan it if it was never scanned
+fn apply_loaded_library(
+    state: &mut AppState,
+    path: std::path::PathBuf,
+    result: Result<Option<Vec<abop_core::models::Audiobook>>, String>,
+) -> Task<Message> {
+    match result {
+        Ok(Some(audiobooks)) => {
+            log::info!(
+                "Loaded {} audiobooks for {}",
+                audiobooks.len(),
+                path.display()
+            );
+            state.library.set_library_path(path);
+            state.library.set_audiobooks(audiobooks);
+            crate::utils::sort_audiobooks(state);
+            state.library.complete_scanning();
+            preload_cover_art(state)
+        }
+        Ok(None) => Task::done(Message::command(crate::messages::Command::scan_library(
+            path,
+        ))),
+        Err(error) => {
+            state
+                .ui
+                .notify_error(format!("Couldn't load library: {error}"));
+            Task::none()
+        }
     }
 }
 
