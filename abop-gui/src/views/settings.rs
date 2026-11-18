@@ -47,6 +47,9 @@ pub fn settings_view(state: &AppState) -> Element<'_, Message> {
         ),
         Space::with_height(8),
         row![
+            text(concat!("ABOP version ", env!("CARGO_PKG_VERSION")))
+                .size(tokens.typography().body_small.size)
+                .color(tokens.colors.on_surface_variant),
             Space::with_width(Length::Fill),
             ui::action_button(
                 tokens,
@@ -55,7 +58,8 @@ pub fn settings_view(state: &AppState) -> Element<'_, Message> {
                 "Done",
                 Some(Message::CloseSettings)
             ),
-        ],
+        ]
+        .align_y(Alignment::Center),
     ]
     .spacing(12)
     .padding(Padding::from([20.0, 24.0]));

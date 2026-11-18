@@ -199,7 +199,20 @@ impl App {
 
     /// Get the application title
     pub fn title(&self) -> String {
-        "ABOP - Audiobook Organizer & Processor".to_string()
+        const APP_NAME: &str = "ABOP — Audiobook Organizer & Processor";
+        let player = &self.state.player;
+        if player.player_state == abop_core::PlayerState::Stopped {
+            return APP_NAME.to_string();
+        }
+        let playing = player.playing_audiobook_id.as_ref().and_then(|id| {
+            self.state
+                .library
+                .audiobooks
+                .iter()
+                .find(|book| &book.id == id)
+                .and_then(|book| book.title.clone())
+        });
+        playing.map_or_else(|| APP_NAME.to_string(), |title| format!("{title} — ABOP"))
     }
 
     /// Update the application state based on messages
@@ -348,5 +361,23 @@ impl App {
             .map(|_| Message::command(crate::messages::Command::Quit));
 
         Subscription::batch([keyboard, close_requests].into_iter().chain(player_tick))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn title_shows_playing_audiobook() {
+        let mut app = App::new();
+        assert!(app.title().starts_with("ABOP"));
+
+        let mut book = abop_core::models::Audiobook::new("lib", "/books/martian.m4b");
+        book.title = Some("The Martian".into());
+        app.state.player.playing_audiobook_id = Some(book.id.clone());
+        app.state.library.audiobooks.push(book);
+        app.state.player.player_state = abop_core::PlayerState::Playing;
+        assert_eq!(app.title(), "The Martian — ABOP");
     }
 }
