@@ -6,6 +6,7 @@
 use iced::Color;
 
 use crate::styling::material::{
+    MaterialColors,
     elevation::MaterialElevation,
     helpers::{AnimationHelpers, ComponentHelpers, ElevationHelpers},
     shapes::{self, MaterialShapes},
@@ -14,7 +15,6 @@ use crate::styling::material::{
     tokens::{semantic::SemanticColors, states::MaterialStates},
     typography::MaterialTypography,
     visual::VisualTokens,
-    MaterialColors,
 };
 
 /// Constants for Material Design token system

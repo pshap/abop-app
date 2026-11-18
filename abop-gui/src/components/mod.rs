@@ -33,12 +33,16 @@ pub mod rename_dialog;
 pub mod search_bar;
 /// Status display and information presentation widgets
 pub mod status;
+/// Status bar along the bottom of the window
+pub mod status_bar;
 /// Table core functionality - main table component
 pub mod table_core;
 /// Table header component with sorting functionality
 pub mod table_header;
 /// Table row component for data display
 pub mod table_row;
+/// Shared, token-driven widget helpers for the application shell
+pub mod ui;
 
 #[cfg(test)]
 #[path = "tests/mod.rs"]

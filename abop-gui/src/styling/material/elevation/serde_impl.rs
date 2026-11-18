@@ -3,9 +3,9 @@
 use super::{ElevationStyle, MaterialElevation};
 use iced::{Color, Shadow, Vector};
 use serde::{
+    Deserialize, Serialize, Serializer,
     de::{Deserializer, MapAccess, Visitor},
     ser::SerializeStruct,
-    Deserialize, Serialize, Serializer,
 };
 use std::fmt;
 

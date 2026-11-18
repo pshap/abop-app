@@ -9,9 +9,10 @@ pub mod settings;
 mod tests;
 
 use iced::widget::{center, column, container, mouse_area, opaque, stack};
-use iced::{Color, Element};
+use iced::{Color, Element, Length};
 
 use crate::components::main_toolbar::MainToolbar;
+use crate::components::status_bar::StatusBar;
 use crate::messages::Message;
 use crate::state::AppState;
 
@@ -33,7 +34,7 @@ fn modal<'a>(
                 container::Style {
                     background: Some(
                         Color {
-                            a: 0.8,
+                            a: 0.55,
                             ..Color::BLACK
                         }
                         .into(),
@@ -50,12 +51,7 @@ fn modal<'a>(
 /// View function that renders the application UI based on current state and route
 #[must_use]
 pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Message> {
-    // Unified toolbar at the top combining navigation and actions
-    let toolbar = MainToolbar::view(
-        &state.library.recent_directories,
-        &state.library.library_path,
-        &state.ui.material_tokens,
-    );
+    let tokens = &state.ui.material_tokens;
 
     // Route-specific content (avoid double rendering settings)
     let content = match route {
@@ -69,9 +65,18 @@ pub fn view(state: &AppState, route: crate::router::Route) -> Element<'_, Messag
         crate::router::Route::About => about_view(state),
     };
 
-    let main_content = column![toolbar, content]
-        .spacing(state.ui.material_tokens.spacing().sm) // Reduced from LG (24px) to SM (8px)
-        .padding(state.ui.material_tokens.spacing().md); // Reduced from LG to MD (16px)
+    let main_content = container(column![
+        MainToolbar::view(state),
+        container(content).width(Length::Fill).height(Length::Fill),
+        StatusBar::view(state),
+    ])
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(move |_theme| container::Style {
+        background: Some(tokens.colors.surface.into()),
+        text_color: Some(tokens.colors.on_surface),
+        ..container::Style::default()
+    });
 
     // Modal overlays
     if let Some(audiobook_id) = &state.ui.renaming_id {

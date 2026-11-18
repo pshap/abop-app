@@ -87,6 +87,23 @@ mod ui_state_tests {
     }
 
     #[test]
+    fn test_theme_change_updates_design_tokens() {
+        let mut state = AppState::default();
+        state.ui.set_theme_mode(ThemeMode::Dark);
+        let dark_surface = state.ui.material_tokens.colors.surface;
+
+        let _ = handle_ui_message(&mut state, Message::ToggleTheme);
+        assert_eq!(state.ui.theme_mode, ThemeMode::Light);
+        assert_ne!(
+            state.ui.material_tokens.colors.surface, dark_surface,
+            "toggling the theme must regenerate the color tokens"
+        );
+
+        let _ = handle_ui_message(&mut state, Message::SetTheme(ThemeMode::Dark));
+        assert_eq!(state.ui.material_tokens.colors.surface, dark_surface);
+    }
+
+    #[test]
     fn test_handle_toggle_select_all() {
         let mut state = AppState::default();
         // Add some audiobooks using the correct structure

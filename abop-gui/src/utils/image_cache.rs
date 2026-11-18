@@ -10,11 +10,11 @@ use std::time::{Duration, Instant};
 use iced::widget::image::Handle;
 use image::DynamicImage;
 
-/// Cache entry for a cover art image
+/// Cache entry for a cover art thumbnail
 #[derive(Debug, Clone)]
 struct CacheEntry {
-    /// The decoded image data
-    image: DynamicImage,
+    /// Ready-to-draw handle; reusing the same handle lets iced reuse the GPU texture
+    handle: Handle,
     /// When this entry was created
     created_at: Instant,
     /// Last time this entry was accessed
@@ -24,12 +24,11 @@ struct CacheEntry {
 }
 
 impl CacheEntry {
-    #[allow(dead_code)]
     /// Create a new cache entry
-    fn new(image: DynamicImage) -> Self {
+    fn new(handle: Handle) -> Self {
         let now = Instant::now();
         Self {
-            image,
+            handle,
             created_at: now,
             last_accessed: now,
             access_count: 1,
@@ -48,10 +47,14 @@ impl CacheEntry {
     }
 }
 
-/// LRU cache for cover art images
+/// LRU cache for cover art thumbnails
+///
+/// Decoding cover art is expensive, so it should happen off the UI thread via
+/// [`ImageCache::preload`]. Views read thumbnails with [`ImageCache::cached_handle`],
+/// which never decodes.
 #[derive(Debug)]
 pub struct ImageCache {
-    /// The actual cache storage
+    /// The actual cache storage, keyed by `"{id}@{size}"`
     cache: Arc<Mutex<HashMap<String, CacheEntry>>>,
     /// Maximum number of images to cache
     max_size: usize,
@@ -62,7 +65,7 @@ pub struct ImageCache {
 impl ImageCache {
     /// Create a new image cache with default settings
     pub fn new() -> Self {
-        Self::with_settings(100, Duration::from_secs(3600)) // 1 hour
+        Self::with_settings(500, Duration::from_secs(3600)) // 1 hour
     }
 
     /// Create a new image cache with custom settings
@@ -74,101 +77,97 @@ impl ImageCache {
         }
     }
 
-    /// Get a cached image handle, or create one from raw data
-    pub fn get_or_create_handle(&self, key: &str, image_data: Option<&[u8]>, size: u32) -> Handle {
-        // Try to get from cache first
-        if let Some(handle) = self.get_cached_handle(key, size) {
-            return handle;
-        }
-
-        // Create new handle from image data
-        if let Some(data) = image_data
-            && let Some((handle, dyn_img)) = self.create_handle_from_data(data, size)
-        {
-            // Cache the decoded thumbnail for future use
-            self.cache_image(key, dyn_img);
-            return handle;
-        }
-
-        // Return placeholder if no image data or creation failed
-        self.create_placeholder_handle(size)
+    fn cache_key(key: &str, size: u32) -> String {
+        format!("{key}@{size}")
     }
 
-    /// Get a cached image handle if available
-    fn get_cached_handle(&self, key: &str, size: u32) -> Option<Handle> {
+    /// Get a cached thumbnail handle without decoding anything
+    ///
+    /// Safe to call from `view()`; returns `None` if the thumbnail isn't ready yet.
+    pub fn cached_handle(&self, key: &str, size: u32) -> Option<Handle> {
         let mut cache = self.cache.lock().ok()?;
-        let entry = cache.get_mut(key)?;
+        let cache_key = Self::cache_key(key, size);
+        let entry = cache.get_mut(&cache_key)?;
 
-        // Check if entry is stale
         if entry.is_stale(self.max_age) {
-            cache.remove(key);
+            cache.remove(&cache_key);
             return None;
         }
 
-        // Update access statistics
         entry.touch();
-
-        // Create handle from cached image
-        Some(self.create_handle_from_image(&entry.image, size))
+        Some(entry.handle.clone())
     }
 
-    /// Create an image handle from raw data, returning the handle and the thumbnail image
-    fn create_handle_from_data(&self, data: &[u8], size: u32) -> Option<(Handle, DynamicImage)> {
-        // Try to decode the image
-        let img = image::load_from_memory(data).ok()?;
+    /// Get a cached thumbnail handle, decoding and caching it if needed
+    ///
+    /// Decoding can take a long time for large covers; avoid calling this from `view()`.
+    pub fn get_or_create_handle(&self, key: &str, image_data: Option<&[u8]>, size: u32) -> Handle {
+        if let Some(handle) = self.cached_handle(key, size) {
+            return handle;
+        }
 
-        // Resize to thumbnail size
-        let thumbnail = if img.width() != size || img.height() != size {
+        if let Some(data) = image_data
+            && let Some(handle) = Self::decode_thumbnail(data, size)
+        {
+            self.insert(key, size, handle.clone());
+            return handle;
+        }
+
+        self.create_placeholder_handle(size)
+    }
+
+    /// Decode and cache thumbnails for many images; intended for background threads
+    ///
+    /// Returns how many thumbnails were newly decoded.
+    pub fn preload<'a>(
+        &self,
+        items: impl IntoIterator<Item = (&'a str, &'a [u8])>,
+        size: u32,
+    ) -> usize {
+        let mut decoded = 0;
+        for (key, data) in items {
+            if self.cached_handle(key, size).is_some() {
+                continue;
+            }
+            if let Some(handle) = Self::decode_thumbnail(data, size) {
+                self.insert(key, size, handle);
+                decoded += 1;
+            }
+        }
+        decoded
+    }
+
+    /// Decode image bytes into a thumbnail handle (aspect ratio preserved)
+    fn decode_thumbnail(data: &[u8], size: u32) -> Option<Handle> {
+        let img = image::load_from_memory(data).ok()?;
+        let thumbnail = if img.width() > size || img.height() > size {
             img.thumbnail(size, size)
         } else {
             img
         };
-
-        // Convert to RGBA8 format for Iced
         let rgba = thumbnail.to_rgba8();
         let (width, height) = rgba.dimensions();
-
-        // Create handle from raw RGBA data
-        let handle = Handle::from_rgba(width, height, rgba.into_raw());
-        Some((handle, thumbnail))
-    }
-
-    /// Create an image handle from a DynamicImage
-    fn create_handle_from_image(&self, img: &DynamicImage, size: u32) -> Handle {
-        // Resize to thumbnail size
-        let thumbnail = if img.width() != size || img.height() != size {
-            img.thumbnail(size, size)
-        } else {
-            img.clone()
-        };
-
-        // Convert to RGBA8 format for Iced
-        let rgba = thumbnail.to_rgba8();
-        let (width, height) = rgba.dimensions();
-
-        // Create handle from raw RGBA data
-        Handle::from_rgba(width, height, rgba.into_raw())
+        Some(Handle::from_rgba(width, height, rgba.into_raw()))
     }
 
     /// Create a placeholder handle for missing cover art
     pub fn create_placeholder_handle(&self, size: u32) -> Handle {
-        // Create a simple placeholder image
-        let placeholder = DynamicImage::new_rgba8(size, size);
-        self.create_handle_from_image(&placeholder, size)
+        let placeholder = DynamicImage::new_rgba8(size, size).to_rgba8();
+        Handle::from_rgba(size, size, placeholder.into_raw())
     }
 
-    /// Cache a decoded image under a key with basic LRU eviction
-    fn cache_image(&self, key: &str, image: DynamicImage) {
+    /// Cache a thumbnail handle with basic LRU eviction
+    fn insert(&self, key: &str, size: u32, handle: Handle) {
         if let Ok(mut cache) = self.cache.lock() {
             if cache.len() >= self.max_size {
-                self.evict_oldest(&mut cache);
+                Self::evict_oldest(&mut cache);
             }
-            cache.insert(key.to_string(), CacheEntry::new(image));
+            cache.insert(Self::cache_key(key, size), CacheEntry::new(handle));
         }
     }
 
-    /// Evict the oldest cache entry
-    fn evict_oldest(&self, cache: &mut HashMap<String, CacheEntry>) {
+    /// Evict the least recently used cache entry
+    fn evict_oldest(cache: &mut HashMap<String, CacheEntry>) {
         let oldest_key = cache
             .iter()
             .min_by_key(|(_, entry)| entry.last_accessed)
@@ -176,6 +175,14 @@ impl ImageCache {
 
         if let Some(key) = oldest_key {
             cache.remove(&key);
+        }
+    }
+
+    /// Remove all cached sizes for one image
+    pub fn invalidate(&self, key: &str) {
+        if let Ok(mut cache) = self.cache.lock() {
+            let prefix = format!("{key}@");
+            cache.retain(|k, _| !k.starts_with(&prefix));
         }
     }
 
@@ -235,7 +242,7 @@ mod tests {
     #[test]
     fn test_image_cache_creation() {
         let cache = ImageCache::new();
-        assert_eq!(cache.stats().max_size, 100);
+        assert_eq!(cache.stats().max_size, 500);
     }
 
     #[test]
@@ -251,5 +258,45 @@ mod tests {
         let cache = ImageCache::new();
         let _handle = cache.create_placeholder_handle(64);
         // We can't introspect the handle easily; creation should succeed without panic
+    }
+
+    fn png_bytes(width: u32, height: u32) -> Vec<u8> {
+        let img = DynamicImage::new_rgba8(width, height);
+        let mut bytes = Vec::new();
+        img.write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageFormat::Png,
+        )
+        .unwrap();
+        bytes
+    }
+
+    #[test]
+    fn test_preload_then_cached_handle_reuses_handle() {
+        let cache = ImageCache::new();
+        let data = png_bytes(200, 100);
+
+        assert!(cache.cached_handle("book", 48).is_none());
+        assert_eq!(cache.preload([("book", data.as_slice())], 48), 1);
+        // Already cached: nothing new to decode
+        assert_eq!(cache.preload([("book", data.as_slice())], 48), 0);
+
+        let first = cache.cached_handle("book", 48).unwrap();
+        let second = cache.cached_handle("book", 48).unwrap();
+        assert_eq!(first.id(), second.id(), "same texture should be reused");
+        assert!(
+            cache.cached_handle("book", 96).is_none(),
+            "sizes are cached separately"
+        );
+
+        cache.invalidate("book");
+        assert!(cache.cached_handle("book", 48).is_none());
+    }
+
+    #[test]
+    fn test_invalid_image_data_is_skipped() {
+        let cache = ImageCache::new();
+        assert_eq!(cache.preload([("bad", &b"not an image"[..])], 48), 0);
+        assert!(cache.cached_handle("bad", 48).is_none());
     }
 }

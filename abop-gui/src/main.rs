@@ -89,7 +89,10 @@ fn main() -> iced::Result {
         .filter(|path| {
             let is_dir = path.is_dir();
             if !is_dir {
-                log::warn!("Ignoring startup path that is not a directory: {}", path.display());
+                log::warn!(
+                    "Ignoring startup path that is not a directory: {}",
+                    path.display()
+                );
             }
             is_dir
         });

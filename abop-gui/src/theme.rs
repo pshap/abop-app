@@ -4,7 +4,7 @@
 //! color standards with multiple theme modes including dark, light, and dynamic themes.
 
 use crate::styling::material::{MaterialColors, MaterialPalette, MaterialTokens};
-use iced::{theme::Palette, Color, Theme as IcedTheme};
+use iced::{Color, Theme as IcedTheme, theme::Palette};
 
 // ================================================================================================
 // CONSTANTS

@@ -13,6 +13,9 @@ use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::data;
 use crate::utils::image_cache::ImageCache;
 
+/// Height of each audiobook row
+pub const ROW_HEIGHT: f32 = 56.0;
+
 /// Component for creating table rows with Material Design styling
 pub struct TableRow;
 
@@ -133,6 +136,7 @@ impl TableRow {
                 })
                 .on_press(Message::ToggleAudiobookSelection(audiobook.id.clone()))
                 .width(Length::Fill)
+                .padding(0)
                 .into()
         } else {
             container(row_content)
@@ -147,8 +151,7 @@ impl TableRow {
         };
         container(styled_row)
             .width(Length::Fill)
-            .height(Length::Fixed(config.density.row_height())) // Ensure each row has a proper height
-            .padding(Padding::from([2, 0])) // Minimal vertical padding, no horizontal padding
+            .height(Length::Fixed(ROW_HEIGHT))
             .into()
     }
 
@@ -157,21 +160,13 @@ impl TableRow {
         audiobook: &'a Audiobook,
         tokens: &'a MaterialTokens,
     ) -> Element<'a, Message> {
-        let rename_button = button(
-            text("✎")
-                .size(tokens.typography().label_large.size)
-                .align_x(iced::Alignment::Center)
-                .align_y(iced::Alignment::Center),
-        )
-        .on_press(Message::BeginRename(audiobook.id.clone()))
-        .style(move |theme, status| {
-            let mut style = button::secondary(theme, status);
-            style.background = Some(tokens.colors.secondary.container.into());
-            style.text_color = tokens.colors.on_secondary_container();
-            style.border.radius = 4.0.into();
-            style
-        })
-        .padding(Padding::from([4, 8]));
+        let rename_button = crate::components::ui::icon_button(
+            tokens,
+            crate::components::ui::ButtonKind::Ghost,
+            "pen",
+            "Rename",
+            Some(Message::BeginRename(audiobook.id.clone())),
+        );
 
         container(rename_button)
             .width(Length::Fixed(64.0))
@@ -192,7 +187,7 @@ impl TableRow {
         if column.id == "cover_art" {
             let cover_art = CoverArt::from_data(
                 audiobook.cover_art.as_deref(),
-                48, // 48x48 thumbnail for table
+                crate::components::cover_art::TABLE_THUMBNAIL_SIZE,
                 image_cache,
                 &audiobook.id,
             )
@@ -208,8 +203,7 @@ impl TableRow {
 
             return container(cover_art.view(tokens))
                 .width(width)
-                .height(Length::Fixed(48.0))
-                .padding(Padding::from([4, 8]))
+                .height(Length::Fill)
                 .align_x(iced::Alignment::Center)
                 .align_y(iced::alignment::Vertical::Center)
                 .into();
@@ -239,106 +233,80 @@ impl TableRow {
             data::ColumnWidth::Shrink => Length::Shrink,
         };
 
-        // Use proper Material Design text color
-        let text_color = tokens.colors.on_surface;
-        log::debug!("Table cell text: {} (column: {})", cell_text, column.id);
+        // Primary text for title/author, muted for numeric metadata
+        let (text_color, size, font) = match column.id.as_str() {
+            "title" => (
+                tokens.colors.on_surface,
+                tokens.typography().body_large.size,
+                iced::Font {
+                    weight: iced::font::Weight::Medium,
+                    ..iced::Font::DEFAULT
+                },
+            ),
+            "author" => (
+                tokens.colors.on_surface,
+                tokens.typography().body_medium.size,
+                iced::Font::DEFAULT,
+            ),
+            _ => (
+                tokens.colors.on_surface_variant,
+                tokens.typography().body_medium.size,
+                iced::Font::DEFAULT,
+            ),
+        };
+        let align = match column.alignment {
+            data::TextAlignment::End => iced::Alignment::End,
+            data::TextAlignment::Center => iced::Alignment::Center,
+            _ => iced::Alignment::Start,
+        };
 
         container(
             text(cell_text)
-                .size(tokens.typography().body_medium.size)
-                .line_height(iced::widget::text::LineHeight::Absolute(
-                    tokens.typography().body_medium.line_height,
-                ))
-                .color(text_color),
+                .size(size)
+                .font(font)
+                .color(text_color)
+                .wrapping(iced::widget::text::Wrapping::None),
         )
         .width(width)
-        .padding(Padding::from([8, 8])) // Increased padding for Standard density
-        .align_y(iced::alignment::Vertical::Center) // Center text vertically
+        .height(Length::Fill)
+        .padding(Padding::from([0, 12]))
+        .clip(true)
+        .align_x(align)
+        .align_y(iced::alignment::Vertical::Center)
         .into()
     }
 
-    /// Style for selectable row buttons with Material Design 3 hover effects
+    /// Style for selectable rows: flat, with subtle hover and a tinted selection
     fn row_button_style(
         _theme: &iced::Theme,
         status: button::Status,
         tokens: &MaterialTokens,
         is_selected: bool,
         is_striped: bool,
-        row_index: usize,
+        _row_index: usize,
     ) -> button::Style {
+        use crate::components::ui::blend;
         let colors = &tokens.colors;
-
-        // Get the base background color using Material Design patterns
-        let base_background = if is_selected {
-            colors.secondary.container
-        } else if is_striped && row_index % 2 == 1 {
+        let surface = if is_striped {
             colors.surface_container
         } else {
-            colors.surface_container_lowest
+            colors.surface_container_low
         };
-
-        let background_color = match status {
-            button::Status::Hovered => {
-                // Create a visible hover effect using Material Design overlay technique
-                // This creates a subtle but noticeable visual feedback on hover
-                let hover_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.08, // Material Design 3 hover overlay opacity
-                };
-
-                // Blend the hover overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background
-                        .r
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.r * hover_overlay.a),
-                    g: base_background
-                        .g
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.g * hover_overlay.a),
-                    b: base_background
-                        .b
-                        .mul_add(1.0 - hover_overlay.a, hover_overlay.b * hover_overlay.a),
-                    a: base_background.a.max(hover_overlay.a),
-                }))
-            }
-            button::Status::Pressed => {
-                // Create a more visible pressed effect
-                let pressed_overlay = Color {
-                    r: colors.on_surface_variant.r,
-                    g: colors.on_surface_variant.g,
-                    b: colors.on_surface_variant.b,
-                    a: 0.12, // Material Design 3 pressed overlay opacity
-                };
-
-                // Blend the pressed overlay with the base background
-                Some(Background::Color(Color {
-                    r: base_background.r.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.r * pressed_overlay.a,
-                    ),
-                    g: base_background.g.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.g * pressed_overlay.a,
-                    ),
-                    b: base_background.b.mul_add(
-                        1.0 - pressed_overlay.a,
-                        pressed_overlay.b * pressed_overlay.a,
-                    ),
-                    a: base_background.a.max(pressed_overlay.a),
-                }))
-            }
-            _ => Some(Background::Color(base_background)),
+        let base = if is_selected {
+            blend(surface, colors.primary.base, 0.14)
+        } else {
+            surface
+        };
+        let background = match status {
+            button::Status::Hovered => blend(base, colors.on_surface, 0.05),
+            button::Status::Pressed => blend(base, colors.on_surface, 0.10),
+            _ => base,
         };
 
         button::Style {
-            background: background_color,
+            background: Some(Background::Color(background)),
             text_color: colors.on_surface,
-            border: iced::Border {
-                color: colors.outline_variant,
-                width: 0.5,
-                radius: iced::border::Radius::new(0.0),
-            },
+            border: iced::Border::default(),
             shadow: iced::Shadow::default(),
         }
     }

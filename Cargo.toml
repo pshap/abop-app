@@ -115,6 +115,12 @@ strip = true
 opt-level = 0
 debug = true
 
+# Optimize dependencies (image/audio decoding, rendering) even in dev builds;
+# unoptimized they are 10-100x slower, which makes the GUI unusable.
+# Workspace crates stay at opt-level 0 for fast incremental builds.
+[profile.dev.package."*"]
+opt-level = 2
+
 [profile.test]
 opt-level = 0
 debug = true

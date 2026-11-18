@@ -10,16 +10,16 @@
 use super::builder::components::LIGHT_TOKENS;
 use super::builder::{Switch, SwitchBuilder};
 use super::common::prelude::*;
+use crate::styling::material::MaterialColors;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use crate::styling::material::MaterialColors;
 
 use iced::{
-    theme::Theme,
-    widget::Checkbox as IcedCheckbox, // Temporary: Phase 4 will implement custom widget
     Element,
     Renderer,
+    theme::Theme,
+    widget::Checkbox as IcedCheckbox, // Temporary: Phase 4 will implement custom widget
 };
 
 // ============================================================================

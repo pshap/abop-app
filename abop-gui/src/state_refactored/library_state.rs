@@ -257,6 +257,21 @@ impl LibraryState {
         matches!(self.scanner_state, ScannerState::Scanning)
     }
 
+    /// Whether the last scan finished (successfully or not)
+    #[must_use]
+    pub fn has_scanned(&self) -> bool {
+        matches!(
+            self.scanner_state,
+            ScannerState::Complete | ScannerState::Error
+        )
+    }
+
+    /// Whether the last scan failed
+    #[must_use]
+    pub fn scan_failed(&self) -> bool {
+        matches!(self.scanner_state, ScannerState::Error)
+    }
+
     /// Get current scan progress as legacy f32 (modern API with legacy compatibility)
     #[must_use]
     pub fn get_scan_progress_legacy(&self) -> Option<f32> {

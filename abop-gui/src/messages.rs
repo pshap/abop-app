@@ -26,6 +26,8 @@ pub enum Message {
     // ===== Settings =====
     /// Show the settings dialog
     ShowSettings,
+    /// Escape key: closes the open dialog, or stops playback when none is open
+    Escape,
     /// Close the settings dialog
     CloseSettings,
     /// Toggle between light and dark theme

@@ -2,8 +2,10 @@
 //!
 //! Provides a modal dialog for renaming an audiobook file and its database record.
 
-use iced::widget::{column, container, row, text, text_input};
-use iced::{Alignment, Element, Length};
+use iced::widget::{Space, column, container, row, text, text_input};
+use iced::{Alignment, Background, Border, Color, Element, Length, Padding};
+
+use crate::components::ui::{self, ButtonKind};
 
 use crate::messages::Message;
 use crate::styling::material::MaterialTokens;
@@ -22,57 +24,72 @@ pub fn view<'a>(
 ) -> Element<'a, Message> {
     // Dialog header
     let header = text("Rename Audiobook")
-        .size(material_tokens.typography().headline_small.size)
+        .size(material_tokens.typography().title_large.size)
         .width(Length::Fill);
 
+    let trimmed = current_input.trim();
+    let commit = (!trimmed.is_empty())
+        .then(|| Message::CommitRename(audiobook_id.clone(), trimmed.to_string()));
+
     // Input field for the new name
+    let muted = material_tokens.colors.on_surface_variant;
     let input = text_input("New filename", current_input)
         .on_input(Message::RenameInputChanged)
-        .on_submit(Message::CommitRename(
-            audiobook_id.clone(),
-            current_input.to_string(),
-        ))
-        .padding(material_tokens.spacing().sm)
-        .size(material_tokens.typography().body_large.size);
+        .on_submit_maybe(commit.clone())
+        .padding(Padding::from([10.0, 12.0]))
+        .size(material_tokens.typography().body_large.size)
+        .style(move |_theme, status| {
+            let focused = matches!(status, text_input::Status::Focused);
+            text_input::Style {
+                background: Background::Color(material_tokens.colors.surface_container_highest),
+                border: Border {
+                    color: if focused {
+                        material_tokens.colors.primary.base
+                    } else {
+                        Color::TRANSPARENT
+                    },
+                    width: 2.0,
+                    radius: 8.0.into(),
+                },
+                icon: muted,
+                placeholder: muted,
+                value: material_tokens.colors.on_surface,
+                selection: Color {
+                    a: 0.35,
+                    ..material_tokens.colors.primary.base
+                },
+            }
+        });
 
-    // Action buttons
-    let cancel_button = iced::widget::button(
-        text("Cancel")
-            .size(material_tokens.typography().label_large.size)
-            .align_x(Alignment::Center),
-    )
-    .on_press(Message::CancelRename)
-    .padding(material_tokens.spacing().sm);
-
-    let rename_button = iced::widget::button(
-        text("Rename")
-            .size(material_tokens.typography().label_large.size)
-            .align_x(Alignment::Center),
-    )
-    .on_press(Message::CommitRename(
-        audiobook_id,
-        current_input.to_string(),
-    ))
-    .padding(material_tokens.spacing().sm);
-
-    let actions = row![cancel_button, rename_button]
-        .spacing(material_tokens.spacing().md)
-        .align_y(Alignment::Center);
+    let actions = row![
+        Space::with_width(Length::Fill),
+        ui::action_button(
+            material_tokens,
+            ButtonKind::Ghost,
+            None,
+            "Cancel",
+            Some(Message::CancelRename),
+        ),
+        ui::action_button(material_tokens, ButtonKind::Primary, None, "Rename", commit),
+    ]
+    .spacing(8)
+    .align_y(Alignment::Center);
 
     // Assemble the dialog content
     let content = column![
         header,
-        text("Enter a new name for the audiobook file:")
-            .size(material_tokens.typography().body_medium.size),
+        text("Enter a new name for the audiobook file.")
+            .size(material_tokens.typography().body_medium.size)
+            .color(muted),
         input,
         actions
     ]
-    .spacing(material_tokens.spacing().md)
-    .padding(material_tokens.spacing().lg);
+    .spacing(16)
+    .padding(24);
 
     // Wrap in a container for the modal look
     container(content)
-        .width(Length::Fixed(400.0))
+        .width(Length::Fixed(440.0))
         .style(move |_theme| container::Style {
             background: Some(material_tokens.colors().surface_container_high.into()),
             border: iced::Border {

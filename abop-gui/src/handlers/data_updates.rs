@@ -64,9 +64,10 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                     // Update state with scan results
                     state.library.set_audiobooks(scan_result.audiobooks);
                     crate::utils::sort_audiobooks(state);
+                    let preload = preload_cover_art(state);
                     // scan_progress is cleared automatically by complete_scanning()
                     state.library.complete_scanning();
-                    Some(Task::none())
+                    Some(preload)
                 }
                 Err(_e) => {
                     state.library.error_scanning();
@@ -142,7 +143,7 @@ pub fn handle_core_operation(state: &mut AppState, message: Message) -> Task<Mes
             state.library.complete_scanning();
             // Clear progress cache
             state.progress_cache.clear_scan_cache();
-            Task::none()
+            preload_cover_art(state)
         }
         Message::ScanComplete(Err(e)) => {
             log::error!("Scan failed: {e}");
@@ -164,4 +165,39 @@ pub fn handle_core_operation(state: &mut AppState, message: Message) -> Task<Mes
         }
         _ => Task::none(),
     }
+}
+
+/// Decode cover thumbnails on a background thread so the table never blocks on it
+///
+/// The view shows placeholders until this finishes; the returned message triggers a redraw.
+fn preload_cover_art(state: &AppState) -> Task<Message> {
+    let covers: Vec<(String, Vec<u8>)> = state
+        .library
+        .audiobooks
+        .iter()
+        .filter_map(|book| Some((book.id.clone(), book.cover_art.clone()?)))
+        .collect();
+    if covers.is_empty() {
+        return Task::none();
+    }
+
+    let cache = Arc::clone(&state.library.image_cache);
+    Task::perform(
+        async move {
+            tokio::task::spawn_blocking(move || {
+                cache.preload(
+                    covers
+                        .iter()
+                        .map(|(id, data)| (id.as_str(), data.as_slice())),
+                    crate::components::cover_art::TABLE_THUMBNAIL_SIZE,
+                )
+            })
+            .await
+            .unwrap_or_default()
+        },
+        |decoded| {
+            log::debug!("Preloaded {decoded} cover thumbnails");
+            Message::NoOp
+        },
+    )
 }

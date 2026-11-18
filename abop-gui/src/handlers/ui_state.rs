@@ -92,7 +92,8 @@ fn handle_show_recent_directories(state: &mut AppState) -> Option<Task<Message>>
 }
 
 fn handle_set_theme(state: &mut AppState, theme_mode: ThemeMode) -> Option<Task<Message>> {
-    state.ui.theme_mode = theme_mode;
+    // Regenerates the design tokens too; assigning theme_mode alone left colors unchanged
+    state.ui.set_theme_mode(theme_mode);
     Some(Task::none())
 }
 
@@ -324,12 +325,13 @@ fn handle_sort_by(state: &mut AppState, column_id: String) -> Option<Task<Messag
 }
 
 fn handle_toggle_theme(state: &mut AppState) -> Option<Task<Message>> {
-    state.ui.theme_mode = match state.ui.theme_mode {
+    let next = match state.ui.theme_mode {
         ThemeMode::Light => ThemeMode::Dark,
         ThemeMode::Dark => ThemeMode::Light,
         // For other modes, default to Light
         _ => ThemeMode::Light,
     };
+    state.ui.set_theme_mode(next);
     log::info!("Theme toggled to: {:?}", state.ui.theme_mode);
     Some(Task::none())
 }

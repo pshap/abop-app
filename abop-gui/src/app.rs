@@ -10,13 +10,7 @@ use log::{error, info};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-use crate::{
-    handlers,
-    messages::Message,
-    router::{self, Route},
-    state::AppState,
-    views,
-};
+use crate::{handlers, messages::Message, router, state::AppState, views};
 use abop_core::services::ServiceContainer;
 
 /// Messages for task management
@@ -174,9 +168,19 @@ impl App {
             Message::Navigate(route) => self.router.navigate_to(route),
             Message::NavigateBack => self.router.navigate_back(),
 
-            // Settings messages
-            Message::ShowSettings => self.router.navigate_to(Route::Settings),
-            Message::CloseSettings => self.router.navigate_back(),
+            // Settings open as a modal dialog; handled by the UI state handlers below
+
+            // Escape dismisses the topmost dialog, otherwise stops playback
+            Message::Escape => {
+                let next = if self.state.ui.renaming_id.is_some() {
+                    Message::CancelRename
+                } else if self.state.ui.settings_open {
+                    Message::CloseSettings
+                } else {
+                    Message::Stop
+                };
+                self.update(next)
+            }
 
             // Handle command execution
             Message::ExecuteCommand(command) => {
@@ -247,6 +251,10 @@ impl App {
                 };
             }
 
+            if matches!(key.as_ref(), Key::Named(keyboard::key::Named::Escape)) {
+                return Some(Message::Escape);
+            }
+
             // Playback shortcuts must not steal keys from focused widgets (e.g. search input)
             if status == iced::event::Status::Captured {
                 return None;
@@ -255,7 +263,6 @@ impl App {
                 Key::Named(keyboard::key::Named::Space) => Some(Message::PlayPause),
                 Key::Named(keyboard::key::Named::ArrowRight) => Some(Message::Next),
                 Key::Named(keyboard::key::Named::ArrowLeft) => Some(Message::Previous),
-                Key::Named(keyboard::key::Named::Escape) => Some(Message::Stop),
                 _ => None,
             }
         })

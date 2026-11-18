@@ -6,8 +6,8 @@ use std::collections::HashSet;
 
 use crate::styling::MaterialTokens;
 
-use abop_core::models::Audiobook;
 use abop_core::PlayerState;
+use abop_core::models::Audiobook;
 
 use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;

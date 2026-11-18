@@ -3,8 +3,8 @@
 //! This module contains various utility functions and safe conversion
 //! utilities used throughout the GUI components.
 
-use abop_core::models::Audiobook;
 use crate::state::AppState;
+use abop_core::models::Audiobook;
 use std::path::Path;
 
 pub mod image_cache;
@@ -60,7 +60,11 @@ pub fn sort_audiobooks(state: &mut AppState) {
     let ascending = state.library.table_state.sort_ascending;
     let compare = |a: &Audiobook, b: &Audiobook| {
         let ordering = compare_audiobooks(a, b, &column);
-        if ascending { ordering } else { ordering.reverse() }
+        if ascending {
+            ordering
+        } else {
+            ordering.reverse()
+        }
     };
 
     state.library.audiobooks.sort_by(compare);
@@ -70,7 +74,9 @@ pub fn sort_audiobooks(state: &mut AppState) {
 
 /// Case-insensitive comparison of text fields used for sorting
 fn compare_text(a: &str, b: &str) -> std::cmp::Ordering {
-    a.to_lowercase().cmp(&b.to_lowercase()).then_with(|| a.cmp(b))
+    a.to_lowercase()
+        .cmp(&b.to_lowercase())
+        .then_with(|| a.cmp(b))
 }
 
 /// Compares two audiobooks by the given table column
@@ -116,11 +122,20 @@ mod sort_tests {
         state.library.filtered_audiobooks = vec![book("mango"), book("Apple")];
 
         sort_audiobooks(&mut state);
-        assert_eq!(titles(&state.library.audiobooks), ["Apple", "mango", "zebra"]);
-        assert_eq!(titles(&state.library.filtered_audiobooks), ["Apple", "mango"]);
+        assert_eq!(
+            titles(&state.library.audiobooks),
+            ["Apple", "mango", "zebra"]
+        );
+        assert_eq!(
+            titles(&state.library.filtered_audiobooks),
+            ["Apple", "mango"]
+        );
 
         state.library.table_state.sort_ascending = false;
         sort_audiobooks(&mut state);
-        assert_eq!(titles(&state.library.audiobooks), ["zebra", "mango", "Apple"]);
+        assert_eq!(
+            titles(&state.library.audiobooks),
+            ["zebra", "mango", "Apple"]
+        );
     }
 }
