@@ -145,7 +145,7 @@ abop/
 - Use safe conversion utilities in:
   - `abop-core/src/audio/processing/casting_utils.rs`
   - `abop-core/src/db/helpers.rs` (safe conversions)
-  - `abop-gui/src/utils/safe_conversions.rs`
+  - `abop-core/src/utils/casting/` (shared casting and formatting helpers)
 - All conversions must handle potential overflow/truncation
 - Use `TryFrom`/`TryInto` traits for fallible conversions
 - Property-based tests are required for new conversion utilities
@@ -169,34 +169,16 @@ abop/
 - ✅ Comprehensive documentation (`docs/TESTING_PATTERNS.md`)
 - ✅ Library repository migration: 700 → 422 lines (40% reduction, all tests passing)
 
-**Phase 2: Critical Test Refactoring** 🔄 IN PROGRESS
-- ✅ Library repository tests migrated and working
-- 🔲 **NEXT: Audiobook repository tests** (`abop-core/src/db/repositories/audiobook/tests.rs`)
-  - Current: 684 lines with massive duplication and broken infrastructure
-  - Status: Failing with "no such table: libraries" errors (no migrations)
-  - Action: Migrate to use `TestDatabase::new()` and centralized utilities
-- 🔲 **NEXT: Progress repository tests** (`abop-core/src/db/repositories/progress/tests.rs`)
-  - Current: 504 lines with duplication and broken infrastructure  
-  - Status: Failing with "no such table: libraries" errors (no migrations)
-  - Action: Migrate to use `TestDatabase::new()` and centralized utilities
-- 🔲 **NEXT: GUI component tests** (`abop-gui/src/components/tests.rs`)
-  - Current: 783 lines with extensive code duplication
-  - Status: Mostly working but using legacy helper functions
-  - Action: Migrate to use new component test utilities
+**Phase 2: Critical Test Refactoring** ✅ COMPLETE
+- ✅ Library, audiobook and progress repository tests use `TestDatabase` (modular `tests/` dirs)
+- 🔲 GUI component tests (`abop-gui/src/components/tests/`) still use some legacy helpers
 
-**Phase 3: Architecture & Safety** 🔲 PENDING
-- 🔲 Split database module (`abop-core/src/db/mod.rs` - 634 lines into focused modules)
-- 🔲 Replace critical `unwrap()` calls (200+ occurrences, focus on database/core operations)
-- 🔲 Complete Material Design 3 implementation (HCT color model, dynamic theming)
-
-**Expected Outcomes After Phase 2:**
-- **75%+ reduction** in test code duplication across all repository tests
-- **Consistent test infrastructure** across database and GUI components  
-- **Faster development velocity** for new features and tests
-- **Improved reliability** with proper database migrations in all tests
-- **Better onboarding** for new developers with standardized patterns
-
-**Critical Note:** The failing audiobook/progress tests demonstrate exactly why this migration is essential - they're using broken test infrastructure without proper database setup.
+**Phase 3: Architecture & Safety** 🔄 IN PROGRESS
+- ✅ Split database module (`abop-core/src/db/mod.rs` is now a thin re-export module)
+- 🔲 Replace critical `unwrap()` calls in non-test code (database/core operations first)
+- 🔲 Disabled, uncompiled modules awaiting a decision: `abop-gui/src/styling/plugins`,
+  `styling/material/enhanced_tokens`, `styling/material/components/containers`
+- 🔲 `Route::Player` / `Route::About` views exist but nothing navigates to them
 
 ### Code Style
 - Follow Rust 2024 edition conventions
@@ -210,6 +192,29 @@ abop/
 - Each crate has specific feature flags when needed
 - Internal dependencies: `abop-gui` and `abop-cli` depend on `abop-core`
 - Development dependencies include `criterion`, `approx`, `tempfile`
+
+## Running & Verifying the GUI
+
+- `cargo run -p abop-gui [FOLDER]` opens and scans `FOLDER`; with no argument the last
+  library is reloaded from the database (no rescan)
+- Preferences (theme, recent folders, scan settings) live in `<config dir>/abop-iced/gui.toml`;
+  the database is `<data dir>/abop-iced/database.db`. Set `XDG_CONFIG_HOME`/`XDG_DATA_HOME`
+  to keep test runs away from real user data
+- Shortcuts: Ctrl+O open folder, Ctrl+F search, Ctrl+, settings, Ctrl+Q quit, Space play/pause,
+  ←/→ previous/next, Esc closes dialogs (stops playback when none is open)
+- Headless screenshots: start `Xvfb :99`, run the app with `DISPLAY=:99` and
+  `WAYLAND_DISPLAY` unset, then capture with ImageMagick `import -window root shot.png`
+- Hardware audio tests are `#[ignore]`d: `cargo test -p abop-core -- --ignored`
+
+### Audio decoding notes
+- M4B/M4A need symphonia's `aac` + `isomp4` features (enabled in the workspace `Cargo.toml`)
+- Playback goes through `abop-core/src/audio/playback_source.rs` (our Symphonia decoder as a
+  rodio `Source`), because rodio 0.20's own decoder fails on MP4s whose index is at the end
+- `ThreadSafeAudioPlayer` owns rodio on a dedicated thread (rodio streams are not `Send`)
+- Long-file processing must stream (`audio/processing/streaming.rs`); `file_io.rs` loads whole
+  WAV files into memory and is only suitable for short clips
+- Dev builds compile dependencies at `opt-level = 2`; unoptimized image/audio decoding is too
+  slow to use
 
 ## Common Development Tasks
 
