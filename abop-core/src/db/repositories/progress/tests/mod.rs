@@ -9,7 +9,9 @@ use crate::db::repositories::AudiobookRepository;
 use crate::test_utils::{TestDataFactory, TestDatabase};
 
 /// Create a test progress repository with necessary dependencies
-pub(super) fn create_test_repo_with_deps(audiobook_ids: &[&str]) -> (ProgressRepository, TestDatabase) {
+pub(super) fn create_test_repo_with_deps(
+    audiobook_ids: &[&str],
+) -> (ProgressRepository, TestDatabase) {
     let test_db = TestDatabase::new();
 
     // Create repositories

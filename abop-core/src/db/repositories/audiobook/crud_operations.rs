@@ -7,8 +7,8 @@ use super::validation_operations::*;
 use crate::db::error::DbResult;
 use crate::db::repositories::{EnhancedRepository, Repository, RepositoryBase};
 use crate::db::{
-    datetime_serde::{datetime_to_sql, SqliteDateTime},
     EnhancedConnection,
+    datetime_serde::{SqliteDateTime, datetime_to_sql},
 };
 use crate::error::{AppError, Result};
 use crate::models::Audiobook;
