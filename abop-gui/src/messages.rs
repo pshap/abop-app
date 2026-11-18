@@ -28,6 +28,8 @@ pub enum Message {
     ShowSettings,
     /// Escape key: closes the open dialog, or stops playback when none is open
     Escape,
+    /// Move keyboard focus to the search field
+    FocusSearch,
     /// Dismiss the notice shown in the status bar
     DismissNotice,
     /// Periodic check of the audio player while playing (detects end of playback)

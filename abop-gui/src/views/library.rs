@@ -9,6 +9,12 @@ use crate::messages::{Command, Message};
 use crate::state::AppState;
 use crate::styling::material::MaterialTokens;
 
+/// Widget id of the search field, used to focus it with Ctrl+F
+#[must_use]
+pub fn search_input_id() -> text_input::Id {
+    text_input::Id::new("library-search")
+}
+
 /// Creates the library view
 #[must_use]
 pub fn library_view(state: &AppState) -> Element<'_, Message> {
@@ -56,6 +62,7 @@ fn search_row(state: &AppState) -> Element<'_, Message> {
     let muted = tokens.colors.on_surface_variant;
 
     let input = text_input("Search by title, author or narrator", &library.search_query)
+        .id(search_input_id())
         .on_input(Message::SearchQuery)
         .size(tokens.typography().body_large.size)
         .padding(Padding::from([8.0, 4.0]))

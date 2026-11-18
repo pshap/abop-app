@@ -241,6 +241,10 @@ impl App {
                 crate::commands::handle_command(&mut self.state, command)
             }
 
+            Message::FocusSearch => {
+                iced::widget::text_input::focus(crate::views::library::search_input_id())
+            }
+
             // No operation
             Message::NoOp => Task::none(),
 
@@ -319,6 +323,7 @@ impl App {
                         Some(Message::command(crate::messages::Command::BrowseDirectory))
                     }
                     Key::Character(",") => Some(Message::ShowSettings),
+                    Key::Character("f") => Some(Message::FocusSearch),
                     _ => None,
                 };
             }

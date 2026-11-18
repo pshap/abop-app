@@ -68,6 +68,29 @@ fn load_config_with_fallback() -> Result<Config, InitError> {
     Config::load().map_err(InitError::Config)
 }
 
+/// Window size settings from the configuration, with sane fallbacks
+fn window_settings(window: &abop_core::config::WindowConfig) -> iced::window::Settings {
+    let dimension = |value: u32, fallback: f32| {
+        u16::try_from(value)
+            .ok()
+            .filter(|v| *v > 0)
+            .map_or(fallback, f32::from)
+    };
+    let min_size = iced::Size::new(
+        dimension(window.min_width, 800.0),
+        dimension(window.min_height, 600.0),
+    );
+    let size = iced::Size::new(
+        dimension(window.initial_width, 1200.0).max(min_size.width),
+        dimension(window.initial_height, 800.0).max(min_size.height),
+    );
+    iced::window::Settings {
+        size,
+        min_size: Some(min_size),
+        ..iced::window::Settings::default()
+    }
+}
+
 fn main() -> iced::Result {
     // Initialize logging - panic on failure since this is critical
     init_logging().expect("Failed to initialize logging");
@@ -101,10 +124,7 @@ fn main() -> iced::Result {
     iced::application(App::title, App::update, App::view)
         .theme(App::theme)
         .subscription(App::subscription)
-        .window_size(iced::Size::new(
-            config.window.initial_width as f32,
-            config.window.initial_height as f32,
-        ))
+        .window(window_settings(&config.window))
         .scale_factor(move |_| scale_factor)
         .run_with(move || App::with_library(initial_library))
         .map_err(|e| {
