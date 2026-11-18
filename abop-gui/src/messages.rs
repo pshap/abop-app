@@ -72,6 +72,8 @@ pub enum Message {
     RenameInputChanged(String),
     /// Commit a rename operation
     CommitRename(String, String),
+    /// Result of a rename: the updated audiobook, or an error message
+    RenameFinished(Result<abop_core::models::Audiobook, String>),
     /// Cancel a rename operation
     CancelRename,
     /// Deselect all audiobooks

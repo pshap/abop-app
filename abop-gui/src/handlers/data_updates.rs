@@ -80,6 +80,10 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
             Some(Task::none())
         }
         Message::CommitRename(id, new_name) => handle_commit_rename(state, id, new_name),
+        Message::RenameFinished(result) => {
+            apply_rename_result(state, result);
+            Some(Task::none())
+        }
         _ => None,
     }
 }
@@ -113,19 +117,49 @@ fn handle_commit_rename(
             .map_err(|e| e.to_string())?
             .map_err(|e| e.to_string())
         },
-        |result| match result {
-            Ok(updated) => {
-                log::info!("Rename successful: {}", updated.path.display());
-                // We could send a message to update local state,
-                // but for now let's just trigger a re-scan or partial update
-                Message::NoOp // Or Message::RenameSuccess(updated)
-            }
-            Err(e) => {
-                log::error!("Rename failed: {e}");
-                Message::NoOp
-            }
-        },
+        Message::RenameFinished,
     ))
+}
+
+/// Update the library with a renamed audiobook, or report why the rename failed
+fn apply_rename_result(state: &mut AppState, result: Result<abop_core::models::Audiobook, String>) {
+    let updated = match result {
+        Ok(updated) => updated,
+        Err(error) => {
+            state.ui.notify_error(format!("Rename failed: {error}"));
+            return;
+        }
+    };
+    log::info!("Renamed audiobook to {}", updated.path.display());
+
+    let Some(existing) = state
+        .library
+        .audiobooks
+        .iter_mut()
+        .find(|b| b.id == updated.id)
+    else {
+        return;
+    };
+    let old_path = std::mem::replace(&mut existing.path, updated.path.clone());
+    existing.updated_at = updated.updated_at;
+    if let Some(book) = state
+        .library
+        .filtered_audiobooks
+        .iter_mut()
+        .find(|b| b.id == updated.id)
+    {
+        book.path = updated.path.clone();
+    }
+    if state.player.current_playing_file.as_ref() == Some(&old_path) {
+        state.player.current_playing_file = Some(updated.path.clone());
+    }
+
+    let file_name = updated
+        .path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    state.ui.notify_info(format!("Renamed to “{file_name}”"));
 }
 
 /// Handles core operation messages that require async operations
@@ -200,4 +234,54 @@ fn preload_cover_art(state: &AppState) -> Task<Message> {
             Message::NoOp
         },
     )
+}
+
+#[cfg(test)]
+mod rename_tests {
+    use super::*;
+    use abop_core::models::Audiobook;
+
+    fn state_with_book() -> AppState {
+        let mut state = AppState::default();
+        let mut book = Audiobook::new("lib", "/books/Old.mp3");
+        book.id = "b1".into();
+        state.library.audiobooks.push(book);
+        state
+    }
+
+    #[test]
+    fn successful_rename_updates_paths_everywhere() {
+        let mut state = state_with_book();
+        state.player.current_playing_file = Some("/books/Old.mp3".into());
+        let mut renamed = state.library.audiobooks[0].clone();
+        renamed.path = "/books/New.mp3".into();
+
+        apply_rename_result(&mut state, Ok(renamed));
+
+        assert_eq!(
+            state.library.audiobooks[0].path,
+            std::path::Path::new("/books/New.mp3")
+        );
+        assert_eq!(
+            state.player.current_playing_file.as_deref(),
+            Some(std::path::Path::new("/books/New.mp3"))
+        );
+        assert_eq!(
+            state.ui.notice.as_ref().map(|n| n.kind),
+            Some(crate::state::NoticeKind::Info)
+        );
+    }
+
+    #[test]
+    fn failed_rename_reports_error_and_keeps_path() {
+        let mut state = state_with_book();
+        apply_rename_result(&mut state, Err("Destination already exists".into()));
+        assert_eq!(
+            state.library.audiobooks[0].path,
+            std::path::Path::new("/books/Old.mp3")
+        );
+        let notice = state.ui.notice.expect("error should be shown");
+        assert_eq!(notice.kind, crate::state::NoticeKind::Error);
+        assert!(notice.message.contains("Destination already exists"));
+    }
 }

@@ -35,6 +35,7 @@ impl RenamingService {
     #[instrument(skip(self, audiobook))]
     pub fn rename_audiobook(&self, audiobook: &Audiobook, new_name: &str) -> Result<Audiobook> {
         let old_path = &audiobook.path;
+        let new_name = validate_file_name(new_name)?;
 
         // Ensure the old path exists
         if !old_path.exists() {
@@ -56,6 +57,10 @@ impl RenamingService {
 
         new_path.push(filename_with_ext);
 
+        if new_path == *old_path {
+            return Ok(audiobook.clone());
+        }
+
         // Don't overwrite existing files
         if new_path.exists() {
             return Err(AppError::Other(format!(
@@ -73,15 +78,128 @@ impl RenamingService {
         // Perform disk operation
         fs::rename(old_path, &new_path)?;
 
-        // Update database
+        // Update database; the title comes from the file's tags and is left unchanged
         let mut updated_audiobook = audiobook.clone();
         updated_audiobook.path = new_path;
-        // Also update the title to the new name if it was set
-        updated_audiobook.title = Some(new_name.to_string());
         updated_audiobook.updated_at = chrono::Utc::now();
 
-        self.audiobook_repo.upsert(&updated_audiobook)?;
+        if let Err(db_error) = self.audiobook_repo.upsert(&updated_audiobook) {
+            // Keep disk and database consistent: undo the rename
+            if let Err(undo_error) = fs::rename(&updated_audiobook.path, old_path) {
+                tracing::error!(
+                    "Failed to restore {} after database error: {undo_error}",
+                    old_path.display()
+                );
+            }
+            return Err(db_error.into());
+        }
 
         Ok(updated_audiobook)
+    }
+}
+
+/// Validate a user-supplied file name (without extension)
+///
+/// Rejects names that are empty, contain path separators or would refer to a
+/// different directory, so a rename can never move a file elsewhere.
+fn validate_file_name(name: &str) -> Result<&str> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(AppError::InvalidData(
+            "File name cannot be empty".to_string(),
+        ));
+    }
+    if name == "." || name == ".." {
+        return Err(AppError::InvalidData(format!("Invalid file name: {name}")));
+    }
+    if let Some(bad) = name
+        .chars()
+        .find(|c| matches!(c, '/' | '\\' | '\0') || c.is_control())
+    {
+        return Err(AppError::InvalidData(format!(
+            "File name cannot contain {bad:?}"
+        )));
+    }
+    Ok(name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{TestDataFactory, TestDatabase};
+
+    struct Fixture {
+        _db: TestDatabase,
+        dir: tempfile::TempDir,
+        service: RenamingService,
+        book: Audiobook,
+    }
+
+    fn fixture() -> Fixture {
+        let db = TestDatabase::new();
+        db.insert_test_library("lib", "Library", "/library");
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("Original Name.mp3");
+        fs::write(&path, b"audio").unwrap();
+        let book =
+            TestDataFactory::audiobook_with_path("book", "lib", &path, "Tag Title", "Author");
+        let repo = Arc::new(AudiobookRepository::new(db.connection.clone()));
+        repo.upsert(&book).unwrap();
+        Fixture {
+            _db: db,
+            dir,
+            service: RenamingService::new(repo),
+            book,
+        }
+    }
+
+    #[test]
+    fn renames_file_keeps_extension_and_title() {
+        let f = fixture();
+        let updated = f.service.rename_audiobook(&f.book, "  New Name  ").unwrap();
+        assert_eq!(updated.path, f.dir.path().join("New Name.mp3"));
+        assert!(updated.path.exists());
+        assert!(!f.book.path.exists());
+        assert_eq!(updated.title.as_deref(), Some("Tag Title"));
+    }
+
+    #[test]
+    fn rejects_names_that_escape_the_directory() {
+        let f = fixture();
+        for name in [
+            "",
+            "   ",
+            "..",
+            "../escaped",
+            "sub/dir",
+            "back\\slash",
+            "nul\0byte",
+        ] {
+            assert!(
+                f.service.rename_audiobook(&f.book, name).is_err(),
+                "{name:?} should be rejected"
+            );
+        }
+        assert!(f.book.path.exists(), "original file must be untouched");
+    }
+
+    #[test]
+    fn refuses_to_overwrite_existing_files() {
+        let f = fixture();
+        fs::write(f.dir.path().join("Taken.mp3"), b"other").unwrap();
+        assert!(f.service.rename_audiobook(&f.book, "Taken").is_err());
+        assert!(f.book.path.exists());
+        assert_eq!(fs::read(f.dir.path().join("Taken.mp3")).unwrap(), b"other");
+    }
+
+    #[test]
+    fn renaming_to_same_name_is_a_no_op() {
+        let f = fixture();
+        let updated = f
+            .service
+            .rename_audiobook(&f.book, "Original Name")
+            .unwrap();
+        assert_eq!(updated.path, f.book.path);
+        assert!(f.book.path.exists());
     }
 }
