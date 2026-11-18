@@ -16,6 +16,9 @@ use symphonia::core::{
 use super::{AudioBuffer, AudioStream, SampleFormat};
 use crate::error::{AppError, Result};
 
+/// Corrupt packets skipped in a row before decoding gives up
+const MAX_CONSECUTIVE_DECODE_ERRORS: usize = 16;
+
 /// Audio decoder for various audio formats
 pub struct AudioDecoder {
     /// The format reader for the audio file
@@ -139,19 +142,33 @@ impl AudioDecoder {
         // Clear the sample buffer
         self.sample_buffer.clear();
 
-        // Read the next packet from the format reader
-        let packet = match self.format.next_packet() {
-            Ok(packet) => packet,
-            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-                return Ok(None);
+        // Read packets until one from our track decodes. Containers such as M4B
+        // interleave other tracks (chapter titles, cover art) that must be
+        // skipped, and an occasional corrupt packet shouldn't end the stream.
+        let mut decode_errors = 0;
+        let decoded = loop {
+            let packet = match self.format.next_packet() {
+                Ok(packet) => packet,
+                Err(SymphoniaError::IoError(e))
+                    if e.kind() == std::io::ErrorKind::UnexpectedEof =>
+                {
+                    return Ok(None);
+                }
+                Err(e) => return Err(AppError::Audio(format!("Failed to read packet: {e}"))),
+            };
+            if packet.track_id() != self.track.id {
+                continue;
             }
-            Err(e) => return Err(AppError::Audio(format!("Failed to read packet: {e}"))),
-        };
-
-        // Decode the packet
-        let decoded = match self.decoder.decode(&packet) {
-            Ok(decoded) => decoded,
-            Err(e) => return Err(AppError::Audio(format!("Failed to decode packet: {e}"))),
+            match self.decoder.decode(&packet) {
+                Ok(decoded) => break decoded,
+                Err(SymphoniaError::DecodeError(e))
+                    if decode_errors < MAX_CONSECUTIVE_DECODE_ERRORS =>
+                {
+                    decode_errors += 1;
+                    log::debug!("Skipping undecodable packet: {e}");
+                }
+                Err(e) => return Err(AppError::Audio(format!("Failed to decode packet: {e}"))),
+            }
         };
 
         // Get the audio specification
