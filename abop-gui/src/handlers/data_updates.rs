@@ -5,7 +5,6 @@
 use crate::commands::library::scan_directory_async;
 use crate::messages::Message;
 use crate::state::AppState;
-use abop_core::db::Database;
 use abop_core::services::RenamingService;
 use iced::Task;
 use std::sync::Arc;
@@ -122,7 +121,7 @@ fn handle_commit_rename(
     Some(Task::perform(
         async move {
             tokio::task::spawn_blocking(move || {
-                let db = Database::open_app_database()?;
+                let db = crate::database::app_database()?;
                 let repo = Arc::new(db.audiobook_repository());
                 let service = RenamingService::new(repo);
 

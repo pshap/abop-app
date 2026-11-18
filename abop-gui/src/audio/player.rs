@@ -23,48 +23,6 @@ pub fn get_audio_player() -> &'static ThreadSafeAudioPlayer {
     AUDIO_PLAYER.get_or_init(init_audio_player)
 }
 
-/// Play selected audio files
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - No audiobooks are selected for playback
-/// - Selected audiobook is not found
-/// - Audio file path is invalid or missing
-/// - Audio playback initialization fails
-pub async fn play_selected_audio(
-    selected_ids: Vec<String>,
-    audiobooks: Vec<abop_core::models::Audiobook>,
-) -> Result<String, String> {
-    if selected_ids.is_empty() {
-        return Err("No audiobooks selected for playback".to_string());
-    }
-
-    // Find the first selected audiobook
-    let audiobook = audiobooks
-        .iter()
-        .find(|ab| selected_ids.contains(&ab.id))
-        .ok_or_else(|| "Selected audiobook not found".to_string())?;
-
-    // Validate the file exists before trying to play
-    if !std::path::Path::new(&audiobook.path).exists() {
-        return Err(format!(
-            "Audio file not found: {}",
-            audiobook.path.display()
-        ));
-    }
-
-    // Play the audio file using the global player
-    let player = get_audio_player();
-    match player.play(&audiobook.path) {
-        Ok(()) => {
-            let title = audiobook.title.as_deref().unwrap_or("Unknown");
-            Ok(format!("Started playing: {title}"))
-        }
-        Err(e) => Err(format!("Failed to play audio: {e}")),
-    }
-}
-
 /// Stop audio playback
 pub fn stop_audio() {
     let player = get_audio_player();
@@ -130,7 +88,7 @@ pub async fn play_audiobook(audiobook: abop_core::models::Audiobook) -> Result<S
         ));
     }
     tokio::task::spawn_blocking(move || {
-        let saved = abop_core::db::Database::open_app_database()
+        let saved = crate::database::app_database()
             .and_then(|db| Ok(db.progress_repository().find_by_audiobook(&audiobook.id)?))
             .unwrap_or_else(|e| {
                 log::warn!("Could not load saved progress: {e}");
@@ -181,7 +139,7 @@ pub async fn save_progress(
     completed: bool,
 ) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        let db = abop_core::db::Database::open_app_database().map_err(|e| e.to_string())?;
+        let db = crate::database::app_database().map_err(|e| e.to_string())?;
         let repository = db.progress_repository();
         let mut progress = repository
             .find_by_audiobook(&audiobook_id)
@@ -207,7 +165,7 @@ pub async fn save_progress(
 pub async fn load_all_progress()
 -> Result<std::collections::HashMap<String, crate::state::ListeningProgress>, String> {
     tokio::task::spawn_blocking(|| {
-        let db = abop_core::db::Database::open_app_database().map_err(|e| e.to_string())?;
+        let db = crate::database::app_database().map_err(|e| e.to_string())?;
         let all = db
             .progress_repository()
             .find_all()

@@ -30,6 +30,9 @@ pub mod handlers;
 /// Application state management
 pub mod state;
 
+/// Shared application database handle
+pub mod database;
+
 // Update logic is handled within `app` and `handlers`; legacy `update` module removed.
 
 // View modules

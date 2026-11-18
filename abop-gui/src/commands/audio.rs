@@ -1,7 +1,7 @@
 //! Audio command handlers for asynchronous audio operations
 
 use crate::audio::processing::{ProcessingEvent, convert_to_mono};
-use crate::audio::{play_selected_audio, stop_audio};
+use crate::audio::stop_audio;
 use crate::messages::{Command as GuiCommand, Message};
 use crate::state::AppState;
 use iced::Task;
@@ -33,19 +33,6 @@ pub fn handle_audio_command(state: &mut AppState, command: GuiCommand) -> Option
                 }
                 ProcessingEvent::Finished(result) => Message::AudioProcessingComplete(result),
             }))
-        }
-        GuiCommand::PlayAudio {
-            selected_ids,
-            audiobooks,
-        } => {
-            log::info!(
-                "Executing PlayAudio command for {} audiobooks",
-                selected_ids.len()
-            );
-            Some(Task::perform(
-                play_selected_audio(selected_ids, audiobooks),
-                Message::PlaybackStarted,
-            ))
         }
         GuiCommand::StopAudio => {
             log::info!("Executing StopAudio command");

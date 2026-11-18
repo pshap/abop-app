@@ -36,8 +36,6 @@ pub async fn scan_directory_async(path: PathBuf) -> Result<DirectoryInfo, String
 pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Option<Task<Message>> {
     match command {
         GuiCommand::ScanLibrary { library_path } => {
-            use abop_core::db::Database;
-
             state.library.start_scanning();
             let recursive = state.library.scan_subdirectories;
             log::info!(
@@ -49,7 +47,8 @@ pub fn handle_library_command(state: &mut AppState, command: GuiCommand) -> Opti
             Some(Task::perform(
                 async move {
                     // Open centralized database synchronously in a blocking task
-                    let db = match tokio::task::spawn_blocking(Database::open_app_database).await {
+                    let db = match tokio::task::spawn_blocking(crate::database::app_database).await
+                    {
                         Ok(Ok(db)) => db,
                         Ok(Err(e)) => return Err(e.to_string()),
                         Err(e) => return Err(e.to_string()),
@@ -145,7 +144,7 @@ pub async fn load_library_from_db(
     library_path: PathBuf,
 ) -> Result<Option<Vec<abop_core::models::Audiobook>>, String> {
     tokio::task::spawn_blocking(move || {
-        let db = abop_core::db::Database::open_app_database().map_err(|e| e.to_string())?;
+        let db = crate::database::app_database().map_err(|e| e.to_string())?;
         let Some(library) = db
             .libraries()
             .find_by_path(&library_path)

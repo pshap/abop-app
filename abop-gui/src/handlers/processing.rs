@@ -24,10 +24,17 @@ pub fn handle_processing_message(state: &mut AppState, message: &Message) -> Opt
         }
         Message::ConfirmProcess => {
             state.ui.confirm_process = false;
-            let selected_ids = state.library.selected_audiobooks.iter().cloned().collect();
+            let selected = &state.library.selected_audiobooks;
+            let audiobooks = state
+                .library
+                .audiobooks
+                .iter()
+                .filter(|book| selected.contains(&book.id))
+                .cloned()
+                .collect();
             Task::done(Message::command(Command::ConvertToMono {
-                selected_ids,
-                audiobooks: state.library.audiobooks.clone(),
+                selected_ids: selected.iter().cloned().collect(),
+                audiobooks,
             }))
         }
         Message::ProcessingProgress(progress, status) => {

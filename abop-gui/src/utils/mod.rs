@@ -56,11 +56,12 @@ pub fn get_file_format_simple(path: &Path) -> String {
 /// sort_audiobooks(&mut state);
 /// ```
 pub fn sort_audiobooks(state: &mut AppState) {
-    let column = state.library.table_state.sort_column.clone();
-    let ascending = state.library.table_state.sort_ascending;
-    let progress = state.library.progress.clone();
+    let library = &mut state.library;
+    let column = library.table_state.sort_column.as_str();
+    let ascending = library.table_state.sort_ascending;
+    let progress = &library.progress;
     let compare = |a: &Audiobook, b: &Audiobook| {
-        let ordering = compare_audiobooks(a, b, &column, &progress);
+        let ordering = compare_audiobooks(a, b, column, progress);
         if ascending {
             ordering
         } else {
@@ -68,16 +69,22 @@ pub fn sort_audiobooks(state: &mut AppState) {
         }
     };
 
-    state.library.audiobooks.sort_by(compare);
+    library.audiobooks.sort_by(compare);
     // Keep the search results (shown while a search is active) in the same order
-    state.library.filtered_audiobooks.sort_by(compare);
+    library.filtered_audiobooks.sort_by(compare);
 }
 
-/// Case-insensitive comparison of text fields used for sorting
+/// Case-insensitive comparison of text fields used for sorting (no allocation)
 fn compare_text(a: &str, b: &str) -> std::cmp::Ordering {
-    a.to_lowercase()
-        .cmp(&b.to_lowercase())
+    a.chars()
+        .flat_map(char::to_lowercase)
+        .cmp(b.chars().flat_map(char::to_lowercase))
         .then_with(|| a.cmp(b))
+}
+
+/// The title used for sorting, falling back to the id
+fn sort_title(book: &Audiobook) -> &str {
+    book.title.as_deref().unwrap_or(&book.id)
 }
 
 /// Compares two audiobooks by the given table column
@@ -93,9 +100,8 @@ fn compare_audiobooks(
             .and_then(|p| p.fraction(book.duration_seconds))
             .unwrap_or(0.0)
     };
-    let title = |book: &Audiobook| book.title.clone().unwrap_or_else(|| book.id.clone());
     match column {
-        "title" => compare_text(&title(a), &title(b)),
+        "title" => compare_text(sort_title(a), sort_title(b)),
         "author" => compare_text(
             a.author.as_deref().unwrap_or("Unknown"),
             b.author.as_deref().unwrap_or("Unknown"),
@@ -109,7 +115,7 @@ fn compare_audiobooks(
         // For unknown columns, fall back to sorting by title to provide consistent behavior
         _ => {
             log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
-            compare_text(&title(a), &title(b))
+            compare_text(sort_title(a), sort_title(b))
         }
     }
 }
