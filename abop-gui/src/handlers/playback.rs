@@ -7,6 +7,7 @@
 use abop_core::PlayerState as CorePlayerState;
 use abop_core::models::Audiobook;
 use iced::Task;
+use std::time::{Duration, Instant};
 
 use crate::audio::player as audio;
 use crate::messages::Message;
@@ -16,6 +17,7 @@ use crate::state::AppState;
 pub fn handle_playback_message(state: &mut AppState, message: &Message) -> Option<Task<Message>> {
     let task = match message {
         Message::StartPlayback => start_selected(state),
+        Message::RowClicked(id) => row_clicked(state, id, Instant::now()),
         Message::PlayPause => play_pause(state),
         Message::Stop => {
             stop(state);
@@ -34,6 +36,39 @@ pub fn handle_playback_message(state: &mut AppState, message: &Message) -> Optio
         _ => return None,
     };
     Some(task)
+}
+
+/// Maximum time between two clicks on the same row to count as a double-click
+const DOUBLE_CLICK_INTERVAL: Duration = Duration::from_millis(400);
+
+/// Whether a click on `id` at `now` completes a double-click
+fn is_double_click(previous: Option<&(String, Instant)>, id: &str, now: Instant) -> bool {
+    previous.is_some_and(|(last_id, at)| {
+        last_id == id && now.saturating_duration_since(*at) <= DOUBLE_CLICK_INTERVAL
+    })
+}
+
+/// A single click toggles the row's selection; a double-click plays the book
+fn row_clicked(state: &mut AppState, id: &str, now: Instant) -> Task<Message> {
+    if is_double_click(state.ui.last_row_click.as_ref(), id, now) {
+        state.ui.last_row_click = None;
+        // The first click toggled the selection; keep the book selected
+        state.library.selected_audiobooks.insert(id.to_string());
+        let book = state
+            .library
+            .audiobooks
+            .iter()
+            .find(|b| b.id == id)
+            .cloned();
+        return book.map_or_else(Task::none, |book| play_book(state, book));
+    }
+
+    state.ui.last_row_click = Some((id.to_string(), now));
+    let selected = &mut state.library.selected_audiobooks;
+    if !selected.remove(id) {
+        selected.insert(id.to_string());
+    }
+    Task::none()
 }
 
 /// Selected audiobooks in the order they are shown in the table
@@ -231,6 +266,54 @@ mod tests {
         assert_eq!(state.player.player_state, CorePlayerState::Paused);
         let _ = handle_playback_message(&mut state, &Message::PlayPause);
         assert_eq!(state.player.player_state, CorePlayerState::Playing);
+    }
+
+    #[test]
+    fn single_click_toggles_and_double_click_plays() {
+        let mut state = state_with_books();
+        let t0 = Instant::now();
+
+        let _ = row_clicked(&mut state, "b", t0);
+        assert!(state.library.selected_audiobooks.contains("b"));
+        assert_eq!(state.player.player_state, CorePlayerState::Stopped);
+
+        // Second click shortly after on the same row: play, stay selected
+        let _ = row_clicked(&mut state, "b", t0 + Duration::from_millis(200));
+        assert!(state.library.selected_audiobooks.contains("b"));
+        assert_eq!(state.player.player_state, CorePlayerState::Playing);
+        assert_eq!(
+            state.player.current_playing_file.as_deref(),
+            Some(std::path::Path::new("/nonexistent/b.mp3"))
+        );
+    }
+
+    #[test]
+    fn slow_or_different_clicks_are_not_double_clicks() {
+        let t0 = Instant::now();
+        let previous = ("a".to_string(), t0);
+        assert!(!is_double_click(
+            Some(&previous),
+            "a",
+            t0 + Duration::from_secs(1)
+        ));
+        assert!(!is_double_click(
+            Some(&previous),
+            "b",
+            t0 + Duration::from_millis(100)
+        ));
+        assert!(!is_double_click(None, "a", t0));
+        assert!(is_double_click(
+            Some(&previous),
+            "a",
+            t0 + Duration::from_millis(100)
+        ));
+
+        // Two slow clicks just toggle the selection on and off
+        let mut state = state_with_books();
+        let _ = row_clicked(&mut state, "a", t0);
+        let _ = row_clicked(&mut state, "a", t0 + Duration::from_secs(1));
+        assert!(!state.library.selected_audiobooks.contains("a"));
+        assert_eq!(state.player.player_state, CorePlayerState::Stopped);
     }
 
     #[test]

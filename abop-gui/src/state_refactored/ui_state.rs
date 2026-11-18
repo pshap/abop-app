@@ -28,6 +28,8 @@ pub struct UiState {
     pub notice: Option<Notice>,
     /// Whether the "convert to mono" confirmation dialog is open
     pub confirm_process: bool,
+    /// Last clicked table row and when, for double-click detection
+    pub last_row_click: Option<(String, std::time::Instant)>,
 }
 
 /// Severity of a [`Notice`]
@@ -77,6 +79,7 @@ impl UiState {
             needs_redraw: false,
             notice: None,
             confirm_process: false,
+            last_row_click: None,
         }
     }
 

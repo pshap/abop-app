@@ -148,7 +148,15 @@ fn status_message(state: &AppState) -> (&'static str, String, bool) {
     if let Some(status) = player.processing_status.as_deref() {
         return ("circle-check", status.to_string(), false);
     }
-    ("circle-check", "Ready".to_string(), false)
+    if library.audiobooks.is_empty() {
+        ("circle-check", "Ready".to_string(), false)
+    } else {
+        (
+            "circle-check",
+            "Ready — double-click an audiobook to play it".to_string(),
+            false,
+        )
+    }
 }
 
 #[cfg(test)]

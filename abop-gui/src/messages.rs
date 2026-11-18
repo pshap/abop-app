@@ -69,6 +69,8 @@ pub enum Message {
     SelectAudiobook(String),
     /// Toggle selection state of an audiobook by ID
     ToggleAudiobookSelection(String),
+    /// A table row was clicked (toggles selection; a double-click plays the book)
+    RowClicked(String),
     /// Toggle selection state of all audiobooks
     ToggleSelectAll,
     /// Begin renaming an audiobook (opens dialog)

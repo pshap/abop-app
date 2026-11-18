@@ -134,7 +134,7 @@ impl TableRow {
                         row_index,
                     )
                 })
-                .on_press(Message::ToggleAudiobookSelection(audiobook.id.clone()))
+                .on_press(Message::RowClicked(audiobook.id.clone()))
                 .width(Length::Fill)
                 .padding(0)
                 .into()
