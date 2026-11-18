@@ -191,6 +191,10 @@ impl LibraryState {
     /// Update audiobooks list
     pub fn set_audiobooks(&mut self, audiobooks: Vec<Audiobook>) {
         self.audiobooks = audiobooks;
+        // Drop selections for books that are no longer in the library
+        let ids: HashSet<&str> = self.audiobooks.iter().map(|b| b.id.as_str()).collect();
+        self.selected_audiobooks
+            .retain(|id| ids.contains(id.as_str()));
         self.sync_directory_metadata();
         self.update_search_index();
         self.mark_for_redraw();
@@ -473,5 +477,41 @@ impl LibraryState {
 impl Default for LibraryState {
     fn default() -> Self {
         Self::from_core_state(&AppState::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn book(id: &str, title: &str) -> Audiobook {
+        let mut book = Audiobook::new("lib", format!("/books/{id}.mp3"));
+        book.id = id.to_string();
+        book.title = Some(title.to_string());
+        book
+    }
+
+    #[test]
+    fn set_audiobooks_drops_stale_selection_and_refreshes_search() {
+        let mut library = LibraryState::from_core_state(&AppState::default());
+        library.set_audiobooks(vec![book("a", "Dune"), book("b", "Emma")]);
+        library.selected_audiobooks.insert("a".into());
+        library.selected_audiobooks.insert("b".into());
+        library.update_search_query("Emma".into());
+        assert_eq!(library.filtered_audiobooks.len(), 1);
+
+        // Rescan: "a" was deleted, "c" was added
+        library.set_audiobooks(vec![book("b", "Emma"), book("c", "Emma II")]);
+
+        assert_eq!(
+            library.selected_audiobooks,
+            HashSet::from(["b".to_string()])
+        );
+        let found: Vec<_> = library
+            .filtered_audiobooks
+            .iter()
+            .map(|b| b.id.as_str())
+            .collect();
+        assert!(found.contains(&"b") && found.contains(&"c"), "{found:?}");
     }
 }
