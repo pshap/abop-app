@@ -148,7 +148,10 @@ impl ThreadSafeAudioPlayer {
     /// See `AudioPlayer::play` for details.
     pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
         let (reply_tx, reply_rx) = mpsc::channel();
-        self.send(AudioCommand::Play(file_path.as_ref().to_path_buf(), reply_tx))?;
+        self.send(AudioCommand::Play(
+            file_path.as_ref().to_path_buf(),
+            reply_tx,
+        ))?;
         let result = reply_rx
             .recv()
             .map_err(|_| AppError::Audio("Audio thread stopped unexpectedly".to_string()))?;
@@ -433,6 +436,29 @@ mod tests {
         assert_eq!(player.get_state(), PlayerState::Stopped);
         assert!(player.get_current_file().is_none());
         assert_eq!(player.get_volume(), 0.7);
+    }
+
+    /// Needs a real audio output device: `cargo test -p abop-core -- --ignored`
+    #[test]
+    #[ignore = "requires an audio output device"]
+    fn test_thread_safe_player_plays_pauses_and_finishes() {
+        let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.mp3");
+        let player = ThreadSafeAudioPlayer::new().unwrap();
+        player.play(fixture).expect("fixture should play");
+        assert_eq!(player.get_state(), PlayerState::Playing);
+        assert!(player.get_current_file().is_some());
+
+        player.pause();
+        std::thread::sleep(Duration::from_millis(400));
+        assert_eq!(player.get_state(), PlayerState::Paused);
+
+        player.resume();
+        std::thread::sleep(Duration::from_millis(400));
+        assert_eq!(player.get_state(), PlayerState::Playing);
+
+        // The fixture is one second long; the audio thread should notice the end
+        std::thread::sleep(Duration::from_millis(2000));
+        assert_eq!(player.get_state(), PlayerState::Stopped);
     }
 
     #[test]

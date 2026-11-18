@@ -24,6 +24,26 @@ pub struct UiState {
     pub rename_input: String,
     /// Flag to force a UI redraw when state changes
     pub needs_redraw: bool,
+    /// Latest user-facing message (operation result or error), shown in the status bar
+    pub notice: Option<Notice>,
+}
+
+/// Severity of a [`Notice`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoticeKind {
+    /// Successful or informational result
+    Info,
+    /// Something went wrong and the user should know
+    Error,
+}
+
+/// A short message for the user, shown until dismissed or replaced
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Notice {
+    /// Message text
+    pub message: String,
+    /// Severity
+    pub kind: NoticeKind,
 }
 
 impl UiState {
@@ -53,7 +73,26 @@ impl UiState {
             renaming_id: None,
             rename_input: String::new(),
             needs_redraw: false,
+            notice: None,
         }
+    }
+
+    /// Show an informational message in the status bar
+    pub fn notify_info(&mut self, message: impl Into<String>) {
+        self.notice = Some(Notice {
+            message: message.into(),
+            kind: NoticeKind::Info,
+        });
+    }
+
+    /// Show an error message in the status bar
+    pub fn notify_error(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        log::warn!("{message}");
+        self.notice = Some(Notice {
+            message,
+            kind: NoticeKind::Error,
+        });
     }
 
     /// Update the theme mode and regenerate material tokens

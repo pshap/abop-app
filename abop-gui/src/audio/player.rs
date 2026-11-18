@@ -71,6 +71,16 @@ pub fn stop_audio() {
     player.stop();
 }
 
+/// Pause audio playback, keeping the position
+pub fn pause_audio() {
+    get_audio_player().pause();
+}
+
+/// Resume paused audio playback
+pub fn resume_audio() {
+    get_audio_player().resume();
+}
+
 /// Get current player state
 pub fn get_player_state() -> PlayerState {
     let player = get_audio_player();

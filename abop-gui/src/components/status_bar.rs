@@ -3,12 +3,12 @@
 //! Left: what the app is doing (scanning, processing, playing, ready).
 //! Right: selection count and keyboard hint.
 
-use iced::widget::{Space, container, row, text};
+use iced::widget::{Space, button, container, row, text};
 use iced::{Alignment, Background, Border, Element, Length, Padding};
 
 use crate::components::ui;
 use crate::messages::Message;
-use crate::state::AppState;
+use crate::state::{AppState, NoticeKind};
 
 /// Height of the status bar
 pub const STATUS_BAR_HEIGHT: f32 = 30.0;
@@ -40,6 +40,31 @@ impl StatusBar {
         ]
         .spacing(8)
         .align_y(Alignment::Center);
+
+        if let Some(notice) = &state.ui.notice {
+            let (icon_name, color) = match notice.kind {
+                NoticeKind::Error => ("circle-exclamation", tokens.colors.error.base),
+                NoticeKind::Info => ("circle-info", tokens.colors.on_surface),
+            };
+            let dismiss = button(ui::icon("xmark", size, muted))
+                .padding(Padding::from([2.0, 6.0]))
+                .style(move |_theme, status| {
+                    ui::button_style(tokens, ui::ButtonKind::Ghost, status)
+                })
+                .on_press(Message::DismissNotice);
+            bar = bar.push(
+                row![
+                    ui::icon(icon_name, size, color),
+                    text(notice.message.as_str())
+                        .size(size)
+                        .color(color)
+                        .wrapping(text::Wrapping::None),
+                    ui::with_tooltip(tokens, dismiss, "Dismiss"),
+                ]
+                .spacing(6)
+                .align_y(Alignment::Center),
+            );
+        }
 
         let selected = state.library.selected_audiobooks.len();
         if selected > 0 {

@@ -4,6 +4,7 @@
 //! specialized handlers based on message type and category.
 
 pub mod data_updates;
+pub mod playback;
 pub mod ui_state;
 
 #[cfg(test)]

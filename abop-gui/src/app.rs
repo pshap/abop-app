@@ -194,6 +194,12 @@ impl App {
 
             // Delegate other messages to appropriate handlers
             _ => {
+                if let Some(task) =
+                    handlers::playback::handle_playback_message(&mut self.state, &message)
+                {
+                    return task;
+                }
+
                 // Try UI state handlers first
                 if let Some(task) =
                     handlers::ui_state::handle_ui_message(&mut self.state, message.clone())
@@ -233,7 +239,16 @@ impl App {
     pub fn subscription(&self) -> Subscription<Message> {
         use keyboard::key::Key;
 
-        iced::event::listen_with(|event, status, _window| {
+        // Poll the player while playing so the UI notices when a book ends
+        let player_tick = matches!(
+            self.state.player.player_state,
+            abop_core::PlayerState::Playing
+        )
+        .then(|| {
+            iced::time::every(std::time::Duration::from_millis(500)).map(|_| Message::PlayerTick)
+        });
+
+        let keyboard = iced::event::listen_with(|event, status, _window| {
             let iced::Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) = event
             else {
                 return None;
@@ -265,6 +280,8 @@ impl App {
                 Key::Named(keyboard::key::Named::ArrowLeft) => Some(Message::Previous),
                 _ => None,
             }
-        })
+        });
+
+        Subscription::batch(std::iter::once(keyboard).chain(player_tick))
     }
 }

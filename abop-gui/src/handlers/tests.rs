@@ -184,32 +184,20 @@ mod ui_state_tests {
     }
 
     #[test]
-    fn test_handle_play_pause() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::PlayPause);
-        // Play/pause should return a task
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_stop() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Stop);
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_previous() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Previous);
-        assert!(task.is_some());
-    }
-
-    #[test]
-    fn test_handle_next() {
-        let mut state = AppState::default();
-        let task = handle_ui_message(&mut state, Message::Next);
-        assert!(task.is_some());
+    fn test_playback_messages_are_routed_to_playback_handler() {
+        // Behavior is covered in handlers::playback; here we pin down the routing
+        for message in [
+            Message::PlayPause,
+            Message::Stop,
+            Message::Previous,
+            Message::Next,
+        ] {
+            let mut state = AppState::default();
+            assert!(handle_ui_message(&mut state, message.clone()).is_none());
+            assert!(
+                crate::handlers::playback::handle_playback_message(&mut state, &message).is_some()
+            );
+        }
     }
 
     #[test]
