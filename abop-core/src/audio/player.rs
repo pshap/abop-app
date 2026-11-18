@@ -38,11 +38,16 @@ pub struct AudioPlayer {
     volume: f32,
     /// Current playing file path
     current_file: Option<PathBuf>,
+    /// Position the current source started from (sink positions are relative to it)
+    position_offset: Duration,
+    /// Total duration of the current file, if known
+    duration: Option<Duration>,
 }
 
 /// Commands sent to the dedicated audio thread
 enum AudioCommand {
-    Play(PathBuf, mpsc::Sender<Result<()>>),
+    Play(PathBuf, Duration, mpsc::Sender<Result<()>>),
+    Seek(Duration),
     Stop,
     Pause,
     Resume,
@@ -55,6 +60,8 @@ struct PlayerStatus {
     state: PlayerState,
     current_file: Option<PathBuf>,
     volume: f32,
+    position: Duration,
+    duration: Option<Duration>,
 }
 
 /// How often the audio thread checks whether playback has finished
@@ -105,10 +112,15 @@ impl ThreadSafeAudioPlayer {
     ) {
         loop {
             match rx.recv_timeout(STATUS_POLL_INTERVAL) {
-                Ok(AudioCommand::Play(path, reply)) => {
-                    let result = player.play(&path);
+                Ok(AudioCommand::Play(path, start, reply)) => {
+                    let result = player.play_from(&path, start);
                     // The caller may have stopped waiting; that's fine
                     let _ = reply.send(result);
+                }
+                Ok(AudioCommand::Seek(position)) => {
+                    if let Err(e) = player.seek(position) {
+                        log::warn!("{e}");
+                    }
                 }
                 Ok(AudioCommand::Stop) => player.stop(),
                 Ok(AudioCommand::Pause) => player.pause(),
@@ -122,6 +134,8 @@ impl ThreadSafeAudioPlayer {
             snapshot.state = player.get_state();
             snapshot.current_file = player.get_current_file();
             snapshot.volume = player.get_volume();
+            snapshot.position = player.position().unwrap_or_default();
+            snapshot.duration = player.duration();
         }
         player.stop();
     }
@@ -145,9 +159,19 @@ impl ThreadSafeAudioPlayer {
     ///
     /// See `AudioPlayer::play` for details.
     pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
+        self.play_from(file_path, Duration::ZERO)
+    }
+
+    /// Plays an audio file starting at `start`, blocking until playback has started
+    ///
+    /// # Errors
+    ///
+    /// See `AudioPlayer::play_from` for details.
+    pub fn play_from<P: AsRef<Path>>(&self, file_path: P, start: Duration) -> Result<()> {
         let (reply_tx, reply_rx) = mpsc::channel();
         self.send(AudioCommand::Play(
             file_path.as_ref().to_path_buf(),
+            start,
             reply_tx,
         ))?;
         let result = reply_rx
@@ -158,8 +182,31 @@ impl ThreadSafeAudioPlayer {
             let mut status = self.status.lock().unwrap_or_else(PoisonError::into_inner);
             status.state = PlayerState::Playing;
             status.current_file = Some(file_path.as_ref().to_path_buf());
+            status.position = start;
         }
         result
+    }
+
+    /// Jumps to `position` in the current file
+    pub fn seek(&self, position: Duration) {
+        if self.send(AudioCommand::Seek(position)).is_ok() {
+            self.status
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .position = position;
+        }
+    }
+
+    /// Current playback position (updated a few times per second)
+    #[must_use]
+    pub fn get_position(&self) -> Duration {
+        self.snapshot().position
+    }
+
+    /// Total duration of the current file, if known
+    #[must_use]
+    pub fn get_duration(&self) -> Option<Duration> {
+        self.snapshot().duration
     }
 
     /// Stops audio playback
@@ -168,6 +215,8 @@ impl ThreadSafeAudioPlayer {
             let mut status = self.status.lock().unwrap_or_else(PoisonError::into_inner);
             status.state = PlayerState::Stopped;
             status.current_file = None;
+            status.position = Duration::ZERO;
+            status.duration = None;
         }
     }
 
@@ -218,6 +267,8 @@ impl AudioPlayer {
             state: PlayerState::Stopped,
             volume: 0.7, // Default volume 70%
             current_file: None,
+            position_offset: Duration::ZERO,
+            duration: None,
         })
     }
 
@@ -240,6 +291,17 @@ impl AudioPlayer {
     /// the file format is unsupported, or the audio sink creation fails.
     /// Returns [`AppError::Io`] if the file cannot be read.
     pub fn play<P: AsRef<Path>>(&mut self, file_path: P) -> Result<()> {
+        self.play_from(file_path, Duration::ZERO)
+    }
+
+    /// Plays an audio file starting at `start`
+    ///
+    /// # Errors
+    ///
+    /// Same as [`AudioPlayer::play`]; a failed seek to `start` is logged and
+    /// playback begins at the start of the file instead.
+    pub fn play_from<P: AsRef<Path>>(&mut self, file_path: P, start: Duration) -> Result<()> {
+        use rodio::Source;
         let file_path = file_path.as_ref();
 
         // Stop any currently playing audio
@@ -250,12 +312,23 @@ impl AudioPlayer {
             .map_err(|e| AppError::Audio(format!("Failed to create audio output stream: {e}")))?;
 
         // Decode with our Symphonia decoder (rodio's own fails on many M4B files)
-        let source = super::playback_source::DecoderSource::open(file_path).map_err(|e| {
+        let mut source = super::playback_source::DecoderSource::open(file_path).map_err(|e| {
             AppError::Audio(format!(
                 "Failed to decode audio file '{}': {e}",
                 file_path.display()
             ))
         })?;
+        let duration = source.total_duration();
+        // Seek before handing the source to rodio, so starting never blocks
+        let offset = if start.is_zero() {
+            Duration::ZERO
+        } else if let Err(e) = source.try_seek(start) {
+            log::warn!("Could not resume at {start:?}, starting from the beginning: {e}");
+            source = super::playback_source::DecoderSource::open(file_path)?;
+            Duration::ZERO
+        } else {
+            start
+        };
 
         // Create new sink and set volume
         let sink = Sink::try_new(&stream_handle)
@@ -271,6 +344,8 @@ impl AudioPlayer {
         self._stream = Some(stream);
         self.state = PlayerState::Playing;
         self.current_file = Some(file_path.to_path_buf());
+        self.position_offset = offset;
+        self.duration = duration;
 
         log::info!("Started playing audio file: {}", file_path.display());
         Ok(())
@@ -286,6 +361,40 @@ impl AudioPlayer {
 
         self.state = PlayerState::Stopped;
         self.current_file = None;
+        self.position_offset = Duration::ZERO;
+        self.duration = None;
+    }
+
+    /// Jumps to `position` in the current file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if nothing is playing or the source cannot seek.
+    pub fn seek(&mut self, position: Duration) -> Result<()> {
+        let sink = self
+            .sink
+            .as_ref()
+            .ok_or_else(|| AppError::Audio("Nothing is playing".to_string()))?;
+        let position = self.duration.map_or(position, |d| position.min(d));
+        sink.try_seek(position)
+            .map_err(|e| AppError::Audio(format!("Seek failed: {e}")))?;
+        // rodio now reports positions from the start of the file
+        self.position_offset = Duration::ZERO;
+        Ok(())
+    }
+
+    /// Current playback position, if something is loaded
+    #[must_use]
+    pub fn position(&self) -> Option<Duration> {
+        self.sink
+            .as_ref()
+            .map(|sink| self.position_offset + sink.get_pos())
+    }
+
+    /// Total duration of the current file, if known
+    #[must_use]
+    pub const fn duration(&self) -> Option<Duration> {
+        self.duration
     }
     /// Pauses audio playback
     pub fn pause(&mut self) {
@@ -369,14 +478,14 @@ impl AudioPlayer {
 
 impl Default for AudioPlayer {
     fn default() -> Self {
-        // Create a new instance with default values
-        // This matches the field types in the struct definition exactly
-        AudioPlayer {
-            sink: None,                  // Option<Sink>
-            _stream: None,               // Option<OutputStream>
-            state: PlayerState::Stopped, // PlayerState
-            volume: 0.7,                 // f32
-            current_file: None,          // Option<PathBuf>
+        Self {
+            sink: None,
+            _stream: None,
+            state: PlayerState::Stopped,
+            volume: 0.7,
+            current_file: None,
+            position_offset: Duration::ZERO,
+            duration: None,
         }
     }
 }
@@ -452,6 +561,32 @@ mod tests {
         // The fixture is one second long; the audio thread should notice the end
         std::thread::sleep(Duration::from_millis(2000));
         assert_eq!(player.get_state(), PlayerState::Stopped);
+    }
+
+    #[test]
+    #[ignore = "requires an audio output device"]
+    fn test_thread_safe_player_resumes_and_seeks() {
+        let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.m4b");
+        let player = ThreadSafeAudioPlayer::new().unwrap();
+        player
+            .play_from(fixture, Duration::from_millis(500))
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(300));
+        let position = player.get_position();
+        assert!(
+            position >= Duration::from_millis(500),
+            "resumed at {position:?}"
+        );
+        assert!(player.get_duration().is_some());
+
+        player.seek(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(300));
+        let position = player.get_position();
+        assert!(
+            position < Duration::from_millis(500),
+            "after seek {position:?}"
+        );
+        player.stop();
     }
 
     /// M4B/M4A need symphonia's aac + isomp4 features (enabled in the workspace)

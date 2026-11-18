@@ -306,20 +306,19 @@ impl AudioDecoder {
     /// Returns an error if the seek operation fails, the time base is not available,
     /// or the seek position is invalid.
     pub fn seek(&mut self, timestamp: f64) -> Result<()> {
-        // Get the time base for the track
-        let time_base =
-            self.track.codec_params.time_base.ok_or_else(|| {
-                AppError::Audio("Cannot seek: no time base available".to_string())
-            })?; // Calculate the target time in the track's time base
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let time = (timestamp * f64::from(time_base.denom) / f64::from(time_base.numer)) as u64;
+        if !timestamp.is_finite() || timestamp < 0.0 {
+            return Err(AppError::Audio(format!(
+                "Invalid seek position: {timestamp}"
+            )));
+        }
 
-        // Seek to the specified time
+        // SeekTo::Time takes seconds (previously this passed time-base ticks,
+        // so every seek landed far past the end of the stream)
         self.format
             .seek(
                 SeekMode::Coarse,
                 SeekTo::Time {
-                    time: time.into(),
+                    time: symphonia::core::units::Time::from(timestamp),
                     track_id: Some(self.track.id),
                 },
             )

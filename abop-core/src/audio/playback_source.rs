@@ -108,6 +108,16 @@ impl Source for DecoderSource {
     fn total_duration(&self) -> Option<Duration> {
         self.total_duration
     }
+
+    fn try_seek(&mut self, pos: Duration) -> std::result::Result<(), rodio::source::SeekError> {
+        self.decoder
+            .seek(pos.as_secs_f64())
+            .map_err(|e| rodio::source::SeekError::Other(Box::new(e)))?;
+        // Drop the rest of the old packet; the next sample comes from the new position
+        self.buffer.clear();
+        self.position = 0;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -136,6 +146,20 @@ mod tests {
             let seconds = samples / f64::from(rate * u32::from(channels));
             assert!((0.8..1.5).contains(&seconds), "{name}: decoded {seconds}s");
         }
+    }
+
+    #[test]
+    fn seeking_skips_ahead() {
+        let path = fixture("tagged.m4b");
+        let full = DecoderSource::open(&path).unwrap().count();
+        let mut source = DecoderSource::open(&path).unwrap();
+        source.try_seek(Duration::from_millis(500)).unwrap();
+        let rest = source.count();
+        assert!(
+            rest < full,
+            "seeking should skip samples ({rest} vs {full})"
+        );
+        assert!(rest > 0, "audio after the seek point should remain");
     }
 
     #[test]
