@@ -5,6 +5,5 @@
 
 mod about;
 mod audio_controls;
-mod audio_toolbar;
 mod status;
 mod table;

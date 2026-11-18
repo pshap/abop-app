@@ -11,8 +11,6 @@ pub mod buttons;
 pub mod about;
 /// Audio playback controls and manipulation widgets
 pub mod audio_controls;
-/// Audio toolbar component for playback controls
-pub mod audio_toolbar;
 /// Shared components used across multiple views and contexts
 ///
 /// Contains reusable Material Design 3 components:
@@ -27,12 +25,10 @@ pub mod cover_art;
 pub mod icon_support;
 /// Icon utilities and Font Awesome integration
 pub mod icons;
-/// Unified main toolbar combining navigation and actions
+/// Application bar (brand, open library, actions, settings, exit)
 pub mod main_toolbar;
 /// Rename audiobook dialog component
 pub mod rename_dialog;
-/// Search bar component for filtering audiobooks
-pub mod search_bar;
 /// Status display and information presentation widgets
 pub mod status;
 /// Status bar along the bottom of the window
