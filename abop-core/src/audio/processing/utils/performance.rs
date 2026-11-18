@@ -66,10 +66,11 @@ mod tests {
             channels: 2,
         };
 
-        // f32: 1000 samples * 2 channels * 4 bytes = 8000 bytes
-        assert_eq!(estimate_memory_usage(&buffer_f32), 16000); // *2 for overhead
+        // `data` holds interleaved samples, so channels are already counted in its length
+        // f32: 1000 samples * 4 bytes * 2 (processing overhead) = 8000 bytes
+        assert_eq!(estimate_memory_usage(&buffer_f32), 8000);
 
-        // i16: 1000 samples * 2 channels * 2 bytes = 4000 bytes
-        assert_eq!(estimate_memory_usage(&buffer_i16), 8000); // *2 for overhead
+        // i16: 1000 samples * 2 bytes * 2 (processing overhead) = 4000 bytes
+        assert_eq!(estimate_memory_usage(&buffer_i16), 4000);
     }
 }

@@ -22,6 +22,7 @@ pub mod columns {
 pub const SELECT_ALL_COLUMNS: &str = "
     SELECT id, library_id, path, title, author, narrator, description,
            duration_seconds, size_bytes, cover_art, created_at, updated_at, selected
+    FROM audiobooks
 ";
 
 /// UPSERT query for inserting or updating audiobooks
@@ -82,7 +83,8 @@ pub mod where_clauses {
 pub mod order_by {
     pub const BY_TITLE_ASC: &str = "ORDER BY title ASC";
     pub const BY_TITLE_ASC_LIMIT_OFFSET: &str = "ORDER BY title ASC LIMIT ?2 OFFSET ?3";
-    pub const BY_TITLE_ASC_OFFSET: &str = "ORDER BY title ASC OFFSET ?2";
+    // SQLite requires LIMIT before OFFSET; -1 means "no limit"
+    pub const BY_TITLE_ASC_OFFSET: &str = "ORDER BY title ASC LIMIT -1 OFFSET ?2";
 }
 
 /// COUNT queries

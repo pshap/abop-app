@@ -240,10 +240,20 @@ fn test_silence_segment_validation() {
     assert!(negative_segment.validate().is_err());
 }
 
+/// Detector that treats gaps of 100ms or more as silence (default is 500ms)
+#[cfg(test)]
+fn short_gap_detector() -> SilenceDetector {
+    SilenceDetector::new(super::super::config::SilenceDetectorConfig {
+        min_duration: std::time::Duration::from_millis(100),
+        ..Default::default()
+    })
+    .unwrap()
+}
+
 #[test]
 fn test_silence_percentage_calculation() {
     let buffer = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
-    let detector = SilenceDetector::default();
+    let detector = short_gap_detector();
 
     let percentage = detector.calculate_silence_percentage(&buffer).unwrap();
     assert!(percentage > 0.0); // Should detect some silence
@@ -254,16 +264,18 @@ fn test_silence_percentage_calculation() {
 fn test_has_significant_silence() {
     let buffer_with_silence = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
     let buffer_no_silence = create_test_buffer_with_silence(44100, 1, 1.0, 0.0, 0.0);
-    let detector = SilenceDetector::default();
+    let detector = short_gap_detector();
 
     assert!(detector.has_significant_silence(&buffer_with_silence));
     assert!(!detector.has_significant_silence(&buffer_no_silence));
+    // A 0.2s gap is shorter than the default 500ms minimum
+    assert!(!SilenceDetector::default().has_significant_silence(&buffer_with_silence));
 }
 
 #[test]
 fn test_total_silence_duration() {
     let buffer = create_test_buffer_with_silence(44100, 1, 1.0, 0.3, 0.2);
-    let detector = SilenceDetector::default();
+    let detector = short_gap_detector();
 
     let total_duration = detector.get_total_silence_duration(&buffer);
     assert!((total_duration - 0.2).abs() < 0.01); // Should be approximately 0.2s

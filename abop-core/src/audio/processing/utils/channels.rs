@@ -76,7 +76,9 @@ mod tests {
     #[test]
     fn test_validate_channel_mixing() {
         assert!(validate_channel_mixing(2, 1).is_ok());
-        assert!(validate_channel_mixing(1, 2).is_err()); // Can't upmix to mono
+        assert!(validate_channel_mixing(1, 2).is_ok()); // Upmixing mono to stereo is allowed
+        assert!(validate_channel_mixing(0, 2).is_err()); // Invalid input channel count
+        assert!(validate_channel_mixing(2, 0).is_err()); // Invalid output channel count
     }
 
     #[test]

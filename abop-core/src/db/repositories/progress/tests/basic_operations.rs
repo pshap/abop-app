@@ -6,10 +6,10 @@ use crate::test_utils::TestDatabase;
 use chrono::Utc;
 
 /// Create a test progress repository with a fresh database
+/// The database contains a library and an `audiobook-1` row, so progress
+/// records for `audiobook-1` satisfy the foreign key constraint.
 fn create_test_repo() -> (ProgressRepository, TestDatabase) {
-    let test_db = TestDatabase::new();
-    let repo = ProgressRepository::new(test_db.connection.clone());
-    (repo, test_db)
+    super::create_test_repo_with_deps(&["audiobook-1"])
 }
 
 /// Create a test progress record
@@ -27,11 +27,7 @@ fn create_test_progress(audiobook_id: &str, position: u64, completed: bool) -> P
 
 #[test]
 fn test_upsert_new_progress() {
-    let (repo, test_db) = create_test_repo();
-
-    // Create a test library first
-    let library_id = "test-library-1";
-    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+    let (repo, _test_db) = create_test_repo();
 
     let progress = create_test_progress("audiobook-1", 300, false);
 
@@ -50,11 +46,7 @@ fn test_upsert_new_progress() {
 
 #[test]
 fn test_upsert_update_existing_progress() {
-    let (repo, test_db) = create_test_repo();
-
-    // Create a test library first
-    let library_id = "test-library-1";
-    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+    let (repo, _test_db) = create_test_repo();
 
     let initial_progress = create_test_progress("audiobook-1", 300, false);
 
@@ -83,11 +75,7 @@ fn test_upsert_update_existing_progress() {
 
 #[test]
 fn test_find_by_audiobook_existing() {
-    let (repo, test_db) = create_test_repo();
-
-    // Create a test library first
-    let library_id = "test-library-1";
-    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+    let (repo, _test_db) = create_test_repo();
 
     let progress = create_test_progress("audiobook-1", 450, false);
     repo.upsert(&progress).unwrap();
@@ -117,11 +105,7 @@ fn test_find_by_audiobook_non_existing() {
 
 #[test]
 fn test_find_by_id_existing() {
-    let (repo, test_db) = create_test_repo();
-
-    // Create a test library first
-    let library_id = "test-library-1";
-    test_db.insert_test_library(library_id, "Test Library", "/test/path");
+    let (repo, _test_db) = create_test_repo();
 
     let progress = create_test_progress("audiobook-1", 450, false);
     repo.upsert(&progress).unwrap();

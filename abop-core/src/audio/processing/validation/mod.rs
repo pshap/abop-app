@@ -81,14 +81,14 @@ mod tests {
 
     #[test]
     fn test_validate_file_exists() {
-        let valid_path = "/dev/null"; // Should exist on Unix systems
+        let valid_file = tempfile::NamedTempFile::new().unwrap();
         let invalid_path = "/nonexistent/file.mp3";
 
         // Note: These tests may fail on different systems, adjust as needed
-        if cfg!(unix) {
-            assert!(validate_file_exists(valid_path).is_ok());
-        }
+        assert!(validate_file_exists(valid_file.path()).is_ok());
         assert!(validate_file_exists(invalid_path).is_err());
+        // Directories exist but are not files
+        assert!(validate_file_exists(std::env::temp_dir()).is_err());
     }
 
     #[test]

@@ -121,9 +121,10 @@ mod tests {
             channels: 2,
         };
 
-        // Test with wrong expected size
-        assert!(validate_buffer_size(&buffer, 500).is_err());
-        assert!(validate_buffer_size(&buffer, 2000).is_ok());
+        // 1000 interleaved samples across 2 channels = 500 samples per channel
+        assert!(validate_buffer_size(&buffer, 500).is_ok());
+        assert!(validate_buffer_size(&buffer, 1000).is_err());
+        assert!(validate_buffer_size(&buffer, 2000).is_err());
     }
 
     #[test]

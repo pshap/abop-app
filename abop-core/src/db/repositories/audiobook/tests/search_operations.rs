@@ -136,3 +136,39 @@ fn test_delete_audiobook() {
         "Audiobook should not be found after deletion"
     );
 }
+
+#[test]
+fn test_find_by_library_paginated() {
+    let test_db = TestDatabase::new();
+    let repo = AudiobookRepository::new(test_db.connection.clone());
+    let lib_id = "lib1";
+    test_db.insert_test_library(lib_id, "Library 1", "/path/to/library1");
+
+    for title in ["Charlie", "Alpha", "Bravo"] {
+        let path = format!("/test/{title}.mp3");
+        let book = TestDataFactory::audiobook_with_path(
+            &uuid::Uuid::new_v4().to_string(),
+            lib_id,
+            std::path::Path::new(&path),
+            title,
+            "Author",
+        );
+        repo.upsert(&book).expect("Failed to insert book");
+    }
+
+    let titles = |books: Vec<crate::models::Audiobook>| -> Vec<String> {
+        books.into_iter().filter_map(|b| b.title).collect()
+    };
+
+    // With a limit
+    let page = repo
+        .find_by_library_paginated(lib_id, Some(2), 0)
+        .expect("paginated query with limit should not fail");
+    assert_eq!(titles(page), ["Alpha", "Bravo"]);
+
+    // Offset without a limit returns everything after the offset
+    let rest = repo
+        .find_by_library_paginated(lib_id, None, 1)
+        .expect("paginated query without limit should not fail");
+    assert_eq!(titles(rest), ["Bravo", "Charlie"]);
+}

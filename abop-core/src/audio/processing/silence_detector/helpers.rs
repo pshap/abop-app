@@ -73,14 +73,14 @@ mod tests {
         assert!((linear_to_db(1.0) - 0.0).abs() < f32::EPSILON);
         assert!((linear_to_db(0.5) - (-6.02)).abs() < 0.01);
         assert!((linear_to_db(0.1) - (-20.0)).abs() < 0.01);
-        assert!((linear_to_db(0.0) - (-f32::INFINITY)).abs() < f32::EPSILON);
+        assert_eq!(linear_to_db(0.0), f32::NEG_INFINITY);
     }
 
     #[test]
     fn test_find_first_non_silent_sample() {
         let data = vec![0.0, 0.0, 0.001, 0.0, 0.002];
         assert_eq!(find_first_non_silent_sample(&data, 0.0005), 2);
-        assert_eq!(find_first_non_silent_sample(&data, 0.003), 4);
+        assert_eq!(find_first_non_silent_sample(&data, 0.0015), 4);
         assert_eq!(find_first_non_silent_sample(&data, 0.01), 0);
     }
 
