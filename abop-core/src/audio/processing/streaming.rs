@@ -11,7 +11,7 @@ use hound::{SampleFormat as HoundSampleFormat, WavSpec, WavWriter};
 
 use crate::audio::decoder::AudioDecoder;
 use crate::error::{AppError, Result};
-use crate::utils::casting::{safe_f64_to_usize_samples, safe_progress};
+use crate::utils::casting::{safe_f32_to_i16_sample, safe_f64_to_usize_samples, safe_progress};
 
 /// Summary of a finished conversion
 #[derive(Debug, Clone, PartialEq)]
@@ -100,18 +100,29 @@ fn write_mono(
         bits_per_sample: 16,
         sample_format: HoundSampleFormat::Int,
     };
-    let mut writer = WavWriter::create(path, spec).map_err(wav_error)?;
 
     // Expected number of frames, for progress reporting
     let expected_frames = total_seconds
-        .and_then(|seconds| safe_f64_to_usize_samples(seconds * f64::from(sample_rate)).ok())
+        .and_then(|seconds| safe_f64_to_usize_samples(seconds.ceil() * f64::from(sample_rate)).ok())
         .filter(|frames| *frames > 0);
+    // Fail before writing gigabytes if the book can't fit in a WAV file
+    if expected_frames
+        .is_some_and(|frames| u64::try_from(frames).unwrap_or(u64::MAX) > MAX_WAV_FRAMES)
+    {
+        return Err(too_long_error(sample_rate));
+    }
+    let mut writer = WavWriter::create(path, spec).map_err(wav_error)?;
     let mut frames_written: usize = 0;
     let mut last_reported = 0.0_f32;
 
     let mut next = Some(first);
     while let Some(buffer) = next {
         let channels = usize::from(buffer.channels.max(1));
+        let frames_after = frames_written.saturating_add(buffer.data.len() / channels);
+        if u64::try_from(frames_after).unwrap_or(u64::MAX) > MAX_WAV_FRAMES {
+            // The duration was unknown or wrong; stop before the WAV header overflows
+            return Err(too_long_error(sample_rate));
+        }
         for frame in buffer.data.chunks_exact(channels) {
             writer.write_sample(mix_to_i16(frame)).map_err(wav_error)?;
         }
@@ -138,11 +149,24 @@ fn write_mono(
 /// Average one interleaved frame and convert it to a 16-bit sample
 fn mix_to_i16(frame: &[f32]) -> i16 {
     let channels = f32::from(u16::try_from(frame.len()).unwrap_or(u16::MAX).max(1));
-    let mean = frame.iter().sum::<f32>() / channels;
-    // The value is clamped to the i16 range first, so this conversion cannot overflow
-    #[allow(clippy::cast_possible_truncation)]
-    let sample = (mean.clamp(-1.0, 1.0) * f32::from(i16::MAX)).round() as i16;
-    sample
+    safe_f32_to_i16_sample(frame.iter().sum::<f32>() / channels)
+}
+
+/// The most mono 16-bit frames a WAV file can hold: its size fields are
+/// 32-bit, so the data chunk (and the 36 header bytes counted with it) must
+/// stay below 4 GiB
+const MAX_WAV_FRAMES: u64 = (4_294_967_295 - 36) / 2;
+
+/// How long a mono WAV at `sample_rate` can be, for error messages
+fn max_wav_hours(sample_rate: u32) -> u64 {
+    MAX_WAV_FRAMES / u64::from(sample_rate.max(1)) / 3600
+}
+
+fn too_long_error(sample_rate: u32) -> AppError {
+    AppError::Audio(format!(
+        "Audiobook is too long for a WAV file (limit is about {} hours at {sample_rate} Hz)",
+        max_wav_hours(sample_rate)
+    ))
 }
 
 #[cfg(test)]
@@ -162,6 +186,14 @@ mod tests {
             "out-of-range input is clamped"
         );
         assert_eq!(mix_to_i16(&[-0.5, -0.5]), -16384);
+    }
+
+    #[test]
+    fn wav_limit_matches_the_32_bit_size_field() {
+        assert_eq!(MAX_WAV_FRAMES, (u64::from(u32::MAX) - 36) / 2);
+        // About 13.5 hours of 44.1 kHz mono
+        assert_eq!(max_wav_hours(44_100), 13);
+        assert!(too_long_error(44_100).to_string().contains("13 hours"));
     }
 
     #[test]

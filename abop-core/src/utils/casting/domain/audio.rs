@@ -319,3 +319,41 @@ pub fn safe_i32_to_f32_sample(sample: i32) -> f32 {
     let divisor = (1u32 << 31) as f32; // 2^31 = 2,147,483,648
     (sample as f32) / divisor
 }
+
+/// Convert a normalized f32 sample to a 16-bit PCM sample
+///
+/// Values outside [-1.0, 1.0] are clamped and NaN becomes silence, so this
+/// never overflows. 1.0 maps to `i16::MAX` and -1.0 to `-i16::MAX`.
+#[must_use]
+pub fn safe_f32_to_i16_sample(sample: f32) -> i16 {
+    if sample.is_nan() {
+        return 0;
+    }
+    let scaled = (sample.clamp(-1.0, 1.0) * f32::from(i16::MAX)).round();
+    // `scaled` is a whole number within ±i16::MAX, so the conversion is exact
+    #[allow(clippy::cast_possible_truncation)]
+    let pcm = scaled as i16;
+    pcm
+}
+
+#[cfg(test)]
+mod f32_to_i16_tests {
+    use super::*;
+
+    #[test]
+    fn converts_clamps_and_round_trips() {
+        assert_eq!(safe_f32_to_i16_sample(0.0), 0);
+        assert_eq!(safe_f32_to_i16_sample(1.0), i16::MAX);
+        assert_eq!(safe_f32_to_i16_sample(-1.0), -i16::MAX);
+        assert_eq!(safe_f32_to_i16_sample(7.5), i16::MAX);
+        assert_eq!(safe_f32_to_i16_sample(f32::NEG_INFINITY), -i16::MAX);
+        assert_eq!(safe_f32_to_i16_sample(f32::NAN), 0);
+        assert_eq!(safe_f32_to_i16_sample(-0.5), -16384);
+
+        // Every 16-bit value survives a round trip through f32
+        for pcm in -i16::MAX..=i16::MAX {
+            let normalized = f32::from(pcm) / f32::from(i16::MAX);
+            assert_eq!(safe_f32_to_i16_sample(normalized), pcm);
+        }
+    }
+}
