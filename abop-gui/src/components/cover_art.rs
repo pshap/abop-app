@@ -85,7 +85,7 @@ impl CoverArt {
         // Add padding and rounded corners
         container(content)
             .padding(Padding::from(OUTER_PADDING))
-            .style(tokens)
+            .style(tokens.container_style())
             .into()
     }
 }
@@ -99,7 +99,7 @@ fn styled_square_container<'a, C: Into<Element<'a, crate::messages::Message>>>(
     container(content)
         .width(Length::Fixed(size as f32))
         .height(Length::Fixed(size as f32))
-        .style(tokens)
+        .style(tokens.container_style())
         .into()
 }
 
@@ -161,7 +161,7 @@ impl CoverArtWithLoading {
             container(text("⏳").size(self.loading_size as f32 * 0.6))
                 .width(Length::Fixed(self.loading_size as f32))
                 .height(Length::Fixed(self.loading_size as f32))
-                .style(tokens)
+                .style(tokens.container_style())
                 .into()
         } else {
             self.cover_art.view(tokens)

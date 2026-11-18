@@ -2,11 +2,11 @@
 //!
 //! This module provides audio playback capabilities for the ABOP application.
 
-use std::cell::RefCell;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::sync::{Arc, Mutex, PoisonError, mpsc};
+use std::time::Duration;
 
 use rodio::{Decoder, OutputStream, Sink};
 
@@ -26,8 +26,9 @@ pub enum PlayerState {
 
 /// Thread-safe audio player for playing audio files
 ///
-/// This type is not `Send` or `Sync` by default. To share it between threads,
-/// wrap it in an `Arc<Mutex<AudioPlayer>>` or use the provided `ThreadSafeAudioPlayer` type.
+/// This type is not `Send` or `Sync` because rodio's output stream is bound to the
+/// thread that created it. Use [`ThreadSafeAudioPlayer`] to control playback from
+/// other threads.
 pub struct AudioPlayer {
     /// Current audio sink
     sink: Option<Sink>,
@@ -41,70 +42,165 @@ pub struct AudioPlayer {
     current_file: Option<PathBuf>,
 }
 
-/// Thread-safe wrapper around AudioPlayer
+/// Commands sent to the dedicated audio thread
+enum AudioCommand {
+    Play(PathBuf, mpsc::Sender<Result<()>>),
+    Stop,
+    Pause,
+    Resume,
+    SetVolume(f32),
+}
+
+/// Snapshot of the player status shared with other threads
+#[derive(Debug, Clone, Default)]
+struct PlayerStatus {
+    state: PlayerState,
+    current_file: Option<PathBuf>,
+    volume: f32,
+}
+
+/// How often the audio thread checks whether playback has finished
+const STATUS_POLL_INTERVAL: Duration = Duration::from_millis(250);
+
+/// Thread-safe handle to an [`AudioPlayer`]
 ///
-/// This type provides thread-safe access by using internal
-/// synchronization. Note: This is designed for single-threaded GUI use.
+/// Rodio's output stream is not `Send`, so the actual [`AudioPlayer`] lives on a
+/// dedicated audio thread. This handle forwards commands to that thread over a
+/// channel and exposes a status snapshot, making it `Send + Sync` and cheap to clone.
 #[derive(Clone)]
 pub struct ThreadSafeAudioPlayer {
-    inner: std::rc::Rc<std::cell::RefCell<Option<AudioPlayer>>>,
+    commands: mpsc::Sender<AudioCommand>,
+    status: Arc<Mutex<PlayerStatus>>,
 }
 
 impl ThreadSafeAudioPlayer {
-    /// Creates a new thread-safe audio player
+    /// Creates a new thread-safe audio player, spawning its audio thread
     ///
     /// # Errors
     ///
-    /// Returns `AppError::Audio` if audio system initialization fails.
+    /// Returns `AppError::Audio` if the audio thread cannot be spawned.
     pub fn new() -> Result<Self> {
+        let status = Arc::new(Mutex::new(PlayerStatus {
+            volume: AudioPlayer::default().get_volume(),
+            ..PlayerStatus::default()
+        }));
+        let (tx, rx) = mpsc::channel();
+
+        let thread_status = Arc::clone(&status);
+        // The player must be created on the audio thread: rodio streams are not `Send`
+        std::thread::Builder::new()
+            .name("abop-audio".to_string())
+            .spawn(move || Self::run(AudioPlayer::default(), &rx, &thread_status))
+            .map_err(|e| AppError::Audio(format!("Failed to spawn audio thread: {e}")))?;
+
         Ok(Self {
-            inner: Rc::new(RefCell::new(None)),
+            commands: tx,
+            status,
         })
     }
 
-    /// Plays an audio file
+    /// Audio thread main loop; exits when every handle has been dropped
+    fn run(
+        mut player: AudioPlayer,
+        rx: &mpsc::Receiver<AudioCommand>,
+        status: &Mutex<PlayerStatus>,
+    ) {
+        loop {
+            match rx.recv_timeout(STATUS_POLL_INTERVAL) {
+                Ok(AudioCommand::Play(path, reply)) => {
+                    let result = player.play(&path);
+                    // The caller may have stopped waiting; that's fine
+                    let _ = reply.send(result);
+                }
+                Ok(AudioCommand::Stop) => player.stop(),
+                Ok(AudioCommand::Pause) => player.pause(),
+                Ok(AudioCommand::Resume) => player.resume(),
+                Ok(AudioCommand::SetVolume(v)) => player.set_volume(v),
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            }
+            player.update_state();
+            let mut snapshot = status.lock().unwrap_or_else(PoisonError::into_inner);
+            snapshot.state = player.get_state();
+            snapshot.current_file = player.get_current_file();
+            snapshot.volume = player.get_volume();
+        }
+        player.stop();
+    }
+
+    fn send(&self, command: AudioCommand) -> Result<()> {
+        self.commands
+            .send(command)
+            .map_err(|_| AppError::Audio("Audio thread is not running".to_string()))
+    }
+
+    fn snapshot(&self) -> PlayerStatus {
+        self.status
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Plays an audio file, blocking until playback has started or failed
+    ///
+    /// # Errors
     ///
     /// See `AudioPlayer::play` for details.
     pub fn play<P: AsRef<Path>>(&self, file_path: P) -> Result<()> {
-        self.inner
-            .borrow_mut()
-            .as_mut()
-            .ok_or_else(|| AppError::Audio("Audio player not initialized".to_string()))?
-            .play(file_path)
+        let (reply_tx, reply_rx) = mpsc::channel();
+        self.send(AudioCommand::Play(file_path.as_ref().to_path_buf(), reply_tx))?;
+        let result = reply_rx
+            .recv()
+            .map_err(|_| AppError::Audio("Audio thread stopped unexpectedly".to_string()))?;
+        if result.is_ok() {
+            // Reflect the new state immediately instead of waiting for the next poll
+            let mut status = self.status.lock().unwrap_or_else(PoisonError::into_inner);
+            status.state = PlayerState::Playing;
+            status.current_file = Some(file_path.as_ref().to_path_buf());
+        }
+        result
     }
 
     /// Stops audio playback
-    ///
-    /// See `AudioPlayer::stop` for details.
     pub fn stop(&self) {
-        if let Some(player) = self.inner.borrow_mut().as_mut() {
-            player.stop();
+        if self.send(AudioCommand::Stop).is_ok() {
+            let mut status = self.status.lock().unwrap_or_else(PoisonError::into_inner);
+            status.state = PlayerState::Stopped;
+            status.current_file = None;
         }
     }
 
+    /// Pauses audio playback
+    pub fn pause(&self) {
+        let _ = self.send(AudioCommand::Pause);
+    }
+
+    /// Resumes audio playback
+    pub fn resume(&self) {
+        let _ = self.send(AudioCommand::Resume);
+    }
+
+    /// Sets the volume (0.0 to 1.0)
+    pub fn set_volume(&self, volume: f32) {
+        let _ = self.send(AudioCommand::SetVolume(volume));
+    }
+
+    /// Gets the current volume (0.0 to 1.0)
+    #[must_use]
+    pub fn get_volume(&self) -> f32 {
+        self.snapshot().volume
+    }
+
     /// Gets the current player state
-    ///
-    /// Returns the current state of the audio player (Playing, Paused, or Stopped).
-    /// If the player lock cannot be acquired, returns PlayerState::Stopped as a fallback.
     #[must_use]
     pub fn get_state(&self) -> PlayerState {
-        self.inner
-            .borrow()
-            .as_ref()
-            .map(|player| player.get_state())
-            .unwrap_or(PlayerState::Stopped)
+        self.snapshot().state
     }
 
     /// Gets the currently playing file path
-    ///
-    /// See `AudioPlayer::get_current_file` for details.
     #[must_use]
     pub fn get_current_file(&self) -> Option<PathBuf> {
-        self.inner
-            .borrow()
-            .as_ref()
-            .map(|player| player.get_current_file())
-            .unwrap_or(None)
+        self.snapshot().current_file
     }
 }
 
@@ -323,5 +419,28 @@ mod tests {
 
         player.set_volume(-0.5);
         assert_eq!(player.get_volume(), 0.0);
+    }
+
+    #[test]
+    fn test_thread_safe_player_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync + 'static>() {}
+        assert_send_sync::<ThreadSafeAudioPlayer>();
+    }
+
+    #[test]
+    fn test_thread_safe_player_initial_state() {
+        let player = ThreadSafeAudioPlayer::new().unwrap();
+        assert_eq!(player.get_state(), PlayerState::Stopped);
+        assert!(player.get_current_file().is_none());
+        assert_eq!(player.get_volume(), 0.7);
+    }
+
+    #[test]
+    fn test_thread_safe_player_play_missing_file_errors() {
+        let player = ThreadSafeAudioPlayer::new().unwrap();
+        assert!(player.play("/nonexistent/abop/test-file.mp3").is_err());
+        assert_eq!(player.get_state(), PlayerState::Stopped);
+        player.stop();
+        assert_eq!(player.get_state(), PlayerState::Stopped);
     }
 }

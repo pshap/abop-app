@@ -7,7 +7,8 @@
 mod tests {
 
     use crate::styling::material::components::selection::common::prelude::*;
-    use crate::styling::material::{Checkbox, Chip, Switch};
+    use crate::styling::material::selection::Chip;
+    use crate::styling::material::{Checkbox, Switch};
 
     #[test]
     fn test_checkbox_creation() {

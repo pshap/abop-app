@@ -1,13 +1,13 @@
 // Audio controls component
 
-use iced::widget::{column, text};
-use std::collections::HashSet;
+use iced::widget::{column, container, row, text};
+use iced::{Alignment, Element, Length};
 use std::collections::HashSet;
 
 use crate::styling::MaterialTokens;
 
-use abop_core::PlayerState;
 use abop_core::models::Audiobook;
+use abop_core::PlayerState;
 
 use crate::components::buttons::{ButtonBuilder, ButtonVariant};
 use crate::messages::Message;
@@ -124,9 +124,7 @@ impl AudioControls {
                 .align_y(Alignment::Start),
             ]
             .spacing(material_tokens.spacing().md)
-            .width(Length::Fill)
-            .into(),
-            material_tokens,
+            .width(Length::Fill),
         ));
 
         container(content)

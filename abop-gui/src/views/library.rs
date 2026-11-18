@@ -37,16 +37,11 @@ fn create_status_display(state: &AppState) -> iced::Element<'_, Message> {
         EnhancedStatusDisplayParams {
             scanning: state.library.is_scanning(),
             scan_progress: state.library.scanner_progress.clone(),
-            cached_scan_progress_text: state
-                .library
-                .scanner_progress
-                .map(|p| format!("Scanning... {}%", (p * 100.0) as i32)),
+            // StatusDisplay formats the text itself when no cached text is supplied
+            cached_scan_progress_text: None,
             processing_audio: state.player.processing_audio,
             processing_progress: state.player.processing_progress,
-            cached_processing_progress_text: state
-                .player
-                .processing_progress
-                .map(|p| format!("Processing... {}%", (p * 100.0) as i32)),
+            cached_processing_progress_text: None,
             processing_status: state.player.processing_status.as_deref(),
             player_state: state.player.player_state.clone(),
             current_playing_file: state.player.current_playing_file.as_ref(),
@@ -94,7 +89,7 @@ fn create_audiobook_table(state: &AppState) -> iced::Element<'_, Message> {
     container(debug_container)
         .width(Length::Fill)
         .height(Length::Fill)
-        .style(&state.ui.material_tokens)
+        .style(state.ui.material_tokens.container_style())
         .padding(iced::Padding {
             top: 8.0,
             right: 8.0,

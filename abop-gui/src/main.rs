@@ -2,7 +2,6 @@
 
 // Import from abop_gui crate
 use abop_gui::app::App;
-use abop_gui::assets;
 
 use log::info;
 use thiserror::Error;
@@ -79,6 +78,8 @@ fn main() -> iced::Result {
         Config::default()
     });
 
+    let scale_factor = f64::from(config.ui.scale_factor);
+
     // Run the application using the Application trait with proper window settings
     iced::application(App::title, App::update, App::view)
         .theme(App::theme)
@@ -87,7 +88,7 @@ fn main() -> iced::Result {
             config.window.initial_width as f32,
             config.window.initial_height as f32,
         ))
-        .scale_factor(config.ui.scale_factor)
+        .scale_factor(move |_| scale_factor)
         .run_with(App::initial)
         .map_err(|e| {
             log::error!("Application failed to run: {e}");

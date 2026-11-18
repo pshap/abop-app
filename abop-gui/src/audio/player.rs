@@ -55,7 +55,8 @@ pub async fn play_selected_audio(
     }
 
     // Play the audio file using the global player
-    match AUDIO_PLAYER.play(&audiobook.path) {
+    let player = get_audio_player();
+    match player.play(&audiobook.path) {
         Ok(()) => {
             let title = audiobook.title.as_deref().unwrap_or("Unknown");
             Ok(format!("Started playing: {title}"))
@@ -66,16 +67,19 @@ pub async fn play_selected_audio(
 
 /// Stop audio playback
 pub fn stop_audio() {
-    AUDIO_PLAYER.stop();
+    let player = get_audio_player();
+    player.stop();
 }
 
 /// Get current player state
 pub fn get_player_state() -> PlayerState {
-    AUDIO_PLAYER.get_state()
+    let player = get_audio_player();
+    player.get_state()
 }
 
 /// Get currently playing file path
 #[must_use]
 pub fn get_current_playing_file() -> Option<PathBuf> {
-    AUDIO_PLAYER.get_current_file()
+    let player = get_audio_player();
+    player.get_current_file()
 }

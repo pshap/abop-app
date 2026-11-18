@@ -7,7 +7,8 @@ use crate::styling::material::components::selection::common::prelude::*;
 use crate::styling::material::components::selection_style::{
     SelectionSize as LegacySelectionSize, SelectionStyleBuilder, SelectionVariant,
 };
-use iced::{Element, Renderer, theme::Theme, widget::Radio as IcedRadio};
+use crate::styling::material::MaterialColors;
+use iced::{theme::Theme, widget::Radio as IcedRadio, Element, Renderer};
 
 /// Material Design 3 Radio Button component (modern implementation)
 #[derive(Debug, Clone)]
@@ -102,7 +103,7 @@ where
         let label = self.props.label.as_ref().unwrap_or(&default_label);
 
         // Create tokens outside of closure to ensure they live long enough
-        let tokens = &*LIGHT_TOKENS; // Default to light tokens for now
+        let tokens = &super::tokens::LIGHT_TOKENS; // Default to light tokens for now
 
         // Create style function with tokens
         let style_fn = {

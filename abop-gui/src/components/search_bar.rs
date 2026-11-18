@@ -7,8 +7,8 @@ use iced::widget::{button, column, container, row, text};
 use iced::{Element, Length, Padding};
 
 use crate::messages::Message;
-use crate::styling::material::MaterialTokens;
 use crate::styling::material::components::inputs::MaterialSearchField;
+use crate::styling::material::MaterialTokens;
 
 /// Search bar component for filtering audiobooks
 #[derive(Debug, Clone)]
@@ -97,7 +97,7 @@ impl SearchBar {
 
         container(search_row)
             .width(Length::Fill)
-            .style(tokens)
+            .style(tokens.container_style())
             .into()
     }
 }
@@ -218,7 +218,7 @@ impl AdvancedSearchBar {
 
         container(search_content)
             .width(Length::Fill)
-            .style(tokens)
+            .style(tokens.container_style())
             .into()
     }
 

@@ -3,12 +3,11 @@
 //! This module provides the main API functions that other components use
 //! to create button styles, handle sizing, and generate icons.
 
-use iced::{Background, Border, Color, Length, Padding, Shadow, Theme, widget::button};
+use iced::{widget::button, Background, Border, Color, Length, Padding, Shadow, Theme};
 use iced_font_awesome::fa_icon_solid;
 
 use super::strategy::ButtonState;
 use crate::styling::material::{
-    MaterialTokens,
     components::button_style::constants::{
         padding,
         sizing::{
@@ -16,6 +15,7 @@ use crate::styling::material::{
             MEDIUM_HEIGHT, SMALL_HEIGHT,
         },
     },
+    MaterialTokens,
 };
 
 use super::variants::{ButtonSizeVariant, ButtonStyleVariant};
