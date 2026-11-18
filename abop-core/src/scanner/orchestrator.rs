@@ -191,7 +191,9 @@ impl ScanOrchestrator {
                 if options.enable_progress
                     && let Some(reporter) = &self.progress_reporter
                 {
-                    let progress = (overall_index + 1) as f32 / total_files as f32;
+                    let progress =
+                        crate::utils::casting::safe_progress(overall_index + 1, total_files)
+                            .unwrap_or(1.0);
                     let rt = tokio::runtime::Handle::try_current();
                     if let Ok(rt) = rt {
                         rt.block_on(async { reporter.report_progress(progress).await });
@@ -241,13 +243,16 @@ impl ScanOrchestrator {
             );
         }
 
-        // Forget books whose files are gone. Files that exist but failed to
-        // read are kept, and nothing is pruned if saving failed or the library
-        // folder itself is missing (e.g. an unmounted drive).
+        // Forget books whose files are gone. Nothing is pruned if saving failed
+        // or the library folder itself is missing (e.g. an unmounted drive).
+        // A book this scan didn't see is only removed once its file is
+        // confirmed missing: it may sit in a subfolder that wasn't scanned
+        // (subfolders turned off) or couldn't be read (permissions, I/O error),
+        // and deleting it would also delete its listening progress.
         if !persist_failed && self.library.path.is_dir() {
             let found: HashSet<&PathBuf> = files.iter().collect();
             for (path, book) in &existing {
-                if !found.contains(path) {
+                if !found.contains(path) && is_confirmed_missing(path) {
                     match repository.delete(&book.id) {
                         Ok(_) => info!("Removed missing audiobook {}", path.display()),
                         Err(e) => {
@@ -282,10 +287,76 @@ impl ScanOrchestrator {
     }
 }
 
+/// Whether `path` definitely no longer exists (errors such as permission
+/// denied count as "might still exist")
+fn is_confirmed_missing(path: &std::path::Path) -> bool {
+    matches!(path.try_exists(), Ok(false))
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::scanner::config::ScannerConfig;
+
+    fn scan(db: &Arc<Database>, library: &Library, recursive: bool) -> ScanSummary {
+        let config = ScannerConfig {
+            recursive,
+            ..ScannerConfig::default()
+        };
+        ScanOrchestrator::new(Arc::clone(db), library.clone(), config)
+            .scan(ScanOptions {
+                enable_progress: false,
+                enable_monitoring: false,
+                ..ScanOptions::default()
+            })
+            .unwrap()
+    }
+
+    fn fixture(dest: &std::path::Path) {
+        std::fs::create_dir_all(dest.parent().unwrap()).unwrap();
+        std::fs::copy(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.mp3"),
+            dest,
+        )
+        .unwrap();
+    }
+
     #[test]
-    fn test_scan_orchestrator() {
-        // Test setup would go here
+    fn prunes_only_books_whose_files_are_gone() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("library");
+        let top = root.join("top.mp3");
+        let nested = root.join("Author/nested.mp3");
+        let doomed = root.join("Author/deleted.mp3");
+        for path in [&top, &nested, &doomed] {
+            fixture(path);
+        }
+        let db = Arc::new(Database::open(dir.path().join("test.db")).unwrap());
+        let mut library = Library::new("lib", &root);
+        library.id = db.add_library(&library).unwrap();
+
+        assert_eq!(scan(&db, &library, true).new_files.len(), 3);
+        let count = || {
+            db.audiobook_repository()
+                .find_by_library(&library.id)
+                .unwrap()
+                .len()
+        };
+
+        // Subfolders off: nested books aren't seen but still exist, so they stay
+        scan(&db, &library, false);
+        assert_eq!(count(), 3);
+
+        // A file that really was deleted is forgotten
+        std::fs::remove_file(&doomed).unwrap();
+        scan(&db, &library, true);
+        assert_eq!(count(), 2);
+    }
+
+    #[test]
+    fn missing_means_confirmed_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(is_confirmed_missing(&dir.path().join("nope.mp3")));
+        assert!(!is_confirmed_missing(dir.path()));
     }
 }
