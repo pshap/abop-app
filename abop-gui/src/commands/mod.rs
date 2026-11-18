@@ -15,8 +15,10 @@ use crate::state::AppState;
 pub fn handle_command(state: &mut AppState, command: GuiCommand) -> Task<Message> {
     if matches!(command, GuiCommand::Quit) {
         log::info!("Quit requested");
+        // Remember where the listener was before exiting
+        let save = crate::handlers::playback::save_before_exit(state);
         crate::audio::player::stop_audio();
-        return iced::exit();
+        return save.chain(iced::exit());
     }
 
     // Try audio commands first

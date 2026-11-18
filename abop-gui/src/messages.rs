@@ -32,6 +32,8 @@ pub enum Message {
     FocusSearch,
     /// Dismiss the notice shown in the status bar
     DismissNotice,
+    /// Jump forward (positive) or back (negative) by this many seconds
+    SeekBy(i64),
     /// Periodic check of the audio player while playing (detects end of playback)
     PlayerTick,
     /// Close the settings dialog

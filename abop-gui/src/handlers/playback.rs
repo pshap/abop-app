@@ -19,20 +19,15 @@ pub fn handle_playback_message(state: &mut AppState, message: &Message) -> Optio
         Message::StartPlayback => start_selected(state),
         Message::RowClicked(id) => row_clicked(state, id, Instant::now()),
         Message::PlayPause => play_pause(state),
-        Message::Stop => {
-            stop(state);
-            Task::none()
-        }
+        Message::Stop => stop(state),
+        Message::SeekBy(seconds) => seek_by(state, *seconds),
         Message::Next => skip(state, 1),
         Message::Previous => skip(state, -1),
         Message::PlaybackStarted(result) => {
             playback_started(state, result);
             Task::none()
         }
-        Message::PlayerTick => {
-            sync_with_player(state);
-            Task::none()
-        }
+        Message::PlayerTick => sync_with_player(state),
         _ => return None,
     };
     Some(task)
@@ -82,15 +77,70 @@ fn selected_in_display_order(state: &AppState) -> Vec<&Audiobook> {
         .collect()
 }
 
-/// Start playing a specific audiobook
+/// Save progress at least this often while playing
+const SAVE_INTERVAL: Duration = Duration::from_secs(15);
+
+/// Persist the current book's position (or completion) in the background
+fn save_progress_task(state: &mut AppState, completed: bool) -> Task<Message> {
+    let Some(id) = state.player.playing_audiobook_id.clone() else {
+        return Task::none();
+    };
+    let position = if completed {
+        state.player.duration.unwrap_or(state.player.position)
+    } else {
+        state.player.position
+    };
+    state.player.last_saved_position = position;
+    Task::perform(
+        audio::save_progress(id, position.as_secs(), completed),
+        |result| {
+            if let Err(error) = result {
+                log::warn!("Could not save listening progress: {error}");
+            }
+            Message::NoOp
+        },
+    )
+}
+
+/// Save progress before the app exits (used by the quit command)
+pub fn save_before_exit(state: &mut AppState) -> Task<Message> {
+    if state.player.player_state == CorePlayerState::Stopped {
+        return Task::none();
+    }
+    state.player.position = audio::get_position();
+    save_progress_task(state, false)
+}
+
+/// Clear everything about the current book from the player state
+fn clear_current(state: &mut AppState) {
+    state.player.player_state = CorePlayerState::Stopped;
+    state.player.current_playing_file = None;
+    state.player.playing_audiobook_id = None;
+    state.player.position = Duration::ZERO;
+    state.player.duration = None;
+}
+
+/// Start playing a specific audiobook, resuming from its saved position
 fn play_book(state: &mut AppState, book: Audiobook) -> Task<Message> {
     log::info!("Playing {}", book.path.display());
+    // Remember where we were in the previous book
+    let save_previous = if state.player.player_state == CorePlayerState::Stopped {
+        Task::none()
+    } else {
+        state.player.position = audio::get_position();
+        save_progress_task(state, false)
+    };
+
     state.player.current_playing_file = Some(book.path.clone());
+    state.player.playing_audiobook_id = Some(book.id.clone());
     state.player.player_state = CorePlayerState::Playing;
-    Task::perform(
-        audio::play_selected_audio(vec![book.id.clone()], vec![book]),
-        Message::PlaybackStarted,
-    )
+    state.player.position = Duration::ZERO;
+    state.player.last_saved_position = Duration::ZERO;
+    state.player.duration = book.duration_seconds.map(Duration::from_secs);
+    Task::batch([
+        save_previous,
+        Task::perform(audio::play_audiobook(book), Message::PlaybackStarted),
+    ])
 }
 
 /// Play the first selected audiobook (in table order)
@@ -113,7 +163,8 @@ fn play_pause(state: &mut AppState) -> Task<Message> {
         CorePlayerState::Playing => {
             audio::pause_audio();
             state.player.player_state = CorePlayerState::Paused;
-            Task::none()
+            state.player.position = audio::get_position();
+            save_progress_task(state, false)
         }
         CorePlayerState::Paused => {
             audio::resume_audio();
@@ -124,10 +175,36 @@ fn play_pause(state: &mut AppState) -> Task<Message> {
     }
 }
 
-fn stop(state: &mut AppState) {
+fn stop(state: &mut AppState) -> Task<Message> {
+    let save = if state.player.player_state == CorePlayerState::Stopped {
+        Task::none()
+    } else {
+        state.player.position = audio::get_position();
+        save_progress_task(state, false)
+    };
     audio::stop_audio();
-    state.player.player_state = CorePlayerState::Stopped;
-    state.player.current_playing_file = None;
+    clear_current(state);
+    save
+}
+
+/// Jump forward or back within the current book
+fn seek_by(state: &mut AppState, seconds: i64) -> Task<Message> {
+    if state.player.player_state == CorePlayerState::Stopped {
+        return Task::none();
+    }
+    let current = audio::get_position();
+    let delta = Duration::from_secs(seconds.unsigned_abs());
+    let mut target = if seconds < 0 {
+        current.saturating_sub(delta)
+    } else {
+        current + delta
+    };
+    if let Some(duration) = state.player.duration {
+        target = target.min(duration.saturating_sub(Duration::from_secs(1)));
+    }
+    audio::seek_audio(target);
+    state.player.position = target;
+    Task::none()
 }
 
 /// Play the audiobook `offset` rows away from the current one (in table order)
@@ -157,8 +234,7 @@ fn playback_started(state: &mut AppState, result: &Result<String, String>) {
             state.ui.notice = None;
         }
         Err(error) => {
-            state.player.player_state = CorePlayerState::Stopped;
-            state.player.current_playing_file = None;
+            clear_current(state);
             state
                 .ui
                 .notify_error(format!("Couldn't play audiobook: {error}"));
@@ -166,15 +242,31 @@ fn playback_started(state: &mut AppState, result: &Result<String, String>) {
     }
 }
 
-/// Reflect the real player state, e.g. when a book reaches its end
-fn sync_with_player(state: &mut AppState) {
-    if state.player.player_state == CorePlayerState::Playing
-        && audio::get_player_state() == CorePlayerState::Stopped
-    {
-        log::info!("Playback finished");
-        state.player.player_state = CorePlayerState::Stopped;
-        state.player.current_playing_file = None;
+/// Reflect the real player state: position, duration and the end of a book
+fn sync_with_player(state: &mut AppState) -> Task<Message> {
+    if state.player.player_state != CorePlayerState::Playing {
+        return Task::none();
     }
+    if audio::get_player_state() == CorePlayerState::Stopped {
+        log::info!("Playback finished");
+        let save = save_progress_task(state, true);
+        clear_current(state);
+        return save;
+    }
+
+    state.player.position = audio::get_position();
+    if let Some(duration) = audio::get_duration() {
+        state.player.duration = Some(duration);
+    }
+    if state
+        .player
+        .position
+        .abs_diff(state.player.last_saved_position)
+        >= SAVE_INTERVAL
+    {
+        return save_progress_task(state, false);
+    }
+    Task::none()
 }
 
 #[cfg(test)]
@@ -314,6 +406,31 @@ mod tests {
         let _ = row_clicked(&mut state, "a", t0 + Duration::from_secs(1));
         assert!(!state.library.selected_audiobooks.contains("a"));
         assert_eq!(state.player.player_state, CorePlayerState::Stopped);
+    }
+
+    #[test]
+    fn playing_a_book_records_id_and_duration() {
+        let mut state = state_with_books();
+        state.library.audiobooks[1].duration_seconds = Some(3600);
+        state.library.selected_audiobooks.insert("b".into());
+        let _ = handle_playback_message(&mut state, &Message::StartPlayback);
+        assert_eq!(state.player.playing_audiobook_id.as_deref(), Some("b"));
+        assert_eq!(state.player.duration, Some(Duration::from_secs(3600)));
+        assert_eq!(state.player.position, Duration::ZERO);
+    }
+
+    #[test]
+    fn seeking_is_ignored_when_stopped_and_clamped_to_duration() {
+        let mut state = state_with_books();
+        let _ = handle_playback_message(&mut state, &Message::SeekBy(30));
+        assert_eq!(state.player.position, Duration::ZERO);
+
+        state.player.player_state = CorePlayerState::Paused;
+        state.player.duration = Some(Duration::from_secs(100));
+        let _ = handle_playback_message(&mut state, &Message::SeekBy(1_000));
+        assert_eq!(state.player.position, Duration::from_secs(99));
+        let _ = handle_playback_message(&mut state, &Message::SeekBy(-1_000));
+        assert_eq!(state.player.position, Duration::ZERO);
     }
 
     #[test]

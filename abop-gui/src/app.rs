@@ -344,6 +344,9 @@ impl App {
             }
         });
 
-        Subscription::batch(std::iter::once(keyboard).chain(player_tick))
+        let close_requests = iced::window::close_requests()
+            .map(|_| Message::command(crate::messages::Command::Quit));
+
+        Subscription::batch([keyboard, close_requests].into_iter().chain(player_tick))
     }
 }

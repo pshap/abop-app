@@ -87,6 +87,8 @@ fn window_settings(window: &abop_core::config::WindowConfig) -> iced::window::Se
     iced::window::Settings {
         size,
         min_size: Some(min_size),
+        // Closing the window goes through Command::Quit so progress is saved first
+        exit_on_close_request: false,
         ..iced::window::Settings::default()
     }
 }

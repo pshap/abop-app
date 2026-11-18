@@ -47,12 +47,39 @@ impl StatusBar {
             abop_core::PlayerState::Stopped => None,
         };
         if let Some((toggle_icon, toggle_tip)) = transport {
+            let player = &state.player;
+            let time = match player.duration {
+                Some(total) => format!(
+                    "{} / {}",
+                    format_clock(player.position),
+                    format_clock(total)
+                ),
+                None => format_clock(player.position),
+            };
             bar = bar
+                .push(
+                    text(time)
+                        .size(size)
+                        .color(muted)
+                        .wrapping(text::Wrapping::None),
+                )
+                .push(compact_button(
+                    state,
+                    "rotate-left",
+                    "Back 30 seconds",
+                    Message::SeekBy(-30),
+                ))
                 .push(compact_button(
                     state,
                     toggle_icon,
                     toggle_tip,
                     Message::PlayPause,
+                ))
+                .push(compact_button(
+                    state,
+                    "rotate-right",
+                    "Forward 30 seconds",
+                    Message::SeekBy(30),
                 ))
                 .push(compact_button(state, "stop", "Stop", Message::Stop));
         }
@@ -94,6 +121,17 @@ impl StatusBar {
                 ..container::Style::default()
             })
             .into()
+    }
+}
+
+/// Format a playback position as `m:ss` or `h:mm:ss`
+fn format_clock(position: std::time::Duration) -> String {
+    let total = position.as_secs();
+    let (hours, minutes, seconds) = (total / 3600, (total % 3600) / 60, total % 60);
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{seconds:02}")
+    } else {
+        format!("{minutes}:{seconds:02}")
     }
 }
 
@@ -190,6 +228,14 @@ fn status_message(state: &AppState) -> (&'static str, String, bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn formats_clock_times() {
+        use std::time::Duration;
+        assert_eq!(format_clock(Duration::ZERO), "0:00");
+        assert_eq!(format_clock(Duration::from_secs(75)), "1:15");
+        assert_eq!(format_clock(Duration::from_secs(39_216)), "10:53:36");
+    }
 
     #[test]
     fn idle_state_reports_ready() {
