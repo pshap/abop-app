@@ -13,6 +13,12 @@ use crate::state::AppState;
 
 /// Routes commands to appropriate specialized handlers
 pub fn handle_command(state: &mut AppState, command: GuiCommand) -> Task<Message> {
+    if matches!(command, GuiCommand::Quit) {
+        log::info!("Quit requested");
+        crate::audio::player::stop_audio();
+        return iced::exit();
+    }
+
     // Try audio commands first
     if let Some(task) = audio::handle_audio_command(state, command.clone()) {
         return task;

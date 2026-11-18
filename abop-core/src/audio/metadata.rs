@@ -175,9 +175,15 @@ impl AudioMetadata {
             meta = process_track_metadata(track, meta);
         }
 
-        // Extract metadata tags from the format's metadata
-        let metadata = probed.format.metadata();
-        meta = process_metadata_tags(&metadata, meta);
+        // Tags may live in two places: metadata found while probing (e.g. ID3v2 tags
+        // preceding an MP3 stream) and metadata embedded in the container itself.
+        // Apply probe-level tags first so container tags take precedence.
+        if let Some(revision) = probed.metadata.get().as_ref().and_then(|m| m.current()) {
+            meta = process_metadata_tags(revision, meta);
+        }
+        if let Some(revision) = probed.format.metadata().current() {
+            meta = process_metadata_tags(revision, meta);
+        }
 
         Ok(meta)
     }
@@ -329,11 +335,11 @@ fn process_track_metadata(
 /// Extracts standard metadata tags such as title, artist, album, track number,
 /// genre, date, and cover art from the format's metadata reader.
 fn process_metadata_tags(
-    metadata: &symphonia::core::meta::Metadata,
+    revision: &symphonia::core::meta::MetadataRevision,
     mut meta: AudioMetadata,
 ) -> AudioMetadata {
-    if let Some(reader) = metadata.current() {
-        for tag in reader.tags() {
+    {
+        for tag in revision.tags() {
             if let Some(std_key) = tag.std_key {
                 match std_key {
                     symphonia::core::meta::StandardTagKey::TrackTitle => {
@@ -354,7 +360,12 @@ fn process_metadata_tags(
                         meta.genre = Some(tag.value.to_string());
                     }
                     symphonia::core::meta::StandardTagKey::Date => {
-                        if let Ok(year) = tag.value.to_string().parse::<i32>() {
+                        // Dates are often full timestamps like "2023-05-01"; keep the year
+                        let date = tag.value.to_string();
+                        // ID3v2.3 also maps TDAT ("DDMM") to Date, so ignore implausible years
+                        if let Some(Ok(year)) = date.get(..4).map(str::parse::<i32>)
+                            && year >= 1000
+                        {
                             meta.year = Some(year);
                         }
                     } // Ignore composer and comment fields for now
@@ -367,9 +378,7 @@ fn process_metadata_tags(
     }
 
     // Extract cover art if available (first visual in the metadata)
-    if let Some(reader) = metadata.current()
-        && let Some(visual) = reader.visuals().iter().next()
-    {
+    if let Some(visual) = revision.visuals().first() {
         meta.cover_art = Some(visual.data.to_vec());
     }
 
@@ -380,6 +389,18 @@ fn process_metadata_tags(
 mod tests {
     use super::*;
     use crate::test_constants::metadata::*;
+
+    #[test]
+    fn test_reads_id3_tags_from_mp3() {
+        // ID3v2 tags precede the MP3 stream, so Symphonia reports them at probe level
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tagged.mp3");
+        let meta = AudioMetadata::from_file(path).expect("fixture should be readable");
+        assert_eq!(meta.title.as_deref(), Some("Fixture Title"));
+        assert_eq!(meta.artist.as_deref(), Some("Fixture Author"));
+        assert_eq!(meta.album.as_deref(), Some("Fixture Album"));
+        assert_eq!(meta.year, Some(2021));
+        assert!(meta.duration_seconds.is_some_and(|d| d > 0.5));
+    }
 
     #[test]
     fn test_metadata_builder() {

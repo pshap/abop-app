@@ -31,10 +31,12 @@ fn init_logging() -> Result<(), InitError> {
     let filter = match EnvFilter::try_from_default_env() {
         Ok(f) => f,
         Err(e) => {
-            // Logging may not be initialized yet; use stderr to preserve context
-            eprintln!(
-                "RUST_LOG parse error: {e}. Falling back to defaults: {DEFAULT_LOG_DIRECTIVES}"
-            );
+            // Only complain when RUST_LOG was actually set to something invalid
+            if std::env::var_os("RUST_LOG").is_some() {
+                eprintln!(
+                    "Invalid RUST_LOG ({e}). Falling back to defaults: {DEFAULT_LOG_DIRECTIVES}"
+                );
+            }
             let mut f = EnvFilter::default();
             // Defaults if RUST_LOG is not provided
             for directive in DEFAULT_LOG_DIRECTIVES.split(',') {
@@ -80,6 +82,18 @@ fn main() -> iced::Result {
 
     let scale_factor = f64::from(config.ui.scale_factor);
 
+    // Optional first argument: a library folder to open and scan on startup
+    let initial_library = std::env::args_os()
+        .nth(1)
+        .map(std::path::PathBuf::from)
+        .filter(|path| {
+            let is_dir = path.is_dir();
+            if !is_dir {
+                log::warn!("Ignoring startup path that is not a directory: {}", path.display());
+            }
+            is_dir
+        });
+
     // Run the application using the Application trait with proper window settings
     iced::application(App::title, App::update, App::view)
         .theme(App::theme)
@@ -89,7 +103,7 @@ fn main() -> iced::Result {
             config.window.initial_height as f32,
         ))
         .scale_factor(move |_| scale_factor)
-        .run_with(App::initial)
+        .run_with(move || App::with_library(initial_library))
         .map_err(|e| {
             log::error!("Application failed to run: {e}");
             e

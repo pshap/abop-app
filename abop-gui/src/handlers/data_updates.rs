@@ -16,7 +16,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
     match message {
         Message::DirectorySelected(path) => {
             if let Some(p) = &path {
-                log::warn!("📨 DIRECTORY SELECTED MESSAGE: {}", p.display());
+                log::info!("Library directory selected: {}", p.display());
             }
 
             path.map(|path| {
@@ -34,17 +34,23 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
         Message::QuickScanComplete(result) => {
             match result {
                 Ok(info) => {
-                    log::warn!("💾 STATE UPDATE: library_path = {}", info.path.display());
+                    log::info!("Library path set to {}", info.path.display());
 
                     // Update the library path to the newly selected directory
-                    state.library.set_library_path(info.path.clone());
+                    let library_path = info.path.clone();
+                    state.library.set_library_path(library_path.clone());
 
-                    // Add to recent directories
+                    // Add to recent directories, keeping only the latest entry per path
+                    state
+                        .library
+                        .recent_directories
+                        .retain(|dir| dir.path != info.path);
                     state.library.recent_directories.push(info);
 
-                    // Quick scan complete - just update UI state, don't auto-start full scan
-                    // The user can manually click the scan button if they want a full scan
-                    Some(Task::none())
+                    // Selecting a library folder should show its contents right away
+                    Some(Task::done(Message::command(
+                        crate::messages::Command::scan_library(library_path),
+                    )))
                 }
                 Err(_e) => {
                     log::error!("Quick scan failed: {_e}");
@@ -57,6 +63,7 @@ pub fn handle_gui_message(state: &mut AppState, message: Message) -> Option<Task
                 Ok(scan_result) => {
                     // Update state with scan results
                     state.library.set_audiobooks(scan_result.audiobooks);
+                    crate::utils::sort_audiobooks(state);
                     // scan_progress is cleared automatically by complete_scanning()
                     state.library.complete_scanning();
                     Some(Task::none())
@@ -131,6 +138,7 @@ pub fn handle_core_operation(state: &mut AppState, message: Message) -> Task<Mes
             );
             // Update library state with successful scan results
             state.library.set_audiobooks(result.audiobooks);
+            crate::utils::sort_audiobooks(state);
             state.library.complete_scanning();
             // Clear progress cache
             state.progress_cache.clear_scan_cache();

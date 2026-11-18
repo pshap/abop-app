@@ -145,11 +145,19 @@ impl Drop for App {
 impl App {
     /// Initialize the application with default settings
     pub fn initial() -> (Self, Task<Message>) {
-        // Initialize the application with default state and router
-        let app = Self::new();
+        Self::with_library(None)
+    }
 
-        // Return the app with font registration task
-        (app, crate::assets::register_fonts().map(|_| Message::NoOp))
+    /// Initialize the application, optionally opening and scanning a library folder
+    pub fn with_library(library_path: Option<std::path::PathBuf>) -> (Self, Task<Message>) {
+        let app = Self::new();
+        let fonts = crate::assets::register_fonts().map(|_| Message::NoOp);
+
+        let task = match library_path {
+            Some(path) => Task::batch([fonts, Task::done(Message::DirectorySelected(Some(path)))]),
+            None => fonts,
+        };
+        (app, task)
     }
 
     /// Get the application title
@@ -221,17 +229,34 @@ impl App {
     pub fn subscription(&self) -> Subscription<Message> {
         use keyboard::key::Key;
 
-        iced::event::listen_with(|event, _status, _window| {
-            if let iced::Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
-                match key.as_ref() {
-                    Key::Named(keyboard::key::Named::Space) => Some(Message::PlayPause),
-                    Key::Named(keyboard::key::Named::ArrowRight) => Some(Message::Next),
-                    Key::Named(keyboard::key::Named::ArrowLeft) => Some(Message::Previous),
-                    Key::Named(keyboard::key::Named::Escape) => Some(Message::Stop),
+        iced::event::listen_with(|event, status, _window| {
+            let iced::Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) = event
+            else {
+                return None;
+            };
+
+            // Application shortcuts work everywhere
+            if modifiers.command() {
+                return match key.as_ref() {
+                    Key::Character("q") => Some(Message::command(crate::messages::Command::Quit)),
+                    Key::Character("o") => {
+                        Some(Message::command(crate::messages::Command::BrowseDirectory))
+                    }
+                    Key::Character(",") => Some(Message::ShowSettings),
                     _ => None,
-                }
-            } else {
-                None
+                };
+            }
+
+            // Playback shortcuts must not steal keys from focused widgets (e.g. search input)
+            if status == iced::event::Status::Captured {
+                return None;
+            }
+            match key.as_ref() {
+                Key::Named(keyboard::key::Named::Space) => Some(Message::PlayPause),
+                Key::Named(keyboard::key::Named::ArrowRight) => Some(Message::Next),
+                Key::Named(keyboard::key::Named::ArrowLeft) => Some(Message::Previous),
+                Key::Named(keyboard::key::Named::Escape) => Some(Message::Stop),
+                _ => None,
             }
         })
     }

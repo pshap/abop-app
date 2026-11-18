@@ -3,6 +3,7 @@
 //! This module contains various utility functions and safe conversion
 //! utilities used throughout the GUI components.
 
+use abop_core::models::Audiobook;
 use crate::state::AppState;
 use std::path::Path;
 
@@ -55,40 +56,71 @@ pub fn get_file_format_simple(path: &Path) -> String {
 /// sort_audiobooks(&mut state);
 /// ```
 pub fn sort_audiobooks(state: &mut AppState) {
-    let column = &state.library.table_state.sort_column;
+    let column = state.library.table_state.sort_column.clone();
     let ascending = state.library.table_state.sort_ascending;
+    let compare = |a: &Audiobook, b: &Audiobook| {
+        let ordering = compare_audiobooks(a, b, &column);
+        if ascending { ordering } else { ordering.reverse() }
+    };
 
-    state.library.audiobooks.sort_by(|a, b| {
-        let ordering = match column.as_str() {
-            "title" => a
-                .title
-                .as_deref()
-                .unwrap_or(&a.id)
-                .cmp(b.title.as_deref().unwrap_or(&b.id)),
-            "author" => a
-                .author
-                .as_deref()
-                .unwrap_or("Unknown")
-                .cmp(b.author.as_deref().unwrap_or("Unknown")),
-            "duration" => a.duration_seconds.cmp(&b.duration_seconds),
-            "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
-            "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
-            "path" => a.path.to_string_lossy().cmp(&b.path.to_string_lossy()),
-            "library_id" => a.library_id.cmp(&b.library_id),
-            // For unknown columns, fall back to sorting by title to provide consistent behavior
-            _ => {
-                log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
-                a.title
-                    .as_deref()
-                    .unwrap_or(&a.id)
-                    .cmp(b.title.as_deref().unwrap_or(&b.id))
-            }
-        };
+    state.library.audiobooks.sort_by(compare);
+    // Keep the search results (shown while a search is active) in the same order
+    state.library.filtered_audiobooks.sort_by(compare);
+}
 
-        if ascending {
-            ordering
-        } else {
-            ordering.reverse()
+/// Case-insensitive comparison of text fields used for sorting
+fn compare_text(a: &str, b: &str) -> std::cmp::Ordering {
+    a.to_lowercase().cmp(&b.to_lowercase()).then_with(|| a.cmp(b))
+}
+
+/// Compares two audiobooks by the given table column
+fn compare_audiobooks(a: &Audiobook, b: &Audiobook, column: &str) -> std::cmp::Ordering {
+    let title = |book: &Audiobook| book.title.clone().unwrap_or_else(|| book.id.clone());
+    match column {
+        "title" => compare_text(&title(a), &title(b)),
+        "author" => compare_text(
+            a.author.as_deref().unwrap_or("Unknown"),
+            b.author.as_deref().unwrap_or("Unknown"),
+        ),
+        "duration" => a.duration_seconds.cmp(&b.duration_seconds),
+        "size" => a.size_bytes.unwrap_or(0).cmp(&b.size_bytes.unwrap_or(0)),
+        "format" => get_file_format_simple(&a.path).cmp(&get_file_format_simple(&b.path)),
+        "path" => a.path.to_string_lossy().cmp(&b.path.to_string_lossy()),
+        "library_id" => a.library_id.cmp(&b.library_id),
+        // For unknown columns, fall back to sorting by title to provide consistent behavior
+        _ => {
+            log::warn!("Attempted to sort by unknown column '{column}', falling back to title");
+            compare_text(&title(a), &title(b))
         }
-    });
+    }
+}
+
+#[cfg(test)]
+mod sort_tests {
+    use super::*;
+
+    fn book(title: &str) -> Audiobook {
+        let mut book = Audiobook::new("lib", format!("/books/{title}.mp3"));
+        book.title = Some(title.to_string());
+        book
+    }
+
+    fn titles(books: &[Audiobook]) -> Vec<&str> {
+        books.iter().filter_map(|b| b.title.as_deref()).collect()
+    }
+
+    #[test]
+    fn sorts_titles_case_insensitively_in_both_directions() {
+        let mut state = AppState::default();
+        state.library.audiobooks = vec![book("zebra"), book("Apple"), book("mango")];
+        state.library.filtered_audiobooks = vec![book("mango"), book("Apple")];
+
+        sort_audiobooks(&mut state);
+        assert_eq!(titles(&state.library.audiobooks), ["Apple", "mango", "zebra"]);
+        assert_eq!(titles(&state.library.filtered_audiobooks), ["Apple", "mango"]);
+
+        state.library.table_state.sort_ascending = false;
+        sort_audiobooks(&mut state);
+        assert_eq!(titles(&state.library.audiobooks), ["zebra", "mango", "Apple"]);
+    }
 }
