@@ -197,7 +197,9 @@ impl TableRow {
                 data::ColumnWidth::Fixed(w) => Length::Fixed(w),
                 data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
                 data::ColumnWidth::Auto => Length::Fixed(64.0), // Default width for cover art
-                data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+                data::ColumnWidth::Ratio(num, _den) => {
+                    Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+                }
                 data::ColumnWidth::Shrink => Length::Fixed(64.0),
             };
 
@@ -229,7 +231,9 @@ impl TableRow {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Auto => Length::Shrink,
-            data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+            data::ColumnWidth::Ratio(num, _den) => {
+                Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+            }
             data::ColumnWidth::Shrink => Length::Shrink,
         };
 

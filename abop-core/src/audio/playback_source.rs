@@ -132,8 +132,8 @@ mod tests {
                 "{name}: {duration:?}"
             );
 
-            #[allow(clippy::cast_precision_loss)]
-            let seconds = source.count() as f64 / f64::from(rate * u32::from(channels));
+            let samples = crate::utils::casting::samples_to_f64(source.count());
+            let seconds = samples / f64::from(rate * u32::from(channels));
             assert!((0.8..1.5).contains(&seconds), "{name}: decoded {seconds}s");
         }
     }

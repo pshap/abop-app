@@ -134,7 +134,9 @@ impl TableHeader {
             data::ColumnWidth::Fixed(w) => Length::Fixed(w),
             data::ColumnWidth::FillPortion(factor) => Length::FillPortion(factor),
             data::ColumnWidth::Auto => Length::Shrink,
-            data::ColumnWidth::Ratio(num, _den) => Length::FillPortion(num as u16),
+            data::ColumnWidth::Ratio(num, _den) => {
+                Length::FillPortion(u16::try_from(num).unwrap_or(u16::MAX))
+            }
             data::ColumnWidth::Shrink => Length::Shrink,
         };
 

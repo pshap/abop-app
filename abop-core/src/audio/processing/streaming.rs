@@ -11,6 +11,7 @@ use hound::{SampleFormat as HoundSampleFormat, WavSpec, WavWriter};
 
 use crate::audio::decoder::AudioDecoder;
 use crate::error::{AppError, Result};
+use crate::utils::casting::{safe_f64_to_usize_samples, safe_progress};
 
 /// Summary of a finished conversion
 #[derive(Debug, Clone, PartialEq)]
@@ -89,53 +90,56 @@ fn write_mono(
     progress: &mut impl FnMut(f32),
 ) -> Result<(u64, u32)> {
     let wav_error = |e: hound::Error| AppError::WavFile(e.to_string());
-    let mut writer: Option<WavWriter<std::io::BufWriter<fs::File>>> = None;
-    let mut sample_rate = 0;
-    let mut frames_written: u64 = 0;
+    let Some(first) = decoder.next_packet()? else {
+        return Err(AppError::Audio("Input contains no audio".to_string()));
+    };
+    let sample_rate = first.sample_rate;
+    let spec = WavSpec {
+        channels: 1,
+        sample_rate,
+        bits_per_sample: 16,
+        sample_format: HoundSampleFormat::Int,
+    };
+    let mut writer = WavWriter::create(path, spec).map_err(wav_error)?;
+
+    // Expected number of frames, for progress reporting
+    let expected_frames = total_seconds
+        .and_then(|seconds| safe_f64_to_usize_samples(seconds * f64::from(sample_rate)).ok())
+        .filter(|frames| *frames > 0);
+    let mut frames_written: usize = 0;
     let mut last_reported = 0.0_f32;
 
-    while let Some(buffer) = decoder.next_packet()? {
+    let mut next = Some(first);
+    while let Some(buffer) = next {
         let channels = usize::from(buffer.channels.max(1));
-        if writer.is_none() {
-            sample_rate = buffer.sample_rate;
-            let spec = WavSpec {
-                channels: 1,
-                sample_rate,
-                bits_per_sample: 16,
-                sample_format: HoundSampleFormat::Int,
-            };
-            writer = Some(WavWriter::create(path, spec).map_err(wav_error)?);
-        }
-        let Some(out) = writer.as_mut() else {
-            unreachable!("writer is created above");
-        };
-
         for frame in buffer.data.chunks_exact(channels) {
-            out.write_sample(mix_to_i16(frame)).map_err(wav_error)?;
+            writer.write_sample(mix_to_i16(frame)).map_err(wav_error)?;
         }
-        frames_written += (buffer.data.len() / channels) as u64;
+        frames_written += buffer.data.len() / channels;
 
-        if let Some(total) = total_seconds {
-            #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-            let fraction =
-                ((frames_written as f64 / f64::from(sample_rate)) / total).min(1.0) as f32;
+        if let Some(expected) = expected_frames {
+            let fraction = safe_progress(frames_written.min(expected), expected).unwrap_or(1.0);
             // Report in 1% steps to keep callbacks cheap
             if fraction - last_reported >= 0.01 {
                 last_reported = fraction;
                 progress(fraction);
             }
         }
+        next = decoder.next_packet()?;
     }
 
-    let writer = writer.ok_or_else(|| AppError::Audio("Input contains no audio".to_string()))?;
     writer.finalize().map_err(wav_error)?;
-    Ok((frames_written, sample_rate))
+    Ok((
+        u64::try_from(frames_written).unwrap_or(u64::MAX),
+        sample_rate,
+    ))
 }
 
 /// Average one interleaved frame and convert it to a 16-bit sample
 fn mix_to_i16(frame: &[f32]) -> i16 {
-    #[allow(clippy::cast_precision_loss)]
-    let mean = frame.iter().sum::<f32>() / frame.len() as f32;
+    let channels = f32::from(u16::try_from(frame.len()).unwrap_or(u16::MAX).max(1));
+    let mean = frame.iter().sum::<f32>() / channels;
+    // The value is clamped to the i16 range first, so this conversion cannot overflow
     #[allow(clippy::cast_possible_truncation)]
     let sample = (mean.clamp(-1.0, 1.0) * f32::from(i16::MAX)).round() as i16;
     sample

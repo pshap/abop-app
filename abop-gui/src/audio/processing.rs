@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use abop_core::audio::processing::streaming::{convert_to_mono_wav, estimate_mono_wav_bytes};
 use abop_core::models::Audiobook;
+use abop_core::utils::casting::safe_progress;
 use futures::{SinkExt, Stream};
 
 /// Progress and completion events emitted while converting
@@ -52,8 +53,8 @@ pub fn convert_to_mono(books: Vec<Audiobook>) -> impl Stream<Item = ProcessingEv
         for (index, book) in books.into_iter().enumerate() {
             let title = book.title.clone().unwrap_or_else(|| book.id.clone());
             let label = format!("Converting “{title}” ({}/{total})", index + 1);
-            #[allow(clippy::cast_precision_loss)]
-            let base = index as f32 / total as f32;
+            let base = safe_progress(index, total).unwrap_or(0.0);
+            let step = safe_progress(1, total).unwrap_or(1.0);
             let _ = output
                 .send(ProcessingEvent::Progress(base, label.clone()))
                 .await;
@@ -68,8 +69,7 @@ pub fn convert_to_mono(books: Vec<Audiobook>) -> impl Stream<Item = ProcessingEv
                 })
             });
             while let Some(fraction) = progress_rx.recv().await {
-                #[allow(clippy::cast_precision_loss)]
-                let overall = base + fraction / total as f32;
+                let overall = base + fraction * step;
                 let _ = output
                     .send(ProcessingEvent::Progress(overall, label.clone()))
                     .await;

@@ -13,6 +13,11 @@ use crate::utils::image_cache::{CacheStats, ImageCache};
 /// Pixel size of the cover thumbnails shown in the library table
 pub const TABLE_THUMBNAIL_SIZE: u32 = 40;
 
+/// Convert a pixel size to `f32` without lossy casts (sizes beyond `u16` are clamped)
+fn pixels(size: u32) -> f32 {
+    f32::from(u16::try_from(size).unwrap_or(u16::MAX))
+}
+
 /// Cover art display component
 #[derive(Debug, Clone)]
 pub struct CoverArt {
@@ -68,7 +73,7 @@ impl CoverArt {
 
     /// Create the view for this cover art component
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
-        let size = self.size as f32;
+        let size = pixels(self.size);
         let content: Element<'a, crate::messages::Message> = if self.is_placeholder {
             crate::components::ui::icon("book", size * 0.45, tokens.colors.on_surface_variant)
         } else {
@@ -152,9 +157,9 @@ impl CoverArtWithLoading {
     pub fn view<'a>(&self, tokens: &'a MaterialTokens) -> Element<'a, crate::messages::Message> {
         if self.loading {
             // Show loading indicator
-            container(text("⏳").size(self.loading_size as f32 * 0.6))
-                .width(Length::Fixed(self.loading_size as f32))
-                .height(Length::Fixed(self.loading_size as f32))
+            container(text("⏳").size(pixels(self.loading_size) * 0.6))
+                .width(Length::Fixed(pixels(self.loading_size)))
+                .height(Length::Fixed(pixels(self.loading_size)))
                 .style(tokens.container_style())
                 .into()
         } else {
